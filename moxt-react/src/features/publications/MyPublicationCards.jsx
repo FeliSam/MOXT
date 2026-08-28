@@ -8,6 +8,7 @@ import {
   FiExternalLink,
   FiFileText,
   FiPackage,
+  FiPlay,
   FiRepeat,
   FiRotateCcw,
   FiTrash2,
@@ -32,7 +33,15 @@ import {
   isActiveP2POffer,
   isActiveParcel,
   isActivePost,
+  isActiveVideo,
 } from './publicationCatalogUtils'
+import { videoFeedPath } from '../videos/videoUtils'
+import { PublicationBoostButton } from '../stars/PublicationBoostButton'
+
+function BoostAction({ active, onBoost, activeBoost }) {
+  if (!active || !onBoost) return null
+  return <PublicationBoostButton onBoost={onBoost} activeBoost={activeBoost} />
+}
 
 function PublicationCardShell({
   archived = false,
@@ -124,6 +133,8 @@ export function MyListingPublicationCard({
   onDuplicate,
   onMarkSold,
   onDelete,
+  onBoost,
+  activeBoost = null,
 }) {
   const { t } = useLanguage()
   const p3 = (key) => phase3Text(t, key)
@@ -152,6 +163,7 @@ export function MyListingPublicationCard({
             </Button>
             {active ? (
               <>
+                <BoostAction active={active} onBoost={onBoost} activeBoost={activeBoost} />
                 <Button variant="secondary" icon={FiCheckCircle} size="sm" onClick={onMarkSold}>
                   {mt('marketplace.common.markSold')}
                 </Button>
@@ -183,6 +195,8 @@ export function MyParcelPublicationCard({
   onReactivate,
   onDuplicate,
   onDelete,
+  onBoost,
+  activeBoost = null,
 }) {
   const { t } = useLanguage()
   const status = statusMeta(parcel.status, t)
@@ -221,9 +235,12 @@ export function MyParcelPublicationCard({
               {phase3Text(t, 'publications.cards.duplicate')}
             </Button>
             {active ? (
-              <Button variant="danger" icon={FiArchive} size="sm" onClick={onArchive}>
-                {phase3Text(t, 'publications.cards.archive')}
-              </Button>
+              <>
+                <BoostAction active={active} onBoost={onBoost} activeBoost={activeBoost} />
+                <Button variant="danger" icon={FiArchive} size="sm" onClick={onArchive}>
+                  {phase3Text(t, 'publications.cards.archive')}
+                </Button>
+              </>
             ) : (
               <Button icon={FiRotateCcw} size="sm" onClick={onReactivate}>
                 {t('parcels.my.reactivate')}
@@ -249,6 +266,8 @@ export function MyJobPublicationCard({
   onReactivate,
   onDuplicate,
   onDelete,
+  onBoost,
+  activeBoost = null,
 }) {
   const { t } = useLanguage()
   const p3 = (key) => phase3Text(t, key)
@@ -284,9 +303,12 @@ export function MyJobPublicationCard({
               {p3('publications.cards.duplicate')}
             </Button>
             {active ? (
-              <Button variant="danger" size="sm" onClick={onArchive}>
-                {p3('publications.cards.archive')}
-              </Button>
+              <>
+                <BoostAction active={active} onBoost={onBoost} activeBoost={activeBoost} />
+                <Button variant="danger" size="sm" onClick={onArchive}>
+                  {p3('publications.cards.archive')}
+                </Button>
+              </>
             ) : (
               <Button icon={FiRotateCcw} size="sm" onClick={onReactivate}>
                 {p3('publications.cards.republish')}
@@ -311,6 +333,8 @@ export function MyEventPublicationCard({
   onReactivate,
   onDuplicate,
   onDelete,
+  onBoost,
+  activeBoost = null,
 }) {
   const { t } = useLanguage()
   const p3 = (key) => phase3Text(t, key)
@@ -347,9 +371,12 @@ export function MyEventPublicationCard({
               {p3('publications.cards.duplicate')}
             </Button>
             {active ? (
-              <Button variant="danger" size="sm" onClick={onArchive}>
-                {p3('publications.cards.archive')}
-              </Button>
+              <>
+                <BoostAction active={active} onBoost={onBoost} activeBoost={activeBoost} />
+                <Button variant="danger" size="sm" onClick={onArchive}>
+                  {p3('publications.cards.archive')}
+                </Button>
+              </>
             ) : (
               <Button icon={FiRotateCcw} size="sm" onClick={onReactivate}>
                 {p3('publications.cards.republish')}
@@ -469,6 +496,78 @@ export function MyP2POfferPublicationCard({
                 {p3('publications.cards.republish')}
               </Button>
             ) : null}
+            <Button variant="danger" icon={FiTrash2} size="sm" onClick={onDelete}>
+              {p3('publications.cards.delete')}
+            </Button>
+          </>
+        )
+      }
+    />
+  )
+}
+
+export function MyVideoPublicationCard({
+  video,
+  readOnly = false,
+  guestMode = false,
+  onGuestInteract,
+  onArchive,
+  onReactivate,
+  onDuplicate,
+  onDelete,
+  onBoost,
+  activeBoost = null,
+}) {
+  const { t } = useLanguage()
+  const p3 = (key) => phase3Text(t, key)
+  const active = isActiveVideo(video)
+  const status = statusMeta(video.status, t)
+
+  return (
+    <PublicationCardShell
+      archived={!active}
+      coverUrl={video.thumbnailUrl || ''}
+      icon={FiPlay}
+      tone="from-rose-600 to-red-700"
+      badge={
+        <span className="inline-flex items-center gap-1">
+          <Badge tone={status.tone}>{status.label}</Badge>
+          <span className="grid size-6 place-items-center rounded-full bg-black/55 text-white">
+            <FiPlay className="text-xs" />
+          </span>
+        </span>
+      }
+      title={video.title || p3('publications.cards.fallbackTitle')}
+      subtitle={video.caption || ''}
+      meta={[video.businessName].filter(Boolean)}
+      path={videoFeedPath(video.id)}
+      guestMode={guestMode}
+      onGuestInteract={onGuestInteract}
+      actions={
+        readOnly ? null : (
+          <>
+            <Link to={`/videos/${video.id}/edit`}>
+              <Button variant="secondary" icon={FiEdit2} size="sm">
+                {p3('publications.cards.edit')}
+              </Button>
+            </Link>
+            {onDuplicate ? (
+              <Button variant="secondary" icon={FiCopy} size="sm" onClick={onDuplicate}>
+                {p3('publications.cards.duplicate')}
+              </Button>
+            ) : null}
+            {active ? (
+              <>
+                <BoostAction active={active} onBoost={onBoost} activeBoost={activeBoost} />
+                <Button variant="danger" icon={FiArchive} size="sm" onClick={onArchive}>
+                  {p3('publications.cards.archive')}
+                </Button>
+              </>
+            ) : (
+              <Button icon={FiRotateCcw} size="sm" onClick={onReactivate}>
+                {p3('publications.cards.republish')}
+              </Button>
+            )}
             <Button variant="danger" icon={FiTrash2} size="sm" onClick={onDelete}>
               {p3('publications.cards.delete')}
             </Button>

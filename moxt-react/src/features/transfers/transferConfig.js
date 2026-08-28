@@ -41,6 +41,15 @@ export const TRANSFER_CONFIG = {
   },
 }
 
+/**
+ * Plafonds / minimums de montant.
+ * `false` = désactivés temporairement (aucun min/max appliqué côté UI).
+ * Remettre à `true` pour réactiver la politique KYC.
+ */
+export const TRANSFER_LIMITS_POLICY = {
+  enforceAmountLimits: false,
+}
+
 export const FALLBACK_RATES = {
   [DIRECTIONS.BJ_TO_RU]: {
     from: 'XOF',
@@ -75,8 +84,42 @@ export const FALLBACK_RUB_TO_CURRENCY = {
 
 export const PAYMENT_METHODS = {
   BJ: ['MTN MoMo', 'Moov Money', 'Celtiis Cash'],
-  RU: ['Sberbank', 'VTB', 'T-Bank', 'Alfa-Bank', 'Gazprombank', 'Raiffeisenbank', 'Ozon Bank'],
+  RU: [
+    'Sberbank',
+    'VTB',
+    'T-Bank',
+    'Tinkoff',
+    'Alfa-Bank',
+    'Gazprombank',
+    'Raiffeisenbank',
+    'Ozon Bank',
+  ],
 }
+
+/** Catalogue SBP de secours si l’API NSPK est bloquée (CORS / réseau). */
+export const RU_SBP_BANKS_FALLBACK = [
+  ...PAYMENT_METHODS.RU,
+  'Sovcombank',
+  'Rosbank',
+  'MTS Bank',
+  'Promsvyazbank',
+  'Rosselkhozbank',
+  'Otkritie',
+  'MKB',
+  'Pochta Bank',
+  'Yandex Bank',
+  'Home Credit',
+  'UniCredit',
+  'OTP Bank',
+  'Ak Bars',
+  'Uralsib',
+  'Russian Standard',
+  'Bank Saint-Petersburg',
+  'Tochka',
+  'Modulbank',
+  'Wildberries Bank',
+  'Citibank',
+]
 
 export const COUNTRY_CURRENCIES = {
   BJ: 'XOF',

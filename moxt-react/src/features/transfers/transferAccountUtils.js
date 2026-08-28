@@ -1,5 +1,10 @@
 import { FALLBACK_AFRICAN_COUNTRIES, RUSSIA } from '../../config/geography'
-import { DIRECTIONS, PAYMENT_METHODS, paymentMethodsForCountry } from './transferConfig'
+import {
+  DIRECTIONS,
+  ORIGIN_PAYMENT_METHODS,
+  PAYMENT_METHODS,
+  paymentMethodsForCountry,
+} from './transferConfig'
 
 export const TRANSFER_ACCOUNT_SLOTS = {
   RU: 'ru',
@@ -65,6 +70,20 @@ function methodsEqual(left, right) {
   return String(left || '').trim().toLowerCase() === String(right || '').trim().toLowerCase()
 }
 
+const AFRICAN_METHOD_LABELS = new Set(
+  [PAYMENT_METHODS.BJ, ...Object.values(ORIGIN_PAYMENT_METHODS)]
+    .flat()
+    .map((item) => String(item).trim().toLowerCase())
+    .filter(Boolean),
+)
+
+export function isAfricanPaymentMethod(method) {
+  const key = String(method || '').trim().toLowerCase()
+  if (!key) return false
+  if (AFRICAN_METHOD_LABELS.has(key)) return true
+  return key === 'mobile money local' || key === 'virement bancaire local'
+}
+
 function accountMethodLabel(account) {
   return String(account?.method || account?.bankName || '').trim()
 }
@@ -99,7 +118,7 @@ function uniqueAccountMethods(accounts = []) {
 /**
  * Moyens proposés au client pour un côté (envoi vers l'échangeur ou réception).
  * Afrique : uniquement les réseaux dont l'échangeur a un compte actif.
- * Russie : méthodes des comptes RU s'ils sont renseignés, sinon le catalogue banques.
+ * Russie : catalogue SBP (toutes les banques du corridor), plus d’éventuels libellés custom.
  */
 export function exchangerMethodsForParty({
   business,
@@ -115,14 +134,20 @@ export function exchangerMethodsForParty({
     .filter(Boolean)
 
   if (target === 'RU') {
-    if (fromAccounts.length) return fromAccounts
-    const declaredRu = declared.filter(
+    // SBP : le client choisit sa banque ; le compte échangeur reste le point d’entrée.
+    const extras = [...fromAccounts, ...declared].filter(
       (method) =>
-        catalog.some((item) => methodsEqual(item, method)) ||
-        PAYMENT_METHODS.RU.some((item) => methodsEqual(item, method)),
+        !catalog.some((item) => methodsEqual(item, method)) && !isAfricanPaymentMethod(method),
     )
-    if (declaredRu.length) return declaredRu
-    return catalog
+    const seen = new Set()
+    const uniqueExtras = []
+    for (const method of extras) {
+      const key = method.toLowerCase()
+      if (seen.has(key)) continue
+      seen.add(key)
+      uniqueExtras.push(method)
+    }
+    return [...catalog, ...uniqueExtras]
   }
 
   if (fromAccounts.length) return fromAccounts

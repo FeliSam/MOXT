@@ -3,16 +3,19 @@ import {
   FiCalendar,
   FiFileText,
   FiPackage,
+  FiPlay,
   FiRepeat,
   FiShoppingBag,
 } from 'react-icons/fi'
 import { isActiveListing, isArchivedListing } from '../marketplace/listingCatalogUtils'
+import { isActiveVideo, isArchivedVideo } from '../videos/videoUtils'
 
 export const PUBLICATION_TYPE_TABS = [
   { id: 'listing', label: 'Annonces', icon: FiShoppingBag, color: 'from-cyan-500 to-blue-600' },
   { id: 'parcel', label: 'Colis', icon: FiPackage, color: 'from-sky-500 to-blue-600' },
   { id: 'job', label: 'Jobs', icon: FiBriefcase, color: 'from-violet-500 to-purple-600' },
   { id: 'event', label: 'Événements', icon: FiCalendar, color: 'from-amber-500 to-orange-600' },
+  { id: 'video', label: 'Vidéos', icon: FiPlay, color: 'from-rose-500 to-red-600' },
   { id: 'post', label: 'Publication', icon: FiFileText, color: 'from-slate-500 to-slate-700' },
   { id: 'other', label: 'Autres', icon: FiRepeat, color: 'from-emerald-500 to-teal-600' },
 ]
@@ -73,8 +76,14 @@ export function isArchivedP2POffer(offer) {
   return offer ? !isActiveP2POffer(offer) : false
 }
 
+export { isActiveVideo, isArchivedVideo }
+
 function isBusinessPublication(item) {
   return Boolean(item?.businessId)
+}
+
+function emptyPublications() {
+  return { listings: [], parcels: [], jobs: [], events: [], videos: [], posts: [], others: [] }
 }
 
 export function filterPublicationsByScope(publications, scope = 'personal') {
@@ -88,6 +97,8 @@ export function filterPublicationsByScope(publications, scope = 'personal') {
     parcels: pick(publications.parcels),
     jobs: pick(publications.jobs),
     events: pick(publications.events),
+    // Vidéos toujours business-scoped
+    videos: scope === 'business' ? publications.videos || [] : [],
     posts:
       scope === 'business' ? [] : publications.posts.filter((item) => !isBusinessPublication(item)),
     others: pick(publications.others),
@@ -95,33 +106,31 @@ export function filterPublicationsByScope(publications, scope = 'personal') {
 }
 
 export function collectBusinessPublications(state, businessId) {
-  if (!businessId) {
-    return { listings: [], parcels: [], jobs: [], events: [], posts: [], others: [] }
-  }
+  if (!businessId) return emptyPublications()
   const match = (item) => item?.businessId === businessId
   return {
     listings: (state.marketplace?.items || []).filter(match),
     parcels: (state.parcels?.items || []).filter(match),
     jobs: (state.jobs?.items || []).filter(match),
     events: (state.events?.items || []).filter(match),
+    videos: (state.videos?.items || []).filter(match),
     posts: [],
     others: (state.p2p?.offers || []).filter(match),
   }
 }
 
 export function collectUserPublications(state, userId) {
-  if (!userId) {
-    return { listings: [], parcels: [], jobs: [], events: [], posts: [], others: [] }
-  }
+  if (!userId) return emptyPublications()
 
   const listings = (state.marketplace?.items || []).filter((item) => item.ownerId === userId)
   const parcels = (state.parcels?.items || []).filter((item) => item.ownerId === userId)
   const jobs = (state.jobs?.items || []).filter((item) => item.ownerId === userId)
   const events = (state.events?.items || []).filter((item) => item.ownerId === userId)
+  const videos = (state.videos?.items || []).filter((item) => item.ownerId === userId)
   const posts = (state.posts?.items || []).filter((item) => item.authorId === userId)
   const others = (state.p2p?.offers || []).filter((item) => item.ownerId === userId)
 
-  return { listings, parcels, jobs, events, posts, others }
+  return { listings, parcels, jobs, events, videos, posts, others }
 }
 
 export function publicationTotalCount(publications) {
@@ -130,6 +139,7 @@ export function publicationTotalCount(publications) {
     publications.parcels.length +
     publications.jobs.length +
     publications.events.length +
+    (publications.videos?.length || 0) +
     publications.posts.length +
     publications.others.length
   )
@@ -214,6 +224,13 @@ export function filterPublicationsByTabs(
       archiveTab,
       includePending,
     ),
+    video: filterByArchive(
+      publications.videos || [],
+      isActiveVideo,
+      isArchivedVideo,
+      archiveTab,
+      includePending,
+    ),
     post: filterByArchive(
       publications.posts,
       isActivePost,
@@ -239,6 +256,7 @@ export function filterPublicationsByTabs(
     parcel: typeTab === 'parcel' ? map.parcel : [],
     job: typeTab === 'job' ? map.job : [],
     event: typeTab === 'event' ? map.event : [],
+    video: typeTab === 'video' ? map.video : [],
     post: typeTab === 'post' ? map.post : [],
     other: typeTab === 'other' ? map.other : [],
   }
@@ -255,6 +273,7 @@ export function publicationTypeCounts(publications, archiveTab, { includePending
     parcel: filtered.parcel.length,
     job: filtered.job.length,
     event: filtered.event.length,
+    video: filtered.video.length,
     post: filtered.post.length,
     other: filtered.other.length,
   }
@@ -279,6 +298,7 @@ export function publicationArchiveCounts(
     bucket.parcel.length +
     bucket.job.length +
     bucket.event.length +
+    bucket.video.length +
     bucket.post.length +
     bucket.other.length
   return {
@@ -288,7 +308,12 @@ export function publicationArchiveCounts(
 }
 
 export function publicationTotalViews(publications) {
-  return publications.listings.reduce((sum, item) => sum + (Number(item.views) || 0), 0)
+  const listingViews = publications.listings.reduce((sum, item) => sum + (Number(item.views) || 0), 0)
+  const videoViews = (publications.videos || []).reduce(
+    (sum, item) => sum + (Number(item.viewCount) || 0),
+    0,
+  )
+  return listingViews + videoViews
 }
 
 export function visiblePublicationCount(visible) {
@@ -297,6 +322,7 @@ export function visiblePublicationCount(visible) {
     visible.parcel.length +
     visible.job.length +
     visible.event.length +
+    (visible.video?.length || 0) +
     visible.post.length +
     visible.other.length
   )

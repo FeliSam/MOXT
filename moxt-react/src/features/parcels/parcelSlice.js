@@ -23,7 +23,7 @@ const parcelSlice = createSlice({
         return {
           payload: {
             ...values,
-            id: createId('COL'),
+            id: values.id || createId('COL'),
             capacityKg: Number(values.capacityKg),
             remainingKg: Number(values.capacityKg),
             pricePerKg: Number(values.pricePerKg),

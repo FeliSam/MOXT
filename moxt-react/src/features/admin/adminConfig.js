@@ -11,6 +11,8 @@ import {
   FiRepeat,
   FiShield,
   FiShoppingBag,
+  FiSliders,
+  FiStar,
   FiTrendingUp,
   FiUserCheck,
   FiUsers,
@@ -19,6 +21,7 @@ import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 
 export const MAIN_VIEWS = [
   { id: 'overview', label: 'Vue generale', labelKey: 'admin.nav.overview', icon: FiShield },
+  { id: 'modules', label: 'Modules', labelKey: 'admin.nav.modules', icon: FiSliders },
   { id: 'transfers', label: 'Transferts', labelKey: 'admin.nav.transfers', icon: FiRepeat },
   { id: 'p2p', label: 'P2P', labelKey: 'admin.nav.p2p', icon: FiUsers },
   { id: 'rates', label: 'Taux', labelKey: 'admin.nav.rates', icon: FiTrendingUp },
@@ -30,6 +33,7 @@ export const MAIN_VIEWS = [
   { id: 'documents', label: 'Documents', labelKey: 'admin.nav.documents', icon: FiFileText },
   { id: 'queues', label: "Files d'action", labelKey: 'admin.nav.queues', icon: FiInbox },
   { id: 'audit', label: 'Audit', labelKey: 'admin.nav.audit', icon: FiActivity },
+  { id: 'stars', label: 'Stars', labelKey: 'admin.nav.stars', icon: FiStar },
 ]
 
 export const CONTENT_SECTIONS = [
@@ -64,9 +68,11 @@ export const VIEW_FILTERS = {
   verifications: ['all', 'pending', 'verified', 'rejected'],
   documents: ['all', 'pending', 'verified', 'rejected'],
   overview: [],
+  modules: [],
   rates: [],
   queues: [],
   audit: [],
+  stars: [],
 }
 
 export const ADMIN_VIEW_IDS = MAIN_VIEWS.map((view) => view.id)

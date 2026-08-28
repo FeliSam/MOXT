@@ -4,6 +4,7 @@ import {
   FALLBACK_RATES,
   transferLimitsForCurrency,
   TRANSFER_CONFIG,
+  TRANSFER_LIMITS_POLICY,
 } from './transferConfig'
 import { formatCurrency, formatDateTime } from '../../utils/formatters'
 
@@ -152,12 +153,17 @@ export function validateTransferAmount(
   originCountry = 'BJ',
   t,
 ) {
-  const calculation = calculateTransfer(amount, direction, undefined, undefined, originCountry)
-  const maximum = verified ? calculation.maximumVerified : calculation.maximumUnverified
-
   if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) {
     return resolveMsg(t, 'validation.transfer.amountInvalid', 'Montant invalide.')
   }
+
+  if (!TRANSFER_LIMITS_POLICY.enforceAmountLimits) {
+    return null
+  }
+
+  const calculation = calculateTransfer(amount, direction, undefined, undefined, originCountry)
+  const maximum = verified ? calculation.maximumVerified : calculation.maximumUnverified
+
   if (Number(amount) < calculation.minimumRequired) {
     const formatted = formatMoney(calculation.minimumRequired, calculation.currencyFrom)
     return resolveMsg(t, 'validation.transfer.amountMinimum', `Le minimum est de ${formatted}.`, {

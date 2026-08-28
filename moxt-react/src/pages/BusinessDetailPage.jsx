@@ -25,7 +25,6 @@ import { ReshareButton } from '../components/ui/ReshareButton'
 import { activityByValue, businessExperienceForActivity } from '../config/businessActivities'
 import { statusMeta } from '../config/statuses'
 import { useLanguage } from '../contexts/useLanguage'
-import { FavoriteButton } from '../features/account/FavoriteButton'
 import { SubscribeButton } from '../features/account/SubscribeButton'
 import { ProfileQrShareButton } from '../features/share/ProfileQrShareButton'
 import {
@@ -83,6 +82,7 @@ export function BusinessDetailPage() {
   const jobItems = useSelector((state) => state.jobs.items)
   const eventItems = useSelector((state) => state.events.items)
   const offerItems = useSelector((state) => state.p2p.offers)
+  const videoItems = useSelector((state) => state.videos.items)
 
   const mainTab =
     searchParams.get('view') === 'informations'
@@ -113,6 +113,7 @@ export function BusinessDetailPage() {
         jobs: { items: jobItems },
         events: { items: eventItems },
         p2p: { offers: offerItems },
+        videos: { items: videoItems },
       },
       businessId,
     )
@@ -125,6 +126,7 @@ export function BusinessDetailPage() {
     marketplaceItems,
     offerItems,
     parcelItems,
+    videoItems,
   ])
   const publicationCount = publicationTotalCount(publications)
   const profile = useMemo(
@@ -360,25 +362,14 @@ export function BusinessDetailPage() {
             <FiMapPin className="text-brand-600" /> {business.city} · {business.country}
           </p>
 
-          <div className="grid grid-cols-2 items-center gap-2 border-t border-[var(--app-border)] pt-4 sm:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)]">
-            <div className="col-span-2 flex flex-wrap items-center gap-2 sm:col-span-1">
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 border-t border-[var(--app-border)] pt-4 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
+            <div className="flex shrink-0 items-center gap-2">
               {!guestMode ? (
                 <ReshareButton
                   sourceType="business"
                   sourceId={business.id}
                   sourceData={business}
                   className="shrink-0"
-                />
-              ) : null}
-              {!isOwner && !guestMode ? (
-                <FavoriteButton
-                  relatedId={business.id}
-                  relatedType="business"
-                  title={business.name}
-                  path={`/businesses/${business.id}`}
-                  entity={business}
-                  showLabel={false}
-                  className="!size-11 shrink-0 !shadow-none"
                 />
               ) : null}
               {!isOwner ? (
@@ -400,24 +391,20 @@ export function BusinessDetailPage() {
                 publisherId={business.id}
                 publisherName={business.name}
                 publisherPath={`/businesses/${business.id}`}
-                className="w-full min-w-0"
+                className="min-w-0"
               />
-            ) : null}
+            ) : (
+              <span className="hidden min-w-0 sm:block" aria-hidden />
+            )}
             {guestMode ? (
-              <Link
-                to="/discover"
-                className={`min-w-0 ${isOwner || guestMode ? 'col-span-2 sm:col-span-1' : ''}`}
-              >
+              <Link to="/discover" className="col-span-2 min-w-0 sm:col-auto">
                 <Button variant="secondary" icon={FiArrowLeft} className="w-full">
                   {bt('businesses.publications.discoverMoxt')}
                 </Button>
               </Link>
             ) : (
-              <Link
-                to="/businesses"
-                className={`min-w-0 ${isOwner || guestMode ? 'col-span-2 sm:col-span-1' : ''}`}
-              >
-                <Button variant="secondary" icon={HiOutlineBuildingOffice2} className="w-full">
+              <Link to="/businesses" className="col-span-2 min-w-0 sm:col-auto">
+                <Button variant="secondary" icon={HiOutlineBuildingOffice2} className="w-full sm:w-auto">
                   {bt('businesses.common.directory')}
                 </Button>
               </Link>

@@ -47,6 +47,11 @@ import {
   publishOptionSub,
   publishText,
 } from '../features/publications/publishI18n'
+import { StarsInsufficientError, starsOwnerFromPublish } from '../features/stars/starsPublish'
+import { StarsPublishGate } from '../features/stars/StarsPublishGate'
+import { PublishFormulaSheet } from '../features/stars/PublishFormulaSheet'
+import { DEFAULT_QUOTA_CONFIG } from '../features/stars/starsConfig'
+import { useStarsPublishFlow } from '../features/stars/useStarsPublishFlow'
 
 const STEPS = EVENT_PUBLISH_STEPS
 
@@ -124,6 +129,9 @@ export function PublishEventPage() {
   const [publishing, setPublishing] = useState(false)
   const { progress: uploadProgress, track: trackUpload } = useUploadProgress()
   const { trigger: triggerBurst, node: burstNode } = useActionBurst()
+  const { pendingQuote, confirmPaid, acceptSpend, cancelSpend, withStarsConsume } = useStarsPublishFlow()
+  const starsBalance = useSelector((state) => state.stars.balance)
+  const [formulaKey, setFormulaKey] = useState('standard')
 
   function addPhotos(files) {
     const added = Array.from(files)
@@ -219,13 +227,14 @@ export function PublishEventPage() {
       return
     }
     setPublishing(true)
+    const eventId = `EVT-${Date.now().toString(36).toUpperCase()}`
     let images = []
     try {
       if (photos.length) {
         images = await trackUpload((onProgress) =>
           storageService.uploadEventImages(
             user.id,
-            Date.now().toString(36),
+            eventId,
             photos.map((photo) => photo.file),
             { onProgress },
           ),
@@ -243,17 +252,54 @@ export function PublishEventPage() {
       return
     }
     const { publishAs: _publishAs, ...eventFields } = form
-    const action = dispatch(
-      createEvent({
-        ...eventFields,
-        images,
-        ownerId: user.id,
-        organizerName: publishContext.useBusiness ? business.name : form.organizerName,
-        businessId: publishContext.businessId,
-        price: form.freeEntry ? 0 : Number(form.price),
-        status: initialCatalogStatus(user, { live: 'published', pending: 'pending_review' }),
-      }),
-    )
+    let action
+    try {
+      const outcome = await withStarsConsume({
+        category: 'events',
+        formulaKey,
+        ...starsOwnerFromPublish({
+          useBusiness: publishContext.useBusiness,
+          business,
+          user,
+        }),
+        entityId: eventId,
+        confirmPaid,
+        publish: async () =>
+          dispatch(
+            createEvent({
+              ...eventFields,
+              id: eventId,
+              images,
+              ownerId: user.id,
+              organizerName: publishContext.useBusiness ? business.name : form.organizerName,
+              businessId: publishContext.businessId,
+              price: form.freeEntry ? 0 : Number(form.price),
+              status: initialCatalogStatus(user, { live: 'published', pending: 'pending_review' }),
+            }),
+          ),
+      })
+      if (outcome?.cancelled) {
+        setPublishing(false)
+        return
+      }
+      action = outcome.result
+    } catch (error) {
+      setPublishing(false)
+      dispatch(
+        addToast({
+          title:
+            error instanceof StarsInsufficientError
+              ? t('stars.insufficientTitle')
+              : publishText(t, 'publish.common.toasts.imagesFailedTitle'),
+          message:
+            error instanceof StarsInsufficientError
+              ? t('stars.insufficientBody')
+              : error.message || publishText(t, 'publish.common.toasts.retry'),
+          tone: 'error',
+        }),
+      )
+      return
+    }
     setPublishing(false)
     triggerBurst()
     const live = action.payload?.status === 'published'
@@ -293,6 +339,14 @@ export function PublishEventPage() {
           {publishText(t, 'publish.event.back')}
         </Button>
         <h1 className="text-xl font-black">{publishText(t, 'publish.event.title')}</h1>
+        <StarsPublishGate
+          category="events"
+          ownerType={form.publishAs === 'business' && canPublishAsBusiness ? 'business' : 'user'}
+          ownerId={form.publishAs === 'business' && canPublishAsBusiness ? business?.id : user?.id}
+          pendingQuote={pendingQuote}
+          onCancel={cancelSpend}
+          onConfirm={acceptSpend}
+        />
       </div>
 
       <Card className="px-6 py-5">
@@ -703,6 +757,16 @@ export function PublishEventPage() {
             </p>
           </div>
         </div>
+      ) : null}
+
+      {step === STEPS.length ? (
+        <PublishFormulaSheet
+          category="events"
+          value={formulaKey}
+          onChange={setFormulaKey}
+          enforced={Boolean(starsBalance?.enforced)}
+          config={starsBalance?.config || DEFAULT_QUOTA_CONFIG}
+        />
       ) : null}
 
       <div className="flex items-center justify-between gap-3">

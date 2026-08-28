@@ -17,7 +17,9 @@ import { supabase } from '../services/supabaseClient'
 import { AdminAuditPanel } from '../features/admin/components/AdminAuditPanel'
 import { AdminContentPanel } from '../features/admin/components/AdminContentPanel'
 import { AdminDetailPanel } from '../features/admin/components/AdminDetailPanel'
+import { AdminModulesPanel } from '../features/admin/components/AdminModulesPanel'
 import { AdminOverviewPanel } from '../features/admin/components/AdminOverviewPanel'
+import { AdminStarsPanel } from '../features/admin/components/AdminStarsPanel'
 import { AdminQueuesPanel } from '../features/admin/components/AdminQueuesPanel'
 import { AdminRatesPanel } from '../features/admin/components/AdminRatesPanel'
 import { AdminSupportPanel } from '../features/admin/components/AdminSupportPanel'
@@ -95,7 +97,7 @@ export function AdminPage() {
 
   const confirmName = `${confirmUser?.firstName || ''} ${confirmUser?.lastName || ''}`.trim()
   const purgeName = `${purgeUser?.firstName || ''} ${purgeUser?.lastName || ''}`.trim()
-  const auditFullWidth = view === 'audit' && !selected
+  const auditFullWidth = (view === 'audit' || view === 'stars') && !selected
   const showDetailPanel = !auditFullWidth || selected
 
   return (
@@ -162,6 +164,7 @@ export function AdminPage() {
               transfers={allTransfers}
             />
           )}
+          {view === 'modules' && <AdminModulesPanel />}
           {view === 'transfers' && (
             <AdminTransfersPanel
               businessIdFilter={businessIdFilter}
@@ -250,6 +253,7 @@ export function AdminPage() {
               setSelected={setSelected}
             />
           )}
+          {view === 'stars' && <AdminStarsPanel />}
         </div>
 
         {showDetailPanel ? (

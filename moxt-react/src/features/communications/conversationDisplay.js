@@ -8,6 +8,16 @@ export function formatProfileName(profile) {
   return name || profile.name || ''
 }
 
+export function isParticipantDisplayName(conversation, title) {
+  const normalized = String(title || '').trim().toLowerCase()
+  if (!normalized || !conversation) return false
+  const profiles = conversation.participantProfiles || {}
+  return Object.values(profiles).some((profile) => {
+    const name = formatProfileName(profile)
+    return Boolean(name) && name.trim().toLowerCase() === normalized
+  })
+}
+
 export function getOtherParticipantId(conversation, currentUserId) {
   const ids = conversation?.participantIds || []
   return ids.find((id) => id && id !== currentUserId) || ids[0] || null

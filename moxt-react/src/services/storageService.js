@@ -2,6 +2,7 @@ import { supabase } from './supabaseClient'
 import { compressImage } from './imageUtils'
 import { fileSliceProgress, reportProgress, UPLOAD_PHASES } from './uploadProgress'
 import { mediaStorage } from './media/mediaStorageProvider.js'
+import { videoFileExtension } from '../features/videos/videoUtils.js'
 export { appendCacheBust } from './media/mediaUrlUtils.js'
 
 async function upload(bucket, path, file, { onProgress } = {}) {
@@ -221,6 +222,38 @@ export const storageService = {
     )
   },
 
+  /**
+   * Vidéo entreprise → Yandex `public/videos/{businessId}/{videoId}.{ext}`.
+   * @returns {{ videoUrl: string, thumbnailUrl: string, objectKey: string, legacyPath: string }}
+   */
+  async uploadBusinessVideo(userId, businessId, videoId, videoFile, thumbnailFile, { onProgress } = {}) {
+    if (!userId || !businessId || !videoId) {
+      throw new Error('Utilisateur, entreprise et identifiant vidéo requis.')
+    }
+    if (!videoFile) throw new Error('Fichier vidéo manquant.')
+    const extension = videoFileExtension(videoFile)
+    const safeUserId = String(userId).replace(/[^a-zA-Z0-9_-]/g, '_')
+    const safeBusinessId = String(businessId).replace(/[^a-zA-Z0-9_-]/g, '_')
+    const safeVideoId = String(videoId).replace(/[^a-zA-Z0-9_-]/g, '_')
+    const legacyPath = `${safeUserId}/${safeBusinessId}/${safeVideoId}.${extension}`
+    const videoUrl = await upload('videos', legacyPath, videoFile, { onProgress })
+    let thumbnailUrl = ''
+    if (thumbnailFile) {
+      const thumbPath = legacyPath.replace(/\.[^.]+$/, '-thumb.jpg')
+      thumbnailUrl = await upload('videos', thumbPath, thumbnailFile, {
+        onProgress: onProgress
+          ? (update) => onProgress({ ...update, phase: update.phase || 'thumbnail' })
+          : undefined,
+      })
+    }
+    return {
+      videoUrl,
+      thumbnailUrl,
+      objectKey: `public/videos/${legacyPath}`,
+      legacyPath,
+    }
+  },
+
   async uploadJobImages(userId, jobId, files, { version = '', onProgress } = {}) {
     return uploadImageBatch(files, { onProgress, version }, async (file, i, ver, fileProgress) =>
       compressThenUpload(
@@ -354,6 +387,22 @@ export const storageService = {
     return upload(
       'listings',
       `${userId}/messages/${conversationId}/files/${stamp}-${safeName || `file.${extension}`}`,
+      file,
+      { onProgress },
+    )
+  },
+
+  async uploadMessageVideo(userId, conversationId, file, { onProgress } = {}) {
+    reportProgress(onProgress, {
+      phase: UPLOAD_PHASES.preparing,
+      percent: 6,
+      fileName: file?.name,
+    })
+    const extension = ext(file) || 'mp4'
+    const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    return upload(
+      'listings',
+      `${userId}/messages/${conversationId}/videos/${stamp}.${extension}`,
       file,
       { onProgress },
     )

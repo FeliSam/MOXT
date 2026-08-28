@@ -6,6 +6,7 @@ import {
   attachmentImageSrcs,
   isContactAttachment,
   isImageAttachment,
+  isVideoAttachment,
   messageImageStackRotation,
 } from '../../features/communications/attachmentUtils'
 import { useLanguage } from '../../contexts/useLanguage'
@@ -223,6 +224,23 @@ export function MessageAttachment({ attachment, mine }) {
             )
           : null}
       </>
+    )
+  }
+
+  if (isVideoAttachment(attachment) && attachment.url) {
+    return (
+      <div className="message-status-media">
+        <video
+          src={attachment.url}
+          controls
+          playsInline
+          preload="metadata"
+          className="max-h-72 w-full rounded-2xl bg-black object-contain"
+        />
+        {fromStatus ? (
+          <span className="message-status-badge">{messagesText(t, 'messages.statusBadge')}</span>
+        ) : null}
+      </div>
     )
   }
 

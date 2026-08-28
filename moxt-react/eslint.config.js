@@ -9,6 +9,7 @@ export default defineConfig([
     'dist',
     'android',
     'ios',
+    'public/ffmpeg',
     '.npm-cache',
     '.playwright-browsers',
     'playwright-report',

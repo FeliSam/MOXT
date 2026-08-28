@@ -11,6 +11,7 @@ import { setAll as setMarketplace } from '../marketplace/marketplaceSlice'
 import { setAll as setParcels } from '../parcels/parcelSlice'
 import { setAll as setJobs } from '../jobs/jobSlice'
 import { setAll as setEvents } from '../events/eventSlice'
+import { setAll as setVideos } from '../videos/videosSlice'
 import { receiveRemoteOffer } from '../p2p/p2pSlice'
 import { p2pOfferFromRemoteRow } from '../sync/entityRemote'
 import { jobsFromRemoteRows } from '../jobs/jobRemote'
@@ -40,7 +41,7 @@ export const refreshPublicationsData = createAsyncThunk(
     const uid = getState().auth.user?.id
     if (!uid) return null
 
-    const [listingsRes, parcelsRes, jobsRes, eventsRes, offersRes] = await Promise.all([
+    const [listingsRes, parcelsRes, jobsRes, eventsRes, videosRes, offersRes] = await Promise.all([
       supabase
         .from('listings')
         .select('*')
@@ -58,6 +59,11 @@ export const refreshPublicationsData = createAsyncThunk(
         .limit(PUBLIC_LIMIT),
       supabase
         .from('events')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(PUBLIC_LIMIT),
+      supabase
+        .from('videos')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(PUBLIC_LIMIT),
@@ -90,6 +96,9 @@ export const refreshPublicationsData = createAsyncThunk(
           items: fromRows(eventsRes.data || []).map(enrichEventFromRemoteRow),
         }),
       )
+    }
+    if (!videosRes.error) {
+      dispatch(setVideos({ items: fromRows(videosRes.data || []) }))
     }
     if (!offersRes.error) {
       for (const row of offersRes.data || []) {

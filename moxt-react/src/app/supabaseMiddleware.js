@@ -185,6 +185,11 @@ function toSnake(obj) {
     firstName: 'first_name',
     lastName: 'last_name',
     originPhone: 'origin_phone',
+    videoUrl: 'video_url',
+    thumbnailUrl: 'thumbnail_url',
+    objectKey: 'object_key',
+    durationMs: 'duration_ms',
+    viewCount: 'view_count',
   }
   const result = {}
   for (const [key, value] of Object.entries(obj)) {
@@ -467,6 +472,56 @@ function scheduleMarkConversationRead(payload, getState) {
   return Promise.resolve()
 }
 
+const marketplaceDiscoverySyncTimers = new Map()
+
+async function syncMarketplaceDiscoverySignals(state, userId) {
+  if (!userId) return
+  const viewed = (state.account.viewedListings || [])
+    .filter((item) => item.userId === userId)
+    .slice(0, 80)
+    .map((item) => ({
+      listingId: item.listingId,
+      at: item.viewedAt || item.viewed_at || new Date().toISOString(),
+    }))
+  const impressions = (state.account.listingImpressions || [])
+    .filter((item) => item.userId === userId)
+    .slice(0, 120)
+    .map((item) => ({
+      listingId: item.listingId,
+      at: item.seenAt || new Date().toISOString(),
+      railId: item.railId || '',
+    }))
+
+  const mergedPreferences = {
+    ...selectAccountPreferences(state, userId),
+    marketplaceDiscovery: { viewed, impressions },
+  }
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      updated_at: new Date().toISOString(),
+      preferences: mergedPreferences,
+    })
+    .eq('id', userId)
+  if (error) throw error
+}
+
+function scheduleMarketplaceDiscoverySync(getState, userId) {
+  if (!userId) return
+  clearTimeout(marketplaceDiscoverySyncTimers.get(userId))
+  marketplaceDiscoverySyncTimers.set(
+    userId,
+    setTimeout(async () => {
+      marketplaceDiscoverySyncTimers.delete(userId)
+      try {
+        await syncMarketplaceDiscoverySignals(getState(), userId)
+      } catch (error) {
+        console.warn('[Supabase] marketplaceDiscovery sync', error?.message || error)
+      }
+    }, 1400),
+  )
+}
+
 // ─── Handlers par action ──────────────────────────────────────────────────────
 
 const handlers = {
@@ -724,6 +779,76 @@ const handlers = {
   },
   'events/cancelRegistration': async (payload) => {
     await update('event_registrations', payload.id, { status: 'cancelled' })
+  },
+
+  // ── Vidéos entreprise ────────────────────────────────────────────────────────
+  'videos/createVideo': async (payload) => {
+    const {
+      businessName: _bn,
+      mimeType: _mt,
+      ...row
+    } = payload
+    await upsert('videos', {
+      ...row,
+      likes: Array.isArray(row.likes) ? row.likes : [],
+      comments: Array.isArray(row.comments) ? row.comments : [],
+      shareCount: Number(row.shareCount) || 0,
+    })
+  },
+  'videos/duplicateVideo': async (payload) => {
+    const { businessName: _bn, mimeType: _mt, ...row } = payload
+    await upsert('videos', {
+      ...row,
+      likes: Array.isArray(row.likes) ? row.likes : [],
+      comments: Array.isArray(row.comments) ? row.comments : [],
+      shareCount: Number(row.shareCount) || 0,
+    })
+  },
+  'videos/updateVideo': async (payload, state) => {
+    const video = state.videos.items.find((item) => item.id === payload.id)
+    if (video) {
+      const { businessName: _bn, mimeType: _mt, ...row } = video
+      await upsert('videos', row)
+    }
+  },
+  'videos/moderateVideo': async (payload) => {
+    await update('videos', payload.id, { status: payload.status })
+  },
+  'videos/deleteVideo': async (payload) => {
+    const { error } = await supabase.from('videos').delete().eq('id', payload.id)
+    if (error) throw error
+  },
+  'videos/incrementVideoView': async (payload, state) => {
+    const video = state.videos?.items?.find((item) => item.id === payload.id)
+    if (video) {
+      await update('videos', payload.id, { viewCount: Number(video.viewCount) || 0 })
+    }
+  },
+  'videos/toggleVideoLike': async (payload) => {
+    const { error } = await supabase.rpc('moxt_video_toggle_like', {
+      p_video_id: payload.videoId,
+    })
+    if (error) throw error
+  },
+  'videos/addVideoComment': async (payload) => {
+    const { error } = await supabase.rpc('moxt_video_add_comment', {
+      p_video_id: payload.videoId,
+      p_comment: payload.comment,
+    })
+    if (error) throw error
+  },
+  'videos/deleteVideoComment': async (payload) => {
+    const { error } = await supabase.rpc('moxt_video_delete_comment', {
+      p_video_id: payload.videoId,
+      p_comment_id: payload.commentId,
+    })
+    if (error) throw error
+  },
+  'videos/incrementVideoShare': async (payload) => {
+    const { error } = await supabase.rpc('moxt_video_increment_share', {
+      p_video_id: payload.id,
+    })
+    if (error) throw error
   },
 
   // ── Entreprises ───────────────────────────────────────────────────────────────
@@ -1847,6 +1972,12 @@ const handlers = {
     }
     const { error } = await supabase.from('profiles').update(updates).eq('id', payload.userId)
     if (error) throw error
+  },
+  'account/markListingViewed': async (payload, _state, _dispatch, _beforeState, getState) => {
+    scheduleMarketplaceDiscoverySync(getState, payload.userId)
+  },
+  'account/recordListingImpression': async (payload, _state, _dispatch, _beforeState, getState) => {
+    scheduleMarketplaceDiscoverySync(getState, payload.userId)
   },
   'account/requestAccountDeletion': async (payload) => {
     await authService.requestAccountDeletion(payload.userId, payload.id)

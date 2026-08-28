@@ -11,6 +11,7 @@ import { useContentLifecycle } from '../../features/content/useContentLifecycle'
 import { resyncViewportBottomGap, forceKeyboardClosed, useKeyboardInset } from '../../hooks/useKeyboardInset'
 
 import { useMediaQuery } from '../../hooks/useMediaQuery'
+import { FEED_VIEWPORT_MEDIA_QUERY } from '../../features/feed/feedViewport'
 
 import { resetMessagesScroll } from '../../hooks/useScrollToTopOnStep'
 
@@ -47,18 +48,23 @@ export function AppLayout({ children }) {
   const sidebarOpen = useSelector((state) => state.ui.sidebarOpen)
 
   const isMessagesRoute = isMessagesPath(location.pathname)
+  const isFeedMobileRoute =
+    location.pathname === '/feed' || location.pathname === '/videos'
 
   const mobileViewport = useMediaQuery('(max-width: 1023px)')
+  const feedViewport = useMediaQuery(FEED_VIEWPORT_MEDIA_QUERY)
 
   const isMessageThread = isMessagesRoute && isMessageThreadOpen(searchParams)
 
-  /** Fil mobile ouvert : bottom nav masquée (URL = source unique). */
+  /** Fil mobile ouvert : bottom nav masquée. */
   const hideAppChrome = isMessageThread && mobileViewport
   /** Scroll lock + dvh : desktop messagerie uniquement (liste + détail mobile = catalogues). */
   const messagesScrollLock = isMessagesRoute && !mobileViewport
   const messagesFixedViewport = messagesScrollLock
   const isMessagesMobileDetail = isMessagesRoute && mobileViewport && hideAppChrome
-
+  const isFeedMobileFeed = isFeedMobileRoute && feedViewport
+  const hideBottomNav = hideAppChrome || isFeedMobileFeed
+  const edgeToEdgeMobile = hideAppChrome && isMessagesMobileDetail
   useContentLifecycle()
 
   useKeyboardInset()
@@ -104,6 +110,20 @@ export function AppLayout({ children }) {
       root.classList.remove('messages-route-lock')
     }
   }, [messagesScrollLock])
+
+
+
+  useLayoutEffect(() => {
+
+    const root = document.documentElement
+
+    root.classList.toggle('feed-mobile-immersive', isFeedMobileFeed)
+
+    return () => {
+      root.classList.remove('feed-mobile-immersive')
+    }
+
+  }, [isFeedMobileFeed])
 
 
 
@@ -210,7 +230,7 @@ export function AppLayout({ children }) {
 
       >
 
-        <Header />
+        <Header hideOnMobile={isFeedMobileRoute} />
 
         <main
 
@@ -223,11 +243,13 @@ export function AppLayout({ children }) {
               ? `flex min-h-0 flex-1 flex-col overflow-hidden ${
                   messagesFixedViewport ? 'overscroll-none' : ''
                 } ${
-                  hideAppChrome
+                  edgeToEdgeMobile
                     ? 'max-lg:p-0 max-lg:pb-0 lg:px-8 lg:py-8'
                     : 'px-0 pt-0 pb-[var(--bottom-nav-clearance)] lg:px-8 lg:py-8'
                 }`
-              : 'p-4 pb-[var(--bottom-nav-clearance-loose)] sm:p-6 sm:pb-[var(--bottom-nav-clearance-loose)] lg:px-8 lg:py-8'
+              : isFeedMobileFeed
+                ? 'bg-[var(--app-bg)] px-0 pt-0 pb-0 lg:bg-transparent lg:px-8 lg:py-8'
+                : 'p-4 pb-[var(--bottom-nav-clearance-loose)] sm:p-6 sm:pb-[var(--bottom-nav-clearance-loose)] lg:px-8 lg:py-8'
           }`}
 
         >
@@ -268,9 +290,9 @@ export function AppLayout({ children }) {
 
       </div>
 
-      {!hideAppChrome ? <BottomNavigation /> : null}
+      {!hideBottomNav ? <BottomNavigation /> : null}
 
-      <PullToRefreshIndicator disabled={hideAppChrome || isMessagesRoute} />
+      <PullToRefreshIndicator disabled={hideAppChrome || isMessagesRoute || isFeedMobileFeed} />
 
       <WelcomeGate />
 

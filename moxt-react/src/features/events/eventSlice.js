@@ -28,7 +28,7 @@ const eventSlice = createSlice({
         return {
           payload: {
             ...values,
-            id: `EVT-${Date.now().toString(36).toUpperCase()}`,
+            id: values.id || `EVT-${Date.now().toString(36).toUpperCase()}`,
             capacity: Number(values.capacity),
             price: Number(values.price),
             status: values.status || 'published',

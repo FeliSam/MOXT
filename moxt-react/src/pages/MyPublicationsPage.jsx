@@ -6,6 +6,7 @@ import {
   FiEye,
   FiFileText,
   FiPackage,
+  FiPlay,
   FiPlus,
   FiRepeat,
   FiShoppingBag,
@@ -19,6 +20,7 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { EmptyState } from '../components/ui/EmptyState'
 import { deletePost, moderatePost } from '../features/posts/postsSlice'
 import { deleteEvent, duplicateEvent, moderateEvent } from '../features/events/eventSlice'
+import { deleteVideo, duplicateVideo, moderateVideo } from '../features/videos/videosSlice'
 import { deleteJob, duplicateJob, moderateJob } from '../features/jobs/jobSlice'
 import { deleteParcel, duplicateParcel, updateParcelStatus } from '../features/parcels/parcelSlice'
 import { deleteOffer, updateOfferStatus } from '../features/p2p/p2pSlice'
@@ -35,6 +37,7 @@ import {
   MyP2POfferPublicationCard,
   MyParcelPublicationCard,
   MyPostPublicationCard,
+  MyVideoPublicationCard,
 } from '../features/publications/MyPublicationCards'
 import {
   BUSINESS_PUBLICATION_TYPE_TABS,
@@ -59,12 +62,22 @@ import { addToast } from '../features/ui/uiSlice'
 import { useScopedProfileReviews } from '../features/reviews/useScopedTargetReviews'
 import { useLanguage } from '../contexts/useLanguage'
 import { phase3Text } from '../i18n/phase3I18n'
+import { BoostPublicationSheet, useStarsBoostFlow } from '../features/stars/BoostPublicationSheet'
+import { useStarsModuleEnabled } from '../features/stars/useStarsModuleEnabled'
+import { StarsSpendConfirm } from '../features/stars/StarsSpendConfirm'
+import { withStarsBoost, StarsInsufficientError } from '../features/stars/starsBoost'
+import {
+  activeBoostForEntity,
+  publicationTypeToEntityType,
+} from '../features/stars/publicationBoostUtils'
+import { loadFeedBoosts } from '../features/stars/starsSlice'
 
 const PUBLISH_LINKS = {
   listing: { to: '/marketplace/publish', labelKey: 'publications.mine.publish.listing' },
   parcel: { to: '/parcels/publish', labelKey: 'publications.mine.publish.parcel' },
   job: { to: '/jobs/publish', labelKey: 'publications.mine.publish.job' },
   event: { to: '/events/publish', labelKey: 'publications.mine.publish.event' },
+  video: { to: '/videos/publish', labelKey: 'publications.mine.publish.video' },
   post: { to: '/news', labelKey: 'publications.mine.publish.post' },
   other: { to: '/p2p/publish', labelKey: 'p2p.page.proposeOffer' },
 }
@@ -74,6 +87,7 @@ const EMPTY_ICONS = {
   parcel: FiPackage,
   job: FiBriefcase,
   event: FiCalendar,
+  video: FiPlay,
   post: FiFileText,
   other: FiRepeat,
 }
@@ -84,6 +98,10 @@ export function MyPublicationsPage() {
   const dispatch = useDispatch()
   const [searchParams, setSearchParams] = useSearchParams()
   const [deletingItem, setDeletingItem] = useState(null)
+  const boostFlow = useStarsBoostFlow()
+  const starsEnabled = useStarsModuleEnabled()
+  const feedBoosts = useSelector((state) => state.stars.feedBoosts)
+  const starsBalance = useSelector((state) => state.stars.balance)
   const user = useSelector((state) => state.auth.user)
   const appState = useSelector((state) => state)
   const ownBusiness = useSelector((state) =>
@@ -158,6 +176,81 @@ export function MyPublicationsPage() {
   const subscriberCount = useSelector((state) =>
     selectPublisherSubscribers(state, subscriberPublisherType, subscriberPublisherId),
   ).length
+
+  useEffect(() => {
+    dispatch(loadFeedBoosts())
+  }, [dispatch])
+
+  function boostOwner() {
+    if (scope === 'business' && ownBusiness) {
+      return { ownerType: 'business', ownerId: ownBusiness.id }
+    }
+    return { ownerType: 'user', ownerId: user?.id }
+  }
+
+  function publicationBoostProps(type, item) {
+    const entityType = publicationTypeToEntityType(type)
+    if (!entityType || !item?.id) return {}
+    const owner = boostOwner()
+    const label =
+      item.title ||
+      item.message?.slice?.(0, 40) ||
+      item.id
+    return {
+      onBoost: starsEnabled
+        ? () =>
+            boostFlow.openBoost({
+              entityType,
+              entityId: item.id,
+              label,
+              ...owner,
+            })
+        : undefined,
+      activeBoost: starsEnabled ? activeBoostForEntity(feedBoosts, entityType, item.id) : null,
+    }
+  }
+
+  async function handleBoostSelect(durationKey) {
+    const target = boostFlow.target
+    if (!target) return
+    boostFlow.setLoading(true)
+    try {
+      const outcome = await withStarsBoost({
+        entityType: target.entityType,
+        entityId: target.entityId,
+        durationKey,
+        ownerType: target.ownerType,
+        ownerId: target.ownerId,
+        confirmPaid: boostFlow.confirmPaid,
+      })
+      if (outcome?.cancelled) return
+      dispatch(loadFeedBoosts())
+      dispatch(
+        addToast({
+          title: t('stars.boost.successTitle'),
+          message: t('stars.boost.successBody'),
+          tone: 'success',
+        }),
+      )
+      boostFlow.closeBoost()
+    } catch (error) {
+      dispatch(
+        addToast({
+          title:
+            error instanceof StarsInsufficientError
+              ? t('stars.insufficientTitle')
+              : t('stars.boost.failedTitle'),
+          message:
+            error instanceof StarsInsufficientError
+              ? t('stars.insufficientBody')
+              : error?.message || t('stars.boost.failedBody'),
+          tone: 'error',
+        }),
+      )
+    } finally {
+      boostFlow.setLoading(false)
+    }
+  }
 
   function setArchiveTab(next) {
     const params = new URLSearchParams(searchParams)
@@ -303,6 +396,7 @@ export function MyPublicationsPage() {
                     <MyListingPublicationCard
                       key={listing.id}
                       listing={listing}
+                      {...publicationBoostProps('listing', listing)}
                       onArchive={() =>
                         dispatch(
                           updateListingStatus({
@@ -357,12 +451,14 @@ export function MyPublicationsPage() {
               {visible.parcel.length ||
               visible.job.length ||
               visible.event.length ||
+              visible.video?.length ||
               visible.other.length ? (
                 <CatalogGrid lazy={false}>
                   {visible.parcel.map((parcel) => (
                     <MyParcelPublicationCard
                       key={parcel.id}
                       parcel={parcel}
+                      {...publicationBoostProps('parcel', parcel)}
                       onArchive={() =>
                         dispatch(updateParcelStatus({ id: parcel.id, status: 'archived' }))
                       }
@@ -378,6 +474,7 @@ export function MyPublicationsPage() {
                     <MyJobPublicationCard
                       key={job.id}
                       job={job}
+                      {...publicationBoostProps('job', job)}
                       onArchive={() => dispatch(moderateJob({ id: job.id, status: 'archived' }))}
                       onReactivate={() => {
                         if (!guardBusinessRepublish(job)) return
@@ -391,6 +488,7 @@ export function MyPublicationsPage() {
                     <MyEventPublicationCard
                       key={event.id}
                       event={event}
+                      {...publicationBoostProps('event', event)}
                       onArchive={() => dispatch(moderateEvent({ id: event.id, status: 'archived' }))}
                       onReactivate={() => {
                         if (!guardBusinessRepublish(event)) return
@@ -398,6 +496,20 @@ export function MyPublicationsPage() {
                       }}
                       onDuplicate={() => dispatch(duplicateEvent({ event, ownerId: user.id }))}
                       onDelete={() => setDeletingItem({ type: 'event', item: event })}
+                    />
+                  ))}
+                  {(visible.video || []).map((video) => (
+                    <MyVideoPublicationCard
+                      key={video.id}
+                      video={video}
+                      {...publicationBoostProps('video', video)}
+                      onArchive={() => dispatch(moderateVideo({ id: video.id, status: 'archived' }))}
+                      onReactivate={() => {
+                        if (!guardBusinessRepublish(video)) return
+                        dispatch(moderateVideo({ id: video.id, status: 'active' }))
+                      }}
+                      onDuplicate={() => dispatch(duplicateVideo({ video, ownerId: user.id }))}
+                      onDelete={() => setDeletingItem({ type: 'video', item: video })}
                     />
                   ))}
                   {visible.other.map((offer) => (
@@ -453,10 +565,27 @@ export function MyPublicationsPage() {
           else if (type === 'listing') dispatch(deleteListing({ id: item.id, ownerId: user.id }))
           else if (type === 'job') dispatch(deleteJob({ id: item.id, ownerId: user.id }))
           else if (type === 'event') dispatch(deleteEvent({ id: item.id, ownerId: user.id }))
+          else if (type === 'video') dispatch(deleteVideo({ id: item.id, ownerId: user.id }))
           else if (type === 'post') dispatch(deletePost(item.id))
           else if (type === 'other') dispatch(deleteOffer({ id: item.id, ownerId: user.id }))
           setDeletingItem(null)
         }}
+      />
+
+      <BoostPublicationSheet
+        open={Boolean(boostFlow.target)}
+        entityType={boostFlow.target?.entityType}
+        entityLabel={boostFlow.target?.label || ''}
+        loading={boostFlow.loading}
+        config={starsBalance?.config}
+        onClose={boostFlow.closeBoost}
+        onSelect={handleBoostSelect}
+      />
+      <StarsSpendConfirm
+        open={Boolean(boostFlow.pendingQuote)}
+        quote={boostFlow.pendingQuote}
+        onCancel={boostFlow.cancelSpend}
+        onConfirm={boostFlow.acceptSpend}
       />
     </div>
   )

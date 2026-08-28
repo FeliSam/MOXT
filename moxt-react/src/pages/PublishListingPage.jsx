@@ -62,6 +62,11 @@ import {
   listingOptionLabel,
   marketplaceText,
 } from '../features/marketplace/marketplaceI18n'
+import { StarsInsufficientError, starsOwnerFromPublish } from '../features/stars/starsPublish'
+import { StarsPublishGate } from '../features/stars/StarsPublishGate'
+import { PublishFormulaSheet } from '../features/stars/PublishFormulaSheet'
+import { DEFAULT_QUOTA_CONFIG } from '../features/stars/starsConfig'
+import { useStarsPublishFlow } from '../features/stars/useStarsPublishFlow'
 
 const STEP_DEFS = [
   { key: 'type', labelKey: 'publish.listing.steps.type', icon: FiTag },
@@ -138,6 +143,9 @@ export function PublishListingPage() {
   const { progress: uploadProgress, track: trackUpload } = useUploadProgress()
   const fileInputRef = useRef(null)
   const { trigger: triggerBurst, node: burstNode } = useActionBurst()
+  const { pendingQuote, confirmPaid, acceptSpend, cancelSpend, withStarsConsume } = useStarsPublishFlow()
+  const starsBalance = useSelector((state) => state.stars.balance)
+  const [formulaKey, setFormulaKey] = useState('standard')
 
   const rules = listingType ? (TYPE_RULES[listingType] ?? TYPE_RULES.other) : null
   const categories = listingType ? (CATEGORIES_BY_TYPE[listingType] ?? []) : []
@@ -249,6 +257,12 @@ export function PublishListingPage() {
       return
     }
     setPublishing(true)
+    const listingId = `ANN-${Date.now().toString(36).toUpperCase()}`
+    const owner = starsOwnerFromPublish({
+      useBusiness: publishContext.useBusiness,
+      business,
+      user,
+    })
     const sanitizedForm = sanitizeListingByType({
       ...form,
       type: listingType,
@@ -256,25 +270,56 @@ export function PublishListingPage() {
     })
     let result
     try {
-      result = await trackUpload(async (onProgress) =>
-        dispatch(
-          publishListing({
-            files: photos.map((photo) => photo.file),
-            onProgress,
-            values: {
-              ...sanitizedForm,
-              ownerId: user.id,
-              sellerName: publishContext.useBusiness
-                ? business.name
-                : `${user.firstName} ${user.lastName}`,
-              businessId: publishContext.businessId,
-              currency: 'RUB',
-              country: 'RU',
-              status: initialCatalogStatus(user),
-            },
-          }),
-        ),
+      const outcome = await withStarsConsume({
+        category: 'marketplace',
+        formulaKey,
+        ...owner,
+        entityId: listingId,
+        confirmPaid,
+        publish: async () => {
+          const action = await trackUpload(async (onProgress) =>
+            dispatch(
+              publishListing({
+                files: photos.map((photo) => photo.file),
+                onProgress,
+                values: {
+                  ...sanitizedForm,
+                  id: listingId,
+                  ownerId: user.id,
+                  sellerName: publishContext.useBusiness
+                    ? business.name
+                    : `${user.firstName} ${user.lastName}`,
+                  businessId: publishContext.businessId,
+                  currency: 'RUB',
+                  country: 'RU',
+                  status: initialCatalogStatus(user),
+                },
+              }),
+            ),
+          )
+          if (publishListing.rejected.match(action)) {
+            throw new Error(action.error?.message || action.payload || 'publish failed')
+          }
+          return action
+        },
+      })
+      if (outcome?.cancelled) return
+      result = outcome.result
+    } catch (error) {
+      dispatch(
+        addToast({
+          title:
+            error instanceof StarsInsufficientError
+              ? t('stars.insufficientTitle')
+              : mt('publish.listing.sentTitle'),
+          message:
+            error instanceof StarsInsufficientError
+              ? t('stars.insufficientBody')
+              : error.message || mt('publish.listing.pendingBody'),
+          tone: 'error',
+        }),
       )
+      return
     } finally {
       setPublishing(false)
     }
@@ -376,6 +421,14 @@ export function PublishListingPage() {
         </Button>
         <div className="min-w-0">
           <h1 className="text-xl font-black">{mt('publish.listing.title')}</h1>
+          <StarsPublishGate
+            category="marketplace"
+            ownerType={form.sellerType === 'business' && canPublishAsBusiness ? 'business' : 'user'}
+            ownerId={form.sellerType === 'business' && canPublishAsBusiness ? business?.id : user?.id}
+            pendingQuote={pendingQuote}
+            onCancel={cancelSpend}
+            onConfirm={acceptSpend}
+          />
           {typeMeta ? (
             <p className="text-xs text-[var(--app-text-muted)]">
               {listingOptionLabel(t, typeMeta)} · {listingOptionLabel(
@@ -1044,6 +1097,16 @@ export function PublishListingPage() {
       uploadProgress.phase === 'done' ||
       uploadProgress.phase === 'error' ? (
         <UploadProgress progress={uploadProgress} />
+      ) : null}
+
+      {step === STEPS.length ? (
+        <PublishFormulaSheet
+          category="marketplace"
+          value={formulaKey}
+          onChange={setFormulaKey}
+          enforced={Boolean(starsBalance?.enforced)}
+          config={starsBalance?.config || DEFAULT_QUOTA_CONFIG}
+        />
       ) : null}
 
       <div className="flex items-center justify-between gap-3">

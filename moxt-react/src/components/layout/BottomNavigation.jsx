@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { FiGrid } from 'react-icons/fi'
 import { NavLink, useLocation } from 'react-router-dom'
@@ -8,6 +8,7 @@ import { preloadRoute } from '../../config/navigation'
 import { resolveNavLabel } from '../../config/navLabel'
 import { useLanguage } from '../../contexts/useLanguage'
 import { TOUR_MORE_EVENT } from '../../features/onboarding/tourChrome'
+import { useDevModuleNavAccess } from '../../hooks/useDevModuleAccess'
 import { selectMoreMenuBadgeCount } from './moreServicesUtils'
 import { MobileMoreDrawer } from './MobileMoreDrawer'
 
@@ -72,12 +73,20 @@ export function BottomNavigation() {
   const location = useLocation()
   const userId = useSelector((state) => state.auth.user?.id)
   const moreBadge = useSelector((state) => selectMoreMenuBadgeCount(state, userId))
+  const canAccessModule = useDevModuleNavAccess()
+  const visibleItems = useMemo(
+    () =>
+      bottomNavigationItems.filter(
+        (item) => !item.devModule || canAccessModule(item.devModule),
+      ),
+    [canAccessModule],
+  )
   const [moreOpen, setMoreOpen] = useState(false)
   const navRef = useRef(null)
   const itemRefs = useRef([])
   const [indicator, setIndicator] = useState({ left: 0, width: 0, ready: false })
 
-  const activeIndex = bottomNavigationItems.findIndex((item) => {
+  const activeIndex = visibleItems.findIndex((item) => {
     if (item.path === '/dashboard') return location.pathname === '/dashboard'
     return location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)
   })
@@ -129,13 +138,15 @@ export function BottomNavigation() {
       vv?.removeEventListener('resize', update)
       vv?.removeEventListener('scroll', update)
     }
-  }, [activeIndex, location.pathname])
+  }, [activeIndex, location.pathname, visibleItems])
 
+  const columnCount = visibleItems.length + 1
   const nav = (
     <nav
       ref={navRef}
       data-tour="bottom-nav"
-      className="bottom-nav-shell z-[var(--z-nav)] grid grid-cols-5 gap-0.5 rounded-[1rem] border border-[var(--app-border)]/75 bg-[var(--app-surface)]/92 shadow-[var(--shadow-bottom-nav)] backdrop-blur-md lg:hidden"
+      className="bottom-nav-shell z-[var(--z-nav)] grid gap-0.5 rounded-[1rem] border border-[var(--app-border)]/75 bg-[var(--app-surface)]/92 shadow-[var(--shadow-bottom-nav)] backdrop-blur-md lg:hidden"
+      style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}
       aria-label={t('nav.mobileQuickAria')}
     >
       <span
@@ -148,7 +159,7 @@ export function BottomNavigation() {
         }}
       />
 
-      {bottomNavigationItems.map((item, index) => (
+      {visibleItems.map((item, index) => (
         <BottomNavItem
           key={item.id}
           item={item}

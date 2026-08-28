@@ -536,8 +536,28 @@ describe('communications', () => {
   })
 
   it('skip le rechargement quand le cache initial est deja charge', () => {
-    expect(shouldSkipMessageReload({ messagesLoaded: true })).toBe(true)
-    expect(shouldSkipMessageReload({ messagesLoaded: false })).toBe(false)
+    expect(shouldSkipMessageReload({ messagesLoaded: true, loadedCount: 4 })).toBe(true)
+    expect(shouldSkipMessageReload({ messagesLoaded: false, loadedCount: 4 })).toBe(false)
+    expect(shouldSkipMessageReload({ messagesLoaded: true, loadedCount: 0 })).toBe(false)
+  })
+
+  it('ne skip pas le rechargement si le fil a un message plus recent', () => {
+    expect(
+      shouldSkipMessageReload({
+        messagesLoaded: true,
+        loadedCount: 4,
+        lastLoadedAt: '2026-08-24T10:00:00.000Z',
+        conversationLastMessageAt: '2026-08-24T11:00:00.000Z',
+      }),
+    ).toBe(false)
+    expect(
+      shouldSkipMessageReload({
+        messagesLoaded: true,
+        loadedCount: 4,
+        lastLoadedAt: '2026-08-24T11:00:00.000Z',
+        conversationLastMessageAt: '2026-08-24T11:00:00.000Z',
+      }),
+    ).toBe(true)
   })
 
   it('detecte le besoin de chargement initial', () => {

@@ -1,5 +1,6 @@
 import { createSelector } from '@reduxjs/toolkit'
 import { searchablePages } from '../config/searchablePages'
+import { canAccessDevModule, selectDevModuleFlags } from './platform/devModuleAccess'
 import { sharedText } from '../i18n/sharedI18n'
 import {
   buildSubscriptionNetworkProfiles,
@@ -22,9 +23,10 @@ export const selectSearchIndex = createSelector(
     (state) => state.jobs.items,
     (state) => state.events.items,
     (state) => state.parcels.items,
-    (state) => state.auth.user?.role,
+    (state) => state.auth.user,
+    selectDevModuleFlags,
   ],
-  (businesses, listings, jobs, events, parcels, role) => [
+  (businesses, listings, jobs, events, parcels, user, devModuleFlags) => [
     ...businesses
       .filter((item) => ['verified', 'active'].includes(item.status))
       .map((item) => ({
@@ -81,7 +83,11 @@ export const selectSearchIndex = createSelector(
         publicPath: `/discover?type=parcel&q=${encodeURIComponent(item.origin)}`,
       })),
     ...searchablePages
-      .filter((page) => !page.roles || page.roles.includes(role))
+      .filter(
+        (page) =>
+          (!page.roles || page.roles.includes(user?.role)) &&
+          (!page.devModule || canAccessDevModule(user, devModuleFlags, page.devModule)),
+      )
       .map((page) => ({
         id: page.id,
         type: 'page',

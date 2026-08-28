@@ -14,7 +14,6 @@ export function TransferAmountDualFields({
 
   return (
     <div className="grid gap-3">
-      <p className="text-sm text-[var(--app-text-muted)]">{t('transfers.new.amountModeHint')}</p>
       <CurrencyAmountField
         id="transfer-amount-send"
         label={t('transfers.new.amountToSend', { currency: currencyFrom })}

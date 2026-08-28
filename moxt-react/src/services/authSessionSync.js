@@ -338,8 +338,8 @@ async function syncSessionToStore(
   const onAuthCallback =
     typeof window !== 'undefined' && window.location.pathname.startsWith('/auth/callback')
   if (!skipDataLoad && payload.user.id !== previousUserId && !onRegisterOtpStep && !onAuthCallback) {
-    const { loadAllData } = await import('../app/loadAllData')
-    dispatch(loadAllData())
+    const { scheduleCatalogSync } = await import('../app/catalogSync')
+    void scheduleCatalogSync({ dispatch, getState }, { force: true })
   }
 
   const { setNativePushUserId } = await import('../platform/pushNotifications')
@@ -634,6 +634,6 @@ export async function softRefreshSession(store) {
   lastDataRefresh = 0
   lastProactiveRefresh = 0
   await onForeground(dispatch, getState, { forceAuth: true })
-  const { loadAllData } = await import('../app/loadAllData')
-  await dispatch(loadAllData())
+  const { scheduleCatalogSync } = await import('../app/catalogSync')
+  await scheduleCatalogSync(store, { force: true })
 }

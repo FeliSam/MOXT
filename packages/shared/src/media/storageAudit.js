@@ -26,6 +26,13 @@ export const SUPABASE_STORAGE_BUCKETS = [
     legacyPathPattern: '{userId}/…',
   },
   {
+    id: 'videos',
+    visibility: 'public',
+    yandexPrefix: 'public/videos',
+    content: 'Vidéos entreprise (feed / catalogue publications)',
+    legacyPathPattern: '{userId}/{businessId}/{videoId}.{ext}',
+  },
+  {
     id: 'documents',
     visibility: 'private',
     yandexPrefix: 'private/documents',
@@ -60,6 +67,7 @@ export const MEDIA_KIND_BY_LEGACY_BUCKET = {
   avatars: 'avatar',
   businesses: 'image',
   listings: 'image',
+  videos: 'video',
   documents: 'document',
   parcels: 'proof',
   transfers: 'proof',

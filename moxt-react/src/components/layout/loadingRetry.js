@@ -34,6 +34,6 @@ export async function retryAuthAndDataLoad({ dispatch, getState }) {
   await dispatch(restoreSession())
   const user = getState()?.auth?.user
   if (!user) return
-  const { loadAllData } = await import('../../app/loadAllData')
-  dispatch(loadAllData())
+  const { scheduleCatalogSync } = await import('../../app/catalogSync')
+  void scheduleCatalogSync({ dispatch, getState }, { force: true })
 }

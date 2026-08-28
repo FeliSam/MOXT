@@ -126,6 +126,12 @@ export const FEATURE_MATRIX = [
         status: 'complete',
         note: 'Reçus transfert (local + sync), export et partage depuis le suivi d’opération.',
       },
+      {
+        id: 'moxt-stars',
+        label: 'MOXT Stars',
+        status: 'complete',
+        note: 'Wallet, achat stub, quotas, boost fil, cadeaux abonnements, admin pricing/rollout et flags modules.',
+      },
     ],
   },
   {
@@ -154,6 +160,12 @@ export const FEATURE_MATRIX = [
         label: 'Événements et inscriptions',
         status: 'complete',
         note: 'Publication, inscription, liste des participants et gestion par l’organisateur.',
+      },
+      {
+        id: 'business-videos',
+        label: 'Vidéos entreprise',
+        status: 'complete',
+        note: 'Publication business-only, catalogue Mes publications / profil / entreprise, feed mobile snap et desktop type publications.',
       },
       {
         id: 'reviews',

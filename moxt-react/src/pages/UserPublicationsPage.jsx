@@ -7,6 +7,7 @@ import {
   FiFileText,
   FiLock,
   FiPackage,
+  FiPlay,
   FiRepeat,
   FiShoppingBag,
 } from 'react-icons/fi'
@@ -26,6 +27,7 @@ import {
   MyP2POfferPublicationCard,
   MyParcelPublicationCard,
   MyPostPublicationCard,
+  MyVideoPublicationCard,
 } from '../features/publications/MyPublicationCards'
 import {
   BUSINESS_PUBLICATION_TYPE_TABS,
@@ -63,6 +65,7 @@ const EMPTY_ICONS = {
   parcel: FiPackage,
   job: FiBriefcase,
   event: FiCalendar,
+  video: FiPlay,
   post: FiFileText,
   other: FiRepeat,
 }
@@ -111,6 +114,7 @@ export function UserPublicationsPage() {
           parcels: [],
           jobs: [],
           events: [],
+          videos: [],
           posts: [],
           others: [],
         },
@@ -447,6 +451,7 @@ export function UserPublicationsPage() {
               {visible.parcel.length ||
               visible.job.length ||
               visible.event.length ||
+              visible.video?.length ||
               visible.other.length ? (
                 <CatalogGrid lazy={false}>
                   {visible.parcel.map((parcel) => (
@@ -472,6 +477,15 @@ export function UserPublicationsPage() {
                     <MyEventPublicationCard
                       key={event.id}
                       event={event}
+                      readOnly
+                      guestMode={guestMode}
+                      onGuestInteract={handleGuestInteract}
+                    />
+                  ))}
+                  {(visible.video || []).map((video) => (
+                    <MyVideoPublicationCard
+                      key={video.id}
+                      video={video}
                       readOnly
                       guestMode={guestMode}
                       onGuestInteract={handleGuestInteract}

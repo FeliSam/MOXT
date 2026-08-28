@@ -1,4 +1,5 @@
 import { storageService } from '../../services/storageService'
+import { cacheMediaBlob } from '../../services/media/cachedMediaResolver.js'
 import { inferProofStoragePath } from './transferProofUtils'
 
 const FALLBACK_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png', 'webp']
@@ -81,6 +82,14 @@ export async function downloadTransferProofFile({ proof, path, transfer, transfe
 
   const downloaded = await resolveDownloadBlob(pathCandidates)
   if (downloaded?.blob) {
+    void cacheMediaBlob({
+      legacyBucket: 'transfers',
+      legacyPath: downloaded.path,
+      blob: downloaded.blob,
+      kind: 'proof',
+      entityType: 'transfer',
+      entityId: transferId || transfer?.id,
+    })
     triggerBrowserDownload(downloaded.blob, fileName)
     return
   }

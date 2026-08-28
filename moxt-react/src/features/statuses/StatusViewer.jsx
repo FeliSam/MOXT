@@ -9,6 +9,7 @@ import { openConversationWithContact, sendMessage } from '../communications/comm
 import { addToast } from '../ui/uiSlice'
 import { useLanguage } from '../../contexts/useLanguage'
 import { useSwipeDownToClose } from '../../hooks/useSwipeDownToClose'
+import { useCachedMediaUrl } from '../../hooks/useCachedMediaUrl'
 
 const IMAGE_DURATION_MS = 4500
 const QUICK_REACTIONS = ['❤️', '😂', '😮', '😢', '👏', '🔥']
@@ -70,6 +71,11 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
   // taille de `pages` : on recadre à la lecture plutôt que dans un effet séparé.
   const safePageIndex = pages.length ? Math.min(pageIndex, pages.length - 1) : 0
   const page = pages[safePageIndex]
+  const cachedPageUrl = useCachedMediaUrl(page?.url, {
+    kind: 'image',
+    entityType: 'status',
+    entityId: page?.statusId,
+  })
 
   function goNextGroup() {
     if (groupIndex < groups.length - 1) setGroupIndex((i) => i + 1)
@@ -355,11 +361,11 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
         }}
         onPointerLeave={() => setPaused(false)}
       >
-        {page.url ? (
+        {cachedPageUrl || page.url ? (
           <img
-            src={page.url}
+            src={cachedPageUrl || page.url}
             alt=""
-            className="relative z-20 mx-auto size-full max-w-2xl object-contain"
+            className="relative z-10 mx-auto size-full max-w-2xl object-contain"
           />
         ) : (
           <div className="flex size-full items-center justify-center bg-gradient-to-br from-brand-800 via-brand-600 to-[var(--app-cobalt)] px-8">
@@ -373,13 +379,15 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
         )}
 
         {page.url && page.caption ? (
-          <LinkifiedText
-            as="p"
-            text={page.caption}
-            preserveWhitespace="pre-line"
-            linkClassName="underline underline-offset-2 text-white"
-            className="pointer-events-auto absolute inset-x-0 bottom-6 mx-auto max-w-xl px-6 text-center text-sm font-semibold text-white drop-shadow-lg sm:text-base"
-          />
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-30 bg-gradient-to-b from-black/65 via-black/25 to-transparent pb-10 pt-3">
+            <LinkifiedText
+              as="p"
+              text={page.caption}
+              preserveWhitespace="pre-line"
+              linkClassName="underline underline-offset-2 text-white"
+              className="pointer-events-auto mx-auto max-w-xl px-6 text-center text-sm font-semibold text-white drop-shadow-lg sm:text-base"
+            />
+          </div>
         ) : null}
 
         <button

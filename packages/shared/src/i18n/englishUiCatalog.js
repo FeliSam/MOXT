@@ -33,6 +33,9 @@ export const ENGLISH_UI_CATALOG = {
   'Fermer la navigation': 'Close navigation',
 
   // Routes (titres)
+  'MOXT Stars': 'MOXT Stars',
+  'Packs Stars': 'Stars packs',
+  'Portefeuille Stars': 'Stars wallet',
   'Mes activités': 'My activity',
   'Mes favoris': 'My favorites',
   'Mes publications': 'My publications',
@@ -146,6 +149,9 @@ export const ENGLISH_UI_CATALOG = {
   'Proposer une offre': 'Post an offer',
   'Créer un événement': 'Create an event',
   'Nouveau transfert': 'New transfer',
+  'Grâce au SBP, vous pouvez envoyer ou recevoir depuis n’importe quelle banque russe.':
+    'With SBP, you can send or receive from any Russian bank.',
+  'Autre banque (SBP)': 'Other bank (SBP)',
   Calculatrice: 'Calculator',
   Détail: 'Details',
   "Voir l'offre": 'View offer',
@@ -402,6 +408,10 @@ export const ENGLISH_UI_CATALOG = {
   'Gestion du profil, documents, sécurité et préférences personnelles.': 'Manage your profile, documents, security and personal preferences.',
   'Transferts, portefeuille, paiements, reçus et échanges financiers.': 'Transfers, wallet, payments, receipts and financial exchange.',
   'Marketplace, colis, entreprises et services professionnels vérifiés.': 'Marketplace, parcels, businesses and verified professional services.',
+  'Pour vous': 'For you',
+  Tendances: 'Trending',
+  Nouveautés: 'Just in',
+  Découvrir: 'Discover',
   'Jobs, événements, actualités et vie de la diaspora afro-russe.': 'Jobs, events, news and Afro-Russian community life.',
   'Messagerie, notifications et support utilisateur.': 'Messaging, notifications and user support.',
   'Modération, pilotage et outils internes MOXT.': 'Moderation, operations and internal MOXT tools.',

@@ -30,8 +30,8 @@ function finishLogin(dispatch, store, navigate, location, searchParams) {
   navigate(destination, { replace: true })
 
   // Imports lourds hors du chunk Login — ne bloquent ni l'ouverture ni la navigation.
-  void import('../app/loadAllData').then(({ loadAllData }) => {
-    dispatch(loadAllData())
+  void import('../app/catalogSync').then(({ scheduleCatalogSync }) => {
+    void scheduleCatalogSync(store, { force: true })
   })
   void import('../services/realtimeService').then(({ startRealtimeSubscription }) => {
     const userId = store.getState().auth.user?.id

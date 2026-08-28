@@ -3,6 +3,7 @@ import {
   buildParticipantProfilesMap,
   formatProfileName,
   getConversationPeer,
+  isParticipantDisplayName,
   mergeParticipantProfiles,
   resolveContactProfileFromEntity,
 } from './conversationDisplay'
@@ -18,6 +19,17 @@ describe('conversationDisplay', () => {
       lastName: 'Martin',
       avatarUrl: null,
     })
+  })
+
+  it('détecte un titre de conversation qui n’est que le nom du pair', () => {
+    const conversation = {
+      title: 'Christelle DEDEWANOU',
+      participantProfiles: {
+        peer: { firstName: 'Christelle', lastName: 'DEDEWANOU' },
+      },
+    }
+    expect(isParticipantDisplayName(conversation, 'Christelle DEDEWANOU')).toBe(true)
+    expect(isParticipantDisplayName(conversation, 'Vélo urbain')).toBe(false)
   })
 
   it('affiche le nom du co-participant plutôt que le titre de conversation', () => {

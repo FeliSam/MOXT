@@ -1,4 +1,4 @@
-import { FiExternalLink } from 'react-icons/fi'
+import { FiCornerUpLeft, FiExternalLink } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { RELATED_CONTENT_META } from '../../config/communications'
 import { useLanguage } from '../../contexts/useLanguage'
@@ -15,13 +15,20 @@ export function RelatedContentPreview({
 
   const meta = RELATED_CONTENT_META[preview.type] || RELATED_CONTENT_META.general
   const Icon = meta.icon
-  const interactive = Boolean(inline && onReply && contextId)
+  const canReply = Boolean(inline && onReply && contextId && preview.type !== 'profile' && preview.type !== 'general')
   const typeLabel = meta.labelKey ? messagesText(t, meta.labelKey) : meta.label
+  const shellClass = inline ? 'mx-auto my-3 max-w-md' : 'mb-4'
 
-  const body = (
-    <>
-      <div className="flex gap-3 p-3 sm:gap-4 sm:p-4">
-        <div className="relative size-16 shrink-0 overflow-hidden rounded-xl bg-[var(--app-surface-muted)] sm:size-20">
+  return (
+    <article
+      className={`overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] ${shellClass}`}
+      data-testid="related-content-preview"
+    >
+      <Link
+        to={preview.path}
+        className="group flex gap-3 p-3 text-left transition hover:bg-[var(--app-surface-muted)]/50 sm:gap-4 sm:p-4"
+      >
+        <div className="relative size-14 shrink-0 overflow-hidden rounded-xl bg-[var(--app-surface-muted)] sm:size-16">
           {preview.imageUrl ? (
             <img
               src={preview.imageUrl}
@@ -30,7 +37,7 @@ export function RelatedContentPreview({
             />
           ) : (
             <span
-              className={`grid size-full place-items-center text-xl text-white ${meta.tone}`}
+              className={`grid size-full place-items-center text-lg text-white ${meta.tone}`}
             >
               <Icon />
             </span>
@@ -61,55 +68,25 @@ export function RelatedContentPreview({
             </p>
           ) : null}
         </div>
-        {interactive ? (
-          <Link
-            to={preview.path}
-            className="grid size-9 shrink-0 place-items-center self-center rounded-xl border border-[var(--app-border)] text-[var(--app-text-muted)] transition hover:border-brand-200 hover:bg-[var(--app-accent-soft)] hover:text-brand-700"
-            aria-label={t('messages.openListing')}
-            onClick={(event) => event.stopPropagation()}
+        <span
+          className="grid size-9 shrink-0 place-items-center self-center rounded-xl border border-[var(--app-border)] text-[var(--app-text-muted)] transition group-hover:border-brand-200 group-hover:bg-[var(--app-accent-soft)] group-hover:text-brand-700"
+          aria-hidden="true"
+        >
+          <FiExternalLink />
+        </span>
+      </Link>
+      {canReply ? (
+        <div className="flex border-t border-[var(--app-border)]">
+          <button
+            type="button"
+            className="flex flex-1 items-center justify-center gap-1.5 px-3 py-2 text-[11px] font-bold text-[var(--app-accent)] transition hover:bg-[var(--app-accent-soft)]"
+            onClick={() => onReply(contextId)}
           >
-            <FiExternalLink />
-          </Link>
-        ) : (
-          <span className="grid size-9 shrink-0 place-items-center self-center rounded-xl border border-[var(--app-border)] text-[var(--app-text-muted)] transition group-hover:border-brand-200 group-hover:bg-[var(--app-accent-soft)] group-hover:text-brand-700">
-            <FiExternalLink />
-          </span>
-        )}
-      </div>
-      <div className="border-t border-[var(--app-border)] bg-[var(--app-surface-muted)]/60 px-3 py-2 text-center text-[11px] font-semibold text-[var(--app-text-muted)] sm:px-4">
-        {interactive
-          ? t('messages.replyToListing')
-          : inline
-            ? t('messages.linkedListing')
-            : t('messages.openListing')}
-      </div>
-    </>
-  )
-
-  if (interactive) {
-    return (
-      <button
-        type="button"
-        className={`group block w-full overflow-hidden rounded-2xl bg-[var(--app-surface)] text-left shadow-sm transition hover:shadow-md ${
-          inline ? 'mx-auto my-3 max-w-md' : 'mb-4'
-        }`}
-        data-testid="related-content-preview"
-        onClick={() => onReply(contextId)}
-      >
-        {body}
-      </button>
-    )
-  }
-
-  return (
-    <Link
-      to={preview.path}
-      className={`group block overflow-hidden rounded-2xl bg-[var(--app-surface)] shadow-sm transition hover:shadow-md ${
-        inline ? 'mx-auto my-3 w-full max-w-md' : 'mb-4'
-      }`}
-      data-testid="related-content-preview"
-    >
-      {body}
-    </Link>
+            <FiCornerUpLeft className="size-3.5" aria-hidden="true" />
+            {t('messages.replyToListing')}
+          </button>
+        </div>
+      ) : null}
+    </article>
   )
 }

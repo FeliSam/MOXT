@@ -1043,7 +1043,7 @@ export function createAuthService(supabase, redirects = {}) {
     return refreshed ? enrichUserFromAuth(refreshed, authUser) : null
   }
 
-  async function enrichUserFromAuth(user, authUser) {
+  function enrichUserFromAuth(user, authUser) {
     if (!user || !authUser) return user
     const email = String(authUser.email || user.email || '').trim()
     return {
@@ -1213,6 +1213,15 @@ export function createAuthService(supabase, redirects = {}) {
     } catch {
       // ignore
     }
+  }
+
+  /** Refresh access token this many seconds before expires_at. */
+  const ACCESS_TOKEN_SKEW_SECONDS = 15 * 60
+
+  function isSessionAccessTokenExpiring(session, skewSeconds = ACCESS_TOKEN_SKEW_SECONDS) {
+    const expiresAt = Number(session?.expires_at)
+    if (!Number.isFinite(expiresAt) || expiresAt <= 0) return false
+    return expiresAt * 1000 <= Date.now() + skewSeconds * 1000
   }
 
   return {
@@ -2042,13 +2051,13 @@ export function createAuthService(supabase, redirects = {}) {
           'getSession',
         )
         session = data.session
-        if (!session) {
+        if (!session || isSessionAccessTokenExpiring(session)) {
           const { data: refreshed } = await withTimeout(
             supabase.auth.refreshSession(),
             AUTH_NETWORK_TIMEOUT_MS,
             'refreshSession',
           )
-          session = refreshed.session
+          session = refreshed.session ?? session
         }
       } catch (error) {
         console.warn('[MOXT] Session Supabase indisponible au démarrage:', error?.message)
@@ -2057,16 +2066,18 @@ export function createAuthService(supabase, redirects = {}) {
 
       if (!session) return null
 
-      // getUser() (réseau) — pas session.user local — pour email_confirmed_at à jour (Safari / autres onglets)
+      // Boot rapide : session.user local ; getUser() différé (authSessionSync / focus).
       let authUser = session.user
-      try {
-        authUser = await withTimeout(
-          getAuthenticatedAuthUser(),
-          AUTH_NETWORK_TIMEOUT_MS,
-          'getUser',
-        )
-      } catch (error) {
-        console.warn('[MOXT] getUser indisponible, fallback session.user:', error?.message)
+      if (isSessionAccessTokenExpiring(session, 60 * 60)) {
+        try {
+          authUser = await withTimeout(
+            getAuthenticatedAuthUser(),
+            AUTH_NETWORK_TIMEOUT_MS,
+            'getUser',
+          )
+        } catch (error) {
+          console.warn('[MOXT] getUser indisponible, fallback session.user:', error?.message)
+        }
       }
 
       try {

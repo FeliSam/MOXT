@@ -315,6 +315,7 @@ export const BUSINESSES_FR_SOURCES = {
   'businesses.publications.types.parcel': 'Colis',
   'businesses.publications.types.job': 'Jobs',
   'businesses.publications.types.event': 'Événements',
+  'businesses.publications.types.video': 'Vidéos',
   'businesses.publications.types.other': 'Autres',
   'businesses.publications.emptyTitle': 'Aucune publication entreprise',
   'businesses.publications.emptyDescription':

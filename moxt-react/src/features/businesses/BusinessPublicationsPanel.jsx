@@ -1,9 +1,11 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useSearchParams } from 'react-router-dom'
 import { CatalogGrid } from '../../components/ui/CatalogGrid'
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { useLanguage } from '../../contexts/useLanguage'
+import { phase3Text } from '../../i18n/phase3I18n'
 import {
   duplicateListing,
   updateListingStatus,
@@ -14,6 +16,7 @@ import {
   MyListingPublicationCard,
   MyP2POfferPublicationCard,
   MyParcelPublicationCard,
+  MyVideoPublicationCard,
 } from '../publications/MyPublicationCards'
 import {
   BUSINESS_PUBLICATION_TYPE_TABS,
@@ -26,6 +29,7 @@ import {
 } from '../publications/publicationCatalogUtils'
 import { PublicationCatalogNav } from '../publications/PublicationCatalogNav'
 import { useRefreshPublicationsData } from '../publications/useRefreshPublicationsData'
+import { deleteVideo, duplicateVideo, moderateVideo } from '../videos/videosSlice'
 import { businessesText } from './businessesI18n'
 
 const TYPE_LABEL_KEYS = {
@@ -33,6 +37,7 @@ const TYPE_LABEL_KEYS = {
   parcel: 'businesses.publications.types.parcel',
   job: 'businesses.publications.types.job',
   event: 'businesses.publications.types.event',
+  video: 'businesses.publications.types.video',
   other: 'businesses.publications.types.other',
 }
 
@@ -47,12 +52,15 @@ export function BusinessPublicationsPanel({
   const dispatch = useDispatch()
   const { t } = useLanguage()
   const bt = (key, vars) => businessesText(t, key, vars)
+  const p3 = (key, vars) => phase3Text(t, key, vars)
+  const [deletingVideo, setDeletingVideo] = useState(null)
   const user = useSelector((state) => state.auth.user)
   const marketplaceItems = useSelector((state) => state.marketplace.items)
   const parcelItems = useSelector((state) => state.parcels.items)
   const jobItems = useSelector((state) => state.jobs.items)
   const eventItems = useSelector((state) => state.events.items)
   const offerItems = useSelector((state) => state.p2p.offers)
+  const videoItems = useSelector((state) => state.videos.items)
 
   useRefreshPublicationsData(guestMode ? null : businessId)
 
@@ -81,6 +89,7 @@ export function BusinessPublicationsPanel({
         jobs: { items: jobItems },
         events: { items: eventItems },
         p2p: { offers: offerItems },
+        videos: { items: videoItems },
       },
       businessId,
     )
@@ -93,6 +102,7 @@ export function BusinessPublicationsPanel({
     marketplaceItems,
     offerItems,
     parcelItems,
+    videoItems,
   ])
 
   const archiveCounts = useMemo(
@@ -207,6 +217,7 @@ export function BusinessPublicationsPanel({
           {visible.parcel.length ||
           visible.job.length ||
           visible.event.length ||
+          visible.video?.length ||
           visible.other.length ? (
             <CatalogGrid lazy={false}>
               {visible.parcel.map((parcel) => (
@@ -236,6 +247,19 @@ export function BusinessPublicationsPanel({
                   onGuestInteract={onGuestInteract}
                 />
               ))}
+              {(visible.video || []).map((video) => (
+                <MyVideoPublicationCard
+                  key={video.id}
+                  video={video}
+                  readOnly={!isOwner}
+                  guestMode={guestMode}
+                  onGuestInteract={onGuestInteract}
+                  onArchive={() => dispatch(moderateVideo({ id: video.id, status: 'archived' }))}
+                  onReactivate={() => dispatch(moderateVideo({ id: video.id, status: 'active' }))}
+                  onDuplicate={() => dispatch(duplicateVideo({ video, ownerId: user?.id }))}
+                  onDelete={() => setDeletingVideo(video)}
+                />
+              ))}
               {visible.other.map((offer) => (
                 <MyP2POfferPublicationCard
                   key={offer.id}
@@ -254,6 +278,19 @@ export function BusinessPublicationsPanel({
           description={bt('businesses.publications.emptyDescription')}
         />
       )}
+
+      <ConfirmDialog
+        open={Boolean(deletingVideo)}
+        title={p3('publications.cards.deleteConfirmTitle')}
+        description={p3('publications.cards.deleteConfirmDescription')}
+        onCancel={() => setDeletingVideo(null)}
+        onConfirm={() => {
+          if (deletingVideo?.id && user?.id) {
+            dispatch(deleteVideo({ id: deletingVideo.id, ownerId: user.id }))
+          }
+          setDeletingVideo(null)
+        }}
+      />
     </div>
   )
 }

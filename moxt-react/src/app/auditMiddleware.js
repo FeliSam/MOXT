@@ -10,6 +10,7 @@ const auditedPrefixes = [
   'marketplace/',
   'jobs/',
   'events/',
+  'videos/',
   'communications/',
   'administration/',
   'account/',

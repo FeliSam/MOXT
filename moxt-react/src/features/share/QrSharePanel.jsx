@@ -5,8 +5,11 @@ import { Alert } from '../../components/ui/Alert'
 import { VerifiedBadge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { useLanguage } from '../../contexts/useLanguage'
+import { useStarsModuleEnabled } from '../stars/useStarsModuleEnabled'
 import { makeQrCodeUrl } from '../../utils/qrCode'
 import { DownloadBadgeButton } from './DownloadBadgeButton'
+
+export const REFERRAL_STARS_PER_INVITE = 5
 
 function initialsFromTitle(title = '') {
   const parts = title.trim().split(/\s+/).filter(Boolean)
@@ -37,6 +40,7 @@ export function QrSharePanel({
   className = '',
 }) {
   const { t } = useLanguage()
+  const starsEnabled = useStarsModuleEnabled()
   const [copied, setCopied] = useState(false)
   const qrUrl = useMemo(
     () => qrImageSrc || makeQrCodeUrl(shareUrl, qrSize),
@@ -44,6 +48,10 @@ export function QrSharePanel({
   )
   const showPrivateProfileWarning =
     (variant === 'profile' || variant === 'business') && activityVisibility === 'private'
+  const starsEarned =
+    variant === 'invite' && starsEnabled && inviteCount != null
+      ? Number(inviteCount) * REFERRAL_STARS_PER_INVITE
+      : null
 
   const hint = t(`share.hints.${variant}`)
   const socialVariants = ['instagram', 'telegram', 'whatsapp']
@@ -162,13 +170,33 @@ export function QrSharePanel({
         ) : null}
 
         {variant === 'invite' && inviteCount !== null ? (
-          <div className="mt-5 grid w-full max-w-xs grid-cols-1 gap-3">
-            <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3">
+          <div
+            className={`mt-5 grid w-full max-w-sm gap-3 ${
+              starsEarned != null ? 'grid-cols-2' : 'grid-cols-1'
+            }`}
+          >
+            <div className="rounded-2xl border border-white/15 bg-white/10 px-3 py-3 sm:px-4">
               <p className="text-3xl font-black tracking-tight">{inviteCount}</p>
-              <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-white/65">
+              <p className="mt-1 text-[10px] font-semibold uppercase leading-snug tracking-[0.12em] text-white/65 sm:text-xs sm:tracking-[0.14em]">
                 {inviteCount === 1 ? t('share.inviteCountOne') : t('share.inviteCountMany')}
               </p>
             </div>
+            {starsEarned != null ? (
+              <div className="rounded-2xl border border-amber-300/30 bg-amber-400/15 px-3 py-3 sm:px-4">
+                <p className="text-3xl font-black tracking-tight text-amber-100">
+                  {starsEarned}
+                  <span className="ml-1 text-lg" aria-hidden="true">
+                    ★
+                  </span>
+                </p>
+                <p className="mt-1 text-[10px] font-semibold uppercase leading-snug tracking-[0.12em] text-amber-100/75 sm:text-xs sm:tracking-[0.14em]">
+                  {t('share.starsEarnedLabel')}
+                </p>
+                <p className="mt-1 text-[10px] font-medium text-amber-100/60">
+                  {t('share.starsPerInviteHint', { n: REFERRAL_STARS_PER_INVITE })}
+                </p>
+              </div>
+            ) : null}
           </div>
         ) : null}
 

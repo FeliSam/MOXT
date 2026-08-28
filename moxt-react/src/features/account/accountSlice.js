@@ -41,9 +41,11 @@ const ACCOUNT_DEFAULTS = {
   preferences: {},
   deletionRequests: [],
   viewedListings: [],
+  listingImpressions: [],
 }
 
 const VIEWED_LISTINGS_LIMIT = 200
+const LISTING_IMPRESSIONS_LIMIT = 400
 
 const storedAccount = storage.read(ACCOUNT_DEFAULTS)
 const initialState = {
@@ -52,6 +54,9 @@ const initialState = {
   // Anciens caches sans la clé → undefined ferait disparaître l’étiquette « Vu »
   viewedListings: Array.isArray(storedAccount?.viewedListings)
     ? storedAccount.viewedListings.slice(0, VIEWED_LISTINGS_LIMIT)
+    : [],
+  listingImpressions: Array.isArray(storedAccount?.listingImpressions)
+    ? storedAccount.listingImpressions.slice(0, LISTING_IMPRESSIONS_LIMIT)
     : [],
   favorites: Array.isArray(storedAccount?.favorites) ? storedAccount.favorites : [],
 }
@@ -155,6 +160,62 @@ const accountSlice = createSlice({
           },
         }
       },
+    },
+    recordListingImpression: {
+      reducer(state, action) {
+        state.listingImpressions = Array.isArray(state.listingImpressions)
+          ? state.listingImpressions
+          : []
+        const exists = state.listingImpressions.some(
+          (item) =>
+            item.userId === action.payload.userId && item.listingId === action.payload.listingId,
+        )
+        if (exists) return
+        state.listingImpressions.unshift(action.payload)
+        if (state.listingImpressions.length > LISTING_IMPRESSIONS_LIMIT) {
+          state.listingImpressions.length = LISTING_IMPRESSIONS_LIMIT
+        }
+      },
+      prepare(values) {
+        return {
+          payload: {
+            userId: values.userId,
+            listingId: values.listingId,
+            railId: values.railId || '',
+            seenAt: new Date().toISOString(),
+          },
+        }
+      },
+    },
+    hydrateMarketplaceDiscoverySignals(state, action) {
+      const { userId, viewedListings = [], listingImpressions = [] } = action.payload || {}
+      if (!userId) return
+      if (Array.isArray(viewedListings) && viewedListings.length) {
+        const merged = [...viewedListings, ...(state.viewedListings || [])]
+        const seen = new Set()
+        state.viewedListings = merged
+          .filter((item) => {
+            if (!item?.listingId || item.userId !== userId) return false
+            const key = item.listingId
+            if (seen.has(key)) return false
+            seen.add(key)
+            return true
+          })
+          .slice(0, VIEWED_LISTINGS_LIMIT)
+      }
+      if (Array.isArray(listingImpressions) && listingImpressions.length) {
+        const merged = [...listingImpressions, ...(state.listingImpressions || [])]
+        const seen = new Set()
+        state.listingImpressions = merged
+          .filter((item) => {
+            if (!item?.listingId || item.userId !== userId) return false
+            const key = item.listingId
+            if (seen.has(key)) return false
+            seen.add(key)
+            return true
+          })
+          .slice(0, LISTING_IMPRESSIONS_LIMIT)
+      }
     },
     removeTransferProfile(state, action) {
       state.transferProfiles = (state.transferProfiles || []).filter(
@@ -549,6 +610,8 @@ export const {
   cancelAccountDeletion,
   discardUnsyncedPersonalDocument,
   markListingViewed,
+  recordListingImpression,
+  hydrateMarketplaceDiscoverySignals,
   removePersonalDocument,
   requestAccountDeletion,
   removeTransferProfile,

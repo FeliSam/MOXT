@@ -44,6 +44,11 @@ import {
   publishOptionSub,
   publishText,
 } from '../features/publications/publishI18n'
+import { StarsInsufficientError, starsOwnerFromPublish } from '../features/stars/starsPublish'
+import { StarsPublishGate } from '../features/stars/StarsPublishGate'
+import { PublishFormulaSheet } from '../features/stars/PublishFormulaSheet'
+import { DEFAULT_QUOTA_CONFIG } from '../features/stars/starsConfig'
+import { useStarsPublishFlow } from '../features/stars/useStarsPublishFlow'
 
 const STEPS = JOB_PUBLISH_STEPS
 
@@ -130,6 +135,9 @@ export function PublishJobPage() {
     })
   }
   const { trigger: triggerBurst, node: burstNode } = useActionBurst()
+  const { pendingQuote, confirmPaid, acceptSpend, cancelSpend, withStarsConsume } = useStarsPublishFlow()
+  const starsBalance = useSelector((state) => state.stars.balance)
+  const [formulaKey, setFormulaKey] = useState('standard')
   const [form, setForm] = useState({
     title: '',
     sector: '',
@@ -221,18 +229,55 @@ export function PublishJobPage() {
       )
       return
     }
-    const action = dispatch(
-      createJob({
-        ...form,
-        id: jobId,
-        images,
-        salary: form.salary.toUpperCase().includes('RUB') ? form.salary : `${form.salary} RUB`,
-        ownerId: user.id,
-        publisherName: publishAsBusiness ? business.name : `${user.firstName} ${user.lastName}`,
-        businessId: publishAsBusiness ? business.id : null,
-        status: initialCatalogStatus(user),
-      }),
-    )
+    const actionOutcome = await (async () => {
+      try {
+        return await withStarsConsume({
+          category: 'jobs',
+          formulaKey,
+          ...starsOwnerFromPublish({
+            useBusiness: publishAsBusiness,
+            business,
+            user,
+          }),
+          entityId: jobId,
+          confirmPaid,
+          publish: async () =>
+            dispatch(
+              createJob({
+                ...form,
+                id: jobId,
+                images,
+                salary: form.salary.toUpperCase().includes('RUB') ? form.salary : `${form.salary} RUB`,
+                ownerId: user.id,
+                publisherName: publishAsBusiness ? business.name : `${user.firstName} ${user.lastName}`,
+                businessId: publishAsBusiness ? business.id : null,
+                status: initialCatalogStatus(user),
+              }),
+            ),
+        })
+      } catch (error) {
+        setPublishing(false)
+        dispatch(
+          addToast({
+            title:
+              error instanceof StarsInsufficientError
+                ? t('stars.insufficientTitle')
+                : publishText(t, 'publish.common.toasts.imagesFailedTitle'),
+            message:
+              error instanceof StarsInsufficientError
+                ? t('stars.insufficientBody')
+                : error.message || publishText(t, 'publish.common.toasts.retry'),
+            tone: 'error',
+          }),
+        )
+        return null
+      }
+    })()
+    if (!actionOutcome || actionOutcome.cancelled) {
+      setPublishing(false)
+      return
+    }
+    const action = actionOutcome.result
     setPublishing(false)
     triggerBurst()
     const live = action.payload?.status === 'active'
@@ -271,6 +316,14 @@ export function PublishJobPage() {
           {publishText(t, 'publish.job.back')}
         </Button>
         <h1 className="text-xl font-black">{publishText(t, 'publish.job.title')}</h1>
+        <StarsPublishGate
+          category="jobs"
+          ownerType={form.publisherType === 'business' && eligibleBusiness ? 'business' : 'user'}
+          ownerId={form.publisherType === 'business' && eligibleBusiness ? business?.id : user?.id}
+          pendingQuote={pendingQuote}
+          onCancel={cancelSpend}
+          onConfirm={acceptSpend}
+        />
       </div>
 
       <Card className="px-6 py-5">
@@ -611,6 +664,16 @@ export function PublishJobPage() {
             </p>
           </div>
         </div>
+      ) : null}
+
+      {step === STEPS.length ? (
+        <PublishFormulaSheet
+          category="jobs"
+          value={formulaKey}
+          onChange={setFormulaKey}
+          enforced={Boolean(starsBalance?.enforced)}
+          config={starsBalance?.config || DEFAULT_QUOTA_CONFIG}
+        />
       ) : null}
 
       <div className="flex items-center justify-between gap-3">

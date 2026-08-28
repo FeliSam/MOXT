@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom'
 import { searchTypeMeta } from '../../config/searchTypes'
 import { useLanguage } from '../../contexts/useLanguage'
 import { searchGlobalResults, selectSearchIndex, selectSubscriptionNetworkProfiles } from '../../features/searchSelectors'
+import { useIsFeedViewport } from '../../features/feed/feedViewport'
 import { Badge } from '../ui/Badge'
 
 export function GlobalSearch() {
@@ -15,10 +16,19 @@ export function GlobalSearch() {
   const anchorRef = useRef(null)
   const [panelRect, setPanelRect] = useState(null)
   const index = useSelector(selectSearchIndex)
+  const isFeedViewport = useIsFeedViewport()
+  const searchableIndex = useMemo(
+    () =>
+      index.filter((entry) => {
+        if (!isFeedViewport && String(entry.path || '').startsWith('/feed')) return false
+        return true
+      }),
+    [index, isFeedViewport],
+  )
   const networkProfiles = useSelector(selectSubscriptionNetworkProfiles)
   const results = useMemo(
-    () => searchGlobalResults(index, networkProfiles, query),
-    [index, networkProfiles, query],
+    () => searchGlobalResults(searchableIndex, networkProfiles, query),
+    [searchableIndex, networkProfiles, query],
   )
   const showPanel = query.trim().length >= 2
 

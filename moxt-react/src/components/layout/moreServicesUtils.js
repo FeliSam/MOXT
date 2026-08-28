@@ -2,21 +2,31 @@ import { buildQueues } from '../../features/admin/adminData'
 
 export { bottomNavigationPaths } from '../../config/primaryNavigation'
 
-function filterGroupItems(group, role, excludePaths) {
+function filterGroupItems(group, role, excludePaths, devModuleAccess, { feedViewport = true } = {}) {
   return group.children.filter(
     (item) =>
       (!item.roles || item.roles.includes(role)) &&
-      (!excludePaths || !excludePaths.has(item.path)),
+      (!excludePaths || !excludePaths.has(item.path)) &&
+      (!item.devModule || devModuleAccess(item.devModule)) &&
+      (!item.mobileOnly || feedViewport),
   )
 }
 
 /** @param {(item: { label?: string, labelKey?: string }) => string} resolveLabel */
-export function filterNavigationGroups(groups, role, excludePaths, query, resolveLabel) {
+export function filterNavigationGroups(
+  groups,
+  role,
+  excludePaths,
+  query,
+  resolveLabel,
+  devModuleAccess = () => true,
+  { feedViewport = true } = {},
+) {
   const q = query.trim().toLowerCase()
   return groups
     .map((group) => ({
       ...group,
-      children: filterGroupItems(group, role, excludePaths).filter(
+      children: filterGroupItems(group, role, excludePaths, devModuleAccess, { feedViewport }).filter(
         (item) => !q || resolveLabel(item).toLowerCase().includes(q),
       ),
     }))

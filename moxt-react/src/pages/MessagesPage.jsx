@@ -19,6 +19,7 @@ import {
   loadConversationMessages,
   loadOlderConversationMessages,
   loadParticipantProfiles,
+  preloadInboxMessages,
   markConversationRead,
   reactToMessage,
   reportMessage,
@@ -51,6 +52,7 @@ import {
 import { storageService } from '../services/storageService'
 import {
   isImageFile,
+  isVideoFile,
   MAX_MESSAGE_IMAGES,
 } from '../features/communications/attachmentUtils'
 import { buildContactAttachment } from '../features/communications/contactShareUtils'
@@ -285,7 +287,8 @@ export function MessagesPage() {
       try {
         if (attachments.length) {
           const imageFiles = attachments.filter(isImageFile)
-          const otherFile = attachments.find((file) => !isImageFile(file))
+          const videoFiles = attachments.filter(isVideoFile)
+          const otherFile = attachments.find((file) => !isImageFile(file) && !isVideoFile(file))
 
           if (imageFiles.length) {
             const urls = []
@@ -315,6 +318,18 @@ export function MessagesPage() {
               type: imageFiles[0].type || 'image/jpeg',
               url: urls[0],
               ...(urls.length > 1 ? { urls } : {}),
+            }
+          } else if (videoFiles.length) {
+            const file = videoFiles[0]
+            const uploaded = await trackUpload(async (onProgress) =>
+              storageService.uploadMessageVideo(user.id, active.id, file, { onProgress }),
+            )
+            attachmentPayload = {
+              kind: 'video',
+              name: file.name,
+              size: file.size,
+              type: file.type || 'video/mp4',
+              url: uploaded,
             }
           } else if (otherFile) {
             const uploaded = await trackUpload(async (onProgress) =>
@@ -454,14 +469,19 @@ export function MessagesPage() {
   }, [active?.id, dispatch, user.id])
 
   useEffect(() => {
-    if (!active?.id || active.messagesLoading || active.messagesLoaded) return
+    if (!active?.id || active.messagesLoading) return
     dispatch(loadConversationMessages(active.id))
-  }, [
-    active?.id,
-    active?.messagesLoaded,
-    active?.messagesLoading,
-    dispatch,
-  ])
+  }, [active?.id, active?.lastMessageAt, active?.messagesLoading, dispatch])
+
+  const inboxPreloadStarted = useRef(false)
+  useEffect(() => {
+    if (inboxPreloadStarted.current || !conversations.length) return
+    inboxPreloadStarted.current = true
+    const timer = window.setTimeout(() => {
+      dispatch(preloadInboxMessages({ limit: 6 }))
+    }, 400)
+    return () => window.clearTimeout(timer)
+  }, [conversations.length, dispatch])
 
   function selectConversation(id) {
     setSearchParams({ conversation: id })
@@ -480,9 +500,13 @@ export function MessagesPage() {
 
     const list = Array.from(files)
     const imageFiles = list.filter(isImageFile)
-    const otherFiles = list.filter((file) => !isImageFile(file))
+    const videoFiles = list.filter(isVideoFile)
+    const otherFiles = list.filter((file) => !isImageFile(file) && !isVideoFile(file))
 
-    if (imageFiles.length && otherFiles.length) {
+    if (
+      (imageFiles.length && (videoFiles.length || otherFiles.length)) ||
+      (videoFiles.length && otherFiles.length)
+    ) {
       dispatch(
         addToast({
           title: t('messages.mixedFilesTitle'),
@@ -493,8 +517,25 @@ export function MessagesPage() {
       return
     }
 
+    if (videoFiles.length > 1) {
+      dispatch(
+        addToast({
+          title: t('messages.maxVideosTitle'),
+          message: t('messages.maxVideos'),
+          tone: 'error',
+        }),
+      )
+      setAttachments([videoFiles[0]])
+      return
+    }
+
     if (otherFiles.length) {
       setAttachments([otherFiles[0]])
+      return
+    }
+
+    if (videoFiles.length) {
+      setAttachments([videoFiles[0]])
       return
     }
 

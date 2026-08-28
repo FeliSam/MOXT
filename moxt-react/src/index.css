@@ -189,6 +189,54 @@ body {
 
 #root { min-height: 100dvh; }
 
+/* Fil mobile : plein viewport iOS (ferme la bande sous la bottom nav / home indicator).
+   z-index reste sous la nav (100) ; le rail d’actions utilise --z-page-float en fixed. */
+.feed-mobile-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100dvh;
+  height: 100svh;
+  background: var(--app-bg);
+}
+
+.feed-snap-scroller {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.feed-snap-scroller [data-feed-slide] {
+  min-height: 100%;
+  height: 100%;
+}
+
+.feed-snap-scroller::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+@media (min-width: 768px) {
+  .feed-mobile-shell {
+    position: static;
+    inset: auto;
+    z-index: auto;
+    background: transparent;
+  }
+
+  .feed-snap-scroller {
+    display: none;
+  }
+}
+
 /* Contenu page uniquement : bloque le pan latéral au scroll vertical.
    Menus (bottom-nav, sidebar, drawers) hors de #main-content — non concernés. */
 @media (max-width: 1023px) {
@@ -655,6 +703,11 @@ html.messages-route-lock #root {
     --bottom-nav-clearance-loose: 0px;
   }
 
+  html.feed-mobile-immersive {
+    --bottom-nav-clearance: max(0.75rem, env(safe-area-inset-bottom, 0px));
+    --bottom-nav-clearance-loose: max(1.25rem, env(safe-area-inset-bottom, 0px));
+  }
+
   .messages-thread-immersive main,
   html.messages-thread-detail main,
   html.messages-thread-immersive main {
@@ -764,6 +817,7 @@ html.messages-route-lock #root {
 
 .message-avatar--ghost {
   visibility: hidden;
+  pointer-events: none;
 }
 
 .message-stack {
@@ -1049,19 +1103,14 @@ html.messages-route-lock #root {
     max-width: min(100%, 56.25rem);
   }
 
-  /* Reçus : compenser avatar + espacement pour égaler la largeur utile des envoyés */
-  .message-row:not(.message-row--sent):has(.message-avatar:not(.message-avatar--ghost)) {
+  /* Reçus : compenser avatar + gap pour égaler la largeur utile des envoyés.
+     Le spacer ghost reste dans le flux pour aligner toutes les bulles d’un groupe. */
+  .message-row:not(.message-row--sent):has(.message-avatar) {
     max-width: min(var(--message-text-row-width-pct), calc(var(--message-text-row-width-cap) + 2.05rem));
   }
 
-  .message-row:not(.message-row--sent):has(.message-stack--media):has(
-      .message-avatar:not(.message-avatar--ghost)
-    ) {
+  .message-row:not(.message-row--sent):has(.message-stack--media):has(.message-avatar) {
     max-width: min(100%, calc(56.25rem + 2.05rem));
-  }
-
-  .message-row:not(.message-row--sent) .message-avatar--ghost {
-    display: none;
   }
 
   .message-row:not(.message-row--sent) .message-stack {
@@ -3873,6 +3922,16 @@ input[type='file'] {
 .horizontal-track a {
   -webkit-user-drag: none;
   user-select: none;
+}
+
+@media (min-width: 768px) {
+  .horizontal-track--md-grid {
+    overflow: visible;
+    scroll-snap-type: none;
+    touch-action: auto;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
 }
 
 @media (min-width: 1024px) {

@@ -243,24 +243,14 @@ export function AiAssistantPanel({
         <div className="mx-auto flex max-w-3xl flex-col gap-4">
           <AssistantMessage text={messagesText(t, 'messages.assistant.greeting')} />
           {!messages.length || showAllQuestions ? (
-            <div className="ml-10 grid gap-2 sm:grid-cols-2">
-              {ASSISTANT_SUGGESTION_KEYS.map((key) => {
-                const suggestion = messagesText(t, key)
-                return (
-                  <button
-                    key={key}
-                    className="rounded-2xl bg-[var(--app-surface)] p-3 text-left text-sm font-bold shadow-[0_8px_24px_rgb(15_23_42/0.08)] hover:shadow-lg"
-                    onClick={() => {
-                      setShowAllQuestions(false)
-                      ask(suggestion)
-                    }}
-                  >
-                    <FiZap className="mb-2 text-brand-500" />
-                    {suggestion}
-                  </button>
-                )
-              })}
-            </div>
+            <AssistantSuggestionChips
+              className="ml-10"
+              items={ASSISTANT_SUGGESTION_KEYS.map((key) => messagesText(t, key))}
+              onPick={(suggestion) => {
+                setShowAllQuestions(false)
+                ask(suggestion)
+              }}
+            />
           ) : null}
           {messages.map((message, index) =>
             message.role === 'assistant' ? (
@@ -475,6 +465,26 @@ function inlineBold(text) {
   )
 }
 
+function AssistantSuggestionChips({ className = '', items, onPick }) {
+  if (!items?.length) return null
+  return (
+    <div role="list" className={`flex flex-row flex-wrap gap-2 ${className}`.trim()}>
+      {items.map((suggestion) => (
+        <button
+          key={suggestion}
+          type="button"
+          role="listitem"
+          onClick={() => onPick(suggestion)}
+          className="flex min-h-14 min-w-[9.5rem] flex-[1_1_calc(50%-0.25rem)] items-start gap-2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2.5 text-left text-xs font-bold leading-snug text-[var(--app-text)] shadow-[0_8px_24px_rgb(15_23_42/0.08)] transition hover:border-brand-400 hover:text-brand-700 hover:shadow-md"
+        >
+          <FiZap className="mt-0.5 size-3.5 shrink-0 text-brand-500" aria-hidden="true" />
+          <span className="min-w-0">{suggestion}</span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
 function AssistantMessage({
   actions,
   sources,
@@ -514,18 +524,11 @@ function AssistantMessage({
         </div>
       </div>
       {suggestions?.length ? (
-        <div className="ml-10 flex flex-wrap gap-2">
-          {suggestions.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => onSuggestion(s)}
-              className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--app-text-2)] transition hover:border-brand-400 hover:text-brand-600"
-            >
-              {s}
-            </button>
-          ))}
-        </div>
+        <AssistantSuggestionChips
+          className="ml-10"
+          items={suggestions}
+          onPick={onSuggestion}
+        />
       ) : null}
       {showAllQuestionsLabel && onShowAllQuestions ? (
         <div className="ml-10">

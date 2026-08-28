@@ -65,6 +65,11 @@ export function inferEntityFromLegacyBucket(legacyBucket, legacyPath = '') {
     const parts = legacyPath.split('/')
     return { entityType: 'transfer', entityId: parts[1] || null }
   }
+  if (legacyBucket === 'videos') {
+    const parts = legacyPath.split('/')
+    const filePart = parts[2] || parts[1] || parts[0] || ''
+    return { entityType: 'video', entityId: filePart.replace(/\.[^.]+$/, '') || null }
+  }
   if (legacyPath.includes('/statuses/')) return { entityType: 'status', entityId: null }
   if (legacyPath.includes('/messages/')) return { entityType: 'message', entityId: null }
   if (legacyPath.includes('/jobs/')) return { entityType: 'job', entityId: null }

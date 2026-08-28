@@ -21,6 +21,8 @@ const PENDING_MESSAGE_MS = 24 * 60 * 60 * 1000
 const MESSAGE_FETCH_LIMIT = 200
 const MESSAGE_INCREMENTAL_LIMIT = 100
 const MESSAGE_OLDER_LIMIT = 100
+const MESSAGE_INBOX_PRELOAD = 6
+const messageLoadInFlight = new Set()
 
 const MESSAGE_SELECT_COLUMNS = [
   'id',
@@ -117,8 +119,16 @@ export function mergeMessageBatch(existingMessages, remoteRows) {
   )
 }
 
-export function shouldSkipMessageReload({ messagesLoaded }) {
-  return Boolean(messagesLoaded)
+export function shouldSkipMessageReload({
+  messagesLoaded,
+  loadedCount = 0,
+  lastLoadedAt = null,
+  conversationLastMessageAt = null,
+} = {}) {
+  if (!messagesLoaded || loadedCount <= 0) return false
+  if (!conversationLastMessageAt) return true
+  if (!lastLoadedAt) return false
+  return new Date(lastLoadedAt).getTime() >= new Date(conversationLastMessageAt).getTime()
 }
 
 export function conversationNeedsInitialMessageLoad({ messagesLoaded, messagesLoading }) {
@@ -1105,7 +1115,7 @@ const communicationSlice = createSlice({
     builder
       .addCase('communications/loadConversationMessages/pending', (state, action) => {
         const conversation = state.conversations.find((c) => c.id === action.meta.arg)
-        if (conversation) conversation.messagesLoading = true
+        if (conversation && !conversation.messagesLoaded) conversation.messagesLoading = true
       })
       .addCase('communications/loadConversationMessages/fulfilled', (state, action) => {
         const conversation = state.conversations.find(
@@ -1117,7 +1127,7 @@ const communicationSlice = createSlice({
         const conversation = state.conversations.find((c) => c.id === action.meta.arg)
         if (conversation) {
           conversation.messagesLoading = false
-          conversation.messagesLoaded = false
+          if (!conversation.messages?.length) conversation.messagesLoaded = false
         }
       })
       .addCase('communications/loadOlderConversationMessages/pending', (state, action) => {
@@ -1150,104 +1160,143 @@ const communicationSlice = createSlice({
 export const loadConversationMessages = createAsyncThunk(
   'communications/loadConversationMessages',
   async (conversationId, { dispatch, getState }) => {
-    const localConversation = getState().communications.conversations.find(
-      (item) => item.id === conversationId,
-    )
-    const { canonicalId, conversationIds, remoteRow } = await resolveMessageLoadScope(
-      conversationId,
-      localConversation,
-    )
-
-    if (canonicalId !== conversationId && remoteRow) {
-      dispatch(
-        replaceConversationId({
-          fromId: conversationId,
-          conversation: normalizeConversation({
-            ...fromRow(remoteRow),
-            messages: localConversation?.messages || [],
-            messagesLoaded: localConversation?.messagesLoaded ?? false,
-            messagesLoading: localConversation?.messagesLoading ?? false,
-            drafts: localConversation?.drafts,
-          }),
-        }),
+    if (messageLoadInFlight.has(conversationId)) {
+      return { conversationId, skipped: true }
+    }
+    messageLoadInFlight.add(conversationId)
+    try {
+      const localConversation = getState().communications.conversations.find(
+        (item) => item.id === conversationId,
       )
-    }
+      const existingMessages = localConversation?.messages || []
+      const messagesLoaded = Boolean(localConversation?.messagesLoaded)
+      const lastMessageAt = existingMessages[existingMessages.length - 1]?.createdAt
+      const expectedCount = Number(localConversation?.messageCount) || 0
+      const loadedCount = existingMessages.length
 
-    const syncedConversation = getState().communications.conversations.find(
-      (item) => item.id === canonicalId,
-    )
-    const existingMessages = syncedConversation?.messages || localConversation?.messages || []
-    const messagesLoaded = Boolean(syncedConversation?.messagesLoaded ?? localConversation?.messagesLoaded)
-    const lastMessageAt = existingMessages[existingMessages.length - 1]?.createdAt
-    const expectedCount = Number(syncedConversation?.messageCount ?? localConversation?.messageCount) || 0
-    const loadedCount = existingMessages.length
+      if (
+        shouldSkipMessageReload({
+          messagesLoaded,
+          loadedCount,
+          lastLoadedAt: lastMessageAt,
+          conversationLastMessageAt: localConversation?.lastMessageAt,
+        })
+      ) {
+        return { conversationId, count: loadedCount, skipped: true }
+      }
 
-    if (shouldSkipMessageReload({ messagesLoaded, expectedCount, loadedCount })) {
-      return { conversationId: canonicalId, count: loadedCount, skipped: true }
-    }
+      const { canonicalId, conversationIds, remoteRow } = await resolveMessageLoadScope(
+        conversationId,
+        localConversation,
+      )
 
-    const canIncremental = messagesLoaded && Boolean(lastMessageAt) && loadedCount > 0
-
-    if (canIncremental) {
-      const { data, error } = await supabase
-        .from('messages').select(MESSAGE_SELECT_COLUMNS)
-        .in('conversation_id', conversationIds)
-        .gt('created_at', lastMessageAt)
-        .order('created_at', { ascending: true })
-        .limit(MESSAGE_INCREMENTAL_LIMIT)
-      if (error) throw error
-
-      if (data?.length) {
-        const messages = mergeMessageBatch(existingMessages, data)
+      if (canonicalId !== conversationId && remoteRow) {
         dispatch(
-          setConversationMessages({
-            conversationId: canonicalId,
-            messages,
-            hasOlderMessages: resolveHasOlderMessages({
-              messages,
-              messageCount: expectedCount,
-              fetchedCount: data.length,
-              fetchLimit: MESSAGE_INCREMENTAL_LIMIT,
+          replaceConversationId({
+            fromId: conversationId,
+            conversation: normalizeConversation({
+              ...fromRow(remoteRow),
+              messages: localConversation?.messages || [],
+              messagesLoaded: localConversation?.messagesLoaded ?? false,
+              messagesLoading: localConversation?.messagesLoading ?? false,
+              drafts: localConversation?.drafts,
             }),
           }),
         )
-        return { conversationId: canonicalId, count: messages.length, incremental: true }
       }
 
-      if (messagesLoaded) {
-        return { conversationId: canonicalId, count: loadedCount, skipped: true }
+      const syncedConversation = getState().communications.conversations.find(
+        (item) => item.id === canonicalId,
+      )
+      const mergedExisting = syncedConversation?.messages || existingMessages
+      const syncedLoaded = Boolean(syncedConversation?.messagesLoaded ?? messagesLoaded)
+      const syncedLastAt = mergedExisting[mergedExisting.length - 1]?.createdAt
+      const syncedExpected =
+        Number(syncedConversation?.messageCount ?? localConversation?.messageCount) || expectedCount
+      const syncedCount = mergedExisting.length
+
+      if (
+        shouldSkipMessageReload({
+          messagesLoaded: syncedLoaded,
+          loadedCount: syncedCount,
+          lastLoadedAt: syncedLastAt,
+          conversationLastMessageAt: syncedConversation?.lastMessageAt || localConversation?.lastMessageAt,
+        })
+      ) {
+        return { conversationId: canonicalId, count: syncedCount, skipped: true }
       }
 
-      if (loadedCount >= expectedCount) {
-        return { conversationId: canonicalId, count: loadedCount, skipped: true }
+      const canIncremental = syncedLoaded && Boolean(syncedLastAt) && syncedCount > 0
+
+      if (canIncremental) {
+        const { data, error } = await supabase
+          .from('messages').select(MESSAGE_SELECT_COLUMNS)
+          .in('conversation_id', conversationIds)
+          .gt('created_at', syncedLastAt)
+          .order('created_at', { ascending: true })
+          .limit(MESSAGE_INCREMENTAL_LIMIT)
+        if (error) throw error
+
+        if (data?.length) {
+          const messages = mergeMessageBatch(mergedExisting, data)
+          dispatch(
+            setConversationMessages({
+              conversationId: canonicalId,
+              messages,
+              hasOlderMessages: resolveHasOlderMessages({
+                messages,
+                messageCount: syncedExpected,
+                fetchedCount: data.length,
+                fetchLimit: MESSAGE_INCREMENTAL_LIMIT,
+              }),
+            }),
+          )
+          return { conversationId: canonicalId, count: messages.length, incremental: true }
+        }
+
+        return { conversationId: canonicalId, count: syncedCount, skipped: true }
       }
-    }
 
-    const { data, error } = await supabase
-      .from('messages').select(MESSAGE_SELECT_COLUMNS)
-      .in('conversation_id', conversationIds)
-      .order('created_at', { ascending: false })
-      .limit(MESSAGE_FETCH_LIMIT)
-    if (error) throw error
+      const { data, error } = await supabase
+        .from('messages').select(MESSAGE_SELECT_COLUMNS)
+        .in('conversation_id', conversationIds)
+        .order('created_at', { ascending: false })
+        .limit(MESSAGE_FETCH_LIMIT)
+      if (error) throw error
 
-    const remoteRows = [...(data || [])].reverse()
-    const messages = canIncremental
-      ? mergeMessageBatch(existingMessages, remoteRows)
-      : mergeMessageBatch([], remoteRows)
+      const remoteRows = [...(data || [])].reverse()
+      const messages = mergeMessageBatch(mergedExisting, remoteRows)
 
-    dispatch(
-      setConversationMessages({
-        conversationId: canonicalId,
-        messages,
-        hasOlderMessages: resolveHasOlderMessages({
+      dispatch(
+        setConversationMessages({
+          conversationId: canonicalId,
           messages,
-          messageCount: expectedCount,
-          fetchedCount: remoteRows.length,
-          fetchLimit: MESSAGE_FETCH_LIMIT,
+          hasOlderMessages: resolveHasOlderMessages({
+            messages,
+            messageCount: syncedExpected,
+            fetchedCount: remoteRows.length,
+            fetchLimit: MESSAGE_FETCH_LIMIT,
+          }),
         }),
-      }),
-    )
-    return { conversationId: canonicalId, count: messages.length }
+      )
+      return { conversationId: canonicalId, count: messages.length }
+    } finally {
+      messageLoadInFlight.delete(conversationId)
+    }
+  },
+)
+
+export const preloadInboxMessages = createAsyncThunk(
+  'communications/preloadInboxMessages',
+  async ({ limit = MESSAGE_INBOX_PRELOAD } = {}, { getState, dispatch }) => {
+    const conversations = getState().communications.conversations || []
+    const targets = conversations
+      .filter((item) => conversationNeedsInitialMessageLoad(item))
+      .slice(0, limit)
+    for (const conversation of targets) {
+      await dispatch(loadConversationMessages(conversation.id))
+    }
+    return targets.length
   },
 )
 

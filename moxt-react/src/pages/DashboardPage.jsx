@@ -6,6 +6,7 @@ import { DashboardCalcBand } from '../features/dashboard/components/DashboardCal
 import { DashboardOverviewPanels } from '../features/dashboard/components/DashboardOverviewPanels'
 import { DashboardQuickActionsSection } from '../features/dashboard/components/DashboardQuickActionsSection'
 import { DashboardSectionHeading } from '../features/dashboard/components/DashboardSectionHeading'
+import { DashboardStarsStrip } from '../features/dashboard/components/DashboardStarsStrip'
 import { DashboardTodoInbox } from '../features/dashboard/components/DashboardTodoInbox'
 import { DashboardServiceCarousels } from '../features/dashboard/components/DashboardServiceCarousels'
 import { ScrollArrows } from '../features/dashboard/components/ScrollArrows'
@@ -76,6 +77,8 @@ export function DashboardPage() {
       <div className="min-w-0 overflow-x-clip">
         <StatusRail />
       </div>
+
+      <DashboardStarsStrip />
 
       <DashboardServiceCarousels />
 

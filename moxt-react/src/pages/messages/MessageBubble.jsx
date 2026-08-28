@@ -15,6 +15,7 @@ import {
   FiRefreshCw,
   FiTrash2,
   FiUser,
+  FiX,
 } from 'react-icons/fi'
 import { initials, shortTime, formatDateLabel } from './format'
 import { messageReadStatus } from './messageUtils'
@@ -939,28 +940,39 @@ export function MessageUnreadSeparator({ count }) {
   )
 }
 
-export function MessageThreadStart() {
-  const { t } = useLanguage()
-  return (
-    <div className="my-3 flex justify-center">
-      <span className="message-date-chip">{messagesText(t, 'messages.threadStart')}</span>
-    </div>
-  )
-}
+const SECURITY_NOTICE_STORAGE_KEY = 'moxt.messages.security-notice.dismissed'
 
 export function MessageSecurityNotice() {
   const { t } = useLanguage()
+  const [hidden, setHidden] = useState(() => {
+    try {
+      return localStorage.getItem(SECURITY_NOTICE_STORAGE_KEY) === '1'
+    } catch {
+      return false
+    }
+  })
+  if (hidden) return null
   return (
     <div
-      className="message-security-notice mx-auto my-4 max-w-md rounded-2xl border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-center shadow-sm dark:border-amber-900/40 dark:bg-amber-950/30"
+      className="mx-auto my-2 flex max-w-md items-start gap-2 px-1 py-1 text-[11px] leading-snug text-[var(--app-text-muted)]"
       data-testid="message-security-notice"
     >
-      <p className="text-[11px] font-black uppercase tracking-wide text-amber-800 dark:text-amber-200">
-        {messagesText(t, 'messages.securityTitle')}
-      </p>
-      <p className="mt-1.5 text-[11px] leading-[1.35] text-amber-900/90 dark:text-amber-100/90">
-        {t("messages.securityNotice")}
-      </p>
+      <p className="min-w-0 flex-1">{t('messages.securityNotice')}</p>
+      <button
+        type="button"
+        className="grid size-7 shrink-0 place-items-center rounded-lg text-[var(--app-text-faint)] hover:bg-[var(--app-surface-muted)] hover:text-[var(--app-text)]"
+        onClick={() => {
+          try {
+            localStorage.setItem(SECURITY_NOTICE_STORAGE_KEY, '1')
+          } catch {
+            /* quota */
+          }
+          setHidden(true)
+        }}
+        aria-label={t('common.close')}
+      >
+        <FiX />
+      </button>
     </div>
   )
 }

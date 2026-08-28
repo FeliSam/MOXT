@@ -31,6 +31,13 @@ export const primaryNavigationItems = [
     path: '/notifications',
     mobileRoute: 'notifications',
   },
+  {
+    id: 'stars',
+    label: 'MOXT Stars',
+    labelKey: 'nav.stars',
+    path: '/stars',
+    mobileRoute: 'stars',
+  },
 ];
 
 const primaryById = Object.fromEntries(primaryNavigationItems.map((item) => [item.id, item]));
@@ -59,4 +66,5 @@ export const sidebarMobileHiddenPaths = new Set([
 export const moreServicesExcludedPaths = new Set([
   ...bottomNavigationPaths,
   ...sidebarMobileHiddenPaths,
+  '/videos',
 ]);

@@ -11,6 +11,11 @@ import { useUploadProgress } from '../../hooks/useUploadProgress'
 import { addToast } from '../ui/uiSlice'
 import { useLanguage } from '../../contexts/useLanguage'
 import { createStatus } from './statusesSlice'
+import { DEFAULT_QUOTA_CONFIG, statusExpiresAt } from '../stars/starsConfig'
+import { StarsInsufficientError, starsOwnerFromPublish } from '../stars/starsPublish'
+import { StarsPublishGate } from '../stars/StarsPublishGate'
+import { StatusDurationSheet } from '../stars/StatusDurationSheet'
+import { useStarsPublishFlow } from '../stars/useStarsPublishFlow'
 
 /**
  * Composeur de statut — plein écran mobile, centré en modal sur desktop.
@@ -27,6 +32,10 @@ export function StatusComposer({ onClose, officialIdentity }) {
   const [photos, setPhotos] = useState([])
   const [submitting, setSubmitting] = useState(false)
   const [postAs, setPostAs] = useState('personal')
+  const [durationKey, setDurationKey] = useState('24h')
+  const { pendingQuote, confirmPaid, acceptSpend, cancelSpend, withStarsConsume, starsEnabled } =
+    useStarsPublishFlow()
+  const starsBalance = useSelector((s) => s.stars.balance)
   const [dialogEl, setDialogEl] = useState(null)
   const titleId = useId()
   const { progress: uploadProgress, track: trackUpload } = useUploadProgress()
@@ -76,26 +85,45 @@ export function StatusComposer({ onClose, officialIdentity }) {
             ),
           )
         : []
-      dispatch(
-        createStatus({
-          id: statusId,
-          authorId: user.id,
-          authorName: officialIdentity
-            ? officialIdentity.name
-            : postingAsBusiness
-              ? ownBusiness.name
-              : `${user.firstName} ${user.lastName}`,
-          authorAvatarUrl: officialIdentity
-            ? officialIdentity.avatarUrl || null
-            : postingAsBusiness
-              ? ownBusiness.logoUrl || null
-              : user.avatarUrl || null,
-          businessId: postingAsBusiness ? ownBusiness.id : null,
-          images: urls,
-          caption: trimmed,
-          isOfficial: Boolean(officialIdentity),
-        }),
-      )
+      const owner = starsOwnerFromPublish({
+        useBusiness: postingAsBusiness,
+        business: ownBusiness,
+        user,
+      })
+      const outcome = await withStarsConsume({
+        category: 'status',
+        ...owner,
+        entityId: statusId,
+        durationKey: starsEnabled && starsBalance?.enforced ? durationKey : null,
+        confirmPaid,
+        publish: async () => {
+          dispatch(
+            createStatus({
+              id: statusId,
+              authorId: user.id,
+              authorName: officialIdentity
+                ? officialIdentity.name
+                : postingAsBusiness
+                  ? ownBusiness.name
+                  : `${user.firstName} ${user.lastName}`,
+              authorAvatarUrl: officialIdentity
+                ? officialIdentity.avatarUrl || null
+                : postingAsBusiness
+                  ? ownBusiness.logoUrl || null
+                  : user.avatarUrl || null,
+              businessId: postingAsBusiness ? ownBusiness.id : null,
+              images: urls,
+              caption: trimmed,
+              isOfficial: Boolean(officialIdentity),
+              expiresAt:
+                starsEnabled && starsBalance?.enforced
+                  ? statusExpiresAt(durationKey, new Date(), starsBalance?.config || DEFAULT_QUOTA_CONFIG)
+                  : undefined,
+            }),
+          )
+        },
+      })
+      if (outcome?.cancelled) return
       dispatch(
         addToast({
           title: t('status.composer.publishedTitle'),
@@ -108,8 +136,11 @@ export function StatusComposer({ onClose, officialIdentity }) {
     } catch (err) {
       dispatch(
         addToast({
-          title: t('common.error'),
-          message: err?.message || t('common.retryLater'),
+          title: err instanceof StarsInsufficientError ? t('stars.insufficientTitle') : t('common.error'),
+          message:
+            err instanceof StarsInsufficientError
+              ? t('stars.insufficientBody')
+              : err?.message || t('common.retryLater'),
           tone: 'error',
         }),
       )
@@ -188,6 +219,27 @@ export function StatusComposer({ onClose, officialIdentity }) {
                 <span className="truncate">{ownBusiness.name}</span>
               </button>
             </div>
+          ) : null}
+
+          {starsEnabled ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <StarsPublishGate
+                category="status"
+                ownerType={postingAsBusiness ? 'business' : 'user'}
+                ownerId={postingAsBusiness ? ownBusiness?.id : user?.id}
+                pendingQuote={pendingQuote}
+                onCancel={cancelSpend}
+                onConfirm={acceptSpend}
+              />
+            </div>
+          ) : null}
+          {starsEnabled ? (
+            <StatusDurationSheet
+              value={durationKey}
+              onChange={setDurationKey}
+              enforced={Boolean(starsBalance?.enforced)}
+              config={starsBalance?.config || DEFAULT_QUOTA_CONFIG}
+            />
           ) : null}
 
           <PosterUploader

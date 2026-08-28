@@ -23,6 +23,7 @@ function MarketplaceListingCardComponent({
   actions = null,
   badge = null,
   archived = false,
+  layout = 'grid',
 }) {
   const dispatch = useDispatch()
   const { t } = useLanguage()
@@ -102,17 +103,21 @@ function MarketplaceListingCardComponent({
     el.scrollTo({ left: bounded * el.clientWidth, behavior: 'smooth' })
   }
 
+  const isRail = layout === 'rail'
+
   return (
     <div
       role="article"
-      className={`group relative h-full overflow-hidden rounded-[1.4rem] shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-card-hover)] ${
-        archived ? archivedPublicationCardClass : ''
-      }`}
+      className={`group relative h-full overflow-hidden rounded-[1.4rem] shadow-[var(--shadow-card)] ${
+        isRail
+          ? ''
+          : 'transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-card-hover)]'
+      } ${archived ? archivedPublicationCardClass : ''}`}
     >
       <div
-        className={`relative h-[290px] w-full overflow-hidden bg-gradient-to-br from-cyan-700 to-blue-600 xl:h-[333px] ${
-          archived ? 'opacity-75 saturate-[0.85]' : ''
-        }`}
+        className={`relative w-full overflow-hidden bg-gradient-to-br from-cyan-700 to-blue-600 ${
+          isRail ? 'h-full' : 'h-[290px] xl:h-[333px]'
+        } ${archived ? 'opacity-75 saturate-[0.85]' : ''}`}
       >
         {images.length ? (
           <div
@@ -126,7 +131,7 @@ function MarketplaceListingCardComponent({
                 <img
                   src={src}
                   alt={listing.title}
-                  className="h-full w-full object-cover transition duration-500 ease-out group-hover:scale-[1.05]"
+                  className={`h-full w-full object-cover ${isRail ? '' : 'transition duration-500 ease-out group-hover:scale-[1.05]'}`}
                   loading={index === 0 ? 'eager' : 'lazy'}
                   draggable={false}
                   onError={() => {

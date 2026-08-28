@@ -10,7 +10,8 @@ import { getMoxtSocialNetwork, MOXT_SOCIAL_NETWORKS } from '../config/socialLink
 import { useLanguage } from '../contexts/useLanguage'
 import { selectAccountPreferences } from '../features/account/accountSlice'
 import { buildReferralCode, buildReferralLink } from '../features/referral/referralUtils'
-import { loadInviteCount } from '../features/referral/referralService'
+import { loadInviteCount, syncReferralStarRewards } from '../features/referral/referralService'
+import { useStarsModuleEnabled } from '../features/stars/useStarsModuleEnabled'
 import { QrCameraScanner } from '../features/share/QrCameraScanner'
 import { QrSharePanel } from '../features/share/QrSharePanel'
 import { buildAbsoluteUrl } from '../utils/siteUrl'
@@ -78,26 +79,33 @@ export function ReferralPage() {
   )
 
   const [inviteCount, setInviteCount] = useState(null)
+  const starsEnabled = useStarsModuleEnabled()
 
   useEffect(() => {
     if (!user?.id) return undefined
     let cancelled = false
-    loadInviteCount(user.id).then((count) => {
+    ;(async () => {
+      if (starsEnabled) {
+        await syncReferralStarRewards()
+      }
+      const count = await loadInviteCount(user.id)
       if (!cancelled) setInviteCount(count)
-    })
+    })()
     return () => {
       cancelled = true
     }
-  }, [user?.id])
+  }, [starsEnabled, user?.id])
 
-  const displayName = `${user.firstName} ${user.lastName}`.trim()
-  const referralCode = useMemo(() => buildReferralCode(user), [user])
-  const referralLink = useMemo(() => buildReferralLink(user), [user])
+  const displayName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim()
+  const referralCode = useMemo(() => (user ? buildReferralCode(user) : ''), [user])
+  const referralLink = useMemo(() => (user ? buildReferralLink(user) : ''), [user])
   const profileLink = useMemo(
-    () => buildAbsoluteUrl(`/users/${user.id}/publications`),
-    [user.id],
+    () => (user?.id ? buildAbsoluteUrl(`/users/${user.id}/publications`) : ''),
+    [user],
   )
   const selectedNetwork = getMoxtSocialNetwork(network)
+
+  if (!user) return null
 
   function setActiveTab(tab) {
     if (tab === 'invite') {

@@ -55,7 +55,6 @@ import {
   shouldMuteRegisterErrorToast,
 } from '../features/auth/authErrorMessages'
 import { MOXT_AUTH_DEV_MODE } from '@moxt/shared/auth/otpCooldown.js'
-import { loadAllData } from '../app/loadAllData'
 import { startRealtimeSubscription } from '../services/realtimeService'
 import { useGeographyOptions } from '../hooks/useGeographyOptions'
 import { markWelcomePending } from '../features/onboarding/welcomeStorage'
@@ -300,7 +299,9 @@ export function RegisterPage() {
       )
       startRealtimeSubscription(registeredUserId, dispatch, store.getState)
     }
-    void dispatch(loadAllData())
+    void import('../app/catalogSync').then(({ scheduleCatalogSync }) => {
+      void scheduleCatalogSync(store, { force: true })
+    })
 
     if (registeredUser) {
       const name = `${registeredUser.firstName || ''} ${registeredUser.lastName || ''}`.trim()

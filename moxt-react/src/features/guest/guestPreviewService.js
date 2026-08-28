@@ -83,6 +83,7 @@ function mapPublications(rowsByType) {
     parcels: fromRows(rowsByType.parcels || []),
     jobs: fromRows(rowsByType.jobs || []),
     events: fromRows(rowsByType.events || []),
+    videos: fromRows(rowsByType.videos || []),
     posts: fromRows(rowsByType.posts || []),
     others: [],
   }
@@ -114,12 +115,13 @@ export async function fetchGuestUserPreview(userId) {
     return { error: visibility === 'contacts' ? 'contacts' : 'private', visibility }
   }
 
-  const [listingsRes, parcelsRes, jobsRes, eventsRes, postsRes, businessRes] =
+  const [listingsRes, parcelsRes, jobsRes, eventsRes, videosRes, postsRes, businessRes] =
     await Promise.all([
       supabase.from('listings').select('*').eq('owner_id', userId).eq('status', 'active'),
       supabase.from('parcels').select('*').eq('owner_id', userId).in('status', ['active', 'full']),
       supabase.from('jobs').select('*').eq('owner_id', userId).eq('status', 'active'),
       supabase.from('events').select('*').eq('owner_id', userId).eq('status', 'published'),
+      supabase.from('videos').select('*').eq('owner_id', userId).eq('status', 'active'),
       supabase.from('posts').select('*').eq('author_id', userId).eq('status', 'published'),
       supabase
         .from('businesses')
@@ -135,6 +137,7 @@ export async function fetchGuestUserPreview(userId) {
     parcels: parcelsRes.data,
     jobs: jobsRes.data,
     events: eventsRes.data,
+    videos: videosRes.data,
     posts: postsRes.data,
   })
 
@@ -175,11 +178,12 @@ export async function fetchGuestBusinessPreview(businessId) {
     return { error: visibility === 'contacts' ? 'contacts' : 'private', visibility }
   }
 
-  const [listingsRes, parcelsRes, jobsRes, eventsRes] = await Promise.all([
+  const [listingsRes, parcelsRes, jobsRes, eventsRes, videosRes] = await Promise.all([
     supabase.from('listings').select('*').eq('business_id', businessId).eq('status', 'active'),
     supabase.from('parcels').select('*').eq('business_id', businessId).in('status', ['active', 'full']),
     supabase.from('jobs').select('*').eq('business_id', businessId).eq('status', 'active'),
     supabase.from('events').select('*').eq('business_id', businessId).eq('status', 'published'),
+    supabase.from('videos').select('*').eq('business_id', businessId).eq('status', 'active'),
   ])
 
   const publications = mapPublications({
@@ -187,6 +191,7 @@ export async function fetchGuestBusinessPreview(businessId) {
     parcels: parcelsRes.data,
     jobs: jobsRes.data,
     events: eventsRes.data,
+    videos: videosRes.data,
     posts: [],
   })
 

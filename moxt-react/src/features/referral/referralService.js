@@ -35,3 +35,19 @@ export async function loadInviteCount(userId) {
 
   return count ?? 0
 }
+
+/** Crédite les Stars manquantes pour les filleuls déjà confirmés (module Stars on). */
+export async function syncReferralStarRewards() {
+  if (!supabase) return 0
+  try {
+    const { data, error } = await supabase.rpc('moxt_sync_my_referral_star_rewards')
+    if (error) {
+      console.warn('[MOXT] Sync récompenses Stars:', error.message)
+      return 0
+    }
+    return Number(data) || 0
+  } catch (err) {
+    console.warn('[MOXT] Sync récompenses Stars:', err)
+    return 0
+  }
+}

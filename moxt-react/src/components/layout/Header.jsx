@@ -2,14 +2,13 @@ import {
   LuBell,
   LuBriefcase,
   LuChevronDown,
-  LuCompass,
   LuHeart,
   LuHistory,
   LuMessageCircle,
   LuMoon,
   LuNewspaper,
+  LuRss,
   LuSun,
-  LuUsers,
 } from 'react-icons/lu'
 import { useSelector } from 'react-redux'
 import { Link, useLocation } from 'react-router-dom'
@@ -28,6 +27,9 @@ import { VerifiedDisplayName } from '../ui/Badge'
 import { isProfileVerified } from '../../features/profile/userProfileUtils'
 import { avatarDisplayUrl } from '../../features/account/avatarDisplayUrl'
 import { GlobalSearch } from './GlobalSearch'
+import { FeedPublishMenu } from '../../features/feed/FeedPublishMenu'
+import { useDevModuleAccess } from '../../hooks/useDevModuleAccess'
+import { useIsFeedViewport } from '../../features/feed/feedViewport'
 
 function HeaderActionLabel({ children }) {
   return (
@@ -42,18 +44,23 @@ function pathMatches(pathname, prefix) {
 }
 
 /** Mobile header shortcuts — contextual per section. */
-function getMobileHeaderActions(pathname) {
+function getMobileHeaderActions(pathname, { canFeed, canJobs, isFeedViewport }) {
+  const isHome = pathname === '/dashboard' || pathname === '/'
   const isTransfers = pathMatches(pathname, '/transfers')
   const isParcels = pathMatches(pathname, '/parcels')
   const isNews = pathMatches(pathname, '/news')
   const isMarketplace = pathMatches(pathname, '/marketplace')
+  const isFeed = pathMatches(pathname, '/feed') || pathname === '/videos'
+  const showContextualShortcuts =
+    !isTransfers && !isParcels && !isNews && !isMarketplace && !isFeed
   return {
-    showNews: !isTransfers && !isParcels && !isNews && !isMarketplace,
-    showP2p: isMarketplace,
-    showGuide: isNews,
+    showPublishMenu: isHome || isMarketplace,
+    showNews: showContextualShortcuts && !(isFeedViewport && canFeed),
+    showFeed: isFeedViewport && canFeed && (showContextualShortcuts || isNews),
+    showPublishVideo: false,
     showHistory: isTransfers,
-    showJobs: isParcels,
-    showMessages: true,
+    showJobs: isParcels && canJobs,
+    showMessages: !isFeed,
   }
 }
 
@@ -66,16 +73,24 @@ export function Header({ hideOnMobile = false }) {
   const { isDark, toggleTheme } = useTheme()
   const { t, translateLabel } = useLanguage()
   const messagesHeader = useMessagesHeaderContent()
+  const canFeed = useDevModuleAccess('feed')
+  const canJobs = useDevModuleAccess('jobs')
+  const isFeedViewport = useIsFeedViewport()
   const isMessagesRoute = isMessagesPath(location.pathname)
+  const isFeedRoute = location.pathname === '/feed' || location.pathname === '/videos'
   const isMessagesListView =
     isMessagesRoute && messagesHeader?.variant === 'list'
   const isMessagesThreadView =
     isMessagesRoute && messagesHeader?.variant && messagesHeader.variant !== 'list'
   const visible = useSmartNavbar({
-    disabled: isMessagesThreadView,
+    disabled: isMessagesThreadView || isFeedRoute,
     scrollRootSelector: isMessagesListView ? '[data-testid="messages-list-scroll"]' : null,
   })
-  const mobileActions = getMobileHeaderActions(location.pathname)
+  const mobileActions = getMobileHeaderActions(location.pathname, {
+    canFeed,
+    canJobs,
+    isFeedViewport,
+  })
   const showMessagesHeader = isMessagesRoute && messagesHeader?.content
 
   return (
@@ -83,7 +98,7 @@ export function Header({ hideOnMobile = false }) {
       data-tour="header"
       className={`app-top-header sticky top-0 z-[var(--z-nav)] shrink-0 px-3 pt-5 transition-transform duration-300 ease-out sm:px-5 sm:pt-5 lg:px-5 lg:pt-5 ${
         visible ? 'translate-y-0' : '-translate-y-[calc(100%+1rem)]'
-      } ${hideOnMobile ? 'hidden lg:block' : ''}`}
+      } ${hideOnMobile ? 'hidden md:block' : ''}`}
     >
       {showMessagesHeader ? (
         <div
@@ -119,6 +134,12 @@ export function Header({ hideOnMobile = false }) {
           className="ml-auto flex h-[3.004375rem] shrink-0 items-center gap-1.5 sm:h-[3.3048125rem] lg:h-auto lg:gap-1.5"
           data-tour="header-actions"
         >
+          {mobileActions.showPublishMenu ? (
+            <div className="relative grid lg:hidden" data-tour="header-publish">
+              <FeedPublishMenu variant="header" />
+            </div>
+          ) : null}
+
           {mobileActions.showNews ? (
             <Link
               to="/news"
@@ -126,31 +147,24 @@ export function Header({ hideOnMobile = false }) {
               className="header-action-btn relative grid lg:hidden"
               aria-label={t('nav.news')}
             >
-              <LuNewspaper className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
+              <LuNewspaper
+                className="header-action-icon"
+                strokeWidth={HEADER_ICON_STROKE}
+                aria-hidden="true"
+              />
               <HeaderActionLabel>{t('nav.news')}</HeaderActionLabel>
             </Link>
           ) : null}
 
-          {mobileActions.showP2p ? (
+          {mobileActions.showFeed ? (
             <Link
-              to="/p2p"
-              data-tour="header-p2p"
+              to="/feed"
+              data-tour="header-feed"
               className="header-action-btn relative grid lg:hidden"
-              aria-label={t('nav.p2p')}
+              aria-label={t('nav.feed')}
             >
-              <LuUsers className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
-              <HeaderActionLabel>{t('nav.p2p')}</HeaderActionLabel>
-            </Link>
-          ) : null}
-
-          {mobileActions.showGuide ? (
-            <Link
-              to="/guide"
-              className="header-action-btn relative grid lg:hidden"
-              aria-label={t('nav.guide')}
-            >
-              <LuCompass className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
-              <HeaderActionLabel>{t('nav.guide')}</HeaderActionLabel>
+              <LuRss className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
+              <HeaderActionLabel>{t('nav.feed')}</HeaderActionLabel>
             </Link>
           ) : null}
 

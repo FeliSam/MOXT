@@ -8,11 +8,14 @@ import p2pReducer from '../features/p2p/p2pSlice'
 import marketplaceReducer from '../features/marketplace/marketplaceSlice'
 import jobsReducer from '../features/jobs/jobSlice'
 import eventsReducer from '../features/events/eventSlice'
+import videosReducer from '../features/videos/videosSlice'
+import starsReducer from '../features/stars/starsSlice'
 import communicationsReducer from '../features/communications/communicationSlice'
 import auditReducer from '../features/audit/auditSlice'
 import accountReducer from '../features/account/accountSlice'
 import administrationReducer from '../features/administration/administrationSlice'
 import platformRatesReducer from '../features/admin/platformRatesSlice'
+import platformModulesReducer from '../features/platform/platformModulesSlice'
 import profileDirectoryReducer from '../features/profile/profileDirectorySlice'
 import reviewsReducer from '../features/reviews/reviewSlice'
 import postsReducer from '../features/posts/postsSlice'
@@ -24,6 +27,7 @@ import identityReducer from '../features/identity/identitySlice'
 import recipientAddressesReducer from '../features/addresses/recipientAddressesSlice'
 import presenceReducer from '../features/presence/presenceSlice'
 import { auditMiddleware } from './auditMiddleware'
+import { authBootstrapMiddleware } from './authBootstrapMiddleware'
 import { persistenceMiddleware } from './persistenceMiddleware'
 import { interactionMiddleware } from './interactionMiddleware'
 import { supabaseMiddleware } from './supabaseMiddleware'
@@ -35,6 +39,7 @@ export const store = configureStore({
     account: accountReducer,
     administration: administrationReducer,
     platformRates: platformRatesReducer,
+    platformModules: platformModulesReducer,
     profileDirectory: profileDirectoryReducer,
     auth: authReducer,
     ui: uiReducer,
@@ -53,6 +58,8 @@ export const store = configureStore({
     marketplace: marketplaceReducer,
     jobs: jobsReducer,
     events: eventsReducer,
+    videos: videosReducer,
+    stars: starsReducer,
     communications: communicationsReducer,
     audit: auditReducer,
     presence: presenceReducer,
@@ -65,6 +72,7 @@ export const store = configureStore({
       },
     }).concat(
       baseApi.middleware,
+      authBootstrapMiddleware,
       auditMiddleware,
       interactionMiddleware,
       persistenceMiddleware,

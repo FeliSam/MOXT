@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux'
 import { getConversationPeer } from '../../../features/communications/conversationDisplay'
 import {
   contextHasMessages,
+  isThreadRelatedPreview,
   normalizeRelatedContexts,
 } from '../../../features/communications/conversationTimeline'
 import { resolveRelatedSnapshot } from '../../../features/communications/relatedSnapshot'
@@ -30,10 +31,10 @@ export function useConversationHeaderModel(active, userId, avatarMap) {
       ? contexts.slice().sort((a, b) => new Date(a.introducedAt) - new Date(b.introducedAt)).at(-1)
       : null
     return (
-      Boolean(relatedPreview?.path) &&
+      isThreadRelatedPreview(relatedPreview) &&
       (latestContext ? contextHasMessages(latestContext, active) : active.messages?.length > 0)
     )
-  }, [active, relatedPreview?.path])
+  }, [active, relatedPreview])
 
   return {
     peer,

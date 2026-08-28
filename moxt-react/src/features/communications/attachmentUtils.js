@@ -57,6 +57,9 @@ export function attachmentPreviewLabel(attachment, t) {
     if (count > 1) return messagesText(t, 'messages.attachment.photos', { count })
     return messagesText(t, 'messages.attachment.photo')
   }
+  if (isVideoAttachment(attachment)) {
+    return messagesText(t, 'messages.attachment.video')
+  }
   const name = attachment.name || messagesText(t, 'messages.attachment.fileFallback')
   return messagesText(t, 'messages.attachment.file', { name })
 }
@@ -75,9 +78,24 @@ export function attachmentSearchText(attachment, t) {
     }
     return `${name} ${messagesText(t, 'messages.attachment.searchPhoto')}`.trim()
   }
+  if (isVideoAttachment(attachment)) {
+    return `${name} ${messagesText(t, 'messages.attachment.searchVideo')}`.trim()
+  }
   return name || messagesText(t, 'messages.attachment.searchFileFallback')
 }
 
 export function isImageFile(file) {
   return Boolean(file?.type?.startsWith('image/'))
+}
+
+export function isVideoFile(file) {
+  return Boolean(file?.type?.startsWith('video/'))
+}
+
+export function isVideoAttachment(attachment) {
+  if (!attachment) return false
+  if (attachment.kind === 'video') return true
+  if (attachment.type?.startsWith('video/')) return true
+  const src = attachment.url || attachment.localUrl || ''
+  return /\.(mp4|webm|mov|m4v|ogv)(\?|#|$)/i.test(src)
 }

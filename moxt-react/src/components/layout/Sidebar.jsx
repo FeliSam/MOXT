@@ -25,6 +25,8 @@ import { TOUR_MORE_EVENT } from '../../features/onboarding/tourChrome'
 import { CountBounce } from '../ui/CountBounce'
 import { MoreServicesContent } from './MoreServicesContent'
 import { filterNavigationGroups, useNavigationBadges } from './moreServicesUtils'
+import { useDevModuleNavAccess } from '../../hooks/useDevModuleAccess'
+import { useIsFeedViewport } from '../../features/feed/feedViewport'
 
 const primaryItems = primaryNavigationItems
 const mobileHiddenPaths = sidebarMobileHiddenPaths
@@ -70,13 +72,16 @@ export function Sidebar({ open }) {
     () => selectActiveBusinessForOwner(businesses, user?.id),
     [businesses, user?.id],
   )
+  const canAccessModule = useDevModuleNavAccess()
+  const isFeedViewport = useIsFeedViewport()
   const visiblePrimaryItems = useMemo(
     () =>
       primaryItems.filter((item) => {
         if (item.requiresOwnedBusiness && !ownBusiness) return false
+        if (item.devModule && !canAccessModule(item.devModule)) return false
         return true
       }),
-    [ownBusiness],
+    [canAccessModule, ownBusiness],
   )
   const railKeys = useMemo(() => buildRailKeys(visiblePrimaryItems), [visiblePrimaryItems])
   const badgeForItem = useNavigationBadges(user?.id)
@@ -223,6 +228,8 @@ export function Sidebar({ open }) {
                   excludePaths={mobileSidebarExcludePaths}
                   onNavigate={() => dispatch(closeSidebar())}
                   resolveLabel={resolveLabel}
+                  canAccessDevModule={canAccessModule}
+                  feedViewport={isFeedViewport}
                 />
               ))}
             </div>
@@ -330,7 +337,9 @@ export function Sidebar({ open }) {
             >
               <MoreServicesContent
                 badgeFor={(item) => badgeForItem(item, appState)}
-                groups={filterNavigationGroups(groups, role, moreServicesExcludedPaths, '', resolveLabel)}
+                groups={filterNavigationGroups(groups, role, moreServicesExcludedPaths, '', resolveLabel, canAccessModule, {
+                  feedViewport: isFeedViewport,
+                })}
                 layout="grid"
                 onNavigate={() => setMoreOpen(false)}
                 resolveLabel={resolveLabel}
@@ -353,10 +362,22 @@ export function Sidebar({ open }) {
   )
 }
 
-function NavigationGroup({ card = false, excludePaths, group, onNavigate, role, resolveLabel }) {
+function NavigationGroup({
+  card = false,
+  excludePaths,
+  group,
+  onNavigate,
+  role,
+  resolveLabel,
+  canAccessDevModule = () => true,
+  feedViewport = true,
+}) {
   const items = group.children.filter(
     (item) =>
-      (!item.roles || item.roles.includes(role)) && (!excludePaths || !excludePaths.has(item.path)),
+      (!item.roles || item.roles.includes(role)) &&
+      (!excludePaths || !excludePaths.has(item.path)) &&
+      (!item.devModule || canAccessDevModule(item.devModule)) &&
+      (!item.mobileOnly || feedViewport),
   )
   if (!items.length) return null
 

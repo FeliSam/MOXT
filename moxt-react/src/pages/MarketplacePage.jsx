@@ -1,5 +1,5 @@
 import { FiGrid, FiList, FiPlus, FiShoppingBag } from 'react-icons/fi'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate, useOutletContext } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
@@ -16,6 +16,13 @@ import {
   listingSpecificDetails,
 } from '../config/listingConfig'
 import { MarketplaceListingCard } from '../features/marketplace/MarketplaceListingCard'
+import { MarketplaceDiscoveryRail } from '../features/marketplace/MarketplaceDiscoveryRail'
+import {
+  MARKETPLACE_DISCOVER_GRID_COLUMNS,
+  MARKETPLACE_DISCOVERY_CARD_HEIGHT,
+} from '../features/marketplace/marketplaceDiscoveryLayout'
+import { buildMarketplaceDiscovery } from '../features/marketplace/marketplaceFeed'
+import { loadFeedBoosts } from '../features/stars/starsSlice'
 import {
   resetMarketplaceFilters,
   setMarketplaceFilters,
@@ -24,14 +31,28 @@ import {
   listingOptionLabel,
   marketplaceText,
 } from '../features/marketplace/marketplaceI18n'
-import { sortByCountryPriority, resolveUserCountryCode } from '@moxt/shared/utils/countryPriority.js'
-import { sortBySubscriptionPriority } from '@moxt/shared/utils/subscriptionUtils.js'
+import { countrySortRank, resolveUserCountryCode } from '@moxt/shared/utils/countryPriority.js'
 import { resolveListingCountry } from '../features/marketplace/listingCatalogUtils'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
+import { useProgressiveReveal } from '../hooks/useProgressiveReveal'
 import { useLanguage } from '../contexts/useLanguage'
 import { useGuestAction } from '../features/guest/useGuestAction'
 import { useGuestMarketplaceListings } from '../features/guest/useGuestPreview'
+
+const MARKETPLACE_PRELOAD = 20
+const MARKETPLACE_BATCH = 20
+
+function prefetchListingCovers(listings = []) {
+  if (typeof window === 'undefined' || typeof Image === 'undefined') return
+  for (const listing of listings) {
+    const url = listing?.images?.[0]
+    if (!url || typeof url !== 'string') continue
+    const img = new Image()
+    img.decoding = 'async'
+    img.src = url
+  }
+}
 
 export function MarketplacePage() {
   useScrollToSecondSection()
@@ -52,56 +73,122 @@ export function MarketplacePage() {
   )
   const user = useSelector((state) => state.auth.user)
   const subscriptions = useSelector((state) => state.account.subscriptions || [])
+  const favorites = useSelector((state) => state.account.favorites || [])
+  const viewedListings = useSelector((state) => state.account.viewedListings || [])
+  const listingImpressions = useSelector((state) => state.account.listingImpressions || [])
+  const feedBoosts = useSelector((state) => state.stars.feedBoosts || [])
+  const discoverRef = useRef(null)
   const preferredCountry = resolveUserCountryCode(user)
-  const visible = useMemo(
-    () => {
-      const filtered = listings.filter((item) => {
-        if (item.status !== 'active') return false
-        const searchText = [
-          item.title,
-          item.description,
-          item.city,
-          item.district,
-          item.address,
-          item.category,
-          item.type,
-          item.brand,
-          item.model,
-          item.sellerName,
-          ...listingSpecificDetails(item, t).map((detail) => `${detail.label} ${detail.value}`),
-        ]
-          .filter(Boolean)
-          .join(' ')
-          .toLowerCase()
-
-        return (
-          (!filters.query || searchText.includes(filters.query.toLowerCase())) &&
-          (!filters.type || item.type === filters.type) &&
-          (!filters.category || item.category === filters.category) &&
-          (!filters.city ||
-            `${item.city || ''} ${item.district || ''}`
-              .toLowerCase()
-              .includes(filters.city.toLowerCase())) &&
-          (!filters.min || Number(item.price) >= Number(filters.min)) &&
-          (!filters.max || Number(item.price) <= Number(filters.max))
-        )
-      })
-      return sortBySubscriptionPriority(
-        sortByCountryPriority(filtered, preferredCountry, resolveListingCountry),
-        subscriptions,
-        user?.id,
-        'listing',
-      )
-    },
-    [filters, listings, preferredCountry, subscriptions, t, user?.id],
+  const searching = Boolean(
+    filters.query || filters.category || filters.city || filters.min || filters.max,
   )
+  const feed = useMemo(() => {
+    const filtered = listings.filter((item) => {
+      if (item.status !== 'active') return false
+      const searchText = [
+        item.title,
+        item.description,
+        item.city,
+        item.district,
+        item.address,
+        item.category,
+        item.type,
+        item.brand,
+        item.model,
+        item.sellerName,
+        ...listingSpecificDetails(item, t).map((detail) => `${detail.label} ${detail.value}`),
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+
+      return (
+        (!filters.query || searchText.includes(filters.query.toLowerCase())) &&
+        (!filters.type || item.type === filters.type) &&
+        (!filters.category || item.category === filters.category) &&
+        (!filters.city ||
+          `${item.city || ''} ${item.district || ''}`
+            .toLowerCase()
+            .includes(filters.city.toLowerCase())) &&
+        (!filters.min || Number(item.price) >= Number(filters.min)) &&
+        (!filters.max || Number(item.price) <= Number(filters.max))
+      )
+    })
+    const local = []
+    const elsewhere = []
+    for (const item of filtered) {
+      if (countrySortRank(resolveListingCountry(item), preferredCountry) === 0) local.push(item)
+      else elsewhere.push(item)
+    }
+    const ctx = {
+      userId: user?.id,
+      userCity: user?.city,
+      subscriptions,
+      favorites,
+      viewedListings,
+      impressionListings: listingImpressions,
+      feedBoosts,
+      searching,
+      showRails: true,
+    }
+    const localFeed = buildMarketplaceDiscovery(local.length ? local : filtered, ctx)
+    const restFeed = local.length
+      ? buildMarketplaceDiscovery(elsewhere, { ...ctx, showRails: false })
+      : { discover: [] }
+    return {
+      forYou: localFeed.forYou,
+      trending: localFeed.trending,
+      fresh: localFeed.fresh,
+      discover: [...localFeed.discover, ...restFeed.discover],
+      total: filtered.length,
+      personalized: localFeed.personalized,
+    }
+  }, [
+    favorites,
+    feedBoosts,
+    filters,
+    listings,
+    listingImpressions,
+    preferredCountry,
+    searching,
+    subscriptions,
+    t,
+    user?.city,
+    user?.id,
+    viewedListings,
+  ])
+  const visible = feed.discover
+
+  const { visibleItems, sentinelRef, hasMore, shownCount } = useProgressiveReveal(visible, {
+    initial: MARKETPLACE_PRELOAD,
+    step: MARKETPLACE_BATCH,
+  })
+
+  useEffect(() => {
+    dispatch(loadFeedBoosts())
+  }, [dispatch])
+
+  useEffect(() => {
+    prefetchListingCovers(visibleItems.slice(0, MARKETPLACE_PRELOAD))
+  }, [visibleItems])
+
+  function scrollToDiscover() {
+    discoverRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  useEffect(() => {
+    if (!hasMore) return undefined
+    const nextBatch = visible.slice(shownCount, shownCount + MARKETPLACE_BATCH)
+    prefetchListingCovers(nextBatch)
+    return undefined
+  }, [hasMore, shownCount, visible])
 
   return (
     <div className="community-warm-bg grid gap-7 rounded-[var(--radius-card-lg)]">
       <PageHeader
         title={mt('marketplace.common.name')}
         stats={[
-          { label: mt('marketplace.page.stats.activeListings'), value: visible.length },
+          { label: mt('marketplace.page.stats.activeListings'), value: feed.total },
           { label: mt('marketplace.page.stats.categories'), value: LISTING_TYPES_META.length },
         ]}
         actions={
@@ -154,7 +241,7 @@ export function MarketplacePage() {
 
         <CatalogSearch
           advancedOpen={advancedOpen}
-          count={visible.length}
+          count={feed.total}
           activeFilterCount={[filters.category, filters.city, filters.min, filters.max].filter(Boolean).length}
           query={filters.query}
           onQueryChange={(query) => dispatch(setMarketplaceFilters({ query }))}
@@ -230,17 +317,103 @@ export function MarketplacePage() {
               description={mt('marketplace.page.searchPlaceholder')}
             />
           ) : visible.length ? (
-            <CatalogGrid lazy={false}>
-              {visible.map((listing, index) => (
-                <RevealListItem key={listing.id} index={index} className="h-full overflow-visible">
-                  <MarketplaceListingCard
-                    listing={listing}
+            <>
+              {!searching ? (
+                <div className="grid gap-6">
+                  <MarketplaceDiscoveryRail
+                    railId="forYou"
+                    title={mt('marketplace.page.feed.forYou')}
+                    subtitle={
+                      feed.personalized
+                        ? mt('marketplace.page.feed.forYouHint')
+                        : mt('marketplace.page.feed.forYouColdHint')
+                    }
+                    badgeLabel={mt('marketplace.page.feed.badgeForYou')}
+                    viewAllLabel={mt('marketplace.page.feed.viewAll')}
+                    listings={feed.forYou}
                     guestMode={guestMode}
                     onGuestInteract={() => requireAccount('aimer cette annonce')}
+                    onViewAll={scrollToDiscover}
+                    scrollPrevLabel={mt('marketplace.common.previous')}
+                    scrollNextLabel={mt('marketplace.common.next')}
                   />
-                </RevealListItem>
-              ))}
-            </CatalogGrid>
+                  <MarketplaceDiscoveryRail
+                    railId="trending"
+                    title={mt('marketplace.page.feed.trending')}
+                    subtitle={mt('marketplace.page.feed.trendingHint')}
+                    badgeLabel={mt('marketplace.page.feed.badgeTrending')}
+                    viewAllLabel={mt('marketplace.page.feed.viewAll')}
+                    listings={feed.trending}
+                    guestMode={guestMode}
+                    onGuestInteract={() => requireAccount('aimer cette annonce')}
+                    onViewAll={scrollToDiscover}
+                    scrollPrevLabel={mt('marketplace.common.previous')}
+                    scrollNextLabel={mt('marketplace.common.next')}
+                  />
+                  <MarketplaceDiscoveryRail
+                    railId="fresh"
+                    title={mt('marketplace.page.feed.fresh')}
+                    subtitle={mt('marketplace.page.feed.freshHint')}
+                    badgeLabel={mt('marketplace.page.feed.badgeFresh')}
+                    viewAllLabel={mt('marketplace.page.feed.viewAll')}
+                    listings={feed.fresh}
+                    guestMode={guestMode}
+                    onGuestInteract={() => requireAccount('aimer cette annonce')}
+                    onViewAll={scrollToDiscover}
+                    scrollPrevLabel={mt('marketplace.common.previous')}
+                    scrollNextLabel={mt('marketplace.common.next')}
+                  />
+                </div>
+              ) : null}
+              <div
+                ref={discoverRef}
+                className={`grid gap-3 scroll-mt-24 lg:scroll-mt-28${!searching ? ' mt-6' : ''}`}
+              >
+                <div className="min-w-0">
+                  <h2 className="text-sm font-black tracking-tight">
+                    {searching
+                      ? mt('marketplace.page.feed.results')
+                      : mt('marketplace.page.feed.discover')}
+                  </h2>
+                  <p className="mt-0.5 text-xs text-[var(--app-text-muted)]">
+                    {searching
+                      ? mt('marketplace.page.feed.resultsHint')
+                      : mt('marketplace.page.feed.discoverHint')}
+                  </p>
+                </div>
+                <CatalogGrid
+                  lazy={false}
+                  columns={MARKETPLACE_DISCOVER_GRID_COLUMNS}
+                  className="min-w-0 w-full"
+                >
+                {visibleItems.map((listing, index) => (
+                  <RevealListItem
+                    key={listing.id}
+                    index={index}
+                    className={`${MARKETPLACE_DISCOVERY_CARD_HEIGHT} min-w-0 overflow-hidden`}
+                  >
+                    <MarketplaceListingCard
+                      listing={listing}
+                      guestMode={guestMode}
+                      onGuestInteract={() => requireAccount('aimer cette annonce')}
+                      layout="rail"
+                    />
+                  </RevealListItem>
+                ))}
+                </CatalogGrid>
+              </div>
+              {hasMore ? (
+                <div
+                  ref={sentinelRef}
+                  className="flex h-10 items-center justify-center"
+                  aria-hidden
+                >
+                  <span className="size-5 animate-pulse rounded-full bg-[var(--app-border)]" />
+                </div>
+              ) : (
+                <div ref={sentinelRef} className="h-px w-full" aria-hidden />
+              )}
+            </>
           ) : (
             <EmptyState
               icon={FiShoppingBag}

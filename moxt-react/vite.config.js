@@ -66,9 +66,19 @@ export default defineConfig(({ mode }) => {
       },
     },
   ],
+  optimizeDeps: {
+    exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util'],
+  },
+  worker: {
+    format: 'es',
+  },
   server: {
     host: true,
     port: 5173,
+    headers: {
+      // Aide certains navigateurs à charger wasm / workers ffmpeg
+      'Cross-Origin-Resource-Policy': 'same-origin',
+    },
   },
   preview: {
     host: '127.0.0.1',

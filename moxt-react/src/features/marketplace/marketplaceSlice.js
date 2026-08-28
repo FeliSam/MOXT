@@ -115,7 +115,7 @@ const marketplaceSlice = createSlice({
         return {
           payload: {
             ...sanitizedValues,
-            id: `ANN-${Date.now().toString(36).toUpperCase()}`,
+            id: values.id || `ANN-${Date.now().toString(36).toUpperCase()}`,
             price: Number(values.price),
             currency: 'RUB',
             country: 'RU',

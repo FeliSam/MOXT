@@ -21,6 +21,12 @@ describe('publicationCatalogUtils', () => {
     parcels: { items: [{ id: 'P1', ownerId: 'u1', businessId: 'BIZ-1' }] },
     jobs: { items: [] },
     events: { items: [] },
+    videos: {
+      items: [
+        { id: 'V1', ownerId: 'u1', businessId: 'BIZ-1', status: 'active', title: 'Reel' },
+        { id: 'V2', ownerId: 'u1', businessId: 'BIZ-1', status: 'archived', title: 'Old' },
+      ],
+    },
     posts: { items: [{ id: 'POST-1', authorId: 'u1' }] },
     p2p: {
       offers: [
@@ -36,6 +42,7 @@ describe('publicationCatalogUtils', () => {
     expect(publications.listings).toHaveLength(2)
     expect(publications.parcels).toHaveLength(1)
     expect(publications.posts).toHaveLength(1)
+    expect(publications.videos).toHaveLength(2)
     expect(publications.others).toHaveLength(2)
   })
 
@@ -46,6 +53,7 @@ describe('publicationCatalogUtils', () => {
     expect(businessOnly.listings[0].id).toBe('L2')
     expect(businessOnly.parcels).toHaveLength(1)
     expect(businessOnly.posts).toHaveLength(0)
+    expect(businessOnly.videos).toHaveLength(2)
     expect(businessOnly.others.map((item) => item.id)).toEqual(['O2'])
   })
 
@@ -56,7 +64,26 @@ describe('publicationCatalogUtils', () => {
     expect(personalOnly.listings[0].id).toBe('L1')
     expect(personalOnly.parcels).toHaveLength(0)
     expect(personalOnly.posts).toHaveLength(1)
+    expect(personalOnly.videos).toHaveLength(0)
     expect(personalOnly.others.map((item) => item.id)).toEqual(['O1'])
+  })
+
+  it('sépare les vidéos actives et archivées', () => {
+    const publications = collectUserPublications(state, 'u1')
+    const active = filterPublicationsByTabs(publications, {
+      archiveTab: 'active',
+      typeTab: 'video',
+    })
+    const archived = filterPublicationsByTabs(publications, {
+      archiveTab: 'archived',
+      typeTab: 'video',
+    })
+    expect(active.video.map((item) => item.id)).toEqual(['V1'])
+    expect(archived.video.map((item) => item.id)).toEqual(['V2'])
+  })
+
+  it('expose l’onglet video dans PUBLICATION_TYPE_TABS', () => {
+    expect(PUBLICATION_TYPE_TABS.some((tab) => tab.id === 'video')).toBe(true)
   })
 
   it('sépare les offres P2P actives et archivées', () => {
@@ -118,6 +145,7 @@ describe('publicationCatalogUtils', () => {
       parcel: 0,
       job: 0,
       event: 1,
+      video: 0,
       post: 0,
       other: 1,
     })

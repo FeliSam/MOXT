@@ -97,7 +97,44 @@ describe('transferAccountUtils', () => {
         country: 'RU',
         originCountry: 'BJ',
       }),
-    ).toEqual(['Sberbank'])
+    ).toEqual(expect.arrayContaining(['Sberbank', 'VTB', 'T-Bank', 'Alfa-Bank']))
+  })
+
+  it('ajoute un libelle RU hors catalogue au catalogue SBP', () => {
+    expect(
+      exchangerMethodsForParty({
+        business: {
+          transferAccounts: [
+            ...accounts,
+            {
+              id: 'ru-2',
+              slot: TRANSFER_ACCOUNT_SLOTS.RU,
+              country: 'RU',
+              recipientName: 'Sovcom',
+              phone: '+79001112234',
+              method: 'Sovcombank',
+              active: true,
+            },
+          ],
+        },
+        country: 'RU',
+        originCountry: 'BJ',
+      }),
+    ).toEqual(expect.arrayContaining(['Sberbank', 'Sovcombank']))
+  })
+
+  it('n inclut pas les reseaux africains dans le catalogue SBP', () => {
+    const methods = exchangerMethodsForParty({
+      business: {
+        transferAccounts: accounts,
+        exchangeMethods: ['MTN MoMo', 'Moov Money', 'Sberbank', 'Tinkoff'],
+      },
+      country: 'RU',
+      originCountry: 'BJ',
+    })
+    expect(methods).toEqual(expect.arrayContaining(['Sberbank', 'Tinkoff']))
+    expect(methods).not.toContain('MTN MoMo')
+    expect(methods).not.toContain('Moov Money')
   })
 
   it('choisit le compte par defaut dans un slot', () => {

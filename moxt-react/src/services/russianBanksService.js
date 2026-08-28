@@ -1,4 +1,4 @@
-import { PAYMENT_METHODS } from '../features/transfers/transferConfig'
+import { RU_SBP_BANKS_FALLBACK } from '../features/transfers/transferConfig'
 
 const NSPK_BANKS_URL = 'https://qr.nspk.ru/proxyapp/c2bmembers.json'
 /** Clé localStorage (pas un secret) — nom volontairement descriptif pour gitleaks. */
@@ -75,7 +75,7 @@ export async function refreshRussianBanks() {
     } catch {
       const cached = readCache()
       if (cached?.names?.length) return cached.names
-      return [...PAYMENT_METHODS.RU]
+      return [...RU_SBP_BANKS_FALLBACK]
     } finally {
       inFlight = null
     }

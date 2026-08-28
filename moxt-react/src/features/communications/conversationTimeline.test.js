@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
   appendRelatedContext,
+  buildContextPreview,
   buildConversationTimeline,
   contextHasMessages,
   findRelatedContext,
   findRelatedContextById,
   hasRelatedContext,
+  inferRelatedTypeFromPath,
   normalizeRelatedContexts,
 } from './conversationTimeline'
 
@@ -217,5 +219,66 @@ describe('conversationTimeline', () => {
     expect(hasRelatedContext(conversation, 'listing', 'LST-2')).toBe(false)
     expect(findRelatedContext(conversation, 'listing', 'LST-1')?.id).toBe('CTX-1')
     expect(findRelatedContextById(conversation, 'CTX-1')?.relatedId).toBe('LST-1')
+  })
+
+  it('infère listing depuis un chemin marketplace', () => {
+    expect(inferRelatedTypeFromPath('/marketplace/LST-9')).toBe('listing')
+    expect(inferRelatedTypeFromPath('/jobs/JOB-1')).toBe('job')
+    expect(inferRelatedTypeFromPath('/users/abc/publications')).toBe('profile')
+  })
+
+  it('n’affiche pas le nom du pair comme titre d’annonce', () => {
+    const preview = buildContextPreview(
+      {
+        relatedType: 'general',
+        relatedId: 'LST-9',
+        relatedPath: '/marketplace/LST-9',
+        relatedSnapshot: { type: 'general', title: 'Christelle DEDEWANOU' },
+      },
+      {
+        title: 'Christelle DEDEWANOU',
+        participantProfiles: {
+          peer: { firstName: 'Christelle', lastName: 'DEDEWANOU' },
+        },
+      },
+    )
+    expect(preview.type).toBe('listing')
+    expect(preview.title).toBe('Annonce')
+    expect(preview.path).toBe('/marketplace/LST-9')
+  })
+
+  it('conserve le vrai titre de l’annonce', () => {
+    const preview = buildContextPreview(
+      { relatedSnapshot: snapshotA, relatedType: 'listing', relatedId: 'LST-1' },
+      { title: 'Christelle DEDEWANOU' },
+    )
+    expect(preview.type).toBe('listing')
+    expect(preview.title).toBe('Velo')
+  })
+
+  it('n’insère pas de carte liée pour un fil ouvert depuis un profil', () => {
+    const timeline = buildConversationTimeline(
+      {
+        title: 'Christelle DEDEWANOU',
+        relatedType: 'profile',
+        relatedId: 'user-1',
+        relatedPath: '/users/user-1/publications',
+        relatedSnapshot: {
+          type: 'profile',
+          id: 'user-1',
+          title: 'Christelle DEDEWANOU',
+          path: '/users/user-1/publications',
+        },
+        participantProfiles: {
+          peer: { firstName: 'Christelle', lastName: 'DEDEWANOU' },
+        },
+        createdAt: '2026-07-07T10:00:00.000Z',
+        messages: [
+          { id: 'MSG-1', senderId: 'u1', text: 'Bonjour', createdAt: '2026-07-07T10:30:00.000Z' },
+        ],
+      },
+      'u1',
+    )
+    expect(timeline.map((item) => item.kind)).toEqual(['message'])
   })
 })

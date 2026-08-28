@@ -2,6 +2,7 @@ import { supabase } from '../supabaseClient'
 import { mediaConfig, assertUploadBackendAvailable } from '../../config/mediaConfig.js'
 import { appendCacheBust } from './mediaUrlUtils.js'
 import { uploadToYandex, resolvePrivateSignedUrl } from './yandexMediaClient.js'
+import { resolveCachedMediaUrl } from './cachedMediaResolver.js'
 import { reportProgress, runWithUploadProgress, UPLOAD_PHASES } from '../uploadProgress'
 
 async function uploadSupabasePublic(bucket, path, file, { onProgress } = {}) {
@@ -47,6 +48,13 @@ const ALLOWED_UPLOAD_MIME = new Set([
   'application/pdf',
   'video/mp4',
   'video/webm',
+  'video/quicktime',
+  'video/x-m4v',
+  'video/m4v',
+  'video/3gpp',
+  'video/3gpp2',
+  'video/x-matroska',
+  'video/mkv',
 ])
 
 const ALLOWED_UPLOAD_EXT = new Set([
@@ -61,6 +69,11 @@ const ALLOWED_UPLOAD_EXT = new Set([
   'pdf',
   'mp4',
   'webm',
+  'mov',
+  'm4v',
+  '3gp',
+  '3g2',
+  'mkv',
 ])
 
 function assertAllowedUpload(file, { imagesOnly = false } = {}) {
@@ -138,10 +151,16 @@ export function createMediaStorageProvider({ supabaseFallback = true } = {}) {
   }
 
   async function signedUrl(bucket, path) {
-    return resolvePrivateSignedUrl(bucket, path, async (b, p) => {
+    const remote = await resolvePrivateSignedUrl(bucket, path, async (b, p) => {
       const { data, error } = await supabase.storage.from(b).createSignedUrl(p, 3600)
       if (error) throw new Error(error.message)
       return data.signedUrl
+    })
+    return resolveCachedMediaUrl({
+      legacyBucket: bucket,
+      legacyPath: path,
+      remoteUrl: remote,
+      kind: bucket === 'transfers' ? 'proof' : 'document',
     })
   }
 

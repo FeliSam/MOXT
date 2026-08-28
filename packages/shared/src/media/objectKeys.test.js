@@ -18,6 +18,12 @@ describe('objectKeys', () => {
     )
   })
 
+  it('mappe videos vers public/videos', () => {
+    expect(legacyPathToObjectKey('videos', 'uid-1/BIZ-1/VID-1.mp4')).toBe(
+      'public/videos/uid-1/BIZ-1/VID-1.mp4',
+    )
+  })
+
   it('mappe documents privés', () => {
     expect(legacyPathToObjectKey('documents', 'uid/identity/x.pdf')).toBe(
       'private/documents/uid/identity/x.pdf',

@@ -6,6 +6,7 @@ import { setAll as setParcels } from '../features/parcels/parcelSlice'
 import { setAll as setJobs } from '../features/jobs/jobSlice'
 import { jobsFromRemoteRows, jobApplicationsFromRemoteRows } from '../features/jobs/jobRemote'
 import { setAll as setEvents } from '../features/events/eventSlice'
+import { setAll as setVideos } from '../features/videos/videosSlice'
 import { setAll as setBusinesses } from '../features/businesses/businessSlice'
 import { setAll as setTransfers, runExpireOverdueTransfers } from '../features/transfers/transferSlice'
 import { setAll as setP2P } from '../features/p2p/p2pSlice'
@@ -21,7 +22,7 @@ import {
   mergeViewedByLists,
 } from '../features/statuses/statusViewUtils'
 import { setRecipientAddresses } from '../features/addresses/recipientAddressesSlice'
-import { hydrateAccountPreferences, mergeRemoteAccount, updateAccountPreferences } from '../features/account/accountSlice'
+import { hydrateAccountPreferences, mergeRemoteAccount, updateAccountPreferences, hydrateMarketplaceDiscoverySignals } from '../features/account/accountSlice'
 import { profileRowToAdminUser, setAdminUsers } from '../features/administration/administrationSlice'
 import { setRemoteAuditItems } from '../features/audit/auditSlice'
 import {
@@ -184,6 +185,8 @@ export const loadAllData = createAsyncThunk(
     const uid = user.id
 
     try {
+    const { loadPlatformModules } = await import('../features/platform/platformModulesSlice')
+    void dispatch(loadPlatformModules())
 
     if (!['admin', 'superadmin'].includes(user.role)) {
       const { data: lifecycleData } = await supabase.rpc('moxt_sync_account_lifecycle_for_user')
@@ -272,6 +275,7 @@ export const loadAllData = createAsyncThunk(
       listingsRes, parcelsRes, parcelRequestsRes,
       jobsRes, jobApplicationsRes,
       eventsRes, eventRegistrationsRes,
+      videosRes,
       businessesRes,
       ownedBusinessesRes,
       favoritesRes, subscriptionsRes, subscriberBansRes, subscriberReportsRes, transferProfilesRes, verificationRequestsRes, phoneAssistRequestsRes, personalDocumentsRes,
@@ -294,6 +298,7 @@ export const loadAllData = createAsyncThunk(
       supabase.from('job_applications').select('*').eq('user_id', uid).limit(USER_LIMIT),
       supabase.from('events').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
       supabase.from('event_registrations').select('*').eq('user_id', uid).limit(USER_LIMIT),
+      supabase.from('videos').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
       supabase.from('businesses').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
       supabase.from('businesses').select('*').eq('owner_id', uid),
       supabase.from('favorites').select('*').eq('user_id', uid).limit(USER_LIMIT),
@@ -819,6 +824,7 @@ export const loadAllData = createAsyncThunk(
         registrations: eventRegistrations,
         reports: mergeRemoteItems(getState().events.reports, eventReports),
       }))
+      dispatch(setVideos({ items: fromRows(safeRows(videosRes, 'des videos')) }))
       dispatch(setBusinesses({
         items: mergedBusinessItems,
         members: mergedMembers,
@@ -983,6 +989,25 @@ export const loadAllData = createAsyncThunk(
             },
           }),
         )
+        const discovery = profilePreferences.marketplaceDiscovery
+        if (discovery && typeof discovery === 'object') {
+          dispatch(
+            hydrateMarketplaceDiscoverySignals({
+              userId: uid,
+              viewedListings: (discovery.viewed || []).map((item) => ({
+                userId: uid,
+                listingId: item.listingId,
+                viewedAt: item.at,
+              })),
+              listingImpressions: (discovery.impressions || []).map((item) => ({
+                userId: uid,
+                listingId: item.listingId,
+                seenAt: item.at,
+                railId: item.railId || '',
+              })),
+            }),
+          )
+        }
         // Première connexion / profil sans langue → enregistrer la langue locale appareil
         if (!profilePreferences.language) {
           const localLanguage = normalizeStoredLanguage(
@@ -1087,6 +1112,8 @@ export const loadAllData = createAsyncThunk(
     }
 
     dispatch(runExpireOverdueTransfers())
+    const { markCatalogSynced } = await import('./catalogSync.js')
+    markCatalogSynced(uid)
     } catch (error) {
       console.error('[MOXT] Échec du chargement des données:', error)
       return rejectWithValue(

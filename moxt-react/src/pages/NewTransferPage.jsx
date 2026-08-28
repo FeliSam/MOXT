@@ -35,6 +35,9 @@ import { isBusinessOwnedBy, selectActiveBusinessForOwner } from '../features/bus
 import {
   currencyForCountry,
   DIRECTIONS,
+  PAYMENT_METHODS,
+  RU_SBP_BANKS_FALLBACK,
+  TRANSFER_LIMITS_POLICY,
 } from '../features/transfers/transferConfig'
 import { createTransferSchemas } from '../features/transfers/transferSchemas'
 import { createTransfer } from '../features/transfers/transferSlice'
@@ -42,9 +45,11 @@ import { addToast } from '../features/ui/uiSlice'
 import { TransferCalculator } from '../features/transfers/TransferCalculator'
 import { TransferAmountDualFields } from '../features/transfers/TransferAmountDualFields'
 import { TransferReceivingAccountCard } from '../features/transfers/TransferReceivingAccountCard'
+import { usePaymentMethodOptions } from '../features/p2p/usePaymentMethodOptions'
 import {
   buildExchangerPaymentView,
   exchangerMethodsForParty,
+  isAfricanPaymentMethod,
   resolveBusinessReceivingAccount,
 } from '../features/transfers/transferAccountUtils'
 import { ExchangerPickerAvatar } from '../features/transfers/ExchangerPickerAvatar'
@@ -322,16 +327,25 @@ export function NewTransferPage() {
   }
   const info = directionInfo(formik.values.direction, originCountry)
   const usedThisMonth = monthlyTransferTotal(transfers, user.id, info.from)
-  const sourceMethods = exchangerMethodsForParty({
-    business: selectedExchangerBusiness,
-    country: info.sourceCountry,
-    originCountry,
-  })
-  const destinationMethods = exchangerMethodsForParty({
-    business: selectedExchangerBusiness,
-    country: info.destinationCountry,
-    originCountry,
-  })
+  const { options: russianBankOptions } = usePaymentMethodOptions('RU')
+  const sourceMethods = mergeSbpMethods(
+    info.sourceCountry,
+    exchangerMethodsForParty({
+      business: selectedExchangerBusiness,
+      country: info.sourceCountry,
+      originCountry,
+    }),
+    russianBankOptions,
+  )
+  const destinationMethods = mergeSbpMethods(
+    info.destinationCountry,
+    exchangerMethodsForParty({
+      business: selectedExchangerBusiness,
+      country: info.destinationCountry,
+      originCountry,
+    }),
+    russianBankOptions,
+  )
   const senderProfiles = transferProfiles.filter(
     (item) =>
       transferProfileMatchesCountry(item, info.sourceCountry) &&
@@ -439,7 +453,7 @@ export function NewTransferPage() {
               to="/exchangers"
             />
             <HeaderIslandButton
-              icon={FiArrowLeft}
+              icon={FiClock}
               label={t('transfers.history.sectionTitle')}
               to="/transfers/history"
             />
@@ -543,17 +557,29 @@ export function NewTransferPage() {
                 onSendChange={handleSendAmountChange}
                 onReceiveChange={handleReceiveAmountChange}
                 sendError={errorFor('amount')}
-                sendMin={calculation.minimumRequired}
+                sendMin={
+                  TRANSFER_LIMITS_POLICY.enforceAmountLimits
+                    ? calculation.minimumRequired
+                    : undefined
+                }
               />
-              <div className="flex items-start gap-3 rounded-2xl bg-[var(--app-accent-soft)] p-4 text-sm">
-                <FiClock className="mt-0.5 shrink-0 text-[var(--app-accent)]" />
-                <p className="text-[var(--app-text-muted)]">
-                  {t('transfers.new.minimumLabel')}: <strong>{formatMoney(calculation.minimumRequired, calculation.currencyFrom)}</strong>.
-                  {!user.verified
-                    ? ` ${t('transfers.new.usedThisMonth', { amount: formatMoney(usedThisMonth, calculation.currencyFrom) })}`
-                    : ` ${t('transfers.new.verifiedCeiling')}`}
-                </p>
-              </div>
+              {TRANSFER_LIMITS_POLICY.enforceAmountLimits ? (
+                <div className="flex items-start gap-3 rounded-2xl bg-[var(--app-accent-soft)] p-4 text-sm">
+                  <FiClock className="mt-0.5 shrink-0 text-[var(--app-accent)]" />
+                  <p className="text-[var(--app-text-muted)]">
+                    {t('transfers.new.minimumLabel')}:{' '}
+                    <strong>
+                      {formatMoney(calculation.minimumRequired, calculation.currencyFrom)}
+                    </strong>
+                    .
+                    {!user.verified
+                      ? ` ${t('transfers.new.usedThisMonth', {
+                          amount: formatMoney(usedThisMonth, calculation.currencyFrom),
+                        })}`
+                      : ` ${t('transfers.new.verifiedCeiling')}`}
+                  </p>
+                </div>
+              ) : null}
             </Card>
 
             {/* Exchanger cards */}
@@ -616,6 +642,7 @@ export function NewTransferPage() {
                   ) : null}
                   {exchangers.map((exchanger) => {
                     const active = formik.values.exchangerId === exchanger.id
+                    const transferCount = Math.max(0, Number(exchanger.realAvgDelaySamples) || 0)
                     return (
                       <button
                         key={exchanger.id}
@@ -660,18 +687,30 @@ export function NewTransferPage() {
                         <span className="text-[10px] font-semibold text-[var(--app-text-muted)]">
                           {flagEmoji(exchanger.country)} {exchanger.city || exchanger.country}
                         </span>
-                        <BusinessRatingBadge business={exchanger} />
+                        <div className="flex w-full flex-wrap items-center justify-center gap-1">
+                          <BusinessRatingBadge business={exchanger} />
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-bold tabular-nums ${
+                              active
+                                ? 'bg-emerald-600 text-white'
+                                : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'
+                            }`}
+                            title={t('transfers.new.transferCountTitle', { count: transferCount })}
+                          >
+                            {t('transfers.new.transferCount', { count: transferCount })}
+                          </span>
+                        </div>
                         <PartnerDirectionalRate
                           exchanger={exchanger}
                           direction={formik.values.direction}
                           originCountry={originCountry}
                         />
-                        <div className="flex w-full flex-col gap-1">
-                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${active ? 'bg-emerald-600 text-white' : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'}`}>
+                        <div className="flex w-full flex-nowrap items-center justify-center gap-1">
+                          <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold whitespace-nowrap ${active ? 'bg-emerald-600 text-white' : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'}`}>
                             {exchanger.feePercent}% {t('transfers.new.fees')}
                           </span>
                           <span
-                            className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${active ? 'bg-emerald-500 text-white' : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'}`}
+                            className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold whitespace-nowrap ${active ? 'bg-emerald-500 text-white' : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'}`}
                             title={
                               exchanger.realAvgDelaySamples > 0
                                 ? t('transfers.new.realDelayTitle', {
@@ -680,7 +719,7 @@ export function NewTransferPage() {
                                 : t('transfers.new.announcedDelayTitle')
                             }
                           >
-                            <FiClock className="mr-0.5 inline text-[9px]" />
+                            <FiClock className="mr-0.5 inline text-[8px]" />
                             {resolveExchangerDelayLabel(exchanger, t('transfers.new.delayToConfirm'))}
                           </span>
                         </div>
@@ -906,6 +945,25 @@ export function NewTransferPage() {
   )
 }
 
+function mergeSbpMethods(country, exchangerMethods = [], russianBanks = []) {
+  if (country !== 'RU') return exchangerMethods
+  const seen = new Set()
+  const merged = []
+  for (const method of [...russianBanks, ...exchangerMethods]) {
+    const label = String(method || '').trim()
+    const key = label.toLowerCase()
+    if (!label || seen.has(key) || isAfricanPaymentMethod(label)) continue
+    seen.add(key)
+    merged.push(label)
+  }
+  return merged.length ? merged : [...RU_SBP_BANKS_FALLBACK]
+}
+
+function isCatalogRuMethod(method) {
+  const key = String(method || '').trim().toLowerCase()
+  return PAYMENT_METHODS.RU.some((item) => item.toLowerCase() === key)
+}
+
 function PartyCard({ title, prefix, profiles, formik, methods, errorFor, onProfile, userId }) {
   const { t } = useLanguage()
   const dispatch = useDispatch()
@@ -1052,24 +1110,50 @@ function PartyCard({ title, prefix, profiles, formik, methods, errorFor, onProfi
             {...formik.getFieldProps(`${prefix}Phone`)}
             error={errorFor(`${prefix}Phone`)}
           />
-          <div>
+          <div className={country === 'RU' ? 'sm:col-span-2' : undefined}>
             <p className="mb-1.5 text-sm font-bold">{t('transfers.new.networkOrBank')}</p>
+            {country === 'RU' ? (
+              <p className="mb-2 text-xs text-[var(--app-text-muted)]">{t('transfers.new.sbpBankHint')}</p>
+            ) : null}
             {methods.length ? (
-              <div className="flex flex-wrap gap-2">
-                {methods.map((method) => (
-                  <button
-                    key={method}
-                    type="button"
-                    onClick={() => formik.setFieldValue(`${prefix}Method`, method)}
-                    className={`rounded-full px-3 py-2 text-xs font-bold transition ${
-                      formik.values[`${prefix}Method`] === method
-                        ? 'bg-brand-700 text-white shadow-sm'
-                        : 'bg-[var(--app-surface-muted)] text-[var(--app-text)] hover:bg-[var(--app-accent-soft)] hover:text-[var(--app-accent)]'
-                    }`}
+              <div className="grid gap-2">
+                <div className="flex flex-wrap gap-2">
+                  {(country === 'RU' ? PAYMENT_METHODS.RU : methods).map((method) => (
+                    <button
+                      key={method}
+                      type="button"
+                      onClick={() => formik.setFieldValue(`${prefix}Method`, method)}
+                      className={`rounded-full px-3 py-2 text-xs font-bold transition ${
+                        formik.values[`${prefix}Method`] === method
+                          ? 'bg-brand-700 text-white shadow-sm'
+                          : 'bg-[var(--app-surface-muted)] text-[var(--app-text)] hover:bg-[var(--app-accent-soft)] hover:text-[var(--app-accent)]'
+                      }`}
+                    >
+                      {method}
+                    </button>
+                  ))}
+                </div>
+                {country === 'RU' && methods.some((method) => !isCatalogRuMethod(method)) ? (
+                  <Select
+                    id={`${prefix}OtherSbpBank`}
+                    label={t('transfers.new.otherSbpBank')}
+                    value={
+                      isCatalogRuMethod(formik.values[`${prefix}Method`])
+                        ? ''
+                        : formik.values[`${prefix}Method`] || ''
+                    }
+                    onChange={(event) => formik.setFieldValue(`${prefix}Method`, event.target.value)}
                   >
-                    {method}
-                  </button>
-                ))}
+                    <option value="">{t('common.select')}</option>
+                    {methods
+                      .filter((method) => !isCatalogRuMethod(method))
+                      .map((method) => (
+                        <option key={method} value={method}>
+                          {method}
+                        </option>
+                      ))}
+                  </Select>
+                ) : null}
               </div>
             ) : (
               <p className="text-xs text-[var(--app-text-muted)]">

@@ -11,6 +11,7 @@ import {
 import { SubscriptionNotifyMenu } from './SubscriptionNotifyMenu'
 import { selectIsSubscriberBanned, selectPublisherSubscription } from './subscriptionSelectors'
 import { addToast } from '../ui/uiSlice'
+import { StarsGiftButton } from '../stars/StarsGiftSheet'
 
 const NOTIFY_ICONS = {
   all: FiBell,
@@ -121,7 +122,7 @@ export function SubscribeButton({
         size={size}
         variant="secondary"
         icon={FiUserCheck}
-        className="min-w-0 flex-1 border-brand-200 bg-brand-50 text-brand-800 dark:border-brand-800 dark:bg-brand-950/40 dark:text-brand-200"
+        className="min-w-fit flex-1 whitespace-nowrap border-brand-200 bg-brand-50 text-brand-800 dark:border-brand-800 dark:bg-brand-950/40 dark:text-brand-200"
         aria-pressed="true"
       >
         {p3('subscriptions.subscribed')}
@@ -142,6 +143,13 @@ export function SubscribeButton({
             className="shrink-0 border border-[var(--app-border)] bg-[var(--app-surface)] hover:bg-[var(--app-surface-muted)]"
           />
         }
+      />
+      <StarsGiftButton
+        publisherType={publisherType}
+        publisherId={publisherId}
+        publisherName={publisherName}
+        size="md"
+        className="shrink-0"
       />
     </div>
   )

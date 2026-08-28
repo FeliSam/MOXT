@@ -6,6 +6,7 @@ import { AuthLayout } from '../components/layout/AuthLayout'
 import { PublicSiteLayout } from '../components/layout/PublicSiteLayout'
 import { LegacyDetailRedirect } from '../components/routing/LegacyDetailRedirect'
 import { ProtectedRoute } from '../components/routing/ProtectedRoute'
+import { DevModuleRoute } from '../components/routing/DevModuleRoute'
 import { AccountStatusGate } from '../components/routing/AccountStatusGate'
 import { PublicOnlyRoute } from '../components/routing/PublicOnlyRoute'
 import {
@@ -70,6 +71,10 @@ const DesignDirectionRoutePage = lazyPage(
 )
 const EventDetailPage = lazyPage(() => import('../pages/EventDetailPage'), 'EventDetailPage')
 const EventsPage = lazyPage(() => import('../pages/EventsPage'), 'EventsPage')
+const FeedPage = lazyPage(() => import('../pages/FeedPage'), 'FeedPage')
+const VideosFeedPage = lazyPage(() => import('../pages/VideosFeedPage'), 'VideosFeedPage')
+const PublishVideoPage = lazyPage(() => import('../pages/PublishVideoPage'), 'PublishVideoPage')
+const EditVideoPage = lazyPage(() => import('../pages/EditVideoPage'), 'EditVideoPage')
 const EditListingPage = lazyPage(() => import('../pages/EditListingPage'), 'EditListingPage')
 const FavoritesPage = lazyPage(() => import('../pages/FavoritesPage'), 'FavoritesPage')
 const SubscriptionsPage = lazyPage(
@@ -170,6 +175,9 @@ const ExchangerDashboardPage = lazyPage(
   'ExchangerDashboardPage',
 )
 const ReferralPage = lazyPage(() => import('../pages/ReferralPage'), 'ReferralPage')
+const StarsWalletPage = lazyPage(() => import('../pages/StarsWalletPage'), 'StarsWalletPage')
+const StarsBuyPage = lazyPage(() => import('../pages/StarsBuyPage'), 'StarsBuyPage')
+const StarsCheckoutPage = lazyPage(() => import('../pages/StarsCheckoutPage'), 'StarsCheckoutPage')
 const PublicationShell = lazyPage(
   () => import('../components/routing/PublicationShell'),
   'PublicationShell',
@@ -278,6 +286,30 @@ export function AppRouter() {
             <Route path="/exchangers/:exchangerId" element={<ExchangerDetailPage />} />
             <Route path="/wallet" element={<Navigate to="/receipts" replace />} />
             <Route path="/referral" element={<ReferralPage />} />
+            <Route
+              path="/stars"
+              element={
+                <DevModuleRoute moduleId="stars">
+                  <StarsWalletPage />
+                </DevModuleRoute>
+              }
+            />
+            <Route
+              path="/stars/buy"
+              element={
+                <DevModuleRoute moduleId="stars">
+                  <StarsBuyPage />
+                </DevModuleRoute>
+              }
+            />
+            <Route
+              path="/stars/buy/checkout/:purchaseId"
+              element={
+                <DevModuleRoute moduleId="stars">
+                  <StarsCheckoutPage />
+                </DevModuleRoute>
+              }
+            />
             <Route path="/payments" element={<PaymentsPage />} />
             <Route
               path="/contribute"
@@ -306,10 +338,38 @@ export function AppRouter() {
               path="/business-detail"
               element={<LegacyDetailRedirect fallback="/businesses" target="/businesses" />}
             />
-            <Route path="/parcels" element={<ParcelsPage />} />
-            <Route path="/parcels/publish" element={<PublishParcelPage />} />
-            <Route path="/parcels/:parcelId/edit" element={<EditParcelPage />} />
-            <Route path="/parcels/:parcelId" element={<ParcelDetailPage />} />
+            <Route
+              path="/parcels"
+              element={
+                <DevModuleRoute moduleId="parcels">
+                  <ParcelsPage />
+                </DevModuleRoute>
+              }
+            />
+            <Route
+              path="/parcels/publish"
+              element={
+                <DevModuleRoute moduleId="parcels">
+                  <PublishParcelPage />
+                </DevModuleRoute>
+              }
+            />
+            <Route
+              path="/parcels/:parcelId/edit"
+              element={
+                <DevModuleRoute moduleId="parcels">
+                  <EditParcelPage />
+                </DevModuleRoute>
+              }
+            />
+            <Route
+              path="/parcels/:parcelId"
+              element={
+                <DevModuleRoute moduleId="parcels">
+                  <ParcelDetailPage />
+                </DevModuleRoute>
+              }
+            />
             <Route
               path="/parcel-detail"
               element={<LegacyDetailRedirect fallback="/parcels" target="/parcels" />}
@@ -334,22 +394,117 @@ export function AppRouter() {
                 element={<Navigate to="/publications/mine" replace />}
               />
             ))}
-            <Route path="/jobs" element={<JobsPage />} />
-            <Route path="/jobs/applications" element={<JobApplicationsPage />} />
-            <Route path="/jobs/publish" element={<PublishJobPage />} />
-            <Route path="/jobs/:jobId/edit" element={<EditJobPage />} />
-            <Route path="/jobs/:jobId" element={<JobDetailPage />} />
+            <Route
+              path="/jobs"
+              element={
+                <DevModuleRoute moduleId="jobs">
+                  <JobsPage />
+                </DevModuleRoute>
+              }
+            />
+            <Route
+              path="/jobs/applications"
+              element={
+                <DevModuleRoute moduleId="jobs">
+                  <JobApplicationsPage />
+                </DevModuleRoute>
+              }
+            />
+            <Route
+              path="/jobs/publish"
+              element={
+                <DevModuleRoute moduleId="jobs">
+                  <PublishJobPage />
+                </DevModuleRoute>
+              }
+            />
+            <Route
+              path="/jobs/:jobId/edit"
+              element={
+                <DevModuleRoute moduleId="jobs">
+                  <EditJobPage />
+                </DevModuleRoute>
+              }
+            />
+            <Route
+              path="/jobs/:jobId"
+              element={
+                <DevModuleRoute moduleId="jobs">
+                  <JobDetailPage />
+                </DevModuleRoute>
+              }
+            />
             <Route
               path="/job-detail"
               element={<LegacyDetailRedirect fallback="/jobs" target="/jobs" />}
             />
-            <Route path="/events" element={<EventsPage />} />
-            <Route path="/events/publish" element={<PublishEventPage />} />
-            <Route path="/events/:eventId/edit" element={<EditEventPage />} />
-            <Route path="/events/:eventId" element={<EventDetailPage />} />
+            <Route
+              path="/events"
+              element={
+                <DevModuleRoute moduleId="events">
+                  <EventsPage />
+                </DevModuleRoute>
+              }
+            />
+            <Route
+              path="/events/publish"
+              element={
+                <DevModuleRoute moduleId="events">
+                  <PublishEventPage />
+                </DevModuleRoute>
+              }
+            />
+            <Route
+              path="/events/:eventId/edit"
+              element={
+                <DevModuleRoute moduleId="events">
+                  <EditEventPage />
+                </DevModuleRoute>
+              }
+            />
+            <Route
+              path="/events/:eventId"
+              element={
+                <DevModuleRoute moduleId="events">
+                  <EventDetailPage />
+                </DevModuleRoute>
+              }
+            />
             <Route
               path="/event-detail"
               element={<LegacyDetailRedirect fallback="/events" target="/events" />}
+            />
+            <Route
+              path="/feed"
+              element={
+                <DevModuleRoute moduleId="feed">
+                  <FeedPage />
+                </DevModuleRoute>
+              }
+            />
+            <Route
+              path="/videos"
+              element={
+                <DevModuleRoute moduleId="videos">
+                  <VideosFeedPage />
+                </DevModuleRoute>
+              }
+            />
+            <Route
+              path="/videos/publish"
+              element={
+                <DevModuleRoute moduleId="videos">
+                  <PublishVideoPage />
+                </DevModuleRoute>
+              }
+            />
+            <Route
+              path="/videos/:videoId/edit"
+              element={
+                <DevModuleRoute moduleId="videos">
+                  <EditVideoPage />
+                </DevModuleRoute>
+              }
             />
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />

@@ -5,8 +5,8 @@ export const primaryNavigationItems = [
   { id: 'home', label: 'Accueil', labelKey: 'nav.home', path: '/dashboard', icon: FiHome },
   { id: 'transfers', label: 'Transfert', labelKey: 'nav.transfer', path: '/transfers', icon: FiRepeat },
   { id: 'marketplace', label: 'Marketplace', labelKey: 'nav.marketplace', path: '/marketplace', icon: FiShoppingBag },
-  { id: 'parcels', label: 'Colis', labelKey: 'nav.parcels', path: '/parcels', icon: FiBox },
-  { id: 'jobs', label: 'Jobs', labelKey: 'nav.jobs', path: '/jobs', icon: FiBriefcase },
+  { id: 'parcels', label: 'Colis', labelKey: 'nav.parcels', path: '/parcels', icon: FiBox, devModule: 'parcels' },
+  { id: 'jobs', label: 'Jobs', labelKey: 'nav.jobs', path: '/jobs', icon: FiBriefcase, devModule: 'jobs' },
   {
     id: 'messages',
     label: 'Messagerie',

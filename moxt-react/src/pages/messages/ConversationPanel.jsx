@@ -20,6 +20,7 @@ import {
   buildConversationTimeline,
   buildContextPreview,
   findRelatedContextById,
+  isThreadRelatedPreview,
   normalizeRelatedContexts,
 } from '../../features/communications/conversationTimeline'
 import { messagesText } from '../../features/communications/messagesI18n'
@@ -41,7 +42,6 @@ import {
   MessageDateSeparator,
   MessageEmptyState,
   MessageSecurityNotice,
-  MessageThreadStart,
   MessageUnreadSeparator,
   firstUnreadMessageIndex,
   shouldGroupMessages,
@@ -133,25 +133,47 @@ export function ConversationPanel({
   const liveEntry = peer?.id ? avatarMap[peer.id] : undefined
   const peerAvatarSrc =
     liveEntry !== undefined ? liveEntry.avatarUrl || null : peer?.avatarUrl || null
-  const relatedPreview = useSelector((state) => resolveRelatedSnapshot(state, active))
+  const relatedPreview = useSelector((state) => resolveRelatedSnapshot(state, active, t))
   // Horodatage de secours stable (calculé une seule fois, pas à chaque rendu)
   // pour l'entrée de contexte synthétique quand ni createdAt ni updatedAt n'existent.
   const [fallbackTimelineAt] = useState(() => Date.now())
   const timeline = useMemo(() => {
-    const items = buildConversationTimeline(active, user.id)
+    const overlayPreview = (item) => {
+      if (item.kind !== 'related' || !relatedPreview?.path) return item
+      const sameTarget =
+        (relatedPreview.id &&
+          item.preview?.id &&
+          String(relatedPreview.id) === String(item.preview.id)) ||
+        relatedPreview.path === item.preview?.path
+      if (!sameTarget) return item
+      const liveType =
+        relatedPreview.type && relatedPreview.type !== 'general'
+          ? relatedPreview.type
+          : item.preview.type
+      return {
+        ...item,
+        preview: {
+          ...item.preview,
+          ...relatedPreview,
+          type: liveType,
+          title: relatedPreview.title || item.preview.title,
+        },
+      }
+    }
+    const items = buildConversationTimeline(active, user.id).map(overlayPreview)
     // Repli légitime uniquement quand aucune donnée de contexte n'existe du tout
     // (ni relatedContexts, ni champs legacy) mais que le résolveur live en trouve
     // une — jamais pour recontourner le filtre "a des messages" ci-dessus.
     if (normalizeRelatedContexts(active).length > 0) return items
-    if (!relatedPreview?.path) return items
+    if (!isThreadRelatedPreview(relatedPreview)) return items
     if (!(active.messages?.length > 0)) return items
     return [
-      {
+      overlayPreview({
         kind: 'related',
         id: `CTX-resolved-${active.relatedId || active.id}`,
         at: new Date(active.createdAt || active.updatedAt || fallbackTimelineAt),
         preview: relatedPreview,
-      },
+      }),
       ...items,
     ]
   }, [active, relatedPreview, user.id, fallbackTimelineAt])
@@ -165,7 +187,7 @@ export function ConversationPanel({
   const replyTarget = active.messages.find((item) => item.id === replyToId)
   const replyContextEntry = findRelatedContextById(active, replyToContextId)
   const replyContextPreview = replyContextEntry
-    ? buildContextPreview(replyContextEntry, active)
+    ? buildContextPreview(replyContextEntry, active, t)
     : null
   const messageCount = conversationMessageCount(active, user.id)
   const [openActionsId, setOpenActionsId] = useState(null)
@@ -350,7 +372,9 @@ export function ConversationPanel({
 
   useEffect(() => {
     const urls = (attachments || []).map((file) =>
-      file?.type?.startsWith('image/') ? URL.createObjectURL(file) : null,
+      file?.type?.startsWith('image/') || file?.type?.startsWith('video/')
+        ? URL.createObjectURL(file)
+        : null,
     )
     // eslint-disable-next-line react-hooks/set-state-in-effect -- gestion de ressource externe (URLs d'objets, nettoyées au retour)
     setAttachmentPreviewUrls(urls)
@@ -452,7 +476,6 @@ export function ConversationPanel({
                     </button>
                   </div>
                 ) : null}
-                <MessageThreadStart />
                 <MessageSecurityNotice />
                 {messagesLoading && !active.messages?.length ? (
                   <p className="py-6 text-center text-xs font-medium text-[var(--app-text-faint)]">
@@ -685,12 +708,20 @@ export function ConversationPanel({
           <div className="mx-auto mb-2 flex max-w-3xl flex-wrap items-center gap-2 rounded-xl border border-[var(--app-border)]/40 bg-transparent px-3 py-2 text-xs">
             {attachments.map((file, index) => {
               const previewUrl = attachmentPreviewUrls[index]
+              const isVideo = file?.type?.startsWith('video/')
               return (
                 <div
                   key={`${file.name}-${file.size}-${index}`}
                   className="flex min-w-0 items-center gap-2 rounded-lg bg-transparent px-2 py-1.5"
                 >
-                  {previewUrl ? (
+                  {previewUrl && isVideo ? (
+                    <video
+                      src={previewUrl}
+                      className="size-12 shrink-0 rounded-lg object-cover"
+                      muted
+                      playsInline
+                    />
+                  ) : previewUrl ? (
                     <img
                       src={previewUrl}
                       alt=""
@@ -867,7 +898,7 @@ export function ConversationPanel({
               ref={fileInputRef}
               className="sr-only"
               type="file"
-              accept="image/*,application/pdf,.doc,.docx"
+              accept="image/*,video/*,application/pdf,.doc,.docx"
               multiple
               disabled={blocked}
               onChange={(event) => {

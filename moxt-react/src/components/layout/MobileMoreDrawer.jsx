@@ -8,6 +8,7 @@ import { moreServicesExcludedPaths } from '../../config/primaryNavigation'
 import { useLanguage } from '../../contexts/useLanguage'
 import { MoreServicesContent } from './MoreServicesContent'
 import { filterNavigationGroups, useNavigationBadges } from './moreServicesUtils'
+import { useDevModuleNavAccess } from '../../hooks/useDevModuleAccess'
 
 export function MobileMoreDrawer({ open, onClose }) {
   const user = useSelector((state) => state.auth.user)
@@ -15,6 +16,7 @@ export function MobileMoreDrawer({ open, onClose }) {
   const state = useSelector((v) => v)
   const { t, translateLabel } = useLanguage()
   const resolveLabel = (entry) => resolveNavLabel(entry, t, translateLabel)
+  const canAccessModule = useDevModuleNavAccess()
   const [query, setQuery] = useState('')
   const [closing, setClosing] = useState(false)
 
@@ -39,8 +41,8 @@ export function MobileMoreDrawer({ open, onClose }) {
   )
 
   const filteredGroups = useMemo(
-    () => filterNavigationGroups(groups, role, moreServicesExcludedPaths, query, resolveLabel),
-    [groups, query, resolveLabel, role],
+    () => filterNavigationGroups(groups, role, moreServicesExcludedPaths, query, resolveLabel, canAccessModule),
+    [canAccessModule, groups, query, resolveLabel, role],
   )
 
   function requestClose() {

@@ -52,6 +52,7 @@ import { SecurityGatePanel } from '../features/security/SecurityGatePanel'
 import { ShareToFeedModal } from '../components/ui/ShareToFeedModal'
 import { useActionBurst } from '../components/ui/ActionBurst'
 import {
+  PAYMENT_METHODS,
   paymentMethodsForCountry,
   transferCurrenciesForCountry,
 } from '../features/transfers/transferConfig'
@@ -1039,7 +1040,7 @@ function ServicesStep({
                 <p className="mb-2 text-xs font-bold uppercase tracking-wide text-[var(--app-text-muted)]">{bt('businesses.setup.services.africanNetworks')}</p>
                 <div className="flex flex-wrap gap-2">
                   {exchangeMethodOptions
-                    .filter((o) => !['Sberbank', 'VTB', 'T-Bank', 'Alfa-Bank', 'Gazprombank', 'Raiffeisenbank', 'Ozon Bank'].includes(o))
+                    .filter((o) => !PAYMENT_METHODS.RU.includes(o))
                     .map((option) => (
                       <button
                         key={option}
@@ -1059,7 +1060,7 @@ function ServicesStep({
               <div>
                 <p className="mb-2 text-xs font-bold uppercase tracking-wide text-[var(--app-text-muted)]">{bt('businesses.setup.services.russianBanks')}</p>
                 <div className="flex flex-wrap gap-2">
-                  {['Sberbank', 'VTB', 'T-Bank', 'Alfa-Bank', 'Gazprombank', 'Raiffeisenbank', 'Ozon Bank'].map((option) => (
+                  {PAYMENT_METHODS.RU.map((option) => (
                     <button
                       key={option}
                       type="button"

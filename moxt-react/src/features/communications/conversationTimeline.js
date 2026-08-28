@@ -1,3 +1,4 @@
+import { isParticipantDisplayName } from './conversationDisplay'
 import { messagesText } from './messagesI18n'
 
 const DEFAULT_PATH_BUILDERS = {
@@ -11,27 +12,83 @@ const DEFAULT_PATH_BUILDERS = {
   post: (id) => `/news/${id}`,
 }
 
+const PATH_TYPE_PREFIXES = [
+  ['/marketplace/', 'listing'],
+  ['/jobs/', 'job'],
+  ['/parcels/', 'parcel'],
+  ['/events/', 'event'],
+  ['/businesses/', 'business'],
+  ['/transfers/', 'transfer'],
+  ['/p2p/', 'p2p'],
+  ['/news/', 'post'],
+  ['/users/', 'profile'],
+]
+
+const THREAD_RELATED_CARD_TYPES = new Set([
+  'listing',
+  'job',
+  'parcel',
+  'event',
+  'business',
+  'transfer',
+  'p2p',
+  'post',
+  'support',
+])
+
+export function inferRelatedTypeFromPath(path) {
+  if (!path) return null
+  const pathname = String(path).split('?')[0]
+  for (const [prefix, type] of PATH_TYPE_PREFIXES) {
+    if (pathname.includes(prefix)) return type
+  }
+  return null
+}
+
 function defaultRelatedPath(relatedType, relatedId) {
   if (!relatedId) return null
   return DEFAULT_PATH_BUILDERS[relatedType]?.(relatedId) || null
 }
 
+function usablePreviewTitle(title, conversation) {
+  const value = String(title || '').trim()
+  if (!value) return null
+  if (isParticipantDisplayName(conversation, value)) return null
+  return value
+}
+
+export function isThreadRelatedPreview(preview) {
+  if (!preview?.path) return false
+  const type =
+    (preview.type && preview.type !== 'general' && preview.type !== 'profile'
+      ? preview.type
+      : null) || inferRelatedTypeFromPath(preview.path)
+  return THREAD_RELATED_CARD_TYPES.has(type)
+}
+
 export function buildContextPreview(entry, conversation = {}, t) {
   const snapshot = entry?.relatedSnapshot
   const relatedType = entry?.relatedType || conversation?.relatedType
-  const relatedId = entry?.relatedId || conversation?.relatedId
+  const relatedId = snapshot?.id || entry?.relatedId || conversation?.relatedId
   const relatedPath = entry?.relatedPath || conversation?.relatedPath
   const path =
     snapshot?.path || relatedPath || defaultRelatedPath(relatedType, relatedId)
 
   if (!path) return null
 
+  const rawType = snapshot?.type || relatedType
+  const type =
+    (rawType && rawType !== 'general' ? rawType : null) ||
+    inferRelatedTypeFromPath(path) ||
+    rawType ||
+    'general'
+
   return {
-    type: snapshot?.type || relatedType || 'general',
+    type,
     id: snapshot?.id || relatedId,
     title:
-      snapshot?.title ||
-      conversation?.title ||
+      usablePreviewTitle(snapshot?.title, conversation) ||
+      usablePreviewTitle(conversation?.title, conversation) ||
       messagesText(t, 'communications.snapshot.defaultTitle'),
     path,
     subtitle: snapshot?.subtitle ?? null,
@@ -182,7 +239,7 @@ export function buildConversationTimeline(conversation, userId) {
     .filter((entry) => contextHasMessages(entry, conversation))
     .map((entry) => {
       const preview = buildContextPreview(entry, conversation)
-      if (!preview?.path) return null
+      if (!isThreadRelatedPreview(preview)) return null
       return {
         kind: 'related',
         id: entry.id,

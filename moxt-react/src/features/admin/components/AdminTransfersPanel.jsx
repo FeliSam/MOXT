@@ -427,62 +427,71 @@ export function AdminTransfersPanel({
               const recipientName =
                 `${transfer.recipient?.firstName || ''} ${transfer.recipient?.lastName || ''}`.trim()
               return (
-                <div key={transfer.id} className={`${ITEM} grid gap-3`}>
-                  <div className="flex flex-wrap items-start gap-3">
-                    <span className={`mt-1.5 size-2.5 shrink-0 rounded-full ${statusDotColor(transfer.status)}`} />
-                    <button
-                      type="button"
-                      onClick={() => setSelected({ kind: 'transfer', item: transfer })}
-                      className="min-w-0 flex-1 text-left hover:text-brand-700"
-                    >
-                      <strong className="block text-sm">{transfer.id}</strong>
-                      <p className="text-xs text-[var(--app-text-muted)]">
-                        {[
-                          senderName || null,
-                          recipientName ? `→ ${recipientName}` : null,
-                          transfer.businessName || transfer.exchanger?.name,
-                        ]
-                          .filter(Boolean)
-                          .join(' · ')}
-                      </p>
-                      <p className="mt-1 text-[11px] text-[var(--app-text-muted)]">
-                        {directionLabel(transfer.direction, t)}
-                        {` · ${currencyFrom} → ${currencyTo}`}
-                        {transfer.createdAt
-                          ? ` · ${adminText(t, 'admin.transfers.createdAt', {
-                              date: formatDate(transfer.createdAt),
-                            })}`
-                          : ''}
-                      </p>
-                      {lastEvent ? (
-                        <p className="text-[10px] text-[var(--app-text-muted)]">
-                          {t(statusLabelKey(lastEvent.status)) !== statusLabelKey(lastEvent.status)
-                            ? t(statusLabelKey(lastEvent.status))
-                            : lastEvent.status || lastEvent.label}
-                          {proofCount > 0
-                            ? ` · ${adminText(t, 'admin.transfers.proofCount', { count: proofCount })}`
+                <div key={transfer.id} className={`${ITEM} grid min-w-0 gap-3`}>
+                  <div className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start sm:gap-x-4">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <span
+                        className={`mt-1.5 size-2.5 shrink-0 rounded-full ${statusDotColor(transfer.status)}`}
+                        aria-hidden
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setSelected({ kind: 'transfer', item: transfer })}
+                        className="min-w-0 flex-1 text-left hover:text-brand-700"
+                      >
+                        <strong className="block break-all text-sm">{transfer.id}</strong>
+                        <p className="mt-1 text-xs break-words text-[var(--app-text-muted)]">
+                          {[
+                            senderName || null,
+                            recipientName ? `→ ${recipientName}` : null,
+                            transfer.businessName || transfer.exchanger?.name,
+                          ]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </p>
+                        <p className="mt-1 text-[11px] break-words text-[var(--app-text-muted)]">
+                          {directionLabel(transfer.direction, t)}
+                          {` · ${currencyFrom} → ${currencyTo}`}
+                          {transfer.createdAt
+                            ? ` · ${adminText(t, 'admin.transfers.createdAt', {
+                                date: formatDate(transfer.createdAt),
+                              })}`
                             : ''}
                         </p>
-                      ) : null}
-                    </button>
-                    <TransferStatusBadge status={transfer.status} />
-                    <div className="ml-auto text-right">
-                      <p className="text-sm font-black">{formatMoney(pricing.amountSent, currencyFrom)}</p>
-                      <p className="text-xs text-[var(--app-text-muted)]">
-                        {transfer.amountReceived
-                          ? adminText(t, 'admin.transfers.receivedSuffix', {
-                              amount: formatMoney(transfer.amountReceived, currencyTo),
-                            })
-                          : ''}
-                      </p>
-                      <p className="text-[10px] text-[var(--app-text-muted)]">
-                        {adminText(t, 'admin.transfers.fees', {
-                          amount: formatMoney(pricing.fees, currencyFrom),
-                        })}
-                        {transfer.rate
-                          ? ` · ${adminText(t, 'admin.transfers.rate', { rate: Number(transfer.rate).toFixed(4) })}`
-                          : ''}
-                      </p>
+                        {lastEvent ? (
+                          <p className="mt-0.5 text-[10px] break-words text-[var(--app-text-muted)]">
+                            {t(statusLabelKey(lastEvent.status)) !== statusLabelKey(lastEvent.status)
+                              ? t(statusLabelKey(lastEvent.status))
+                              : lastEvent.status || lastEvent.label}
+                            {proofCount > 0
+                              ? ` · ${adminText(t, 'admin.transfers.proofCount', { count: proofCount })}`
+                              : ''}
+                          </p>
+                        ) : null}
+                      </button>
+                    </div>
+                    <div className="flex min-w-0 flex-wrap items-center gap-2 pl-[1.375rem] sm:flex-col sm:items-end sm:pl-0">
+                      <TransferStatusBadge status={transfer.status} />
+                      <div className="min-w-0 text-right">
+                        <p className="text-sm font-black tabular-nums">
+                          {formatMoney(pricing.amountSent, currencyFrom)}
+                        </p>
+                        <p className="text-xs break-words text-[var(--app-text-muted)]">
+                          {transfer.amountReceived
+                            ? adminText(t, 'admin.transfers.receivedSuffix', {
+                                amount: formatMoney(transfer.amountReceived, currencyTo),
+                              })
+                            : ''}
+                        </p>
+                        <p className="text-[10px] break-words text-[var(--app-text-muted)]">
+                          {adminText(t, 'admin.transfers.fees', {
+                            amount: formatMoney(pricing.fees, currencyFrom),
+                          })}
+                          {transfer.rate
+                            ? ` · ${adminText(t, 'admin.transfers.rate', { rate: Number(transfer.rate).toFixed(4) })}`
+                            : ''}
+                        </p>
+                      </div>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { paymentMethodsForCountry, PAYMENT_METHODS } from '../transfers/transferConfig'
+import { paymentMethodsForCountry, RU_SBP_BANKS_FALLBACK } from '../transfers/transferConfig'
 import { fetchRussianBanks } from '../../services/russianBanksService'
 
 /**
@@ -10,7 +10,7 @@ import { fetchRussianBanks } from '../../services/russianBanksService'
 export function usePaymentMethodOptions(countryCode) {
   const isRussia = countryCode === 'RU'
   const [options, setOptions] = useState(() =>
-    isRussia ? [...PAYMENT_METHODS.RU] : paymentMethodsForCountry(countryCode),
+    isRussia ? [...RU_SBP_BANKS_FALLBACK] : paymentMethodsForCountry(countryCode),
   )
   const [loading, setLoading] = useState(isRussia)
 
@@ -24,7 +24,7 @@ export function usePaymentMethodOptions(countryCode) {
 
     let cancelled = false
     setLoading(true)
-    setOptions([...PAYMENT_METHODS.RU])
+    setOptions([...RU_SBP_BANKS_FALLBACK])
     void fetchRussianBanks().then((banks) => {
       if (cancelled) return
       setOptions(banks)

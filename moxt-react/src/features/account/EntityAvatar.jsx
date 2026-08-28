@@ -1,4 +1,5 @@
 import { avatarDisplayUrl } from './avatarDisplayUrl'
+import { useCachedMediaUrl } from '../../hooks/useCachedMediaUrl'
 
 const SIZES = {
   sm: 'size-9 text-[11px]',
@@ -38,11 +39,12 @@ export function EntityAvatar({
     ? 'ring-2 ring-[var(--app-surface)] ring-offset-1 ring-offset-[color-mix(in_srgb,var(--app-accent)_35%,transparent)]'
     : ''
   const displaySrc = src ? avatarDisplayUrl(src, { width: SIZE_PX[size] || SIZE_PX.md }) : src
+  const cachedSrc = useCachedMediaUrl(displaySrc, { kind: 'avatar' })
 
-  if (displaySrc) {
+  if (cachedSrc || displaySrc) {
     return (
       <img
-        src={displaySrc}
+        src={cachedSrc || displaySrc}
         alt={alt || name || ''}
         loading="lazy"
         decoding="async"

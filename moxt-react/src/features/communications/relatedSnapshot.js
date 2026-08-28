@@ -1,6 +1,8 @@
 import { formatMoney, formatDate } from '../transfers/transferUtils'
 import { jobContractLabel, jobSectorLabel } from '../jobs/jobDisplayUtils'
 import { normalizeConversation } from './communicationSlice'
+import { isParticipantDisplayName } from './conversationDisplay'
+import { inferRelatedTypeFromPath } from './conversationTimeline'
 import { messagesText } from './messagesI18n'
 
 function baseSnapshot({ type, id, title, path, subtitle, imageUrl, badge, details = [] }, t) {
@@ -234,58 +236,104 @@ export function buildRelatedSnapshot(relatedType, entity, fallbacks = {}) {
   )
 }
 
+function liveSnapshotForType(state, relatedType, relatedId, relatedPath, t) {
+  if (!relatedType || !relatedId) return null
+  switch (relatedType) {
+    case 'listing':
+      return buildListingSnapshot(
+        state?.marketplace?.items?.find((entry) => entry.id === relatedId),
+        relatedPath,
+        t,
+      )
+    case 'job':
+      return buildJobSnapshot(
+        state?.jobs?.items?.find((entry) => entry.id === relatedId),
+        relatedPath,
+        t,
+      )
+    case 'parcel':
+      return buildParcelSnapshot(
+        state?.parcels?.items?.find((entry) => entry.id === relatedId),
+        relatedPath,
+        { t },
+      )
+    case 'event':
+      return buildEventSnapshot(
+        state?.events?.items?.find((entry) => entry.id === relatedId),
+        relatedPath,
+        t,
+      )
+    case 'business':
+      return buildBusinessSnapshot(
+        state?.businesses?.items?.find((entry) => entry.id === relatedId),
+        relatedPath,
+        t,
+      )
+    case 'transfer':
+      return buildTransferSnapshot(
+        state?.transfers?.items?.find((entry) => entry.id === relatedId),
+        relatedPath,
+        t,
+      )
+    case 'p2p':
+      return buildP2PSnapshot(
+        state?.p2p?.offers?.find((entry) => entry.id === relatedId),
+        relatedPath,
+        t,
+      )
+    default:
+      return null
+  }
+}
+
+function usableStoredTitle(title, conversation) {
+  const value = String(title || '').trim()
+  if (!value) return null
+  if (isParticipantDisplayName(conversation, value)) return null
+  return value
+}
+
 export function resolveRelatedSnapshot(state, conversation, t) {
   const normalized = normalizeConversation(conversation)
-  if (normalized.relatedSnapshot?.title) return normalized.relatedSnapshot
+  const stored = normalized.relatedSnapshot
+  const relatedPath = stored?.path || normalized.relatedPath
+  const relatedType =
+    (stored?.type && stored.type !== 'general' ? stored.type : null) ||
+    (normalized.relatedType && normalized.relatedType !== 'general'
+      ? normalized.relatedType
+      : null) ||
+    inferRelatedTypeFromPath(relatedPath)
+  const relatedId = stored?.id || normalized.relatedId
+  const live = liveSnapshotForType(state, relatedType, relatedId, relatedPath, t)
 
-  const { relatedType, relatedId, relatedPath, title } = normalized
-  if (!relatedType || !relatedId) return null
-
-  const fallbacks = { id: relatedId, title, path: relatedPath, t }
-  switch (relatedType) {
-    case 'listing': {
-      const item = state.marketplace?.items?.find((entry) => entry.id === relatedId)
-      return (
-        buildListingSnapshot(item, relatedPath, t) ||
-        buildRelatedSnapshot(relatedType, item, fallbacks)
-      )
+  if (live?.title) {
+    return {
+      ...stored,
+      ...live,
+      type: live.type || relatedType || stored?.type || 'general',
+      path: live.path || relatedPath || stored?.path,
+      imageUrl: live.imageUrl || stored?.imageUrl || null,
+      subtitle: live.subtitle ?? stored?.subtitle ?? null,
     }
-    case 'job': {
-      const item = state.jobs?.items?.find((entry) => entry.id === relatedId)
-      return buildJobSnapshot(item, relatedPath, t) || buildRelatedSnapshot(relatedType, item, fallbacks)
-    }
-    case 'parcel': {
-      const item = state.parcels?.items?.find((entry) => entry.id === relatedId)
-      return (
-        buildParcelSnapshot(item, relatedPath, { t }) ||
-        buildRelatedSnapshot(relatedType, item, fallbacks)
-      )
-    }
-    case 'event': {
-      const item = state.events?.items?.find((entry) => entry.id === relatedId)
-      return (
-        buildEventSnapshot(item, relatedPath, t) || buildRelatedSnapshot(relatedType, item, fallbacks)
-      )
-    }
-    case 'business': {
-      const item = state.businesses?.items?.find((entry) => entry.id === relatedId)
-      return (
-        buildBusinessSnapshot(item, relatedPath, t) ||
-        buildRelatedSnapshot(relatedType, item, fallbacks)
-      )
-    }
-    case 'transfer': {
-      const item = state.transfers?.items?.find((entry) => entry.id === relatedId)
-      return (
-        buildTransferSnapshot(item, relatedPath, t) ||
-        buildRelatedSnapshot(relatedType, item, fallbacks)
-      )
-    }
-    case 'p2p': {
-      const item = state.p2p?.offers?.find((entry) => entry.id === relatedId)
-      return buildP2PSnapshot(item, relatedPath, t) || buildRelatedSnapshot(relatedType, item, fallbacks)
-    }
-    default:
-      return buildRelatedSnapshot(relatedType, null, fallbacks)
   }
+
+  const storedTitle = usableStoredTitle(stored?.title, normalized)
+  if (storedTitle) {
+    return {
+      ...stored,
+      title: storedTitle,
+      type: relatedType || stored.type || 'general',
+      path: stored.path || relatedPath,
+    }
+  }
+
+  if (!relatedType || !relatedId) return stored?.path ? { ...stored, type: relatedType || stored.type || 'general' } : null
+
+  const fallbacks = {
+    id: relatedId,
+    title: usableStoredTitle(normalized.title, normalized),
+    path: relatedPath,
+    t,
+  }
+  return buildRelatedSnapshot(relatedType, null, fallbacks)
 }

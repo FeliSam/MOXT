@@ -51,7 +51,11 @@ import { DocumentsPanel } from './professional/DocumentsPanel'
 import { MembersPanel } from './professional/MembersPanel'
 import { Overview } from './professional/Overview'
 import { ProfilePanel } from './professional/ProfilePanel'
-import { PublicationsPanel } from './professional/PublicationsPanel'
+import { BusinessPublicationsPanel } from '../features/businesses/BusinessPublicationsPanel'
+import {
+  collectBusinessPublications,
+  publicationTotalCount,
+} from '../features/publications/publicationCatalogUtils'
 import { RequestsPanel } from './professional/RequestsPanel'
 import { ReviewsPanel } from './professional/ReviewsPanel'
 import { StatisticsPanel } from './professional/StatisticsPanel'
@@ -126,12 +130,22 @@ function buildProfessionalTabGroups({
   ]
 }
 
-const serviceContentMap = {
-  Marketplace: 'listings',
-  Jobs: 'jobs',
-  Events: 'events',
-  Colis: 'parcels',
-  P2P: 'offers',
+
+function flattenBusinessPublications(publications = {}) {
+  const listings = publications.listings || []
+  const jobs = publications.jobs || []
+  const events = publications.events || []
+  const parcels = publications.parcels || []
+  const videos = publications.videos || []
+  const others = publications.others || []
+  return [
+    ...listings.map((item) => ({ ...item, contentType: 'listings' })),
+    ...jobs.map((item) => ({ ...item, contentType: 'jobs' })),
+    ...events.map((item) => ({ ...item, contentType: 'events' })),
+    ...parcels.map((item) => ({ ...item, contentType: 'parcels' })),
+    ...videos.map((item) => ({ ...item, contentType: 'videos' })),
+    ...others.map((item) => ({ ...item, contentType: 'offers' })),
+  ]
 }
 
 export function ProfessionalPage() {
@@ -142,9 +156,10 @@ export function ProfessionalPage() {
   const [active, setActive] = useState('profile')
   const user = useSelector((state) => state.auth.user)
   const business = useSelector((state) =>
-    selectActiveBusinessForOwner(state.businesses.items, user.id),
+    selectActiveBusinessForOwner(state.businesses.items, user?.id),
   )
   const content = useSelector((state) => selectBusinessContent(state, business))
+  const videoItems = useSelector((state) => state.videos.items)
   const members = useSelector((state) =>
     state.businesses.members.filter((item) => item.businessId === business?.id),
   )
@@ -160,6 +175,7 @@ export function ProfessionalPage() {
     state.businesses.requests.filter((item) => item.businessId === business?.id),
   )
   const transfers = useSelector((state) => {
+    if (!user?.id) return []
     const visible = selectTransfersVisibleToUser(state, user.id)
     if (!business?.id) return visible
     return visible.filter((item) => item.businessId === business.id)
@@ -182,10 +198,26 @@ export function ProfessionalPage() {
   const enabledServices = useMemo(() => business?.services || [], [business])
   const hasPublicationModules = businessHasPublicationModules(enabledServices)
   const showRequests = hasPublicationModules
-  const enabledKeys = enabledServices.map((service) => serviceContentMap[service]).filter(Boolean)
-  const publications = enabledKeys.flatMap((key) =>
-    content[key].map((item) => ({ ...item, contentType: key })),
+  const businessPublications = useMemo(
+    () =>
+      collectBusinessPublications(
+        {
+          marketplace: { items: content.listings },
+          parcels: { items: content.parcels },
+          jobs: { items: content.jobs },
+          events: { items: content.events },
+          p2p: { offers: content.offers },
+          videos: { items: videoItems },
+        },
+        business?.id,
+      ),
+    [business?.id, content, videoItems],
   )
+  const publications = useMemo(
+    () => flattenBusinessPublications(businessPublications),
+    [businessPublications],
+  )
+  const publicationCount = publicationTotalCount(businessPublications)
   const completion = calculateBusinessCompletion(business, documents)
   const rating = calculateBusinessRating(reviews)
   const activity = activityByValue(business?.primaryActivity)
@@ -235,7 +267,7 @@ export function ProfessionalPage() {
         enabledServices,
         hasTransfers,
         showRequests,
-        publications,
+        publicationCount,
         rating,
         requests,
         transferStats,
@@ -250,11 +282,10 @@ export function ProfessionalPage() {
       content,
       enabledServices,
       hasTransfers,
-      publications,
+      publicationCount,
       pt,
       rating,
       requests,
-      searchParams,
       showRequests,
       t,
       transferStats,
@@ -370,7 +401,7 @@ export function ProfessionalPage() {
         <TransferRateSettingsPanel business={business} dispatch={dispatch} user={user} />
       ) : null}
       {safeActive === 'publications' ? (
-        <PublicationsPanel publications={publications} dispatch={dispatch} />
+        <BusinessPublicationsPanel businessId={business.id} isOwner />
       ) : null}
       {safeActive === 'documents' ? (
         <DocumentsPanel
@@ -438,7 +469,7 @@ function buildBusinessMetrics({
   enabledServices,
   hasTransfers,
   showRequests,
-  publications,
+  publicationCount,
   rating,
   requests,
   transferStats,
@@ -487,7 +518,7 @@ function buildBusinessMetrics({
     metrics.push({
       icon: FiFileText,
       label: pt('professional.page.metrics.publications'),
-      value: publications.length,
+      value: publicationCount,
     })
     if (enabledServices.includes('Events')) {
       metrics.push({

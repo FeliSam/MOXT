@@ -9,6 +9,7 @@ export const PUBLISH_CONTENT_TYPE_SERVICES = {
   parcel: 'Colis',
   job: 'Jobs',
   event: 'Events',
+  video: 'Marketplace',
   p2p: 'P2P',
 }
 

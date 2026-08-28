@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DIRECTIONS } from './transferConfig'
+import { DIRECTIONS, TRANSFER_LIMITS_POLICY } from './transferConfig'
 import {
   calculateTransfer,
   getTransferPricing,
@@ -8,6 +8,16 @@ import {
   totalToPayFromReceived,
   validateTransferAmount,
 } from './transferUtils'
+
+function withAmountLimits(fn) {
+  const previous = TRANSFER_LIMITS_POLICY.enforceAmountLimits
+  TRANSFER_LIMITS_POLICY.enforceAmountLimits = true
+  try {
+    return fn()
+  } finally {
+    TRANSFER_LIMITS_POLICY.enforceAmountLimits = previous
+  }
+}
 
 describe('calcul des transferts', () => {
   it('applique la marge et les frais inclus dans le montant saisi (XOF vers RUB)', () => {
@@ -68,24 +78,38 @@ describe('calcul des transferts', () => {
   })
 
   it('refuse un montant sous le minimum', () => {
-    expect(validateTransferAmount(999, DIRECTIONS.BJ_TO_RU, true)).toContain('minimum')
+    withAmountLimits(() => {
+      expect(validateTransferAmount(999, DIRECTIONS.BJ_TO_RU, true)).toContain('minimum')
+    })
   })
 
   it('applique un plafond plus bas aux comptes non verifies', () => {
-    expect(validateTransferAmount(600000, DIRECTIONS.BJ_TO_RU, false)).toContain('plafond')
-    expect(validateTransferAmount(600000, DIRECTIONS.BJ_TO_RU, true)).toBeNull()
+    withAmountLimits(() => {
+      expect(validateTransferAmount(600000, DIRECTIONS.BJ_TO_RU, false)).toContain('plafond')
+      expect(validateTransferAmount(600000, DIRECTIONS.BJ_TO_RU, true)).toBeNull()
+    })
   })
 
   it('applique le plafond mensuel cumule aux comptes non verifies', () => {
-    expect(validateTransferAmount(100000, DIRECTIONS.BJ_TO_RU, false, 450000)).toContain('mensuel')
-    expect(validateTransferAmount(50000, DIRECTIONS.BJ_TO_RU, false, 450000)).toBeNull()
+    withAmountLimits(() => {
+      expect(validateTransferAmount(100000, DIRECTIONS.BJ_TO_RU, false, 450000)).toContain('mensuel')
+      expect(validateTransferAmount(50000, DIRECTIONS.BJ_TO_RU, false, 450000)).toBeNull()
+    })
   })
 
   it('utilise les seuils du pays d origine quand ils changent de devise', () => {
-    expect(validateTransferAmount(40, DIRECTIONS.BJ_TO_RU, false, 0, 'GH')).toContain('minimum')
-    expect(validateTransferAmount(30000, DIRECTIONS.BJ_TO_RU, false, 0, 'GH')).toContain(
-      'plafond',
-    )
+    withAmountLimits(() => {
+      expect(validateTransferAmount(40, DIRECTIONS.BJ_TO_RU, false, 0, 'GH')).toContain('minimum')
+      expect(validateTransferAmount(30000, DIRECTIONS.BJ_TO_RU, false, 0, 'GH')).toContain(
+        'plafond',
+      )
+    })
+  })
+
+  it('ignore min et plafond quand la politique est désactivée', () => {
+    expect(TRANSFER_LIMITS_POLICY.enforceAmountLimits).toBe(false)
+    expect(validateTransferAmount(1, DIRECTIONS.BJ_TO_RU, false)).toBeNull()
+    expect(validateTransferAmount(9_999_999, DIRECTIONS.BJ_TO_RU, false)).toBeNull()
   })
 
   it('reconstruit les frais et le total quand des anciens transferts n ont pas ces champs', () => {

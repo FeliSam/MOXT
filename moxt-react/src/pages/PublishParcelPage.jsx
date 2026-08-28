@@ -51,6 +51,11 @@ import {
   publishOptionSub,
   publishText,
 } from '../features/publications/publishI18n'
+import { StarsInsufficientError, starsOwnerFromPublish } from '../features/stars/starsPublish'
+import { StarsPublishGate } from '../features/stars/StarsPublishGate'
+import { PublishFormulaSheet } from '../features/stars/PublishFormulaSheet'
+import { DEFAULT_QUOTA_CONFIG } from '../features/stars/starsConfig'
+import { useStarsPublishFlow } from '../features/stars/useStarsPublishFlow'
 
 const STEPS = PARCEL_PUBLISH_STEPS
 
@@ -139,6 +144,10 @@ export function PublishParcelPage() {
   const [ticketHelpOpen, setTicketHelpOpen] = useState(false)
   const [errors, setErrors] = useState({})
   const { trigger: triggerBurst, node: burstNode } = useActionBurst()
+  const { pendingQuote, confirmPaid, acceptSpend, cancelSpend, withStarsConsume } = useStarsPublishFlow()
+  const starsBalance = useSelector((state) => state.stars.balance)
+  const [formulaKey, setFormulaKey] = useState('standard')
+  const [publishing, setPublishing] = useState(false)
 
   const fromCountry =
     direction === 'RU_TO_AFRICA' ? RUSSIA : originCountry || { code: 'BJ', name: beninName }
@@ -309,7 +318,7 @@ export function PublishParcelPage() {
     setStep((s) => Math.max(s - 1, 1))
   }
 
-  function publish() {
+  async function publish() {
     if (!requireVoyagePublish()) return
     if (!validate(3)) return
     const publishContext = resolveBusinessPublishContext({
@@ -327,36 +336,73 @@ export function PublishParcelPage() {
       )
       return
     }
+    const parcelId = createId('COL')
+    setPublishing(true)
     const { travelProofFile, passportProofFile, ...rest } = form
-    const action = dispatch(
-      createParcel({
-        ...rest,
-        ownerId: user.id,
-        ownerName: publishContext.useBusiness
-          ? business.name
-          : `${user.firstName} ${user.lastName}`,
-        businessId: publishContext.businessId,
-        fromCountry: fromCountry.code,
-        toCountry: toCountry.code,
-        originCountry: fromCountry.code,
-        destinationCountry: toCountry.code,
-        conditions: publishText(t, 'publish.parcel.conditionsAcceptedPrefix', {
-          types: form.acceptedTypes.join(', '),
-          conditions: form.conditions,
+    let action
+    try {
+      const outcome = await withStarsConsume({
+        category: 'parcel',
+        formulaKey,
+        ...starsOwnerFromPublish({
+          useBusiness: publishContext.useBusiness,
+          business,
+          user,
         }),
-        passportProofName: passportProofFile?.name || null,
-        passportProofType: passportProofFile?.type || null,
-        passportProofSize: passportProofFile?.size || null,
-        passportProofUrl: passportProofFile?.path || passportProofFile?.url || null,
-        passportStatus: initialParcelDocStatus(Boolean(passportProofFile?.path || passportProofFile?.url)),
-        travelProofName: travelProofFile?.name || null,
-        travelProofType: travelProofFile?.type || null,
-        travelProofSize: travelProofFile?.size || null,
-        travelProofUrl: travelProofFile?.path || travelProofFile?.url || null,
-        proofStatus: initialParcelDocStatus(Boolean(travelProofFile?.path || travelProofFile?.url)),
-        status: 'active',
-      }),
-    )
+        entityId: parcelId,
+        confirmPaid,
+        publish: async () =>
+          dispatch(
+            createParcel({
+              ...rest,
+              id: parcelId,
+              ownerId: user.id,
+              ownerName: publishContext.useBusiness
+                ? business.name
+                : `${user.firstName} ${user.lastName}`,
+              businessId: publishContext.businessId,
+              fromCountry: fromCountry.code,
+              toCountry: toCountry.code,
+              originCountry: fromCountry.code,
+              destinationCountry: toCountry.code,
+              conditions: publishText(t, 'publish.parcel.conditionsAcceptedPrefix', {
+                types: form.acceptedTypes.join(', '),
+                conditions: form.conditions,
+              }),
+              passportProofName: passportProofFile?.name || null,
+              passportProofType: passportProofFile?.type || null,
+              passportProofSize: passportProofFile?.size || null,
+              passportProofUrl: passportProofFile?.path || passportProofFile?.url || null,
+              passportStatus: initialParcelDocStatus(Boolean(passportProofFile?.path || passportProofFile?.url)),
+              travelProofName: travelProofFile?.name || null,
+              travelProofType: travelProofFile?.type || null,
+              travelProofSize: travelProofFile?.size || null,
+              travelProofUrl: travelProofFile?.path || travelProofFile?.url || null,
+              proofStatus: initialParcelDocStatus(Boolean(travelProofFile?.path || travelProofFile?.url)),
+              status: 'active',
+            }),
+          ),
+      })
+      if (outcome?.cancelled) return
+      action = outcome.result
+    } catch (error) {
+      dispatch(
+        addToast({
+          title:
+            error instanceof StarsInsufficientError
+              ? t('stars.insufficientTitle')
+              : publishText(t, 'publish.common.toasts.businessBlockedTitle'),
+          message:
+            error instanceof StarsInsufficientError
+              ? t('stars.insufficientBody')
+              : error.message || publishText(t, 'publish.common.toasts.retry'),
+          tone: 'error',
+        }),
+      )
+      return
+    } finally {
+      setPublishing(false)
+    }
     triggerBurst()
     dispatch(
       addToast({
@@ -411,6 +457,14 @@ export function PublishParcelPage() {
           {publishText(t, 'publish.parcel.back')}
         </Button>
         <h1 className="text-xl font-black">{publishText(t, 'publish.parcel.title')}</h1>
+        <StarsPublishGate
+          category="parcel"
+          ownerType={form.publishAs === 'business' && canPublishAsBusiness ? 'business' : 'user'}
+          ownerId={form.publishAs === 'business' && canPublishAsBusiness ? business?.id : user?.id}
+          pendingQuote={pendingQuote}
+          onCancel={cancelSpend}
+          onConfirm={acceptSpend}
+        />
       </div>
 
       <Card className="px-6 py-5">
@@ -903,6 +957,16 @@ export function PublishParcelPage() {
         </div>
       ) : null}
 
+      {step === STEPS.length ? (
+        <PublishFormulaSheet
+          category="parcel"
+          value={formulaKey}
+          onChange={setFormulaKey}
+          enforced={Boolean(starsBalance?.enforced)}
+          config={starsBalance?.config || DEFAULT_QUOTA_CONFIG}
+        />
+      ) : null}
+
       <div className="flex items-center justify-between gap-3">
         {step > 1 ? (
           <Button variant="secondary" icon={FiArrowLeft} onClick={back}>
@@ -916,7 +980,7 @@ export function PublishParcelPage() {
             {publishText(t, 'publish.common.continue')}
           </Button>
         ) : (
-          <Button icon={FiCheckCircle} onClick={publish}>
+          <Button icon={FiCheckCircle} onClick={publish} loading={publishing} disabled={publishing}>
             {publishText(t, 'publish.parcel.nav.publish')}
           </Button>
         )}

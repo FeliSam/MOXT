@@ -92,3 +92,11 @@ outputs/
 translations/moxt-translations.json
 apps/mobile/.expo-export*/
 supabase/.temp/
+docs/MOXT_Analyse_Couts_Cursor.*
+scripts/.moxt-*
+scripts/.moxti-*
+scripts/lib/.moxt-*
+scripts/generate_devis_moxt_docx.py
+
+# ffmpeg.wasm core (généré par moxt-react/scripts/copy-ffmpeg-core.mjs)
+moxt-react/public/ffmpeg/
