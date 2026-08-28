@@ -1,6 +1,5 @@
 import {
   LuBell,
-  LuBriefcase,
   LuChevronDown,
   LuHeart,
   LuHistory,
@@ -66,13 +65,15 @@ function getMobileHeaderActions(pathname, { canFeed, canJobs, canNews, canEvents
         ? { to: '/events/publish', labelKey: 'events.browse.create', gate: 'publish' }
         : null
   return {
-    showPublishMenu: isHome || isMarketplace || (isP2P && !pathMatches(pathname, '/p2p/publish')),
+    showPublishMenu:
+      (isHome || isMarketplace || (isP2P && !pathMatches(pathname, '/p2p/publish'))) &&
+      !isFeed &&
+      !sectionPublish,
     sectionPublish,
     showNews: canNews && showContextualShortcuts && !(isFeedViewport && canFeed),
-    showFeed: isFeedViewport && canFeed && (showContextualShortcuts || isNews),
+    showFeed: !isFeed,
     showPublishVideo: false,
     showHistory: isTransfers,
-    showJobs: isParcels && canJobs,
     showMessages: !isFeed,
   }
 }
@@ -207,17 +208,6 @@ export function Header({ hideOnMobile = false }) {
             >
               <LuRss className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
               <HeaderActionLabel>{t('nav.feed')}</HeaderActionLabel>
-            </Link>
-          ) : null}
-
-          {mobileActions.showJobs ? (
-            <Link
-              to="/jobs"
-              className="header-action-btn relative grid lg:hidden"
-              aria-label={t('nav.jobs')}
-            >
-              <LuBriefcase className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
-              <HeaderActionLabel>{t('nav.jobs')}</HeaderActionLabel>
             </Link>
           ) : null}
 
