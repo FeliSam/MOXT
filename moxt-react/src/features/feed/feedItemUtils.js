@@ -299,12 +299,41 @@ function publisherFromBusiness(business, fallbackName = '') {
   }
 }
 
-function publisherFromUser(userId, name = '', avatarUrl = '') {
+const GENERIC_PUBLISHER_NAME_RE = /^(contact|membre(\s+de)?)\s+moxt$/i
+
+export function isGenericPublisherName(name) {
+  const value = String(name || '').trim()
+  return !value || GENERIC_PUBLISHER_NAME_RE.test(value)
+}
+
+function profileFullName(profile) {
+  if (!profile) return ''
+  return `${profile.firstName || profile.first_name || ''} ${profile.lastName || profile.last_name || ''}`.trim()
+}
+
+function pickPublisherName(...candidates) {
+  for (const raw of candidates) {
+    const name = String(raw || '').trim()
+    if (name && !isGenericPublisherName(name)) return name
+  }
+  return ''
+}
+
+function resolveUserRecord(state, userId) {
+  if (!userId || !state) return null
+  const id = String(userId)
+  const authUser = state.auth?.user
+  if (authUser && String(authUser.id) === id) return authUser
+  return state.profileDirectory?.byId?.[id] || null
+}
+
+function publisherFromUser(userId, name = '', avatarUrl = '', state = {}) {
+  const profile = resolveUserRecord(state, userId)
   return {
     type: 'user',
     id: userId || '',
-    name: name || 'Membre MOXT',
-    avatarUrl: avatarUrl || '',
+    name: pickPublisherName(profileFullName(profile), name) || 'Membre MOXT',
+    avatarUrl: avatarUrl || profile?.avatarUrl || profile?.avatar_url || '',
     path: userId ? `/users/${userId}/publications` : '',
     ownerId: userId || '',
   }
@@ -350,8 +379,9 @@ export function normalizeListingFeedItem(listing, state = {}) {
     ? publisherFromBusiness(business, listing.businessName || listing.publisherName || '')
     : publisherFromUser(
         listing.ownerId,
-        listing.ownerName || listing.publisherName || '',
-        listing.ownerAvatarUrl || '',
+        listing.sellerName || listing.ownerName || listing.publisherName || '',
+        listing.ownerAvatarUrl || listing.sellerAvatarUrl || '',
+        state,
       )
   const images = asImages(listing.images)
   const social = aggregateEntitySocialStats('listing', listing.id, state, {
@@ -385,7 +415,7 @@ export function normalizeParcelFeedItem(parcel, state = {}) {
   const business = resolveBusiness(state, parcel.businessId)
   const publisher = parcel.businessId
     ? publisherFromBusiness(business, parcel.businessName || '')
-    : publisherFromUser(parcel.ownerId, parcel.ownerName || '', parcel.ownerAvatarUrl || '')
+    : publisherFromUser(parcel.ownerId, parcel.ownerName || '', parcel.ownerAvatarUrl || '', state)
   const images = asPublicImages(parcel.images || (parcel.travelProofUrl ? [parcel.travelProofUrl] : []))
   const origin =
     parcel.origin || parcel.originCity || parcel.fromCity || parcel.originCountry || parcel.fromCountry || ''
@@ -436,7 +466,7 @@ export function normalizeJobFeedItem(job, state = {}) {
   const business = resolveBusiness(state, job.businessId)
   const publisher = job.businessId
     ? publisherFromBusiness(business, job.businessName || job.companyName || '')
-    : publisherFromUser(job.ownerId, job.ownerName || '', job.ownerAvatarUrl || '')
+    : publisherFromUser(job.ownerId, job.publisherName || job.ownerName || '', job.ownerAvatarUrl || '', state)
   const images = asImages(job.images || (job.imageUrl ? [job.imageUrl] : []))
   const social = aggregateEntitySocialStats('job', job.id, state, {
     likes: job.likes,
@@ -470,7 +500,7 @@ export function normalizeEventFeedItem(event, state = {}) {
   const business = resolveBusiness(state, event.businessId)
   const publisher = event.businessId
     ? publisherFromBusiness(business, event.businessName || event.organizerName || '')
-    : publisherFromUser(event.ownerId, event.ownerName || event.organizerName || '', event.ownerAvatarUrl || '')
+    : publisherFromUser(event.ownerId, event.ownerName || event.organizerName || '', event.ownerAvatarUrl || '', state)
   const images = asImages(event.images || (event.imageUrl ? [event.imageUrl] : []))
   const social = aggregateEntitySocialStats('event', event.id, state, {
     likes: event.likes,
@@ -504,7 +534,7 @@ export function normalizeP2pFeedItem(offer, state = {}) {
   const business = resolveBusiness(state, offer.businessId)
   const publisher = offer.businessId
     ? publisherFromBusiness(business, offer.businessName || offer.ownerName || '')
-    : publisherFromUser(offer.ownerId, offer.ownerName || '', offer.ownerAvatarUrl || '')
+    : publisherFromUser(offer.ownerId, offer.ownerName || '', offer.ownerAvatarUrl || '', state)
   const pair = [offer.fromCurrency, offer.toCurrency].filter(Boolean).join(' → ')
   return {
     id: feedItemKey('p2p', offer.id),
@@ -530,7 +560,7 @@ export function normalizeP2pFeedItem(offer, state = {}) {
   }
 }
 
-export function normalizePostFeedItem(post) {
+export function normalizePostFeedItem(post, state = {}) {
   if (!post?.id || !isActivePost(post)) return null
   // Les posts profil issus d’une publication marketplace/jobs/… sont déjà
   // représentés par la fiche catalogue — on n’affiche que l’élément initial.
@@ -541,7 +571,7 @@ export function normalizePostFeedItem(post) {
     kind: 'post',
     entityId: post.id,
     createdAt: post.createdAt || '',
-    publisher: publisherFromUser(post.authorId, post.authorName || '', post.authorAvatarUrl || ''),
+    publisher: publisherFromUser(post.authorId, post.authorName || '', post.authorAvatarUrl || '', state),
     media: { images, videoUrl: '', poster: images[0] || '' },
     title: (post.message || '').trim().slice(0, 80) || 'Publication',
     caption: post.message || '',

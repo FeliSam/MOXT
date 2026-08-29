@@ -11,6 +11,8 @@ import { EntityVerifiedName } from '../../components/ui/EntityVerifiedName'
 import { useGuestAction } from '../guest/useGuestAction'
 import { useLanguage } from '../../contexts/useLanguage'
 import { phase3Text } from '../../i18n/phase3I18n'
+import { usePublicationProfile } from '../publications/usePublicationProfile'
+import { isGenericPublisherName } from './feedItemUtils'
 import { FeedBoostBadge } from './FeedBoostBadge'
 import { FeedPromoBadge, FeedTrendBadge } from './FeedTrendBadge'
 import { FeedCaption } from './FeedCaption'
@@ -105,11 +107,24 @@ export function FeedSlideShell({
 }) {
   const { t } = useLanguage()
   const p3 = (key, vars) => phase3Text(t, key, vars)
-  const name = publisher?.name || p3('feed.publisherFallback')
+  const currentUser = useSelector((state) => state.auth.user)
+  const directoryEntry = useSelector((state) =>
+    publisher?.type === 'user' && publisher?.id ? state.profileDirectory?.byId?.[publisher.id] : null,
+  )
+  const { profile } = usePublicationProfile(
+    publisher?.type === 'user' ? publisher.id : '',
+    currentUser,
+  )
+  const profileName = `${profile?.firstName || ''} ${profile?.lastName || ''}`.trim()
+  const directoryName = `${directoryEntry?.firstName || ''} ${directoryEntry?.lastName || ''}`.trim()
+  const name =
+    [profileName, directoryName, publisher?.name].find((value) => !isGenericPublisherName(value)) ||
+    p3('feed.publisherFallback')
+  const avatarUrl = publisher?.avatarUrl || profile?.avatarUrl || directoryEntry?.avatarUrl || ''
   const avatar = (
     <EntityAvatar
       name={name}
-      src={publisher?.avatarUrl || ''}
+      src={avatarUrl}
       size="sm"
       shape={publisher?.type === 'business' ? 'business' : 'user'}
       ring={false}
@@ -165,7 +180,7 @@ export function FeedSlideShell({
               <StarsGiftButton
                 publisherType={publisher.type === 'business' ? 'business' : 'user'}
                 publisherId={publisher.id}
-                publisherName={publisher.name || ''}
+                publisherName={name}
                 size="sm"
               />
             ) : null}

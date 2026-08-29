@@ -81,6 +81,38 @@ describe('feedItemUtils', () => {
     expect(item?.stats.likes).toBe(1)
   })
 
+  it('affiche le sellerName de l’annonce plutôt que Membre MOXT', () => {
+    const item = normalizeListingFeedItem({
+      id: 'LST-1',
+      status: 'active',
+      title: 'Annonce',
+      images: ['https://cdn/a.jpg'],
+      ownerId: 'u1',
+      sellerName: 'Marie Martin',
+    })
+    expect(item?.publisher.name).toBe('Marie Martin')
+    expect(item?.publisher.id).toBe('u1')
+  })
+
+  it('préfère le nom du profil si sellerName est générique', () => {
+    const item = normalizeListingFeedItem(
+      {
+        id: 'LST-1',
+        status: 'active',
+        title: 'Annonce',
+        images: ['https://cdn/a.jpg'],
+        ownerId: 'u1',
+        sellerName: 'Membre MOXT',
+      },
+      {
+        profileDirectory: {
+          byId: { u1: { id: 'u1', firstName: 'Christelle', lastName: 'DEDEWANOU' } },
+        },
+      },
+    )
+    expect(item?.publisher.name).toBe('Christelle DEDEWANOU')
+  })
+
   it('ignore une annonce inactive', () => {
     expect(
       normalizeListingFeedItem({

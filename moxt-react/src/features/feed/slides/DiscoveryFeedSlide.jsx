@@ -26,14 +26,16 @@ const VARIANT_SUBTITLE = {
   spotlight: 'feed.discovery.spotlight.subtitle',
 }
 
+const SLIDE_SLOT =
+  'relative flex w-[min(72vw,22rem)] shrink-0 snap-center snap-always justify-center'
+const TRACK_CLASS =
+  'scrollbar-hidden relative flex items-center gap-4 overflow-x-auto overflow-y-hidden overscroll-x-contain snap-x snap-mandatory touch-pan-x px-[max(0px,calc((100%-min(72vw,22rem))/2))] scroll-px-[max(0px,calc((100%-min(72vw,22rem))/2))]'
 const MEDIA_CARD_ACTIVE =
-  'h-[min(58dvh,32rem)] w-[72vw] max-w-[22rem] scale-100 opacity-100'
+  'h-[min(58dvh,32rem)] origin-center scale-100 opacity-100'
 const MEDIA_CARD_INACTIVE =
-  'h-[min(48dvh,26rem)] w-[58vw] max-w-[17rem] scale-[0.86] opacity-55'
-const BUSINESS_CARD_ACTIVE =
-  'w-[clamp(15.5rem,78vw,19rem)] max-w-[19rem] scale-100 opacity-100'
-const BUSINESS_CARD_INACTIVE =
-  'w-[clamp(13rem,66vw,16rem)] max-w-[16rem] scale-[0.92] opacity-70'
+  'h-[min(48dvh,26rem)] origin-center scale-[0.86] opacity-55'
+const BUSINESS_CARD_ACTIVE = 'origin-center scale-100 opacity-100'
+const BUSINESS_CARD_INACTIVE = 'origin-center scale-[0.92] opacity-70'
 
 function DiscoveryCard({ card, active }) {
   return (
@@ -41,7 +43,7 @@ function DiscoveryCard({ card, active }) {
       to={card.href}
       data-discovery-card
       aria-label={card.title || undefined}
-      className={`relative block shrink-0 snap-center overflow-hidden rounded-[2rem] bg-black shadow-[0_20px_60px_rgba(0,0,0,0.45)] transition duration-300 ease-out ${
+      className={`${SLIDE_SLOT} overflow-hidden rounded-[2rem] bg-black shadow-[0_20px_60px_rgba(0,0,0,0.45)] transition duration-300 ease-out ${
         active ? MEDIA_CARD_ACTIVE : MEDIA_CARD_INACTIVE
       }`}
     >
@@ -67,7 +69,7 @@ function DiscoveryBusinessSlideCard({ business, active, user }) {
   return (
     <div
       data-discovery-card
-      className={`shrink-0 snap-center transition duration-300 ease-out ${
+      className={`${SLIDE_SLOT} transition duration-300 ease-out ${
         active ? BUSINESS_CARD_ACTIVE : BUSINESS_CARD_INACTIVE
       }`}
     >
@@ -86,19 +88,22 @@ export function DiscoveryFeedSlide({ item, index, active = true }) {
   const isBusinessVariant = variant === 'businesses'
   const slideCount = isBusinessVariant ? businesses.length : cards.length
   const trackRef = useRef(null)
+  const activeCardRef = useRef(0)
   const [activeCard, setActiveCard] = useState(0)
+  activeCardRef.current = activeCard
 
   const updateActiveCard = useCallback(() => {
     const track = trackRef.current
     if (!track) return
     const cardNodes = [...track.querySelectorAll('[data-discovery-card]')]
     if (!cardNodes.length) return
-    const trackCenter = track.scrollLeft + track.clientWidth / 2
+    const trackRect = track.getBoundingClientRect()
+    const trackCenter = trackRect.left + trackRect.width / 2
     let closest = 0
     let closestDistance = Infinity
     cardNodes.forEach((node, cardIndex) => {
-      const center = node.offsetLeft + node.offsetWidth / 2
-      const distance = Math.abs(center - trackCenter)
+      const rect = node.getBoundingClientRect()
+      const distance = Math.abs(rect.left + rect.width / 2 - trackCenter)
       if (distance < closestDistance) {
         closestDistance = distance
         closest = cardIndex
@@ -107,25 +112,36 @@ export function DiscoveryFeedSlide({ item, index, active = true }) {
     setActiveCard(closest)
   }, [])
 
+  const centerCard = useCallback((cardIndex, behavior = 'auto') => {
+    const track = trackRef.current
+    if (!track) return
+    const card = track.querySelectorAll('[data-discovery-card]')[cardIndex]
+    if (!card) return
+    const trackRect = track.getBoundingClientRect()
+    const cardRect = card.getBoundingClientRect()
+    const delta = cardRect.left + cardRect.width / 2 - (trackRect.left + trackRect.width / 2)
+    if (Math.abs(delta) < 1) return
+    track.scrollTo({ left: track.scrollLeft + delta, behavior })
+  }, [])
+
   useEffect(() => {
     const track = trackRef.current
     if (!track || !active) return undefined
     updateActiveCard()
+    const frame = requestAnimationFrame(() => centerCard(activeCardRef.current))
     track.addEventListener('scroll', updateActiveCard, { passive: true })
-    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateActiveCard) : null
-    observer?.observe(track)
+    const onResize = () => centerCard(activeCardRef.current)
+    window.addEventListener('resize', onResize)
     return () => {
+      cancelAnimationFrame(frame)
       track.removeEventListener('scroll', updateActiveCard)
-      observer?.disconnect()
+      window.removeEventListener('resize', onResize)
     }
-  }, [active, slideCount, updateActiveCard])
+  }, [active, centerCard, slideCount, updateActiveCard])
 
   function scrollBy(direction) {
-    const track = trackRef.current
-    if (!track) return
-    const card = track.querySelector('[data-discovery-card]')
-    const cardWidth = card?.offsetWidth || 280
-    track.scrollBy({ left: direction * (cardWidth + 16), behavior: 'smooth' })
+    const next = Math.min(slideCount - 1, Math.max(0, activeCard + direction))
+    centerCard(next, 'smooth')
   }
 
   if (!slideCount) return null
@@ -173,7 +189,7 @@ export function DiscoveryFeedSlide({ item, index, active = true }) {
           <div className="relative w-full">
             <div
               ref={trackRef}
-              className="scrollbar-hidden flex items-center gap-4 overflow-x-auto overflow-y-hidden overscroll-x-contain px-[14vw] snap-x snap-mandatory touch-pan-x"
+              className={TRACK_CLASS}
             >
               {isBusinessVariant
                 ? businesses.map((business, cardIndex) => (
