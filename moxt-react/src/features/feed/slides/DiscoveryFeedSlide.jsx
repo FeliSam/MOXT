@@ -90,7 +90,10 @@ export function DiscoveryFeedSlide({ item, index, active = true }) {
   const trackRef = useRef(null)
   const activeCardRef = useRef(0)
   const [activeCard, setActiveCard] = useState(0)
-  activeCardRef.current = activeCard
+
+  useEffect(() => {
+    activeCardRef.current = activeCard
+  }, [activeCard])
 
   const updateActiveCard = useCallback(() => {
     const track = trackRef.current
