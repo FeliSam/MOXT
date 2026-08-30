@@ -145,6 +145,12 @@ function parseSharePath(pathname: string) {
   return { kind, entityId }
 }
 
+function isShareCrawler(userAgent: string) {
+  return /bot|crawler|spider|facebookexternalhit|whatsapp|telegram|twitter|slack|linkedin|discord|preview|embedly|vkshare|pinterest/i.test(
+    userAgent,
+  )
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', {
@@ -167,19 +173,20 @@ Deno.serve(async (req) => {
     }
 
     const meta = await resolveShareMeta(parsed.kind, parsed.entityId)
-    if (!meta) {
-      const fallback = {
-        title: 'MOXT',
-        description: 'Découvrez cette publication sur MOXT.',
-        image: DEFAULT_OG_IMAGE,
-        targetUrl: `${SITE_URL}/discover`,
-      }
-      return new Response(renderPreviewHtml(fallback), {
-        headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=300' },
-      })
+    const fallback = {
+      title: 'MOXT',
+      description: 'Découvrez cette publication sur MOXT.',
+      image: DEFAULT_OG_IMAGE,
+      targetUrl: `${SITE_URL}/discover`,
+    }
+    const payload = meta || fallback
+    const userAgent = req.headers.get('user-agent') || ''
+
+    if (!isShareCrawler(userAgent)) {
+      return Response.redirect(payload.targetUrl, 302)
     }
 
-    return new Response(renderPreviewHtml(meta), {
+    return new Response(renderPreviewHtml(payload), {
       headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=300' },
     })
   } catch (error) {

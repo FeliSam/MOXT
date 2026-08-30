@@ -17,14 +17,8 @@ export function buildEntitySharePreviewUrl({ kind, entityId } = {}) {
   })
 }
 
-/** URL absolue partagée avec aperçu riche quand la fonction est déployée. */
+/** URL absolue partagée avec les humains (copier / partager natif). */
 export function buildEntityShareUrl(item = {}) {
-  const preview = buildEntitySharePreviewUrl({
-    kind: item.kind,
-    entityId: item.entityId,
-  })
-  if (preview) return preview
-
   const target = resolveInAppShareTarget({
     kind: item.kind,
     entityId: item.entityId,

@@ -1,7 +1,9 @@
-import { FiStar, FiTrendingUp, FiZap } from 'react-icons/fi'
+import { useEffect } from 'react'
+import { FiLock, FiStar, FiTrendingUp, FiZap } from 'react-icons/fi'
 import { useLanguage } from '../../contexts/useLanguage'
 import { DEFAULT_QUOTA_CONFIG } from './starsConfig'
 import { PUBLISH_FORMULAS, resolveStarsActionCost } from './starsPricing'
+import { useStarsModuleEnabled } from './useStarsModuleEnabled'
 
 const FORMULA_UI = {
   standard: { icon: FiStar, accent: 'border-[var(--app-border)]' },
@@ -13,10 +15,19 @@ export function PublishFormulaSheet({
   category,
   value = 'standard',
   onChange,
-  enforced: _enforced = false,
+  enforced = false,
   config = DEFAULT_QUOTA_CONFIG,
 }) {
   const { t } = useLanguage()
+  const starsEnabled = useStarsModuleEnabled()
+  const premiumEnabled = starsEnabled && enforced
+
+  useEffect(() => {
+    if (!premiumEnabled && value !== 'standard') {
+      onChange?.('standard')
+    }
+  }, [onChange, premiumEnabled, value])
+
   if (category === 'status') return null
 
   return (
@@ -28,39 +39,56 @@ export function PublishFormulaSheet({
           const Icon = meta.icon
           const cost = resolveStarsActionCost({ category, formulaKey, config })
           const selected = value === formulaKey
+          const locked = formulaKey !== 'standard' && !premiumEnabled
           return (
             <button
               key={formulaKey}
               type="button"
-              onClick={() => onChange?.(formulaKey)}
+              disabled={locked}
+              aria-disabled={locked}
+              onClick={() => {
+                if (locked) return
+                onChange?.(formulaKey)
+              }}
               className={`rounded-2xl border bg-[var(--app-surface)] p-3 text-left transition ${
-                selected
-                  ? `${meta.accent} shadow-[var(--shadow-card)]`
-                  : 'border-[var(--app-border)]/70 hover:border-[var(--app-border)]'
+                locked
+                  ? 'cursor-not-allowed border-[var(--app-border)]/60 opacity-70'
+                  : selected
+                    ? `${meta.accent} shadow-[var(--shadow-card)]`
+                    : 'border-[var(--app-border)]/70 hover:border-[var(--app-border)]'
               }`}
             >
               <span className="flex items-center gap-2">
                 <span
                   className={`grid size-8 place-items-center rounded-xl ${
-                    selected ? 'bg-brand-500/15 text-brand-700' : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'
+                    locked
+                      ? 'bg-[var(--app-surface-muted)] text-[var(--app-text-faint)]'
+                      : selected
+                        ? 'bg-brand-500/15 text-brand-700'
+                        : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'
                   }`}
                 >
-                  <Icon aria-hidden />
+                  {locked ? <FiLock aria-hidden /> : <Icon aria-hidden />}
                 </span>
                 <span className="min-w-0">
                   <span className="block text-xs font-black">{t(`stars.formulas.${formulaKey}`)}</span>
                   <span className="mt-0.5 block text-[11px] font-bold tabular-nums text-brand-700">
-                    {t('stars.formulas.costStars', { n: cost })}
+                    {locked
+                      ? t('stars.comingSoon')
+                      : t('stars.formulas.costStars', { n: cost })}
                   </span>
                 </span>
               </span>
               <p className="mt-2 text-[10px] leading-snug text-[var(--app-text-faint)]">
-                {t(`stars.formulas.${formulaKey}Desc`)}
+                {locked ? t('stars.comingSoon') : t(`stars.formulas.${formulaKey}Desc`)}
               </p>
             </button>
           )
         })}
       </div>
+      {!premiumEnabled ? (
+        <p className="text-[10px] text-[var(--app-text-faint)]">{t('stars.comingSoon')}</p>
+      ) : null}
     </div>
   )
 }

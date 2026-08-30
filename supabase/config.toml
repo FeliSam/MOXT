@@ -114,5 +114,8 @@ verify_jwt = true
 [functions.stars-purchase]
 verify_jwt = false
 
+[functions.share-preview]
+verify_jwt = false
+
 [auth.external.google]
 enabled = false
