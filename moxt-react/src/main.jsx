@@ -42,6 +42,9 @@ async function bootstrap() {
   const { hydrateAuthFromBootstrapCache } = await import('./services/authBootstrapCache')
   hydrateAuthFromBootstrapCache(store.dispatch)
 
+  const { hydrateStatusRailIfEmpty } = await import('./features/statuses/statusSync')
+  hydrateStatusRailIfEmpty(store.getState, store.dispatch)
+
   const { loadPlatformModules } = await import('./features/platform/platformModulesSlice')
   void store.dispatch(loadPlatformModules())
 

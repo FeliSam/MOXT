@@ -1,5 +1,6 @@
 import { applySession, clearSession } from '../features/auth/authSlice'
 import { clearAuthBootstrapCache, writeAuthBootstrapCache } from '../services/authBootstrapCache'
+import { hydrateStatusRailIfEmpty } from '../features/statuses/statusSync'
 
 function cachePayloadFromAction(action, state) {
   if (action.payload?.user?.id && action.payload?.token) {
@@ -23,6 +24,7 @@ export const authBootstrapMiddleware = (store) => (next) => (action) => {
   ) {
     const payload = cachePayloadFromAction(action, store.getState())
     if (payload) writeAuthBootstrapCache(payload)
+    hydrateStatusRailIfEmpty(store.getState, store.dispatch)
   }
 
   if (action.type === clearSession.type || action.type === 'auth/logout/fulfilled') {

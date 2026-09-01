@@ -3,9 +3,9 @@
  * le fil de posts. Ma bulle en premier (avec bouton "+" pour publier),
  * suivie des auteurs ayant des statuts non vus puis déjà vus.
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { FiPlus } from 'react-icons/fi'
-import { useDispatch, useSelector } from 'react-redux'
+import { useDispatch, useSelector, useStore } from 'react-redux'
 import { StatusRing } from './StatusRing'
 import { StatusViewer } from './StatusViewer'
 import { StatusComposer } from './StatusComposer'
@@ -14,7 +14,7 @@ import { useLanguage } from '../../contexts/useLanguage'
 import { supabase } from '../../services/supabaseClient'
 import { receiveRemoteStatus, removeRemoteStatus } from './statusesSlice'
 import { statusFromRemoteRow } from './statusRemote'
-import { refreshStatusesData } from './statusSync'
+import { refreshStatusesData, hydrateStatusRailIfEmpty } from './statusSync'
 
 /** Emprise visuelle unique (anneau inclus) pour aligner toutes les bulles. */
 const BUBBLE_OUTER = 'size-[3.75rem]'
@@ -101,6 +101,7 @@ export function StatusRail({
 }) {
   const { t } = useLanguage()
   const dispatch = useDispatch()
+  const store = useStore()
   const user = useSelector((s) => s.auth.user)
   const ownBusiness = useSelector((s) =>
     (s.businesses?.items ?? []).find((item) => item.ownerId === user?.id),
@@ -128,36 +129,50 @@ export function StatusRail({
   const officialGroups = groups.filter((g) => g.isOfficial && !isMine(g))
   const otherGroups = groups.filter((g) => !isMine(g) && !g.isOfficial)
 
+  const channelRef = useRef(null)
+
+  useLayoutEffect(() => {
+    if (!user?.id) return
+    hydrateStatusRailIfEmpty(store.getState, store.dispatch)
+  }, [store, user?.id])
+
   useEffect(() => {
     if (!supabase || !user?.id) return undefined
-    const channel = supabase
-      .channel('statuses-live')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'statuses' },
-        (payload) => {
-          const remote = statusFromRemoteRow(payload.new)
-          if (remote?.id) dispatch(receiveRemoteStatus(remote))
-        },
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'statuses' },
-        (payload) => {
-          const remote = statusFromRemoteRow(payload.new)
-          if (remote?.id) dispatch(receiveRemoteStatus(remote))
-        },
-      )
-      .on(
-        'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'statuses' },
-        (payload) => {
-          if (payload.old?.id) dispatch(removeRemoteStatus(payload.old.id))
-        },
-      )
-      .subscribe()
+    const timer = window.setTimeout(() => {
+      const channel = supabase
+        .channel(`statuses-live-${user.id}`)
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'statuses' },
+          (payload) => {
+            const remote = statusFromRemoteRow(payload.new)
+            if (remote?.id) dispatch(receiveRemoteStatus(remote))
+          },
+        )
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'statuses' },
+          (payload) => {
+            const remote = statusFromRemoteRow(payload.new)
+            if (remote?.id) dispatch(receiveRemoteStatus(remote))
+          },
+        )
+        .on(
+          'postgres_changes',
+          { event: 'DELETE', schema: 'public', table: 'statuses' },
+          (payload) => {
+            if (payload.old?.id) dispatch(removeRemoteStatus(payload.old.id))
+          },
+        )
+        .subscribe()
+      channelRef.current = channel
+    }, 400)
     return () => {
-      supabase.removeChannel(channel)
+      window.clearTimeout(timer)
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current)
+        channelRef.current = null
+      }
     }
   }, [dispatch, user?.id])
 

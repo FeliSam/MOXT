@@ -7,10 +7,24 @@ import {
   mergeStatusViewers,
   mergeViewedByLists,
 } from './statusViewUtils'
-import { readStatusRailCache, writeStatusRailCache } from './statusRailCache'
+import {
+  isStatusRailCacheFresh,
+  readStatusRailCache,
+  writeStatusRailCache,
+} from './statusRailCache'
 
 const STATUS_RAIL_COLUMNS =
   'id, author_id, author_name, author_avatar_url, business_id, images, viewed_by, created_at, expires_at, is_official'
+
+/** Affiche le cache local immédiatement si le store est vide. */
+export function hydrateStatusRailIfEmpty(getState, dispatch) {
+  const uid = getState().auth.user?.id
+  if (!uid || getState().statuses?.items?.length) return false
+  const cached = readStatusRailCache(uid, { allowStale: true })
+  if (!cached?.length) return false
+  dispatch(setStatuses({ items: applySeenLedgerToStatuses(cached, uid) }))
+  return true
+}
 
 function parseJsonField(value, fallback) {
   if (Array.isArray(value) || (value && typeof value === 'object' && !Array.isArray(value))) {
@@ -44,14 +58,15 @@ function mapStatusRows(rows, localStatusesById) {
 /** Recharge léger des statuts (rail) — indépendant du mega loadAllData. */
 export const refreshStatusesData = createAsyncThunk(
   'statuses/refreshStatusesData',
-  async (_, { dispatch, getState, rejectWithValue }) => {
+  async ({ force = false } = {}, { dispatch, getState, rejectWithValue }) => {
     if (!supabase) return rejectWithValue('Connexion indisponible')
     const uid = getState().auth.user?.id
     if (!uid) return null
 
-    const cached = readStatusRailCache(uid)
-    if (cached?.length) {
-      dispatch(setStatuses({ items: applySeenLedgerToStatuses(cached, uid) }))
+    hydrateStatusRailIfEmpty(getState, dispatch)
+
+    if (!force && isStatusRailCacheFresh(uid) && getState().statuses?.items?.length) {
+      return getState().statuses.items.length
     }
 
     const { data, error } = await supabase
