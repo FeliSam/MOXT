@@ -4,6 +4,7 @@ import {
   diversifyFeedItems,
   sortByFeedScore,
 } from './feedRankUtils.js'
+import { asArray } from './feedCollectionUtils.js'
 
 /** Entre deux contenus boostés, au moins N items organiques. */
 export const FEED_ORGANIC_BETWEEN_BOOSTS = 4
@@ -49,11 +50,7 @@ export function boostPriority(boost, now = Date.now()) {
 }
 
 function normalizeBoostList(boosts) {
-  if (!boosts) return []
-  if (Array.isArray(boosts)) return boosts
-  if (boosts instanceof Map) return [...boosts.values()]
-  if (typeof boosts === 'object') return Object.values(boosts)
-  return []
+  return asArray(boosts).filter((row) => row && typeof row === 'object')
 }
 
 function asBoostLookup(lookup, now = Date.now()) {

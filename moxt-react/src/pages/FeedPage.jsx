@@ -19,6 +19,7 @@ import {
   preserveFeedOrder,
   resolveFeedDesktopRedirect,
 } from '../features/feed/feedItemUtils'
+import { readSearchParam } from '../features/feed/feedCollectionUtils'
 import { loadGuestFeedCatalog } from '../features/guest/guestFeedService'
 import { buildEntityShareUrl } from '../features/share/shareLinkUtils'
 import { loadFeedBoosts } from '../features/stars/starsSlice'
@@ -67,9 +68,9 @@ export function FeedPage() {
   const { guestMode = false } = useOutletContext() || {}
   const [searchParams] = useSearchParams()
   const isFeedViewport = useIsFeedViewport()
-  const rawType = searchParams.get('type') || 'all'
+  const rawType = readSearchParam(searchParams, 'type', 'all')
   const requestedType = rawType === 'all' || FEED_KINDS.includes(rawType) ? rawType : 'all'
-  const itemParam = searchParams.get('item') || ''
+  const itemParam = readSearchParam(searchParams, 'item')
   const feedBoosts = useSelector((s) => s.stars.feedBoosts)
   const user = useSelector((s) => s.auth.user)
   const subscriptions = useSelector((s) => s.account.subscriptions)

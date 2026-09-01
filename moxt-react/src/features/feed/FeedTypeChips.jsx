@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useLanguage } from '../../contexts/useLanguage'
 import { phase3Text } from '../../i18n/phase3I18n'
 import { FEED_TYPE_FILTERS, feedPath } from './feedItemUtils'
+import { readSearchParam } from './feedCollectionUtils'
 import { FeedPublishMenu } from './FeedPublishMenu'
 
 const FEED_BACK_BTN_CLASS =
@@ -26,8 +27,8 @@ export function FeedTypeChips({
   const { t } = useLanguage()
   const p3 = (key, vars) => phase3Text(t, key, vars)
   const [searchParams] = useSearchParams()
-  const current = searchParams.get('type') || 'all'
-  const item = searchParams.get('item') || ''
+  const current = readSearchParam(searchParams, 'type', 'all')
+  const item = readSearchParam(searchParams, 'item')
 
   const visible = FEED_TYPE_FILTERS.filter((filter) => {
     if (filter.id === 'all') return true

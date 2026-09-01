@@ -1,5 +1,6 @@
 import { isItemFromSubscribedPublisher } from '@moxt/shared/utils/subscriptionUtils.js'
 import { listingBoostBonus, marketplaceBoostLookup } from './marketplaceListingBoost.js'
+import { asArray, asIdLookup } from '../feed/feedCollectionUtils.js'
 
 const MS_HOUR = 60 * 60 * 1000
 
@@ -55,28 +56,29 @@ export function buildListingAffinity({
 }) {
   const typeWeights = {}
   const categoryWeights = {}
+  const byId = asIdLookup(listingsById)
 
   function bump(type, category, weight) {
     if (type) typeWeights[type] = (typeWeights[type] || 0) + weight
     if (category) categoryWeights[category] = (categoryWeights[category] || 0) + weight
   }
 
-  for (const fav of favorites) {
+  for (const fav of asArray(favorites)) {
     if (fav.userId && fav.userId !== userId) continue
     if (fav.relatedType !== 'listing') continue
-    const listing = listingsById.get(fav.relatedId)
+    const listing = byId.get(fav.relatedId)
     bump(listing?.type || fav.snapshot?.type, listing?.category || fav.snapshot?.category, 3)
   }
 
-  for (const viewed of viewedListings) {
+  for (const viewed of asArray(viewedListings)) {
     if (viewed.userId && viewed.userId !== userId) continue
-    const listing = listingsById.get(viewed.listingId)
+    const listing = byId.get(viewed.listingId)
     bump(listing?.type, listing?.category, 1)
   }
 
-  for (const impression of impressionListings) {
+  for (const impression of asArray(impressionListings)) {
     if (impression.userId && impression.userId !== userId) continue
-    const listing = listingsById.get(impression.listingId)
+    const listing = byId.get(impression.listingId)
     bump(listing?.type, listing?.category, 0.45)
   }
 

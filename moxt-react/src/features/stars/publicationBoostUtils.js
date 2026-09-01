@@ -1,4 +1,5 @@
 import { PUBLISH_FORMULAS } from './starsConfig'
+import { asArray } from '../feed/feedCollectionUtils.js'
 
 const DURATION_TO_FORMULA = {
   '24h': 'featured_24h',
@@ -32,7 +33,7 @@ export function isBoostablePublicationType(publicationType) {
 export function activeBoostForEntity(feedBoosts = [], entityType, entityId) {
   const target = `${entityType}:${entityId}`
   const now = Date.now()
-  return (feedBoosts || []).find((row) => {
+  return asArray(feedBoosts).find((row) => {
     if (String(row?.status || 'active').toLowerCase() !== 'active') return false
     if (new Date(row.expires_at || row.expiresAt).getTime() <= now) return false
     return `${row.entity_type}:${row.entity_id}` === target

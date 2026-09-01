@@ -1,5 +1,6 @@
 import { buildBoostLookup, sortFeedItemsWithBoosts } from './feedBoostUtils.js'
 import { buildFeedRankContext } from './feedRankUtils.js'
+import { asArray } from './feedCollectionUtils.js'
 
 import { getPostImages } from '../posts/postMediaUtils.js'
 import { newsPostPath } from '../posts/postFeedUtils.js'
@@ -595,7 +596,7 @@ export function buildUnifiedFeedItems(state, { typeFilter = 'all', boosts = null
   const items = []
 
   const pushAll = (list, normalize) => {
-    for (const row of list) {
+    for (const row of asArray(list)) {
       const item = normalize(row, state)
       if (item) items.push(item)
     }
@@ -616,7 +617,7 @@ export function buildUnifiedFeedItems(state, { typeFilter = 'all', boosts = null
     return sortFeedItemsWithBoosts(items, new Map(), ctx)
   }
 
-  const boostLookup = buildBoostLookup(boosts)
+  const boostLookup = buildBoostLookup(asArray(boosts))
   const ctx = rankCtx || buildFeedRankContext(state, user)
   return sortFeedItemsWithBoosts(items, boostLookup, ctx)
 }

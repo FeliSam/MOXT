@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import { createLocalStorage } from '../../services/createLocalStorage'
+import { asArray } from '../feed/feedCollectionUtils.js'
 import { selectActiveBusinessForOwner } from '../businesses/businessVisibility'
 import {
   adminStarsOverview,
@@ -50,7 +51,7 @@ const initialState = {
   packages: [],
   purchases: [],
   overview: null,
-  feedBoosts: feedBoostsStorage.read([]) ?? [],
+  feedBoosts: asArray(feedBoostsStorage.read([])),
   status: 'idle',
   error: null,
 }
@@ -113,7 +114,7 @@ export const loadFeedBoosts = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       await expireFeedBoosts()
-      const boosts = await fetchFeedBoosts()
+      const boosts = asArray(await fetchFeedBoosts())
       feedBoostsStorage.write(boosts)
       markFeedBoostsSynced()
       return boosts
@@ -208,7 +209,7 @@ const starsSlice = createSlice({
         state.purchases = action.payload?.purchases || []
       })
       .addCase(loadFeedBoosts.fulfilled, (state, action) => {
-        state.feedBoosts = action.payload || []
+        state.feedBoosts = asArray(action.payload)
       })
       .addCase(loadFeedBoosts.rejected, () => {
         // Conserver les boosts préchargés depuis le cache local.
