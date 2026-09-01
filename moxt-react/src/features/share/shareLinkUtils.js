@@ -1,6 +1,6 @@
 import {
   buildSharePreviewUrl as buildSharedSharePreviewUrl,
-  resolveInAppShareTarget,
+  resolvePublicShareTarget,
 } from '@moxt/shared/share/shareLinkUtils.js'
 import { getSiteUrl } from '../../utils/siteUrl'
 
@@ -19,7 +19,7 @@ export function buildEntitySharePreviewUrl({ kind, entityId } = {}) {
 
 /** URL absolue partagée avec les humains (copier / partager natif). */
 export function buildEntityShareUrl(item = {}) {
-  const target = resolveInAppShareTarget({
+  const target = resolvePublicShareTarget({
     kind: item.kind,
     entityId: item.entityId,
     href: item.href,
@@ -28,4 +28,4 @@ export function buildEntityShareUrl(item = {}) {
   return `${getSiteUrl()}${target.startsWith('/') ? target : `/${target}`}`
 }
 
-export { resolveInAppShareTarget }
+export { resolvePublicShareTarget }

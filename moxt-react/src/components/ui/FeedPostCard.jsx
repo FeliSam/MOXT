@@ -27,11 +27,12 @@ import {
 } from '../../features/posts/postsSlice'
 import { getPostImages, MAX_POST_MESSAGE_LENGTH } from '../../features/posts/postMediaUtils'
 import { newsPostPath } from '../../features/posts/postFeedUtils'
+import { feedItemKey, feedPath } from '../../features/feed/feedItemUtils'
+import { buildEntityShareUrl } from '../../features/share/shareLinkUtils'
 import { SOURCE_TYPE_LABELS } from '../../features/posts/postTemplates'
 import { formatDate } from '../../features/transfers/transferUtils'
 import { addToast } from '../../features/ui/uiSlice'
 import { phase3Text } from '../../i18n/phase3I18n'
-import { buildAbsoluteUrl } from '../../utils/siteUrl'
 import { FeedPostImages } from './FeedPostImages'
 import { EntityVerifiedName } from './EntityVerifiedName'
 
@@ -182,7 +183,12 @@ export function FeedPostCard({ post }) {
   }
 
   async function handleShare() {
-    const url = buildAbsoluteUrl(newsPostPath(post.id))
+    const url = buildEntityShareUrl({
+      kind: 'post',
+      entityId: post.id,
+      href: newsPostPath(post.id),
+      feedHref: feedPath({ item: feedItemKey('post', post.id) }),
+    })
     const shareData = {
       title: post.title || post.authorName || 'MOXT',
       text: (post.message || '').trim().slice(0, 200),

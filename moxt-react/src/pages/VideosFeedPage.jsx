@@ -1,4 +1,4 @@
-import { Navigate, useSearchParams } from 'react-router-dom'
+import { Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { feedItemKey, feedPath, resolveFeedDesktopRedirect } from '../features/feed/feedItemUtils'
 import { useIsFeedViewport } from '../features/feed/feedViewport'
 
@@ -18,6 +18,15 @@ export function VideosFeedPage() {
     return <Navigate to={to} replace />
   }
 
+  const to = videoId
+    ? feedPath({ type: 'video', item: feedItemKey('video', videoId) })
+    : feedPath({ type: 'video' })
+  return <Navigate to={to} replace />
+}
+
+/** Anciens liens partagés `/videos/:videoId` → fil vidéo. */
+export function VideoShareRedirect() {
+  const { videoId } = useParams()
   const to = videoId
     ? feedPath({ type: 'video', item: feedItemKey('video', videoId) })
     : feedPath({ type: 'video' })

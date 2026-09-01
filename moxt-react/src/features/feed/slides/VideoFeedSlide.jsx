@@ -38,7 +38,6 @@ import {
   moderateVideo,
   toggleVideoLike,
 } from '../../videos/videosSlice'
-import { videoFeedPath } from '../../videos/videoUtils'
 import { useCachedMediaUrl } from '../../../hooks/useCachedMediaUrl'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { addToast } from '../../ui/uiSlice'
@@ -51,15 +50,6 @@ function formatCount(value) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`
   if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, '')}k`
   return String(n)
-}
-
-function buildVideoShareUrl(video) {
-  return buildEntityShareUrl({
-    kind: 'video',
-    entityId: video?.id,
-    href: video?.id ? `/videos/${video.id}` : '/videos',
-    feedHref: videoFeedPath(video?.id),
-  })
 }
 
 function MoreActionRow({ icon: Icon, children, onClick, to, danger = false, onNavigate }) {
@@ -90,6 +80,7 @@ function MoreActionRow({ icon: Icon, children, onClick, to, danger = false, onNa
 
 function VideoMoreSheet({
   video,
+  shareUrl,
   open,
   onClose,
   isOwner,
@@ -129,7 +120,8 @@ function VideoMoreSheet({
   }
 
   async function copyLink() {
-    const url = buildVideoShareUrl(video)
+    const url = shareUrl
+    if (!url) return
     try {
       await navigator.clipboard?.writeText(url)
       dispatch(
@@ -420,7 +412,7 @@ export function VideoFeedSlide({ item, index, active }) {
     ownerId: business?.ownerId,
   }
 
-  const shareUrl = buildVideoShareUrl(video)
+  const shareUrl = buildEntityShareUrl(item)
 
   if (!video?.id) return null
 
@@ -575,6 +567,7 @@ export function VideoFeedSlide({ item, index, active }) {
       />
       <VideoMoreSheet
         video={video}
+        shareUrl={shareUrl}
         open={moreOpen}
         onClose={() => setMoreOpen(false)}
         isOwner={isOwner}

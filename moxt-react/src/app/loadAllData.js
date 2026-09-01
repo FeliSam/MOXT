@@ -15,12 +15,7 @@ import { setAll as setReviews } from '../features/reviews/reviewSlice'
 import { setAll as setDisputes } from '../features/disputes/disputeSlice'
 import { setAll as setFinance } from '../features/finance/financeSlice'
 import { setAll as setPosts } from '../features/posts/postsSlice'
-import { setAll as setStatuses } from '../features/statuses/statusesSlice'
-import {
-  applySeenLedgerToStatuses,
-  mergeStatusViewers,
-  mergeViewedByLists,
-} from '../features/statuses/statusViewUtils'
+import { refreshStatusesData } from '../features/statuses/statusSync'
 import { setRecipientAddresses } from '../features/addresses/recipientAddressesSlice'
 import { hydrateAccountPreferences, mergeRemoteAccount, updateAccountPreferences, hydrateMarketplaceDiscoverySignals } from '../features/account/accountSlice'
 import { profileRowToAdminUser, setAdminUsers } from '../features/administration/administrationSlice'
@@ -271,6 +266,8 @@ export const loadAllData = createAsyncThunk(
       }
     }
 
+    void dispatch(refreshStatusesData())
+
     const [
       listingsRes, parcelsRes, parcelRequestsRes,
       jobsRes, jobApplicationsRes,
@@ -286,7 +283,6 @@ export const loadAllData = createAsyncThunk(
       receiptsRes,
       notificationsRes,
       postsRes,
-      statusesRes,
       _helpArticlesRes,
       supportTicketsRes,
       recipientAddressesRes,
@@ -358,12 +354,6 @@ export const loadAllData = createAsyncThunk(
             .order('last_shared_at', { ascending: false, nullsFirst: false })
             .order('created_at', { ascending: false })
             .limit(40),
-      supabase
-        .from('statuses')
-        .select('*')
-        .gt('expires_at', new Date().toISOString())
-        .order('created_at', { ascending: false })
-        .limit(60),
       // Guide chargé à la demande (HelpGuidePage / AdminHelpArticlesPage)
       Promise.resolve({ data: [], error: null }),
       isAdmin
@@ -380,25 +370,6 @@ export const loadAllData = createAsyncThunk(
             .limit(50),
       supabase.from('recipient_addresses').select('*').eq('user_id', uid).order('updated_at', { ascending: false }).limit(USER_LIMIT),
     ])
-
-    // Afficher les statuts dès que la query est prête — ne pas attendre transferts/conversations.
-    {
-      const localStatusesById = new Map((getState().statuses?.items || []).map((item) => [item.id, item]))
-      const mappedStatuses = fromRows(safeRows(statusesRes, 'des statuts')).map((s) => {
-        const remoteViewedBy = parseJsonField(s.viewedBy ?? s.viewed_by, [])
-        const remoteViewers = parseJsonField(s.viewers, {})
-        const local = localStatusesById.get(s.id)
-        return {
-          ...s,
-          images: parseJsonField(s.images, []).filter((url) => typeof url === 'string' && url).slice(0, 4),
-          viewedBy: mergeViewedByLists(remoteViewedBy, local?.viewedBy),
-          viewers: mergeStatusViewers(remoteViewers, local?.viewers),
-          reactions: parseJsonField(s.reactions, {}),
-          isOfficial: s.isOfficial === true || s.is_official === true,
-        }
-      })
-      dispatch(setStatuses({ items: applySeenLedgerToStatuses(mappedStatuses, uid) }))
-    }
 
     let auditLogRes = { data: [], error: null }
     if (isAdmin) {
@@ -892,24 +863,6 @@ export const loadAllData = createAsyncThunk(
           }),
         }
       }) }))
-      // Le marquage "vu" (viewedBy/viewers) est écrit en fire-and-forget côté serveur ;
-      // si ce rechargement arrive avant que l'écriture précédente n'ait abouti, on
-      // fusionne avec l'état local + ledger pour ne jamais faire "regresser" un statut déjà vu.
-      const localStatusesById = new Map((getState().statuses?.items || []).map((item) => [item.id, item]))
-      const mappedStatuses = fromRows(safeRows(statusesRes, 'des statuts')).map((s) => {
-        const remoteViewedBy = parseJsonField(s.viewedBy ?? s.viewed_by, [])
-        const remoteViewers = parseJsonField(s.viewers, {})
-        const local = localStatusesById.get(s.id)
-        return {
-          ...s,
-          images: parseJsonField(s.images, []).filter((url) => typeof url === 'string' && url).slice(0, 4),
-          viewedBy: mergeViewedByLists(remoteViewedBy, local?.viewedBy),
-          viewers: mergeStatusViewers(remoteViewers, local?.viewers),
-          reactions: parseJsonField(s.reactions, {}),
-          isOfficial: s.isOfficial === true || s.is_official === true,
-        }
-      })
-      dispatch(setStatuses({ items: applySeenLedgerToStatuses(mappedStatuses, uid) }))
       dispatch(mergeRemoteAccount({
         favorites: fromRows(safeRows(favoritesRes, 'des favoris')),
         subscriptions: fromRows(safeRows(subscriptionsRes, 'des abonnements')).map((item) => ({
@@ -1077,7 +1030,7 @@ export const loadAllData = createAsyncThunk(
         rememberProfileId(comment.authorId)
       }
     }
-    for (const status of fromRows(safeRows(statusesRes, 'des statuts'))) {
+    for (const status of getState().statuses?.items || []) {
       rememberProfileId(status.authorId)
     }
     for (const review of remoteReviews) rememberProfileId(review.authorId)

@@ -73,6 +73,7 @@ const EventDetailPage = lazyPage(() => import('../pages/EventDetailPage'), 'Even
 const EventsPage = lazyPage(() => import('../pages/EventsPage'), 'EventsPage')
 const FeedPage = lazyPage(() => import('../pages/FeedPage'), 'FeedPage')
 const VideosFeedPage = lazyPage(() => import('../pages/VideosFeedPage'), 'VideosFeedPage')
+const VideoShareRedirect = lazyPage(() => import('../pages/VideosFeedPage'), 'VideoShareRedirect')
 const PublishVideoPage = lazyPage(() => import('../pages/PublishVideoPage'), 'PublishVideoPage')
 const EditVideoPage = lazyPage(() => import('../pages/EditVideoPage'), 'EditVideoPage')
 const EditListingPage = lazyPage(() => import('../pages/EditListingPage'), 'EditListingPage')
@@ -524,6 +525,14 @@ export function AppRouter() {
               element={
                 <DevModuleRoute moduleId="videos">
                   <EditVideoPage />
+                </DevModuleRoute>
+              }
+            />
+            <Route
+              path="/videos/:videoId"
+              element={
+                <DevModuleRoute moduleId="videos">
+                  <VideoShareRedirect />
                 </DevModuleRoute>
               }
             />

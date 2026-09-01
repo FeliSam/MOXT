@@ -85,9 +85,16 @@ function runNodeSupabaseCaptured(args, env, { input } = {}) {
  * migrations sont idempotentes (`if not exists`, `or replace`), il est sûr de
  * neutraliser ces entrées fantômes puis de relancer le push automatiquement.
  */
+function extractRepairVersions(output) {
+  const lineMatch = output.match(/migration repair --status \S+ ([\d\s]+)/)
+  if (lineMatch) {
+    return lineMatch[1].trim().split(/\s+/).filter((v) => /^\d+$/.test(v))
+  }
+  return [...output.matchAll(/\b(\d{14})\b/g)].map((m) => m[1])
+}
+
 function autoRepairOrphanVersions(output, env) {
-  const versions = [...output.matchAll(/migration repair --status \S+ (\d+)/g)].map((m) => m[1])
-  const unique = [...new Set(versions)]
+  const unique = [...new Set(extractRepairVersions(output))]
   if (!unique.length) return false
 
   log(

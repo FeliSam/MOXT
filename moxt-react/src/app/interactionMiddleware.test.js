@@ -683,7 +683,7 @@ describe('interactionMiddleware', () => {
     expect(posts.find((p) => p.id === 'POST-3').status).toBe('published')
   })
 
-  it('notifie tous les utilisateurs quand une offre P2P est publiee', () => {
+  it('ne fan-out pas cote client a la publication P2P (trigger serveur meme pays + push)', () => {
     const rpcMock = vi.fn(() => Promise.resolve({ data: 12, error: null }))
     vi.spyOn(supabase, 'rpc').mockImplementation(rpcMock)
 
@@ -716,25 +716,15 @@ describe('interactionMiddleware', () => {
         toCurrency: 'XOF',
         rate: 6.7,
         method: 'MTN MoMo',
+        receiveCountry: 'BJ',
       }),
     )
 
-    const offerId = store.getState().p2p.offers[0]?.id
-    expect(offerId).toBeTruthy()
-    expect(rpcMock).toHaveBeenCalledWith(
-      'moxt_notify_all_users',
-      expect.objectContaining({
-        p_type: 'p2p',
-        p_link: `/p2p/${offerId}`,
-        p_priority: 'high',
-        p_dedupe_key: `p2p-${offerId}`,
-        p_title: expect.stringContaining('Nouvelle offre P2P'),
-        p_message: expect.stringContaining('RUB'),
-      }),
-    )
+    expect(store.getState().p2p.offers[0]?.id).toBeTruthy()
+    expect(rpcMock).not.toHaveBeenCalledWith('moxt_notify_all_users', expect.anything())
   })
 
-  it('notifie tous les utilisateurs quand une offre P2P est republiée', () => {
+  it('ne fan-out pas cote client quand une offre P2P est republiée', () => {
     const rpcMock = vi.fn(() => Promise.resolve({ data: 12, error: null }))
     vi.spyOn(supabase, 'rpc').mockImplementation(rpcMock)
 
@@ -775,14 +765,6 @@ describe('interactionMiddleware', () => {
 
     store.dispatch(updateOfferStatus({ id: 'P2P-ARCHIVED-1', status: 'active' }))
 
-    expect(rpcMock).toHaveBeenCalledWith(
-      'moxt_notify_all_users',
-      expect.objectContaining({
-        p_type: 'p2p',
-        p_link: '/p2p/P2P-ARCHIVED-1',
-        p_dedupe_key: 'p2p-P2P-ARCHIVED-1',
-        p_priority: 'high',
-      }),
-    )
+    expect(rpcMock).not.toHaveBeenCalledWith('moxt_notify_all_users', expect.anything())
   })
 })

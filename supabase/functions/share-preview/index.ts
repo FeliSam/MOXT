@@ -39,16 +39,11 @@ function firstImage(row: Record<string, unknown>, keys = ['images', 'image_url',
 }
 
 function resolveTargetPath(kind: string, entityId: string) {
-  const hrefByKind: Record<string, string> = {
-    listing: `/marketplace/${entityId}`,
-    parcel: `/parcels/${entityId}`,
-    job: `/jobs/${entityId}`,
-    event: `/events/${entityId}`,
-    post: `/news/${entityId}`,
-    video: `/videos/${entityId}`,
-    p2p: `/p2p/${entityId}`,
+  if (kind === 'listing') return `/marketplace/${entityId}`
+  if (kind === 'video') {
+    return `/feed?type=video&item=${encodeURIComponent(`video:${entityId}`)}`
   }
-  return hrefByKind[kind] || `/feed?item=${encodeURIComponent(`${kind}:${entityId}`)}`
+  return `/feed?item=${encodeURIComponent(`${kind}:${entityId}`)}`
 }
 
 async function serviceClient() {

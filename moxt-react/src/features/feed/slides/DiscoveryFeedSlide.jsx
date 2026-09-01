@@ -6,6 +6,7 @@ import { useLanguage } from '../../../contexts/useLanguage'
 import { phase3Text } from '../../../i18n/phase3I18n'
 import { BusinessDiscoveryCard } from '../../businesses/BusinessDiscoveryCard'
 import { FeedItemActions } from '../FeedItemActions'
+import { feedItemKey, feedPath } from '../feedItemUtils'
 import { FEED_SLIDE_SECTION_CLASS } from '../feedActionStyles.jsx'
 
 const VARIANT_TITLE = {
@@ -161,11 +162,11 @@ export function DiscoveryFeedSlide({ item, index, active = true }) {
       }
     : focusedCard
       ? {
-          kind: 'discovery',
+          kind: focusedCard.type || 'discovery',
           entityId: focusedCard.id,
           title: focusedCard.title || '',
           href: focusedCard.href || '/feed',
-          feedHref: focusedCard.href || '/feed',
+          feedHref: feedPath({ item: feedItemKey(focusedCard.type, focusedCard.id) }),
         }
       : null
 

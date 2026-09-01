@@ -10,7 +10,7 @@ describe('shareLinkUtils (web)', () => {
     vi.unstubAllEnvs()
   })
 
-  it('shares moxtapp.ru links for humans instead of supabase preview', () => {
+  it('shares public marketplace links and feed deep links for other modules', () => {
     vi.stubEnv('VITE_SITE_URL', 'https://moxtapp.ru')
     expect(
       buildEntityShareUrl({
@@ -20,6 +20,22 @@ describe('shareLinkUtils (web)', () => {
         feedHref: '/feed?item=listing:ANN-1',
       }),
     ).toBe('https://moxtapp.ru/marketplace/ANN-1')
+    expect(
+      buildEntityShareUrl({
+        kind: 'parcel',
+        entityId: 'PAR-1',
+        href: '/parcels/PAR-1',
+        feedHref: '/feed?item=parcel%3APAR-1',
+      }),
+    ).toBe('https://moxtapp.ru/feed?item=parcel%3APAR-1')
+    expect(
+      buildEntityShareUrl({
+        kind: 'video',
+        entityId: 'VID-1',
+        href: '/feed?type=video&item=video%3AVID-1',
+        feedHref: '/feed?item=video%3AVID-1',
+      }),
+    ).toBe('https://moxtapp.ru/feed?type=video&item=video%3AVID-1')
     vi.unstubAllEnvs()
   })
 })

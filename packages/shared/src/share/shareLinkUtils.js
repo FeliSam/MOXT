@@ -3,6 +3,24 @@ export const CANONICAL_SHARE_SITE = 'https://moxtapp.ru'
 
 const SHARE_KINDS = new Set(['listing', 'parcel', 'job', 'event', 'post', 'video', 'p2p'])
 
+/** Détail accessible sans connexion (PublicationShell). */
+const PUBLIC_SHARE_PATH_PREFIXES = ['/marketplace/', '/businesses/', '/users/']
+
+export function isPublicSharePath(path) {
+  const value = String(path || '').trim()
+  return PUBLIC_SHARE_PATH_PREFIXES.some((prefix) => value.startsWith(prefix))
+}
+
+export function buildFeedSharePath(kind, entityId, { typeFilter = '' } = {}) {
+  const safeKind = String(kind || '').trim()
+  const safeId = String(entityId || '').trim()
+  if (!safeKind || !safeId) return '/feed'
+  const params = new URLSearchParams()
+  if (typeFilter && typeFilter !== 'all') params.set('type', typeFilter)
+  params.set('item', `${safeKind}:${safeId}`)
+  return `/feed?${params.toString()}`
+}
+
 export function isSharePreviewKind(kind) {
   return SHARE_KINDS.has(String(kind || '').trim())
 }
@@ -31,10 +49,27 @@ export function buildSharePreviewUrl({ kind, entityId, supabaseUrl }) {
 /** Chemin in-app ouvert après le clic (marketplace, fil, etc.). */
 export function resolveInAppShareTarget({ kind, entityId, href, feedHref } = {}) {
   const direct = String(href || '').trim()
-  if (direct && !direct.startsWith('/feed')) return direct
+  if (direct) return direct
   const feed = String(feedHref || '').trim()
   if (feed) return feed
-  if (kind && entityId) return `/feed?item=${encodeURIComponent(`${kind}:${entityId}`)}`
+  if (kind && entityId) return buildFeedSharePath(kind, entityId)
+  return '/feed'
+}
+
+/**
+ * Cible de partage copiée / envoyée — toujours ouvrable sans compte :
+ * fiche publique (marketplace, entreprise) ou deep link fil.
+ */
+export function resolvePublicShareTarget({ kind, entityId, href, feedHref } = {}) {
+  const direct = String(href || '').trim()
+  if (direct && isPublicSharePath(direct)) return direct
+  if (direct.startsWith('/feed')) return direct
+  const feed = String(feedHref || '').trim()
+  if (feed) return feed
+  if (kind && entityId) {
+    const typeFilter = kind === 'video' ? 'video' : ''
+    return buildFeedSharePath(kind, entityId, { typeFilter })
+  }
   return '/feed'
 }
 

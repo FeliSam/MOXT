@@ -198,7 +198,7 @@ export function FeedPage() {
     await scheduleCatalogSync(store, { force: true })
   }, [dispatch, guestMode, store])
 
-  if (!isFeedViewport) {
+  if (!isFeedViewport && !itemParam) {
     return <Navigate to={desktopRedirect} replace />
   }
 
