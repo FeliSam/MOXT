@@ -48,10 +48,23 @@ export function boostPriority(boost, now = Date.now()) {
   return base + Math.min(48, hoursLeft)
 }
 
+function normalizeBoostList(boosts) {
+  if (!boosts) return []
+  if (Array.isArray(boosts)) return boosts
+  if (boosts instanceof Map) return [...boosts.values()]
+  if (typeof boosts === 'object') return Object.values(boosts)
+  return []
+}
+
+function asBoostLookup(lookup, now = Date.now()) {
+  if (lookup instanceof Map) return lookup
+  return buildBoostLookup(normalizeBoostList(lookup), now)
+}
+
 /** Map feed item id → boost actif. */
 export function buildBoostLookup(boosts = [], now = Date.now()) {
   const map = new Map()
-  for (const boost of boosts) {
+  for (const boost of normalizeBoostList(boosts)) {
     if (String(boost?.status || 'active').toLowerCase() !== 'active') continue
     const expiresAt = boost?.expires_at || boost?.expiresAt
     if (expiresAt && new Date(expiresAt).getTime() <= now) continue
@@ -85,13 +98,14 @@ export function sortFeedItemsWithBoosts(items, boostLookup = new Map(), rankCtx 
   if (!items.length) return items
 
   const now = rankCtx.now || Date.now()
+  const lookup = asBoostLookup(boostLookup, now)
   const annotated = items.map((item) =>
-    boostLookup.has(item.id)
-      ? { ...item, isFeatured: true, boost: boostLookup.get(item.id) }
+    lookup.has(item.id)
+      ? { ...item, isFeatured: true, boost: lookup.get(item.id) }
       : { ...item, isFeatured: false, boost: null },
   )
 
-  if (!boostLookup?.size) {
+  if (!lookup.size) {
     const organic = diversifyFeedItems(sortByFeedScore(annotated, rankCtx))
     return annotateTrendingItems(organic)
   }

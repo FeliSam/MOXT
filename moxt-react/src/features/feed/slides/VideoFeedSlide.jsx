@@ -42,6 +42,7 @@ import { useCachedMediaUrl } from '../../../hooks/useCachedMediaUrl'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { addToast } from '../../ui/uiSlice'
 import { phase3Text } from '../../../i18n/phase3I18n'
+import { useVideoFeedMuted } from '../../videos/videoFeedAudio'
 import { FeedSlideShell } from '../FeedSlideShell'
 import { liveFeedSocialStats } from '../feedItemUtils'
 
@@ -260,7 +261,7 @@ function FeedVideoPlayer({ video, active, onActivate }) {
   }, [onActivate])
 
   const [error, setError] = useState(false)
-  const [muted, setMuted] = useState(true)
+  const [muted, setMuted] = useVideoFeedMuted()
   const [paused, setPaused] = useState(false)
   const src = useCachedMediaUrl(video.videoUrl, {
     kind: 'video',
@@ -278,18 +279,39 @@ function FeedVideoPlayer({ video, active, onActivate }) {
   }, [video.id])
 
   useEffect(() => {
+    if (active) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- autoplay when slide becomes visible
+      setPaused(false)
+    }
+  }, [active, video.id])
+
+  useEffect(() => {
     const el = videoRef.current
     if (!el) return undefined
+
     el.muted = muted
-    if (active && !paused) {
+
+    function tryPlay() {
+      if (!active || paused) return
       const playPromise = el.play()
       if (playPromise?.catch) {
         playPromise.catch(() => setPaused(true))
       }
+    }
+
+    if (active && !paused) {
+      if (el.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+        tryPlay()
+      } else {
+        el.addEventListener('canplay', tryPlay, { once: true })
+      }
     } else {
       el.pause()
     }
-    return undefined
+
+    return () => {
+      el.removeEventListener('canplay', tryPlay)
+    }
   }, [active, muted, paused, playbackUrl, video.id])
 
   useEffect(() => {
@@ -320,6 +342,7 @@ function FeedVideoPlayer({ video, active, onActivate }) {
         className="h-full w-full object-cover"
         playsInline
         loop
+        autoPlay={active}
         muted={muted}
         preload={active ? 'auto' : 'metadata'}
         onClick={onTapVideo}
