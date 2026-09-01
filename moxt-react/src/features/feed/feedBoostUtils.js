@@ -4,7 +4,7 @@ import {
   diversifyFeedItems,
   sortByFeedScore,
 } from './feedRankUtils.js'
-import { asArray } from './feedCollectionUtils.js'
+import { asArray, ensureMap, mapGet, mapHas } from './feedCollectionUtils.js'
 
 /** Entre deux contenus boostés, au moins N items organiques. */
 export const FEED_ORGANIC_BETWEEN_BOOSTS = 4
@@ -55,6 +55,8 @@ function normalizeBoostList(boosts) {
 
 function asBoostLookup(lookup, now = Date.now()) {
   if (lookup instanceof Map) return lookup
+  const direct = ensureMap(lookup)
+  if (direct.size) return direct
   return buildBoostLookup(normalizeBoostList(lookup), now)
 }
 
@@ -97,8 +99,8 @@ export function sortFeedItemsWithBoosts(items, boostLookup = new Map(), rankCtx 
   const now = rankCtx.now || Date.now()
   const lookup = asBoostLookup(boostLookup, now)
   const annotated = items.map((item) =>
-    lookup.has(item.id)
-      ? { ...item, isFeatured: true, boost: lookup.get(item.id) }
+    mapHas(lookup, item.id)
+      ? { ...item, isFeatured: true, boost: mapGet(lookup, item.id) }
       : { ...item, isFeatured: false, boost: null },
   )
 

@@ -1,6 +1,6 @@
 import { buildBoostLookup, sortFeedItemsWithBoosts } from './feedBoostUtils.js'
 import { buildFeedRankContext } from './feedRankUtils.js'
-import { asArray } from './feedCollectionUtils.js'
+import { asArray, mapGet } from './feedCollectionUtils.js'
 
 import { getPostImages } from '../posts/postMediaUtils.js'
 import { newsPostPath } from '../posts/postFeedUtils.js'
@@ -593,33 +593,38 @@ export function normalizePostFeedItem(post, state = {}) {
  * @param {{ typeFilter?: string, boosts?: array|null, rankCtx?: object|null, user?: object|null }} [options]
  */
 export function buildUnifiedFeedItems(state, { typeFilter = 'all', boosts = null, rankCtx = null, user = null } = {}) {
-  const items = []
+  try {
+    const items = []
 
-  const pushAll = (list, normalize) => {
-    for (const row of asArray(list)) {
-      const item = normalize(row, state)
-      if (item) items.push(item)
+    const pushAll = (list, normalize) => {
+      for (const row of asArray(list)) {
+        const item = normalize(row, state)
+        if (item) items.push(item)
+      }
     }
-  }
 
-  const want = (kind) => typeFilter === 'all' || typeFilter === kind
+    const want = (kind) => typeFilter === 'all' || typeFilter === kind
 
-  if (want('video')) pushAll(state.videos?.items || [], normalizeVideoFeedItem)
-  if (want('listing')) pushAll(state.marketplace?.items || [], normalizeListingFeedItem)
-  if (want('parcel')) pushAll(state.parcels?.items || [], normalizeParcelFeedItem)
-  if (want('job')) pushAll(state.jobs?.items || [], normalizeJobFeedItem)
-  if (want('event')) pushAll(state.events?.items || [], normalizeEventFeedItem)
-  if (want('post')) pushAll(state.posts?.items || [], normalizePostFeedItem)
-  if (want('p2p')) pushAll(state.p2p?.offers || [], normalizeP2pFeedItem)
+    if (want('video')) pushAll(state.videos?.items || [], normalizeVideoFeedItem)
+    if (want('listing')) pushAll(state.marketplace?.items || [], normalizeListingFeedItem)
+    if (want('parcel')) pushAll(state.parcels?.items || [], normalizeParcelFeedItem)
+    if (want('job')) pushAll(state.jobs?.items || [], normalizeJobFeedItem)
+    if (want('event')) pushAll(state.events?.items || [], normalizeEventFeedItem)
+    if (want('post')) pushAll(state.posts?.items || [], normalizePostFeedItem)
+    if (want('p2p')) pushAll(state.p2p?.offers || [], normalizeP2pFeedItem)
 
-  if (boosts === null) {
+    if (boosts === null) {
+      const ctx = rankCtx || buildFeedRankContext(state, user)
+      return sortFeedItemsWithBoosts(items, new Map(), ctx)
+    }
+
+    const boostLookup = buildBoostLookup(asArray(boosts))
     const ctx = rankCtx || buildFeedRankContext(state, user)
-    return sortFeedItemsWithBoosts(items, new Map(), ctx)
+    return sortFeedItemsWithBoosts(items, boostLookup, ctx)
+  } catch (error) {
+    console.error('[MOXT] buildUnifiedFeedItems:', error)
+    return []
   }
-
-  const boostLookup = buildBoostLookup(asArray(boosts))
-  const ctx = rankCtx || buildFeedRankContext(state, user)
-  return sortFeedItemsWithBoosts(items, boostLookup, ctx)
 }
 
 export function pickInitialFeedIndex(items, itemParam, state = {}) {
@@ -656,7 +661,7 @@ export function preserveFeedOrder(previous, nextItems, signature) {
     return { signature, items: nextItems }
   }
   const byId = new Map(nextItems.map((item) => [item.id, item]))
-  const merged = previous.items.map((item) => byId.get(item.id)).filter(Boolean)
+  const merged = previous.items.map((item) => mapGet(byId, item.id)).filter(Boolean)
   const mergedIds = new Set(merged.map((item) => item.id))
   for (const item of nextItems) {
     if (!mergedIds.has(item.id)) merged.push(item)

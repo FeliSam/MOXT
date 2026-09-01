@@ -75,6 +75,8 @@ const skipPersistence = new Set([
   'marketplace/incrementListingView',
   'marketplace/incrementListingContact',
   'marketplace/incrementListingShare',
+  'videos/incrementVideoView',
+  'videos/incrementVideoShare',
   'communications/loadConversationMessages/pending',
   'communications/loadConversationMessages/fulfilled',
   'communications/loadConversationMessages/rejected',

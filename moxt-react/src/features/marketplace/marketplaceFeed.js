@@ -1,6 +1,6 @@
 import { isItemFromSubscribedPublisher } from '@moxt/shared/utils/subscriptionUtils.js'
 import { listingBoostBonus, marketplaceBoostLookup } from './marketplaceListingBoost.js'
-import { asArray, asIdLookup } from '../feed/feedCollectionUtils.js'
+import { asArray, asIdLookup, mapGet } from '../feed/feedCollectionUtils.js'
 
 const MS_HOUR = 60 * 60 * 1000
 
@@ -66,19 +66,19 @@ export function buildListingAffinity({
   for (const fav of asArray(favorites)) {
     if (fav.userId && fav.userId !== userId) continue
     if (fav.relatedType !== 'listing') continue
-    const listing = byId.get(fav.relatedId)
+    const listing = mapGet(byId, fav.relatedId)
     bump(listing?.type || fav.snapshot?.type, listing?.category || fav.snapshot?.category, 3)
   }
 
   for (const viewed of asArray(viewedListings)) {
     if (viewed.userId && viewed.userId !== userId) continue
-    const listing = byId.get(viewed.listingId)
+    const listing = mapGet(byId, viewed.listingId)
     bump(listing?.type, listing?.category, 1)
   }
 
   for (const impression of asArray(impressionListings)) {
     if (impression.userId && impression.userId !== userId) continue
-    const listing = byId.get(impression.listingId)
+    const listing = mapGet(byId, impression.listingId)
     bump(listing?.type, listing?.category, 0.45)
   }
 

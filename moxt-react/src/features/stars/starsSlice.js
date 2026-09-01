@@ -45,6 +45,22 @@ function markFeedBoostsSynced() {
   }
 }
 
+/** Répare le cache local si des clients ont stocké un objet au lieu d’un tableau. */
+export function sanitizeFeedBoostsStorage() {
+  if (typeof localStorage === 'undefined') return
+  try {
+    const raw = localStorage.getItem('moxt-feed-boosts-v1')
+    if (!raw) return
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) return
+    feedBoostsStorage.write(asArray(parsed))
+  } catch {
+    feedBoostsStorage.write([])
+  }
+}
+
+sanitizeFeedBoostsStorage()
+
 const initialState = {
   balance: null,
   transactions: [],

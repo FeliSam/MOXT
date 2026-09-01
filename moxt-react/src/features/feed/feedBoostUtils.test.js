@@ -59,4 +59,18 @@ describe('feedBoostUtils', () => {
     ])
     expect(sorted[0].isFeatured).toBe(true)
   })
+
+  it('accepte une lookup objet indexée par id feed', () => {
+    const items = [{ id: 'video:V1', createdAt: '2026-08-01T00:00:00.000Z' }]
+    const sorted = sortFeedItemsWithBoosts(items, {
+      'video:V1': {
+        entity_type: 'video',
+        entity_id: 'V1',
+        status: 'active',
+        expires_at: '2099-01-01T00:00:00.000Z',
+        formula_key: 'featured_24h',
+      },
+    })
+    expect(sorted[0].isFeatured).toBe(true)
+  })
 })
