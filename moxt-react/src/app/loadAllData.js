@@ -30,6 +30,7 @@ import { listingFromRemoteRow, mergeListingQuestions } from '../features/marketp
 import { fromRow, fromRows } from '../services/remoteRowMapper'
 import { fetchUserConversations } from '@moxt/shared/utils/fetchUserConversations.js'
 import { normalizeStoredLanguage } from '../config/uiTranslations'
+import { selectStarsModuleEnabled } from '../features/stars/useStarsModuleEnabled'
 import {
   businessFromRemoteRow,
   businessDocumentFromRemoteRow,
@@ -812,6 +813,7 @@ export const loadAllData = createAsyncThunk(
         conversations,
         notifications: fromRows(safeRows(notificationsRes, 'des notifications'))
           .filter((item) => item.type !== 'message')
+          .filter((item) => selectStarsModuleEnabled(getState()) || item.type !== 'stars')
           .map((item) => ({
             ...item,
             priority: item.priority || 'normal',

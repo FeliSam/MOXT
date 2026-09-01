@@ -18,8 +18,8 @@ import {
 import { normalizeConversation, replaceConversationId } from '../features/communications/communicationSlice'
 import { attachmentPreviewLabel } from '../features/communications/attachmentUtils'
 import { fromRow } from '../services/remoteRowMapper'
-import { addToast } from '../features/ui/uiSlice'
 import { sanitizeUserFacingMessage } from '../features/auth/authErrorMessages'
+import { dispatchAdminOnlyErrorToast } from '../utils/errorToastUtils.js'
 import { authService } from '../features/auth/authService'
 import { selectAccountPreferences } from '../features/account/accountSlice'
 import { buildTransferRemotePayload } from '../features/transfers/transferRemote'
@@ -2337,26 +2337,23 @@ export const supabaseMiddleware = (store) => (next) => (action) => {
       }
       // Documents : ne jamais supprimer le fichier storage ni la fiche locale —
       // réessai sync / réparation auto (cron + Admin → Réparer).
-      store.dispatch(
-        addToast({
-          title:
-            action.type === 'account/addPersonalDocument' ||
-            action.type === 'businesses/addBusinessDocument'
-              ? 'Document déposé — synchronisation en cours'
-              : 'Synchronisation impossible',
-          message:
-            action.type === 'account/addPersonalDocument' ||
-            action.type === 'businesses/addBusinessDocument'
-              ? sanitizeUserFacingMessage(
-                  err?.message ||
-                    'Le fichier est conservé. La fiche reste visible et sera rattachée automatiquement.',
-                )
-              : sanitizeUserFacingMessage(
-                  err?.message || "L'enregistrement distant a échoué.",
-                ),
-          tone: 'error',
-        }),
-      )
+      dispatchAdminOnlyErrorToast(store, {
+        title:
+          action.type === 'account/addPersonalDocument' ||
+          action.type === 'businesses/addBusinessDocument'
+            ? 'Document déposé — synchronisation en cours'
+            : 'Synchronisation impossible',
+        message:
+          action.type === 'account/addPersonalDocument' ||
+          action.type === 'businesses/addBusinessDocument'
+            ? sanitizeUserFacingMessage(
+                err?.message ||
+                  'Le fichier est conservé. La fiche reste visible et sera rattachée automatiquement.',
+              )
+            : sanitizeUserFacingMessage(
+                err?.message || "L'enregistrement distant a échoué.",
+              ),
+      })
     })
   }
 

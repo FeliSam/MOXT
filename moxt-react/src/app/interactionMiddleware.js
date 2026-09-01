@@ -1,7 +1,6 @@
 import { addNotification } from '../features/communications/communicationSlice'
 import { BUSINESS_VISIBLE_STATUSES } from '../features/businesses/businessPublishUtils'
 import { syncTransferReceipt } from '../features/transfers/transferReceiptSync'
-import { addToast } from '../features/ui/uiSlice'
 import {
   notifyPublisherSubscribers,
   resolvePublisherFromContent,
@@ -14,6 +13,7 @@ import {
 import { collectCascadeArchiveTargets } from '../features/posts/archiveLinkedPosts'
 import { archivePostsBySource } from '../features/posts/postsSlice'
 import { newsPostPath } from '../features/posts/postFeedUtils'
+import { addToast } from '../features/ui/uiSlice'
 
 import { createNotificationDispatcher } from './notificationTriggers'
 import { hasReviewEligibility } from '@moxt/shared/utils/reviewEligibility.js'
@@ -33,13 +33,16 @@ import {
   starsNotifyIdFromKey,
   takeUnseenStarsTransactions,
 } from '../features/stars/starsNotify'
+import { selectStarsModuleEnabled } from '../features/stars/useStarsModuleEnabled'
 import { resolvePublisherOwnerId } from '@moxt/shared/utils/notificationUtils.js'
+import { dispatchAdminOnlyErrorToast } from '../utils/errorToastUtils.js'
 
 function notify(store, payload) {
   if (payload.userId) store.dispatch(addNotification(payload))
 }
 
 function notifyStarsWallet(store, { userId, id, kind, amount, detail, existingIds }) {
+  if (!selectStarsModuleEnabled(store.getState())) return
   if (!userId || !id) return
   if (existingIds?.has(id)) return
   const copy = starsNotifyCopy(kind, amount, appText, detail)
@@ -1580,13 +1583,10 @@ export const interactionMiddleware = (store) => {
       'auth/requestPhoneVerificationOtp/rejected': appText('toasts.smsSendFailed'),
       'auth/confirmPhoneVerification/rejected': appText('toasts.verificationFailed'),
     }
-    store.dispatch(
-      addToast({
-        title: rejectedTitles[action.type] || appText('toasts.genericError'),
-        message,
-        tone: 'error',
-      }),
-    )
+    dispatchAdminOnlyErrorToast(store, {
+      title: rejectedTitles[action.type] || appText('toasts.genericError'),
+      message,
+    })
   }
 
   return result

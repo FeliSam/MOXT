@@ -191,8 +191,11 @@ export function FeedPage() {
     setRefreshNonce((value) => value + 1)
     if (guestMode) {
       setGuestReady(false)
-      await dispatch(loadGuestFeedCatalog())
-      setGuestReady(true)
+      try {
+        await dispatch(loadGuestFeedCatalog())
+      } finally {
+        setGuestReady(true)
+      }
       return
     }
     const { scheduleCatalogSync } = await import('../app/catalogSync.js')

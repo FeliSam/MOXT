@@ -1,8 +1,10 @@
 import { Component } from 'react'
+import { useSelector } from 'react-redux'
 import { FiHome, FiRefreshCw, FiWifiOff } from 'react-icons/fi'
 import { useLanguage } from '../../contexts/useLanguage'
 import { phase3Text } from '../../i18n/phase3I18n'
 import { isNetworkError } from '../../utils/networkError'
+import { isAdminRole } from '../../features/auth/roleUtils'
 import { Button } from '../ui/Button'
 import { NetworkReconnectModal } from './NetworkReconnectModal'
 
@@ -61,6 +63,12 @@ function ErrorFallback({ network, onRetry, onHome, detail }) {
   )
 }
 
+function ErrorFallbackWithRole(props) {
+  const user = useSelector((state) => state.auth.user)
+  const detail = isAdminRole(user) ? props.detail : ''
+  return <ErrorFallback {...props} detail={detail} />
+}
+
 export class AppErrorBoundary extends Component {
   state = { hasError: false, network: false, detail: '' }
 
@@ -96,7 +104,7 @@ export class AppErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <ErrorFallback
+        <ErrorFallbackWithRole
           network={this.state.network}
           detail={this.state.detail}
           onRetry={this.handleRetry}
