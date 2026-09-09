@@ -91,7 +91,7 @@ export function buildParcelFavoriteSnapshot(parcel) {
     destination: parcel.destination || '',
     departureDate: parcel.departureDate || '',
     pricePerKg: parcel.pricePerKg ?? null,
-    currency: parcel.currency || 'XOF',
+    currency: parcel.currency || 'RUB',
     remainingKg: parcel.remainingKg ?? null,
   }
 }
@@ -208,7 +208,7 @@ export function resolveFavoriteItem(favorite, state) {
         destination: snapshot.destination || parcel.destination || '',
         departureDate: snapshot.departureDate || parcel.departureDate || '',
         pricePerKg: snapshot.pricePerKg ?? parcel.pricePerKg ?? null,
-        currency: snapshot.currency || parcel.currency || 'XOF',
+        currency: snapshot.currency || parcel.currency || 'RUB',
         remainingKg: snapshot.remainingKg ?? parcel.remainingKg ?? null,
       },
     }

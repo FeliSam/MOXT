@@ -20,6 +20,7 @@ const memoryStore = new Map()
  *   residenceCity?: string,
  *   avatarUrl?: string,
  *   phoneResendCount?: number,
+ *   otpChannel?: 'sms' | 'telegram' | 'flashcall',
  *   step?: number,
  *   savedAt?: number,
  * }} PendingRegistration
@@ -60,6 +61,10 @@ export function savePendingRegistration(payload) {
     residenceCity: payload.residenceCity || '',
     avatarUrl: payload.avatarUrl || '',
     phoneResendCount: Number(payload.phoneResendCount) || 0,
+    otpChannel:
+      payload.otpChannel === 'telegram' || payload.otpChannel === 'flashcall'
+        ? payload.otpChannel
+        : 'sms',
     step: payload.step || 4,
     savedAt: Date.now(),
   }

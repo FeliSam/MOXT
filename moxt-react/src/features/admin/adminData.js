@@ -17,6 +17,7 @@ import {
 import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 import { REVIEW_DISPUTE_STATUS } from '@moxt/shared/utils/reviewUtils.js'
 import { adminDetailLink, normalizeAdminKind } from './adminLinkUtils'
+import { formatParcelMoney } from '../parcels/parcelCurrency'
 import { formatDate, formatMoney } from '../transfers/transferUtils'
 import { computeBusinessTransferStats } from '../transfers/businessTransferStats'
 import { adminText } from './adminI18n'
@@ -549,7 +550,7 @@ export function buildDetailFacts(kind, item, t, context = {}) {
         [f('admin.facts.route'), `${item.origin} -> ${item.destination}`],
         [f('admin.facts.departure'), item.departureDate || '—'],
         [f('admin.facts.capacity'), `${item.capacityKg || 0} kg`],
-        [f('admin.facts.pricePerKg'), formatMoney(item.pricePerKg, item.currency)],
+        [f('admin.facts.pricePerKg'), formatParcelMoney(item)],
         [f('admin.facts.status'), item.effectiveStatus || item.status],
         [f('admin.facts.distribution'), item.distributionDate || '—'],
         [

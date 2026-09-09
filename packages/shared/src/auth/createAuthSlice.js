@@ -67,9 +67,11 @@ export function createAuthSlice(authService) {
 
   const resendPhoneRegistrationOtp = createAsyncThunk(
     'auth/resendPhoneRegistrationOtp',
-    async (phone, { rejectWithValue }) => {
+    async (payload, { rejectWithValue }) => {
       try {
-        return await authService.resendPhoneRegistrationOtp(phone)
+        const phone = typeof payload === 'string' ? payload : payload?.phone
+        const otpChannel = typeof payload === 'string' ? 'sms' : payload?.otpChannel
+        return await authService.resendPhoneRegistrationOtp(phone, otpChannel)
       } catch (error) {
         return rejectWithValue(error.message)
       }

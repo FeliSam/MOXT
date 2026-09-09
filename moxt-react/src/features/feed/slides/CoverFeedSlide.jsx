@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { FiBox, FiBriefcase, FiCalendar, FiFileText } from 'react-icons/fi'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { resolveMediaDisplayUrl } from '../../../services/media/mediaUrlUtils.js'
-import { formatMoney } from '../../transfers/transferUtils'
+import { formatParcelMoney } from '../../parcels/parcelCurrency'
 import { phase3Text } from '../../../i18n/phase3I18n'
 import { FeedMediaImage } from '../FeedMediaImage'
 import { FeedSlideShell } from '../FeedSlideShell'
@@ -38,7 +38,10 @@ function CoverMeta({ item, p3 }) {
   if (item.kind === 'parcel') {
     const price =
       item.stats?.pricePerKg != null
-        ? formatMoney(item.stats.pricePerKg, item.stats.currency)
+        ? formatParcelMoney({
+            pricePerKg: item.stats.pricePerKg,
+            currency: item.stats.currency || item.source?.currency,
+          })
         : null
     return (
       <p className="mt-2 text-sm font-semibold text-white/80">

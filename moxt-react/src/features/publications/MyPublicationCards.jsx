@@ -25,6 +25,7 @@ import { isActiveListing } from '../marketplace/listingCatalogUtils'
 import { marketplaceText } from '../marketplace/marketplaceI18n'
 import { getPostImages } from '../posts/postMediaUtils'
 import { newsPostPath } from '../posts/postFeedUtils'
+import { formatParcelMoney } from '../parcels/parcelCurrency'
 import { formatMoney } from '../transfers/transferUtils'
 import { p2pReceivedFromOffered } from '../p2p/p2pUtils'
 import {
@@ -218,7 +219,7 @@ export function MyParcelPublicationCard({
       subtitle={
         parcel.pricePerKg != null
           ? t('parcels.my.perKg', {
-              price: formatMoney(parcel.pricePerKg, parcel.currency),
+              price: formatParcelMoney(parcel),
             })
           : null
       }

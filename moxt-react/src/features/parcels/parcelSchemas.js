@@ -1,5 +1,6 @@
 import * as Yup from 'yup'
 import { phoneError, validatePhone } from '../../config/phone'
+import { transferCurrenciesForCountry } from '../transfers/transferConfig'
 import { publishText } from '../publications/publishI18n'
 
 const createMessageResolver = (t) => (key, fallback) => {
@@ -49,7 +50,9 @@ export const createParcelSchemaFor = (country, t) => {
       ),
     capacityKg: Yup.number().positive().max(500).required(),
     pricePerKg: Yup.number().positive().required(),
-    currency: Yup.string().oneOf(['RUB']).required(),
+    currency: Yup.string()
+      .oneOf(transferCurrenciesForCountry(country))
+      .required(),
     contact: Yup.string()
       .trim()
       .test('parcel-phone-country', (value, context) =>

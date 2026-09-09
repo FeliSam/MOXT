@@ -18,6 +18,7 @@ export type ParcelItem = {
   capacityKg?: number;
   remainingKg?: number;
   pricePerKg?: number;
+  currency?: string;
   maxWeightPerItem?: number;
   conditions?: string;
   acceptedTypes?: string[];

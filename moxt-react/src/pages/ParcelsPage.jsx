@@ -32,7 +32,7 @@ import {
   parcelStatusFilterOptions,
 } from '../features/parcels/parcelBrowseConfig'
 import { isParcelBrowseArchived } from '../features/parcels/parcelUtils'
-import { formatMoney } from '../features/transfers/transferUtils'
+import { formatParcelMoney } from '../features/parcels/parcelCurrency'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
 
 export function ParcelsPage() {
@@ -275,7 +275,7 @@ export function ParcelsPage() {
                             label={t('parcels.card.available')}
                           />
                           <ParcelMetric
-                            value={formatMoney(parcel.pricePerKg, parcel.currency)}
+                            value={formatParcelMoney(parcel)}
                             label={t('parcels.card.perKg')}
                           />
                         </div>

@@ -46,6 +46,11 @@ import { SecurityGatePanel } from '../features/security/SecurityGatePanel'
 import { useSecurityGate } from '../features/security/useSecurityGate'
 import { initialParcelDocStatus } from '../features/parcels/parcelProofUtils'
 import { useLanguage } from '../contexts/useLanguage'
+import { ParcelCurrencySelect } from '../features/parcels/ParcelCurrencySelect'
+import {
+  defaultParcelCurrency,
+  formatParcelMoney,
+} from '../features/parcels/parcelCurrency'
 import {
   publishOptionLabel,
   publishOptionSub,
@@ -164,7 +169,7 @@ export function PublishParcelPage() {
     distributionDate: '',
     capacityKg: 20,
     pricePerKg: '',
-    currency: 'RUB',
+    currency: defaultParcelCurrency(user.originCountry || originCountry?.code || 'BJ'),
     maxWeightPerItem: '',
     acceptedTypes: [],
     rejectedTypes: '',
@@ -680,11 +685,11 @@ export function PublishParcelPage() {
               onChange={(e) => set('pricePerKg', e.target.value)}
               error={errors.pricePerKg}
             />
-            <Input
-              id="parcel-currency"
-              label={publishText(t, 'publish.parcel.fields.currency')}
-              value="RUB"
-              disabled
+            <ParcelCurrencySelect
+              originCountryCode={user.originCountry || originCountry?.code || 'BJ'}
+              value={form.currency}
+              onChange={(next) => set('currency', next)}
+              t={t}
             />
           </div>
           <label className="grid gap-1.5">
@@ -909,7 +914,12 @@ export function PublishParcelPage() {
               ],
               [
                 publishText(t, 'publish.parcel.review.pricePerKg'),
-                publishText(t, 'publish.parcel.review.priceValue', { price: form.pricePerKg }),
+                publishText(t, 'publish.parcel.review.priceValue', {
+                  price: formatParcelMoney({
+                    pricePerKg: form.pricePerKg,
+                    currency: form.currency,
+                  }),
+                }),
               ],
               [
                 publishText(t, 'publish.parcel.review.acceptedTypes'),

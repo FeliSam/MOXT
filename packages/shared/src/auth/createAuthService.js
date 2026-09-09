@@ -115,6 +115,13 @@ function withOtpInFlight(kind, value, fn) {
   return promise
 }
 
+function normalizeOtpChannel(raw) {
+  const value = String(raw || 'sms').toLowerCase()
+  if (value === 'telegram' || value === 'tg') return 'telegram'
+  if (value === 'flashcall' || value === 'call' || value === 'phone_call') return 'flashcall'
+  return 'sms'
+}
+
 function profileToUser(profile) {
   return {
     id: profile.id,
@@ -214,6 +221,19 @@ function isAuthAlreadyExistsError(error) {
 export function createAuthService(supabase, redirects = {}) {
   const getEmailRedirectUrl = redirects.getEmailRedirectUrl ?? (() => '')
   const getPasswordResetRedirectUrl = redirects.getPasswordResetRedirectUrl ?? (() => '')
+
+  async function rememberOtpDeliveryChannel(phone, channel) {
+    if (!supabase) return
+    const normalized = normalizeRussianAuthPhone(phone)
+    const next = normalizeOtpChannel(channel)
+    try {
+      await supabase.functions.invoke('otp-set-channel', {
+        body: { phone: normalized, channel: next },
+      })
+    } catch (error) {
+      console.warn('[MOXT] otp-set-channel', error?.message || error)
+    }
+  }
 
   async function signInWithPhoneFallback(phone, password) {
     // 1) Tentative native Supabase (si Phone est activé dans le dashboard)
@@ -426,7 +446,7 @@ export function createAuthService(supabase, redirects = {}) {
     recordOtpSend(otpSendLog, kind, value, { enforce: enforceCooldown })
   }
 
-  async function resumePhoneSignup(phone, email = '', pendingUserId = null) {
+  async function resumePhoneSignup(phone, email = '', pendingUserId = null, otpChannel = 'sms') {
     // Only unfinished SMS signups are resumable. A live/masked confirmed number
     // must never receive a "register" OTP (that logs into the existing auth user
     // and would let finalize overwrite their profile).
@@ -448,6 +468,8 @@ export function createAuthService(supabase, redirects = {}) {
     }
 
     guardOtpSend('phone', phone)
+
+    await rememberOtpDeliveryChannel(phone, otpChannel)
 
     // Prefer signInWithOtp — more reliably triggers the Send SMS hook than auth.resend.
     // Do not mark prefer_p1sms: resend stays on SMSC (P1SMS dual-route paused).
@@ -1388,6 +1410,7 @@ export function createAuthService(supabase, redirects = {}) {
 
         // Guard before provider send — one code at a time, max 4 / 3h.
         guardOtpSend('phone', normalizedPhone)
+        await rememberOtpDeliveryChannel(normalizedPhone, details.otpChannel)
 
         let data
         let error
@@ -1428,7 +1451,7 @@ export function createAuthService(supabase, redirects = {}) {
           }
           if (isAuthAlreadyExistsError(error)) {
             try {
-              return await resumePhoneSignup(normalizedPhone, email, null)
+              return await resumePhoneSignup(normalizedPhone, email, null, details.otpChannel)
             } catch (resumeError) {
               const resumeMessage = String(resumeError?.message || resumeError || '')
               if (isResumeBlockerMessage(resumeMessage)) {
@@ -1458,7 +1481,7 @@ export function createAuthService(supabase, redirects = {}) {
           data.user.identities.length === 0
         ) {
           try {
-            return await resumePhoneSignup(normalizedPhone, email, data.user.id || null)
+            return await resumePhoneSignup(normalizedPhone, email, data.user.id || null, details.otpChannel)
           } catch (resumeError) {
             const resumeMessage = String(resumeError?.message || resumeError || '')
             if (isResumeBlockerMessage(resumeMessage)) {
@@ -1488,6 +1511,7 @@ export function createAuthService(supabase, redirects = {}) {
           identityChecked: true,
           pendingUserId: data.user.id,
           verificationMethod: 'phone',
+          otpChannel: normalizeOtpChannel(details.otpChannel),
           email,
           phone: normalizedPhone,
         }
@@ -1703,6 +1727,27 @@ export function createAuthService(supabase, redirects = {}) {
 
       let data = null
       let error = null
+      if (/^\d{4}$/.test(otpToken)) {
+        const flash = await supabase.functions.invoke('verify-flashcall', {
+          body: { phone: normalizedPhone, digits: otpToken },
+        })
+        if (flash.error || !flash.data?.access_token) {
+          throw new Error(
+            flash.data?.error ||
+              flash.error?.message ||
+              'Ces chiffres ne correspondent pas au numéro qui a appelé.',
+          )
+        }
+        const sessionResult = await supabase.auth.setSession({
+          access_token: flash.data.access_token,
+          refresh_token: flash.data.refresh_token,
+        })
+        if (sessionResult.error || !sessionResult.data?.session) {
+          throw new Error(translateAuthError(sessionResult.error, verifyContext))
+        }
+        data = { session: sessionResult.data.session, user: sessionResult.data.user }
+        error = null
+      } else {
       ;({ data, error } = await supabase.auth.verifyOtp({
         phone: normalizedPhone,
         token: otpToken,
@@ -1719,6 +1764,7 @@ export function createAuthService(supabase, redirects = {}) {
           data = retry.data
           error = null
         }
+      }
       }
       if (error) throw new Error(translateAuthError(error, verifyContext))
       if (!data.session || !data.user) {
@@ -1749,11 +1795,12 @@ export function createAuthService(supabase, redirects = {}) {
       return finishPhoneRegistration(authUser, session.access_token)
     },
 
-    async resendPhoneRegistrationOtp(phone) {
+    async resendPhoneRegistrationOtp(phone, otpChannel = 'sms') {
       if (!supabase) throw new Error('Supabase non configuré.')
       const normalizedPhone = normalizeRussianAuthPhone(phone)
       return withOtpInFlight('phone', normalizedPhone, async () => {
         guardOtpSend('phone', normalizedPhone)
+        await rememberOtpDeliveryChannel(normalizedPhone, otpChannel)
         // Do not mark prefer_p1sms: renvoi reste sur SMSC (P1SMS dual-route en pause).
         const otpResult = await supabase.auth.signInWithOtp({
           phone: normalizedPhone,

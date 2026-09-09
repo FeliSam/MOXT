@@ -9,6 +9,7 @@ import { EntityVerifiedName } from '../../../components/ui/EntityVerifiedName'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { useDevModuleAccess } from '../../../hooks/useDevModuleAccess'
 import { jobContractLabel, jobSectorLabel } from '../../jobs/jobDisplayUtils'
+import { formatParcelMoney } from '../../parcels/parcelCurrency'
 import { formatParcelDepartureLabel } from '../../parcels/parcelUtils'
 import { buildNewsFeed, newsPostPath } from '../../posts/postFeedUtils'
 import { formatDate } from '../../transfers/transferUtils'
@@ -85,8 +86,7 @@ export function DashboardDiscoverySection({
                 : null,
               item.pricePerKg != null
                 ? t('dashboard.discovery.pricePerKg', {
-                    price: item.pricePerKg,
-                    currency: item.currency || 'RUB',
+                    price: formatParcelMoney(item),
                   })
                 : null,
             ].filter(Boolean),

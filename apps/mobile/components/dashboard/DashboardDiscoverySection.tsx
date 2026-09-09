@@ -6,7 +6,7 @@ import {
   type LucideIcon,
 } from 'lucide-react-native';
 
-import { formatShortDate } from '@moxt/shared/utils/formatters.js';
+import { formatCurrency, formatShortDate } from '@moxt/shared/utils/formatters.js';
 
 import {
   LISTING_TYPES,
@@ -222,7 +222,7 @@ export function DashboardDiscoverySection({
           title: [p.origin, p.destination].filter(Boolean).join(' → ') || p.id,
           chips: [
             `${p.remainingKg ?? p.capacityKg ?? 0} kg dispo`,
-            p.pricePerKg != null ? `${p.pricePerKg} RUB/kg` : null,
+            p.pricePerKg != null ? `${formatCurrency(p.pricePerKg, p.currency || 'RUB')}/kg` : null,
           ].filter(Boolean) as string[],
           meta: p.ownerName,
           highlight: p.departureDate ? `Départ ${formatShortDate(p.departureDate)}` : null,

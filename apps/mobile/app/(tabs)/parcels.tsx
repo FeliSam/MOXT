@@ -75,7 +75,7 @@ function ParcelCard({ parcel }: { parcel: ParcelItem }) {
         {parcel.pricePerKg != null ? (
           <View style={[styles.infoTile, { backgroundColor: colors.surfaceMuted }]}>
             <Text style={[styles.infoTileValue, { color: colors.text }]}>
-              {formatCurrency(parcel.pricePerKg, 'RUB')}
+              {formatCurrency(parcel.pricePerKg, parcel.currency || 'RUB')}
             </Text>
             <Text style={[styles.infoTileLabel, { color: colors.textMuted }]}>Par kg</Text>
           </View>

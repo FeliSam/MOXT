@@ -27,6 +27,7 @@ const parcelSlice = createSlice({
             capacityKg: Number(values.capacityKg),
             remainingKg: Number(values.capacityKg),
             pricePerKg: Number(values.pricePerKg),
+            currency: String(values.currency || 'RUB').toUpperCase(),
             depositDeadline: values.depositDeadline || values.departureDate,
             distributionDate: values.distributionDate || '',
             status: values.status || 'active',
@@ -166,6 +167,7 @@ const parcelSlice = createSlice({
       Object.assign(parcel, changes, {
         capacityKg: Number(changes.capacityKg ?? parcel.capacityKg),
         pricePerKg: Number(changes.pricePerKg ?? parcel.pricePerKg),
+        currency: String(changes.currency ?? parcel.currency ?? 'RUB').toUpperCase(),
         updatedAt: new Date().toISOString(),
       })
     },

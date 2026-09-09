@@ -8,11 +8,13 @@ import {
   FiHelpCircle,
   FiMail,
   FiMessageSquare,
+  FiPhone,
   FiShield,
   FiUser,
 } from 'react-icons/fi'
 import { useDispatch, useSelector, useStore } from 'react-redux'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { FaTelegramPlane } from 'react-icons/fa'
 import { needsOAuthProfileCompletion, needsRegisterProfileCompletion, isProfileComplete } from '@moxt/shared/auth/profileCompletion.js'
 import { AuthCard } from '../components/auth/AuthCard'
 import { AuthLoginHelpModal } from '../components/auth/AuthLoginHelpModal'
@@ -338,6 +340,7 @@ export function RegisterPage() {
       confirmPassword: '',
       acceptTerms: false,
       verificationMethod: 'phone',
+      otpChannel: 'sms',
     },
     validationSchema: oauthCompletion ? oauthProfileCompletionSchema : registerSchema,
     enableReinitialize: true,
@@ -391,6 +394,7 @@ export function RegisterPage() {
           residenceCity: values.residenceCity,
           avatarUrl: values.avatarUrl,
           phoneResendCount: 0,
+          otpChannel: values.otpChannel === 'telegram' || values.otpChannel === 'flashcall' ? values.otpChannel : 'sms',
           step: 4,
         }
         savePendingRegistration(draft)
@@ -406,6 +410,8 @@ export function RegisterPage() {
   })
 
   const authBusy = status === 'loading' || formik.isSubmitting
+  const isFlashcallOtp = pendingVerification?.otpChannel === 'flashcall'
+  const otpExpectedLen = isFlashcallOtp ? 4 : 6
 
   function openOtpSession(payload, values, method) {
     const pending = {
@@ -421,6 +427,12 @@ export function RegisterPage() {
       residenceCity: values.residenceCity,
       avatarUrl: values.avatarUrl,
       phoneResendCount: 0,
+      otpChannel:
+        method === 'email'
+          ? 'sms'
+          : values.otpChannel === 'telegram' || values.otpChannel === 'flashcall'
+            ? values.otpChannel
+            : 'sms',
       step: 4,
     }
     savePendingRegistration(pending)
@@ -435,6 +447,12 @@ export function RegisterPage() {
       pendingUserId: pending.pendingUserId,
       sendingSms: false,
       identityChecked: true,
+      otpChannel:
+        method === 'email'
+          ? 'sms'
+          : values.otpChannel === 'telegram' || values.otpChannel === 'flashcall'
+            ? values.otpChannel
+            : 'sms',
     })
     setVerificationPhase('otp')
     setVerificationCode('')
@@ -453,6 +471,12 @@ export function RegisterPage() {
         register({
           ...values,
           verificationMethod: method,
+          otpChannel:
+            method === 'email'
+              ? 'sms'
+              : values.otpChannel === 'telegram' || values.otpChannel === 'flashcall'
+                ? values.otpChannel
+                : 'sms',
           registrationVia:
             method === 'email' ? 'email_chosen_at_signup' : undefined,
         }),
@@ -525,6 +549,10 @@ export function RegisterPage() {
       residenceCity: pending.residenceCity || current.residenceCity,
       avatarUrl: pending.avatarUrl || current.avatarUrl,
       verificationMethod: pending.method === 'email' ? 'email' : 'phone',
+      otpChannel:
+        pending.otpChannel === 'telegram' || pending.otpChannel === 'flashcall'
+          ? pending.otpChannel
+          : 'sms',
     }))
 
     void (async () => {
@@ -552,6 +580,10 @@ export function RegisterPage() {
           email: pending.email,
           pendingUserId: pending.pendingUserId,
           identityChecked: true,
+          otpChannel:
+            pending.otpChannel === 'telegram' || pending.otpChannel === 'flashcall'
+              ? pending.otpChannel
+              : 'sms',
         })
         setVerificationPhase('otp')
         setPhoneResendCount(Number(pending.phoneResendCount) || 0)
@@ -707,6 +739,7 @@ export function RegisterPage() {
       residenceCity: formik.values.residenceCity,
       avatarUrl: formik.values.avatarUrl,
       phoneResendCount,
+      otpChannel: pendingVerification.otpChannel || formik.values.otpChannel,
       step: 4,
     })
 
@@ -714,7 +747,12 @@ export function RegisterPage() {
       const isEmail = pendingVerification.method === 'email'
       const result = isEmail
         ? await dispatch(resendEmailRegistrationOtp(pendingVerification.email))
-        : await dispatch(resendPhoneRegistrationOtp(pendingVerification.phone))
+        : await dispatch(
+            resendPhoneRegistrationOtp({
+              phone: pendingVerification.phone,
+              otpChannel: pendingVerification.otpChannel || formik.values.otpChannel,
+            }),
+          )
       const ok = isEmail
         ? resendEmailRegistrationOtp.fulfilled.match(result)
         : resendPhoneRegistrationOtp.fulfilled.match(result)
@@ -766,9 +804,10 @@ export function RegisterPage() {
   }
 
   async function confirmCode() {
+    const expectedLen = pendingVerification?.otpChannel === 'flashcall' ? 4 : 6
     if (
       !pendingVerification ||
-      !/^\d{6}$/.test(verificationCode) ||
+      verificationCode.length !== expectedLen ||
       authBusy ||
       otpActionLockRef.current
     ) {
@@ -1251,10 +1290,15 @@ export function RegisterPage() {
                 <button
                   type="button"
                   role="radio"
-                  aria-checked={formik.values.verificationMethod !== 'email'}
-                  onClick={() => formik.setFieldValue('verificationMethod', 'phone')}
+                  aria-checked={
+                    formik.values.verificationMethod !== 'email' && formik.values.otpChannel === 'sms'
+                  }
+                  onClick={() => {
+                    formik.setFieldValue('verificationMethod', 'phone')
+                    formik.setFieldValue('otpChannel', 'sms')
+                  }}
                   className={`flex w-full items-start gap-3 rounded-2xl border-2 p-3.5 text-left transition-all duration-300 ${
-                    formik.values.verificationMethod !== 'email'
+                    formik.values.verificationMethod !== 'email' && formik.values.otpChannel === 'sms'
                       ? 'border-brand-600 bg-[var(--app-accent-soft)] shadow-sm shadow-brand-200/40 scale-[1.01]'
                       : 'border-[var(--app-border)] bg-[var(--app-surface)] hover:border-brand-300'
                   }`}
@@ -1271,7 +1315,67 @@ export function RegisterPage() {
                       {t('auth.register.channel.smsHint')}
                     </span>
                   </span>
-                  {formik.values.verificationMethod !== 'email' ? (
+                  {formik.values.verificationMethod !== 'email' && formik.values.otpChannel === 'sms' ? (
+                    <FiCheck className="mt-1 shrink-0 text-brand-700" />
+                  ) : null}
+                </button>
+
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={
+                    formik.values.verificationMethod !== 'email' && formik.values.otpChannel === 'telegram'
+                  }
+                  onClick={() => {
+                    formik.setFieldValue('verificationMethod', 'phone')
+                    formik.setFieldValue('otpChannel', 'telegram')
+                  }}
+                  className={`flex w-full items-start gap-3 rounded-2xl border-2 p-3.5 text-left transition-all duration-300 ${
+                    formik.values.verificationMethod !== 'email' && formik.values.otpChannel === 'telegram'
+                      ? 'border-brand-600 bg-[var(--app-accent-soft)] shadow-sm shadow-brand-200/40 scale-[1.01]'
+                      : 'border-[var(--app-border)] bg-[var(--app-surface)] hover:border-brand-300'
+                  }`}
+                >
+                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-600/10 text-brand-700">
+                    <FaTelegramPlane className="text-lg" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <strong className="block text-sm font-black">{t('auth.register.channel.telegramTitle')}</strong>
+                    <span className="mt-1 block text-xs text-[var(--app-text-muted)]">
+                      {t('auth.register.channel.telegramHint')}
+                    </span>
+                  </span>
+                  {formik.values.verificationMethod !== 'email' && formik.values.otpChannel === 'telegram' ? (
+                    <FiCheck className="mt-1 shrink-0 text-brand-700" />
+                  ) : null}
+                </button>
+
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={
+                    formik.values.verificationMethod !== 'email' && formik.values.otpChannel === 'flashcall'
+                  }
+                  onClick={() => {
+                    formik.setFieldValue('verificationMethod', 'phone')
+                    formik.setFieldValue('otpChannel', 'flashcall')
+                  }}
+                  className={`flex w-full items-start gap-3 rounded-2xl border-2 p-3.5 text-left transition-all duration-300 ${
+                    formik.values.verificationMethod !== 'email' && formik.values.otpChannel === 'flashcall'
+                      ? 'border-brand-600 bg-[var(--app-accent-soft)] shadow-sm shadow-brand-200/40 scale-[1.01]'
+                      : 'border-[var(--app-border)] bg-[var(--app-surface)] hover:border-brand-300'
+                  }`}
+                >
+                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-600/10 text-brand-700">
+                    <FiPhone className="text-lg" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <strong className="block text-sm font-black">{t('auth.register.channel.callTitle')}</strong>
+                    <span className="mt-1 block text-xs text-[var(--app-text-muted)]">
+                      {t('auth.register.channel.callHint')}
+                    </span>
+                  </span>
+                  {formik.values.verificationMethod !== 'email' && formik.values.otpChannel === 'flashcall' ? (
                     <FiCheck className="mt-1 shrink-0 text-brand-700" />
                   ) : null}
                 </button>
@@ -1363,7 +1467,9 @@ export function RegisterPage() {
                   ? t('auth.register.verify.emailTitle')
                   : pendingVerification.sendingSms
                     ? t('auth.register.verify.sendingTitle')
-                    : t('auth.register.verify.title')
+                    : isFlashcallOtp
+                      ? t('auth.register.verify.callTitle')
+                      : t('auth.register.verify.title')
               }
               variant="info"
             >
@@ -1375,7 +1481,9 @@ export function RegisterPage() {
                   ? t('auth.register.verify.sendingBodyShort', {
                       phone: pendingVerification.phone,
                     })
-                  : t('auth.register.verify.bodyShort', { phone: pendingVerification.phone })}
+                  : isFlashcallOtp
+                    ? t('auth.register.verify.callBodyShort', { phone: pendingVerification.phone })
+                    : t('auth.register.verify.bodyShort', { phone: pendingVerification.phone })}
             </Alert>
             {otpCapMessage ? (
               <Alert title={t('auth.register.otpCapTitle')} variant="warning">
@@ -1387,16 +1495,18 @@ export function RegisterPage() {
               label={
                 pendingVerification.method === 'email'
                   ? t('auth.register.verify.emailCodeLabel')
-                  : t('auth.register.verify.codeLabel')
+                  : isFlashcallOtp
+                    ? t('auth.register.verify.callCodeLabel')
+                    : t('auth.register.verify.codeLabel')
               }
               inputMode="numeric"
               autoComplete="one-time-code"
-              maxLength={6}
-              placeholder="000000"
+              maxLength={otpExpectedLen}
+              placeholder={isFlashcallOtp ? '0000' : '000000'}
               disabled={pendingVerification.sendingSms}
               value={verificationCode}
               onChange={(event) =>
-                setVerificationCode(event.target.value.replace(/\D/g, '').slice(0, 6))
+                setVerificationCode(event.target.value.replace(/\D/g, '').slice(0, otpExpectedLen))
               }
             />
             <Button
@@ -1406,7 +1516,7 @@ export function RegisterPage() {
               disabled={
                 authBusy ||
                 pendingVerification.sendingSms ||
-                verificationCode.length !== 6
+                verificationCode.length !== otpExpectedLen
               }
               onClick={confirmCode}
             >

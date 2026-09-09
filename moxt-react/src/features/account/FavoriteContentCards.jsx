@@ -17,6 +17,7 @@ import { CatalogGrid } from '../../components/ui/CatalogGrid'
 import { useLanguage } from '../../contexts/useLanguage'
 import { phase3Text } from '../../i18n/phase3I18n'
 import { jobContractLabel, jobSectorLabel } from '../jobs/jobDisplayUtils'
+import { formatParcelMoney } from '../parcels/parcelCurrency'
 import { formatMoney } from '../transfers/transferUtils'
 import { formatListingPrice } from './favoriteUtils'
 
@@ -121,7 +122,7 @@ function ParcelFavoriteCard({ item, onRemove }) {
         {display.pricePerKg != null ? (
           <p className="font-bold text-brand-700">
             {t('parcels.favorite.perKg', {
-              price: formatMoney(display.pricePerKg, display.currency),
+              price: formatParcelMoney(display),
             })}
           </p>
         ) : null}

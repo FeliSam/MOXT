@@ -38,7 +38,7 @@ import {
 import { Input } from '../components/ui/Input'
 import { addToast } from '../features/ui/uiSlice'
 import { statusMeta } from '../config/statuses'
-import { formatMoney } from '../features/transfers/transferUtils'
+import { formatParcelMoney } from '../features/parcels/parcelCurrency'
 import { PublisherDetailCard } from '../features/publications/PublisherDetailCard'
 import { PublisherPublicationsStrip } from '../features/publications/PublisherPublicationsStrip'
 import { usePublisherDetailProfile } from '../features/publications/usePublisherDetailProfile'
@@ -228,6 +228,11 @@ export function ParcelDetailPage() {
             label: t('parcels.detail.metrics.remainingCapacity'),
             value: `${parcel.remainingKg} kg`,
           },
+          {
+            icon: FiSend,
+            label: t('parcels.detail.info.rate'),
+            value: `${formatParcelMoney(parcel)} / kg`,
+          },
           { icon: FiCalendar, label: t('parcels.detail.metrics.departure'), value: parcel.departureDate },
           {
             icon: FiCalendar,
@@ -254,7 +259,7 @@ export function ParcelDetailPage() {
           </h2>
           <p className="mt-2 text-sm text-slate-500">
             {t('parcels.detail.perKilogram', {
-              price: formatMoney(parcel.pricePerKg, parcel.currency),
+              price: formatParcelMoney(parcel),
             })}
           </p>
           <p className="mt-4 rounded-2xl bg-[var(--app-surface-muted)] p-3 text-sm font-bold">
@@ -464,7 +469,7 @@ export function ParcelDetailPage() {
               },
               {
                 label: t('parcels.detail.info.rate'),
-                value: `${formatMoney(parcel.pricePerKg, parcel.currency)} / kg`,
+                value: `${formatParcelMoney(parcel)} / kg`,
               },
               {
                 label: t('parcels.detail.info.profile'),

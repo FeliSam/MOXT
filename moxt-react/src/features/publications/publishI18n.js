@@ -125,7 +125,7 @@ export const PUBLISH_FR_SOURCES = {
   'publish.parcel.review.capacity': 'Capacité totale',
   'publish.parcel.review.capacityValue': '{kg} kg',
   'publish.parcel.review.pricePerKg': 'Prix / kg',
-  'publish.parcel.review.priceValue': '{price} RUB',
+  'publish.parcel.review.priceValue': '{price}/kg',
   'publish.parcel.review.acceptedTypes': 'Types acceptés',
   'publish.parcel.review.contact': 'Contact',
   'publish.parcel.review.passportProof': 'Passeport',

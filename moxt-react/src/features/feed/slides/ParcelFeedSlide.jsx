@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { FiArrowRight, FiCalendar, FiMapPin, FiPackage } from 'react-icons/fi'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { resolveMediaDisplayUrl } from '../../../services/media/mediaUrlUtils.js'
-import { formatMoney } from '../../transfers/transferUtils'
+import { formatParcelMoney } from '../../parcels/parcelCurrency'
 import { readParcelDepartureDate } from '../../parcels/parcelUtils'
 import { phase3Text } from '../../../i18n/phase3I18n'
 import { FeedMediaImage } from '../FeedMediaImage'
@@ -65,7 +65,10 @@ export function ParcelFeedSlide({ item, index, active = true }) {
     : ''
   const price =
     item.stats?.pricePerKg != null
-      ? formatMoney(item.stats.pricePerKg, item.stats.currency)
+      ? formatParcelMoney({
+          pricePerKg: item.stats.pricePerKg,
+          currency: item.stats.currency || item.source?.currency,
+        })
       : null
   const remaining =
     item.stats?.remainingKg != null ? p3('feed.meta.remainingKg', { kg: item.stats.remainingKg }) : null

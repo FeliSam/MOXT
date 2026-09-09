@@ -1,3 +1,4 @@
+import { formatParcelMoney } from '../parcels/parcelCurrency'
 import { formatMoney, formatDate } from '../transfers/transferUtils'
 import { jobContractLabel, jobSectorLabel } from '../jobs/jobDisplayUtils'
 import { normalizeConversation } from './communicationSlice'
@@ -78,7 +79,7 @@ export function buildParcelSnapshot(parcel, path, extras = {}) {
         reservedKg != null
           ? text('parcels.snapshot.reservedKg', { kg: reservedKg }, `${reservedKg} kg réservés`)
           : parcel.pricePerKg != null
-            ? `${formatMoney(parcel.pricePerKg, parcel.currency || 'EUR')}/kg`
+            ? `${formatParcelMoney(parcel)}/kg`
             : null,
       badge:
         reservedKg != null

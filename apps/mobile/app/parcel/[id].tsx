@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { formatShortDate } from '@moxt/shared/utils/formatters.js';
+import { formatCurrency, formatShortDate } from '@moxt/shared/utils/formatters.js';
 
 import { Button } from '@/components/ui/Button';
 import { DetailFacts, DetailMetrics, DetailSection, TrustPanel } from '@/components/ui/DetailBlocks';
@@ -52,7 +52,7 @@ export default function ParcelDetailScreen() {
             items={[
               { emoji: '📅', label: 'Départ', value: parcel.departureDate ? formatShortDate(parcel.departureDate) : '—' },
               { emoji: '⚖️', label: 'Kg disponibles', value: `${parcel.remainingKg ?? parcel.capacityKg ?? 0} kg` },
-              { emoji: '💰', label: 'Prix / kg', value: parcel.pricePerKg != null ? `${parcel.pricePerKg} RUB` : '—' },
+              { emoji: '💰', label: 'Prix / kg', value: parcel.pricePerKg != null ? formatCurrency(parcel.pricePerKg, parcel.currency || 'RUB') : '—' },
               { emoji: '🧳', label: 'Transporteur', value: parcel.ownerName || '—' },
             ]}
           />

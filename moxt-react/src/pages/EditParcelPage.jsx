@@ -5,6 +5,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
+import { ParcelCurrencySelect } from '../features/parcels/ParcelCurrencySelect'
 import { Modal } from '../components/ui/Modal'
 import { PageHeader } from '../components/ui/PageHeader'
 import { constrainRussianPhone, phonePlaceholder } from '../config/phone'
@@ -46,6 +47,7 @@ export function EditParcelPage() {
     distributionDate: parcel.distributionDate ? parcel.distributionDate.slice(0, 10) : '',
     capacityKg: parcel.capacityKg ?? 20,
     pricePerKg: parcel.pricePerKg ?? 900,
+    currency: parcel.currency || 'RUB',
     maxWeightPerItem: parcel.maxWeightPerItem || '',
     acceptedTypes: Array.isArray(parcel.acceptedTypes) ? parcel.acceptedTypes : [],
     rejectedTypes: parcel.rejectedTypes || '',
@@ -122,6 +124,7 @@ export function EditParcelPage() {
           ownerId: user.id,
           capacityKg: Number(values.capacityKg),
           pricePerKg: Number(values.pricePerKg),
+          currency: values.currency,
           travelProofName: travelProofFile?.name || null,
           travelProofType: travelProofFile?.type || null,
           travelProofSize: travelProofFile?.size || null,
@@ -246,11 +249,17 @@ export function EditParcelPage() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
-              label={publishText(t, 'publish.parcel.fields.pricePerKgRub')}
+              label={publishText(t, 'publish.parcel.fields.pricePerKg')}
               type="number"
               min="0"
               value={values.pricePerKg}
               onChange={(e) => set('pricePerKg', e.target.value)}
+            />
+            <ParcelCurrencySelect
+              originCountryCode={user.originCountry || parcel.originCountry || 'BJ'}
+              value={values.currency}
+              onChange={(next) => set('currency', next)}
+              t={t}
             />
           </div>
           <label className="grid gap-1.5">

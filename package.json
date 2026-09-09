@@ -41,6 +41,7 @@
     "setup:libretranslate:yandex": "node scripts/provision-libretranslate-yandex.mjs",
     "setup:libretranslate:repair": "node scripts/provision-libretranslate-yandex.mjs --recreate",
     "setup:p1sms": "node scripts/setup-p1sms.mjs",
+    "setup:sigma-sms": "node scripts/setup-sigma-sms.mjs",
     "setup:admin-promote": "node scripts/setup-admin-promote.mjs",
     "setup:google-auth": "node scripts/setup-google-auth.mjs",
     "setup:postbox": "node scripts/setup-postbox-domain.mjs",

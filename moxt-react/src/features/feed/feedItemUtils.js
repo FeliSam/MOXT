@@ -447,7 +447,7 @@ export function normalizeParcelFeedItem(parcel, state = {}) {
     stats: {
       views: Number(parcel.views) || 0,
       pricePerKg: parcel.pricePerKg,
-      currency: parcel.currency,
+      currency: parcel.currency || 'RUB',
       remainingKg: parcel.remainingKg,
       origin,
       destination,

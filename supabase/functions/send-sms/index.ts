@@ -3,6 +3,7 @@ import { SNSClient, PublishCommand } from 'npm:@aws-sdk/client-sns@3'
 import { Webhook } from 'https://esm.sh/standardwebhooks@1.0.0'
 import { phoneToSmsc } from '../_shared/smscPhone.ts'
 import { corsHeadersFor } from '../_shared/cors.ts'
+import { isSigmaConfigured, sendViaSigma } from '../_shared/sigmaSms.ts'
 
 const ALLOW_HEADERS =
   'authorization, x-client-info, apikey, content-type, webhook-id, webhook-timestamp, webhook-signature'
@@ -756,7 +757,58 @@ async function sendWithProvider(provider: SmsProvider, phone: string, otp: strin
   return sendViaSmsc(phone, otp)
 }
 
+async function readOtpChannel(phone: string): Promise<'sms' | 'telegram' | 'flashcall'> {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  if (!supabaseUrl || !serviceRoleKey) return 'sms'
+  try {
+    const admin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
+    const { data } = await admin
+      .from('otp_delivery')
+      .select('channel')
+      .eq('phone', normalizeE164(phone))
+      .maybeSingle()
+    const ch = String(data?.channel || 'sms')
+    if (ch === 'telegram' || ch === 'flashcall') return ch
+  } catch (error) {
+    console.warn('[send-sms] otp_delivery:', error instanceof Error ? error.message : error)
+  }
+  return 'sms'
+}
+
+async function persistFlashcallOtp(phone: string, otp: string) {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  if (!supabaseUrl || !serviceRoleKey) return
+  const admin = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
+  await admin.from('otp_delivery').upsert({
+    phone: normalizeE164(phone),
+    channel: 'flashcall',
+    otp,
+    expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+    updated_at: new Date().toISOString(),
+  })
+}
+
 async function sendOtpSms(phone: string, otp: string) {
+  const channel = await readOtpChannel(phone)
+  if (channel === 'telegram') {
+    if (isSigmaConfigured()) return sendViaSigma(phone, otp, 'telegram', PROVIDER_TIMEOUT_MS)
+    return sendViaSmscTelegram(phone, otp)
+  }
+  if (channel === 'flashcall') {
+    if (!isSigmaConfigured()) {
+      throw new Error('Appel Sigma non configuré (SIGMA_SMS_API_KEY).')
+    }
+    const id = await sendViaSigma(phone, otp, 'flashcall', PROVIDER_TIMEOUT_MS)
+    await persistFlashcallOtp(phone, otp)
+    return id
+  }
+
   // Peek before claim (legacy prefer_p1sms). Ignored while SMSC is forced for all attempts.
   const prior = await peekOtpSmsRoute(phone)
   const forceSmsc = isSmsForceSmsc()
