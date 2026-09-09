@@ -92,9 +92,7 @@ export function DashboardPage() {
 
   return (
     <div className="grid min-w-0 gap-6 overflow-x-clip sm:gap-7">
-      <div className="min-w-0 overflow-x-clip">
-        <StatusRail />
-      </div>
+      <StatusRail hideWhenNoCommunity />
 
       <DashboardStarsStrip />
 

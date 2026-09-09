@@ -344,6 +344,9 @@ export const interactionMiddleware = (store) => {
   if (action.type === 'p2p/addOrderProof') {
     triggers.handleP2POrderProof(after, action, actorId)
   }
+  if (action.type === 'p2p/addOrderComment') {
+    triggers.handleP2POrderComment(after, action, actorId)
+  }
   if (action.type === 'p2p/rateOrder') {
     triggers.handleP2PRateOrder(after, action, actorId)
   }

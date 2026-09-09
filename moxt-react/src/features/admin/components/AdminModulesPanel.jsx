@@ -3,8 +3,13 @@ import { FiBriefcase, FiBox, FiCalendar, FiFileText, FiPlay, FiRss, FiStar } fro
 import { useDispatch, useSelector } from 'react-redux'
 import { Button } from '../../../components/ui/Button'
 import { Card } from '../../../components/ui/Card'
+import { Modal } from '../../../components/ui/Modal'
 import { useLanguage } from '../../../contexts/useLanguage'
-import { DEV_MODULE_IDS, DEV_MODULE_META } from '../../../config/devModules'
+import {
+  DEV_MODULE_IDS,
+  DEV_MODULE_META,
+  constrainDevModuleFlags,
+} from '../../../config/devModules'
 import { adminText } from '../adminI18n'
 import { CARD } from '../adminConfig'
 import { loadPlatformModules, savePlatformModules } from '../../platform/platformModulesSlice'
@@ -27,6 +32,7 @@ export function AdminModulesPanel() {
   const saveStatus = useSelector((state) => state.platformModules.saveStatus)
   const updatedAt = useSelector((state) => state.platformModules.updatedAt)
   const [draft, setDraft] = useState(remoteFlags)
+  const [askVideos, setAskVideos] = useState(false)
 
   useEffect(() => {
     dispatch(loadPlatformModules())
@@ -38,12 +44,31 @@ export function AdminModulesPanel() {
   }, [remoteFlags])
 
   function toggle(moduleId) {
-    setDraft((current) => ({ ...current, [moduleId]: !current[moduleId] }))
+    if (moduleId === 'videos' && !draft.videos && !draft.feed) {
+      dispatch(
+        addToast({
+          title: adminText(t, 'admin.modules.videosNeedsFeedTitle'),
+          message: adminText(t, 'admin.modules.videosNeedsFeedBody'),
+          tone: 'warning',
+        }),
+      )
+      return
+    }
+    const turningFeedOn = moduleId === 'feed' && !draft.feed
+    setDraft((current) =>
+      constrainDevModuleFlags({
+        ...current,
+        [moduleId]: !current[moduleId],
+      }),
+    )
+    if (turningFeedOn) setAskVideos(true)
   }
 
-  async function save() {
+  async function save(nextFlags = draft) {
+    const payload = constrainDevModuleFlags(nextFlags)
     try {
-      await dispatch(savePlatformModules(draft)).unwrap()
+      await dispatch(savePlatformModules(payload)).unwrap()
+      setDraft(payload)
       dispatch(
         addToast({
           title: adminText(t, 'admin.modules.saved'),
@@ -59,6 +84,12 @@ export function AdminModulesPanel() {
         }),
       )
     }
+  }
+
+  function confirmEnableVideos() {
+    const next = constrainDevModuleFlags({ ...draft, videos: true, feed: true })
+    setDraft(next)
+    setAskVideos(false)
   }
 
   const dirty = DEV_MODULE_IDS.some((id) => Boolean(draft[id]) !== Boolean(remoteFlags[id]))
@@ -80,6 +111,7 @@ export function AdminModulesPanel() {
           const meta = DEV_MODULE_META[moduleId]
           const Icon = MODULE_ICONS[moduleId] || FiStar
           const enabled = Boolean(draft[moduleId])
+          const videosLocked = moduleId === 'videos' && !draft.feed
           return (
             <Card key={moduleId} className={`${CARD} flex items-start gap-4 p-4`}>
               <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--app-surface-muted)] text-[var(--app-text)]">
@@ -93,11 +125,12 @@ export function AdminModulesPanel() {
                 type="button"
                 role="switch"
                 aria-checked={enabled}
+                aria-disabled={videosLocked}
                 aria-label={adminText(t, meta.labelKey)}
                 onClick={() => toggle(moduleId)}
                 className={`relative h-8 w-14 shrink-0 rounded-full transition ${
                   enabled ? 'bg-brand-600' : 'bg-[var(--app-border)]'
-                }`}
+                } ${videosLocked ? 'opacity-50' : ''}`}
               >
                 <span
                   className={`absolute top-1 size-6 rounded-full bg-white shadow transition ${
@@ -111,7 +144,7 @@ export function AdminModulesPanel() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button loading={saveStatus === 'saving'} disabled={!dirty} onClick={save}>
+        <Button loading={saveStatus === 'saving'} disabled={!dirty} onClick={() => save()}>
           {adminText(t, 'admin.modules.save')}
         </Button>
         {updatedAt ? (
@@ -122,6 +155,22 @@ export function AdminModulesPanel() {
           </p>
         ) : null}
       </div>
+
+      <Modal
+        open={askVideos}
+        onClose={() => setAskVideos(false)}
+        title={adminText(t, 'admin.modules.enableVideosTitle')}
+      >
+        <p className="text-sm leading-6 text-[var(--app-text-muted)]">
+          {adminText(t, 'admin.modules.enableVideosBody')}
+        </p>
+        <div className="mt-6 flex justify-end gap-3">
+          <Button variant="secondary" onClick={() => setAskVideos(false)}>
+            {adminText(t, 'admin.modules.enableVideosSkip')}
+          </Button>
+          <Button onClick={confirmEnableVideos}>{adminText(t, 'admin.modules.enableVideosConfirm')}</Button>
+        </div>
+      </Modal>
     </div>
   )
 }

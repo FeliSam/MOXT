@@ -26,6 +26,7 @@ import {
 
 const P2P_STATUS_TONE = {
   created: 'info',
+  seller_accepted: 'info',
   waiting_payment: 'warning',
   completed: 'success',
   cancelled: 'slate',
@@ -84,6 +85,7 @@ export function TransfersPage() {
   function p2pStatusLabel(value) {
     const key = {
       created: 'p2p.order.status.created',
+      seller_accepted: 'p2p.order.status.sellerAccepted',
       waiting_payment: 'p2p.order.status.waitingPayment',
       completed: 'p2p.order.status.completed',
       cancelled: 'p2p.order.status.cancelled',

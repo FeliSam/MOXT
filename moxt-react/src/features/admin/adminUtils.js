@@ -31,6 +31,7 @@ export function statusDotColor(status) {
       'new',
       'waiting_payment',
       'created',
+      'seller_accepted',
       'accepted',
     ].includes(status)
   ) {

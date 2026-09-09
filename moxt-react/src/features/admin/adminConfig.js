@@ -60,7 +60,7 @@ export const CHIP = 'rounded-full px-3 py-1.5 text-xs font-bold transition-all'
 
 export const VIEW_FILTERS = {
   transfers: ['all', 'pending', 'completed', 'cancelled'],
-  p2p: ['all', 'active', 'accepted', 'archived', 'created', 'waiting_payment', 'completed', 'cancelled', 'disputed'],
+  p2p: ['all', 'active', 'accepted', 'archived', 'created', 'seller_accepted', 'waiting_payment', 'completed', 'cancelled', 'disputed'],
   support: ['all', 'open', 'resolved', 'pending'],
   users: ['all', 'active', 'suspended', 'pending_deletion', 'user', 'professional', 'moderator', 'admin'],
   content: ['all', 'active', 'pending_review', 'archived', 'published', 'rejected', 'new', 'resolved'],

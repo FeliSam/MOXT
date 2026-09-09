@@ -88,7 +88,7 @@ export function TransferDetailPage() {
   const user = useSelector((state) => state.auth.user)
   const businesses = useSelector((state) => state.businesses.items || [])
   const ownedBusinessIds = useSelector((state) => selectOwnedBusinessIds(state, user?.id))
-  const { business, transfer } = useTransferDetail(transferId, user)
+  const { business, transfer, loading: transferLoading } = useTransferDetail(transferId, user)
   const countdown = usePaymentCountdown(
     transfer?.status === TRANSFER_STATUS.PENDING ? transfer?.paymentDeadlineAt : null,
   )
@@ -108,6 +108,14 @@ export function TransferDetailPage() {
       dispatch(runExpireOverdueTransfers())
     }
   }, [dispatch, transfer, acceptanceCountdown.expired, countdown.expired])
+
+  if (transferLoading) {
+    return (
+      <Card className="grid min-h-72 place-items-center text-center">
+        <p className="text-sm font-semibold text-[var(--app-text-muted)]">{t('common.loading')}</p>
+      </Card>
+    )
+  }
 
   if (!transfer) {
     return <TransferDetailNotFound />

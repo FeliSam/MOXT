@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { createId } from '../../services/createId'
 import { createLocalStorage } from '../../services/createLocalStorage'
-import { mergeRemoteById } from '@moxt/shared/utils/mergeRemoteById.js'
+import { mergeRemoteByIdPruningWindow } from '@moxt/shared/utils/mergeRemoteById.js'
 
 const videosStorage = createLocalStorage('moxt-videos-v1')
 
@@ -45,7 +45,7 @@ const videosSlice = createSlice({
     setAll(state, action) {
       const { items } = action.payload || {}
       if (items) {
-        state.items = mergeRemoteById(state.items, items.map(normalizeVideo))
+        state.items = mergeRemoteByIdPruningWindow(state.items, items.map(normalizeVideo))
       }
     },
     createVideo: {

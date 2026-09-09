@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import {
   canUserAccessTransfer,
@@ -26,22 +26,29 @@ export function useTransferDetail(transferId, user) {
       ? state.businesses.items.find((item) => item.id === transfer.businessId)
       : null,
   )
+  const [lookupPending, setLookupPending] = useState(Boolean(transferId && user?.id))
 
   useEffect(() => {
     if (!transferId || !user?.id) return undefined
-    // Ne pas abort() au cleanup : React Strict Mode / navigation annulait le thunk
-    // et déclenchait un toast « Aborted » via interactionMiddleware.
-    void dispatch(ensureTransferFromRemote(transferId))
-    return undefined
+    let alive = true
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- spinner until the first remote fetch settles
+    setLookupPending(true)
+    void dispatch(ensureTransferFromRemote({ id: transferId, force: true }))
+      .unwrap()
+      .catch(() => null)
+      .finally(() => {
+        if (alive) setLookupPending(false)
+      })
+    return () => {
+      alive = false
+    }
   }, [dispatch, transferId, user?.id])
 
-  // Rafraîchissement périodique + focus : les actions de l'autre partie
-  // s'appliquent sans quitter la page (complément au realtime global).
   useEffect(() => {
     if (!transferId || !user?.id) return undefined
 
     const refresh = () => {
-      void dispatch(ensureTransferFromRemote(transferId))
+      void dispatch(ensureTransferFromRemote({ id: transferId, force: true }))
     }
 
     const onVisible = () => {
@@ -84,5 +91,9 @@ export function useTransferDetail(transferId, user) {
     }
   }, [dispatch, ownedBusinessIds, transferId, user])
 
-  return { business: transferBusiness || ownedBusiness, transfer }
+  return {
+    business: transferBusiness || ownedBusiness,
+    transfer,
+    loading: Boolean(transferId && user?.id && !transfer && lookupPending),
+  }
 }

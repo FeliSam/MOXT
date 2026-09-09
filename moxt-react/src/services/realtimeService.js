@@ -26,6 +26,7 @@ import { businessFromRemoteRow } from '../features/businesses/businessRemote'
 import { setOnlineUsers } from '../features/presence/presenceSlice'
 import { transferFromRemoteRow } from '../features/transfers/transferRemote'
 import { receiveRemoteTransfer } from '../features/transfers/transferSlice'
+import { ensureTransferFromRemote } from '../features/transfers/transferSync'
 import { p2pOfferFromRemoteRow, p2pOrderFromRemoteRow } from '../features/sync/entityRemote'
 import {
   receiveRemoteOffer,
@@ -195,6 +196,14 @@ async function ingestRemoteMessage(conversationId, row, userId, dispatch, getSta
     return
   }
   dispatch(receiveRemoteMessage({ conversationId: conversation.id, message }))
+  const hydrated = resolveConversationForMessage(
+    getState(),
+    conversation.id,
+    conversation.participantIds,
+  )
+  if (hydrated && !hydrated.messagesLoaded) {
+    void dispatch(loadConversationMessages(hydrated.id))
+  }
 }
 
 function maybeReloadConversationMessages(conversation, dispatch, getState) {
@@ -203,12 +212,22 @@ function maybeReloadConversationMessages(conversation, dispatch, getState) {
     conversation.id,
     conversation.participantIds,
   )
-  if (!local?.messagesLoaded) return
+  if (!local) return
+  if (!local.messagesLoaded) {
+    dispatch(loadConversationMessages(local.id))
+    return
+  }
   const remoteCount = conversation.messageCount || 0
   const localCount = local.messages?.length || 0
   if (remoteCount > localCount) {
     dispatch(loadConversationMessages(local.id))
   }
+}
+
+function transferIdFromNotificationLink(link) {
+  const raw = String(link || '')
+  const match = raw.match(/\/transfers\/([^/?#]+)/)
+  return match?.[1] || null
 }
 
 let channel = null
@@ -392,6 +411,10 @@ function bindChannel(userId, dispatch, getState) {
         createdAt: row.created_at,
       }),
     )
+    const transferId = transferIdFromNotificationLink(row.link)
+    if (transferId) {
+      void dispatch(ensureTransferFromRemote({ id: transferId, force: true }))
+    }
   }
 
   let nextChannel = supabase

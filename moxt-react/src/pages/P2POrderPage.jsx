@@ -38,7 +38,8 @@ import {
   rateOrder,
   updateOrderStatus,
 } from '../features/p2p/p2pSlice'
-import { isPastDue } from '../features/p2p/p2pUtils'
+import { familyNameFromFullName, isPastDue, p2pReceivedFromOffered } from '../features/p2p/p2pUtils'
+import { P2POrderThread } from '../features/p2p/components/P2POrderThread'
 import { createReview } from '../features/reviews/reviewSlice'
 import { REVIEW_TARGET_TYPES } from '@moxt/shared/utils/reviewUtils.js'
 import { formatDate, formatMoney } from '../features/transfers/transferUtils'
@@ -48,12 +49,13 @@ import { storageService } from '../services/storageService'
 import { useP2pOrderRealtime } from '../features/p2p/useP2pRealtime'
 
 const ACCOUNT_EMPHASIS_CLASS =
-  'rounded-2xl border border-[color-mix(in_srgb,var(--app-teal)_32%,var(--app-border))] bg-[color-mix(in_srgb,var(--app-teal)_14%,var(--app-surface))] p-4 text-sm text-[var(--app-text)]'
+  'min-w-0 rounded-2xl border border-[color-mix(in_srgb,var(--app-teal)_32%,var(--app-border))] bg-[color-mix(in_srgb,var(--app-teal)_14%,var(--app-surface))] p-4 text-sm text-[var(--app-text)]'
 const ACCOUNT_MUTED_CLASS =
-  'rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-4 text-sm text-[var(--app-text)]'
+  'min-w-0 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-4 text-sm text-[var(--app-text)]'
 
 const ORDER_STATUS_KEYS = {
   created: { labelKey: 'p2p.order.status.created', tone: 'info' },
+  seller_accepted: { labelKey: 'p2p.order.status.sellerAccepted', tone: 'info' },
   waiting_payment: { labelKey: 'p2p.order.status.waitingPayment', tone: 'warning' },
   buyer_receive_details: { labelKey: 'p2p.order.status.buyerReceiveDetails', tone: 'info' },
   completed: { labelKey: 'p2p.order.status.completed', tone: 'success' },
@@ -123,7 +125,7 @@ export function P2POrderPage() {
   const receiveMethod = order?.method || linkedOffer?.method || ''
 
   const handleExpire = useCallback(() => {
-    if (!order || order.status !== 'created') return
+    if (!order || order.status !== 'seller_accepted') return
     if (!isPastDue(order.paymentDueAt)) return
     dispatch(expireOrder({ id: order.id }))
     dispatch(
@@ -146,6 +148,11 @@ export function P2POrderPage() {
     if (order.status === 'completed') return t('p2p.order.hint.completed')
     if (order.status === 'created') {
       return isBuyer
+        ? t('p2p.order.hint.buyerWaitSeller', { name: order.sellerName })
+        : t('p2p.order.hint.sellerAcceptRequest', { name: order.buyerName })
+    }
+    if (order.status === 'seller_accepted') {
+      return isBuyer
         ? t('p2p.order.hint.buyerPay', { name: order.sellerName })
         : t('p2p.order.hint.sellerWait', { name: order.buyerName })
     }
@@ -166,10 +173,18 @@ export function P2POrderPage() {
   const isTerminal = ['completed', 'cancelled'].includes(order.status)
   const isDisputed = order.status === 'disputed' || Boolean(dispute)
   const actionsLocked = isTerminal || isDisputed
+  const canAddProof =
+    !actionsLocked && ['seller_accepted', 'waiting_payment'].includes(order.status)
+  const canSaveReceipt = ['seller_accepted', 'waiting_payment', 'completed'].includes(order.status)
   const otherPartyId = isBuyer ? order.sellerId : order.buyerId
   const otherPartyName = isBuyer ? order.sellerName : order.buyerName
   const statusMeta = ORDER_STATUS_KEYS[order.status] || { tone: 'info' }
   const phoneLabel = t('p2p.order.receivePhone')
+  const payAmountRaw = p2pReceivedFromOffered(order.amount, order.rate)
+  const payAmountLabel = payAmountRaw
+    ? formatMoney(Number(payAmountRaw), order.toCurrency)
+    : formatMoney(order.amount, order.fromCurrency)
+  const receiveLastName = familyNameFromFullName(receiveName)
 
   function copyField(value, label) {
     const text = String(value || '').trim()
@@ -193,7 +208,7 @@ export function P2POrderPage() {
   async function handleProofUpload(event) {
     const file = event.target.files?.[0]
     event.target.value = ''
-    if (!file || actionsLocked) return
+    if (!file || actionsLocked || !canAddProof) return
     setUploading(true)
     try {
       const { path } = await trackProofUpload((onProgress) =>
@@ -235,6 +250,11 @@ export function P2POrderPage() {
   }
 
   function runConfirmedAction() {
+    if (confirmAction === 'acceptSeller') {
+      dispatch(updateOrderStatus({ id: order.id, status: 'seller_accepted' }))
+      setConfirmAction(null)
+      return
+    }
     if (confirmAction === 'markPaid') {
       dispatch(updateOrderStatus({ id: order.id, status: 'waiting_payment' }))
       setConfirmAction(null)
@@ -319,13 +339,13 @@ export function P2POrderPage() {
   }
 
   const countdownDueAt =
-    order.status === 'created'
+    order.status === 'seller_accepted'
       ? order.paymentDueAt
       : order.status === 'waiting_payment'
         ? order.confirmDueAt
         : null
   const countdownLabel =
-    order.status === 'created'
+    order.status === 'seller_accepted'
       ? t('p2p.order.countdown.payment')
       : t('p2p.order.countdown.confirm')
 
@@ -352,13 +372,13 @@ export function P2POrderPage() {
         </Card>
       ) : null}
 
-      <Card className="grid gap-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
+      <Card className="grid min-w-0 gap-5">
+        <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
             <p className="text-xs font-bold uppercase tracking-wide text-[var(--app-text-faint)]">
               {t('p2p.order.amount')}
             </p>
-            <h2 className="mt-1 text-2xl font-black tabular-nums sm:text-3xl">
+            <h2 className="mt-1 break-words text-2xl font-black tabular-nums sm:text-3xl">
               {formatMoney(order.amount, order.fromCurrency)}
               <span className="ml-2 text-base font-bold text-[var(--app-text-muted)]">
                 → {order.toCurrency}
@@ -374,11 +394,11 @@ export function P2POrderPage() {
           <P2PCountdown
             dueAt={countdownDueAt}
             label={countdownLabel}
-            onExpire={order.status === 'created' ? handleExpire : undefined}
+            onExpire={order.status === 'seller_accepted' ? handleExpire : undefined}
           />
         ) : null}
 
-        <p className="rounded-2xl bg-[var(--app-surface-muted)] px-4 py-3 text-sm font-medium leading-6 text-[var(--app-text)]">
+        <p className="min-w-0 break-words rounded-2xl bg-[var(--app-surface-muted)] px-4 py-3 text-sm font-medium leading-6 text-[var(--app-text)]">
           {nextActionHint}
         </p>
 
@@ -395,12 +415,20 @@ export function P2POrderPage() {
           ) : null}
         </div>
 
-        {(receivePhone || receiveName) && isBuyer ? (
+        {(receivePhone || receiveName) && isBuyer && order.status !== 'created' ? (
           <div className={ACCOUNT_EMPHASIS_CLASS}>
             <p className="text-xs font-black uppercase tracking-wide text-[var(--app-teal)]">
               {t('p2p.order.payToTitle')}
             </p>
-            <p className="mt-1 text-sm text-[var(--app-text-muted)]">{t('p2p.order.payToHint')}</p>
+            <p className="mt-2 text-lg font-black tabular-nums">
+              {t('p2p.order.amountToPay')}: {payAmountLabel}
+            </p>
+            <p className="mt-1 text-sm text-[var(--app-text-muted)]">
+              {t('p2p.order.payToHint', {
+                lastName: receiveLastName || receiveName,
+                amount: payAmountLabel,
+              })}
+            </p>
             <div className="mt-3 grid gap-2 text-sm">
               {receiveMethod ? <Row label={t('p2p.detail.method')} value={receiveMethod} /> : null}
               {receiveName ? <Row label={t('p2p.order.receiveName')} value={receiveName} /> : null}
@@ -491,6 +519,7 @@ export function P2POrderPage() {
 
         {isParty ? (
           <ContactButton
+            className="w-full min-w-0"
             ownerId={otherPartyId}
             relatedEntity={order}
             relatedId={order.id}
@@ -501,9 +530,18 @@ export function P2POrderPage() {
           />
         ) : null}
 
+        {isParty ? (
+          <P2POrderThread order={order} user={user} t={t} canWrite={!actionsLocked} />
+        ) : null}
+
         {!actionsLocked && isParty ? (
           <div className="grid gap-2">
-            {order.status === 'created' && isBuyer ? (
+            {order.status === 'created' && isSeller ? (
+              <Button icon={FiCheckCircle} onClick={() => setConfirmAction('acceptSeller')}>
+                {t('p2p.order.acceptAvailability')}
+              </Button>
+            ) : null}
+            {order.status === 'seller_accepted' && isBuyer ? (
               <Button
                 icon={FiClock}
                 disabled={!myProofUploaded}
@@ -521,7 +559,7 @@ export function P2POrderPage() {
                 {t('p2p.order.confirmReceived')}
               </Button>
             ) : null}
-            {order.status === 'created' && isBuyer && !myProofUploaded ? (
+            {order.status === 'seller_accepted' && isBuyer && !myProofUploaded ? (
               <p className="text-xs text-[var(--app-text-muted)]">{t('p2p.order.markPaidHint')}</p>
             ) : null}
             {order.status === 'waiting_payment' && isSeller && !sellerProofUploaded ? (
@@ -568,7 +606,8 @@ export function P2POrderPage() {
 
         {!actionsLocked && isParty ? (
           <div className="grid gap-3 border-t border-[var(--app-border)] pt-4">
-            <div className="flex flex-wrap gap-2">
+            <div className="flex min-w-0 flex-wrap gap-2">
+              {canAddProof ? (
               <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-[var(--app-border)] px-4 text-sm font-bold">
                 <FiUpload /> {uploading ? t('p2p.order.uploading') : t('p2p.order.addProof')}
                 <input
@@ -579,6 +618,8 @@ export function P2POrderPage() {
                   onChange={handleProofUpload}
                 />
               </label>
+              ) : null}
+              {canSaveReceipt ? (
               <Button
                 variant="secondary"
                 icon={FiFileText}
@@ -599,7 +640,8 @@ export function P2POrderPage() {
               >
                 {t('p2p.order.saveReceipt')}
               </Button>
-              {order.status === 'created' ? (
+              ) : null}
+              {order.status === 'created' || order.status === 'seller_accepted' ? (
                 <Button
                   icon={FiXCircle}
                   variant="danger"
@@ -622,7 +664,9 @@ export function P2POrderPage() {
         <Card>
           <h2 className="font-black">{t('p2p.order.timeline')}</h2>
           <div className="mt-5 grid gap-4">
-            {(order.timeline || []).map((event) => (
+            {(order.timeline || [])
+              .filter((event) => event?.status && event.status !== 'comment')
+              .map((event) => (
               <div key={`${event.status}-${event.at}-${event.note || ''}`} className="flex gap-3">
                 <FiCheckCircle className="mt-0.5 text-brand-700" />
                 <div>
@@ -717,7 +761,9 @@ export function P2POrderPage() {
         open={Boolean(confirmAction)}
         onClose={() => setConfirmAction(null)}
         title={
-          confirmAction === 'markPaid'
+          confirmAction === 'acceptSeller'
+            ? t('p2p.order.confirm.acceptSellerTitle')
+            : confirmAction === 'markPaid'
             ? t('p2p.order.confirm.markPaidTitle')
             : confirmAction === 'confirmReceived'
               ? t('p2p.order.confirm.finalizeTitle')
@@ -728,7 +774,9 @@ export function P2POrderPage() {
       >
         <div className="grid gap-4">
           <p className="text-sm leading-6 text-[var(--app-text-muted)]">
-            {confirmAction === 'markPaid'
+            {confirmAction === 'acceptSeller'
+              ? t('p2p.order.confirm.acceptSellerBody')
+              : confirmAction === 'markPaid'
               ? t('p2p.order.confirm.markPaidBody')
               : confirmAction === 'confirmReceived'
                 ? t('p2p.order.confirm.finalizeBody')
@@ -744,7 +792,9 @@ export function P2POrderPage() {
               variant={confirmAction === 'cancel' || confirmAction === 'dispute' ? 'danger' : 'primary'}
               onClick={runConfirmedAction}
             >
-              {confirmAction === 'markPaid'
+              {confirmAction === 'acceptSeller'
+                ? t('p2p.order.confirm.acceptSellerCta')
+                : confirmAction === 'markPaid'
                 ? t('p2p.order.confirm.markPaidCta')
                 : confirmAction === 'confirmReceived'
                   ? t('p2p.order.confirm.finalizeCta')
@@ -796,10 +846,10 @@ export function P2POrderPage() {
 
 function Row({ label, value, onCopy, copyAria }) {
   return (
-    <div className="flex justify-between gap-4 border-b border-slate-100 pb-2 dark:border-slate-800">
-      <span className="text-slate-500">{label}</span>
+    <div className="flex min-w-0 items-start justify-between gap-3 border-b border-slate-100 pb-2 dark:border-slate-800">
+      <span className="shrink-0 text-slate-500">{label}</span>
       <span className="flex min-w-0 items-center justify-end gap-1.5">
-        <strong className="text-right break-all">{value}</strong>
+        <strong className="min-w-0 break-all text-right">{value}</strong>
         {onCopy ? (
           <button
             type="button"

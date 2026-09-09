@@ -76,7 +76,9 @@ export function markCatalogSynced(userId) {
 }
 
 /**
- * Charge loadAllData en arrière-plan sauf sync forcée (login explicite).
+ * Charge loadAllData en arrière-plan.
+ * Le TTL ne bloque plus le réseau : un cache frais sert seulement à afficher
+ * l’UI tout de suite, le pull part quand même (un peu plus tard).
  * @param {{ dispatch: Function, getState: Function }} store
  */
 export function scheduleCatalogSync(store, { force = false } = {}) {
@@ -84,10 +86,7 @@ export function scheduleCatalogSync(store, { force = false } = {}) {
   if (!userId) return Promise.resolve()
 
   const usable = hasUsableFeedCatalog()
-
-  if (!force && usable && isCatalogSyncFresh(userId)) {
-    return Promise.resolve()
-  }
+  const cacheFresh = usable && isCatalogSyncFresh(userId)
 
   const run = () =>
     import('./loadAllData.js').then(({ loadAllData }) =>
@@ -98,10 +97,13 @@ export function scheduleCatalogSync(store, { force = false } = {}) {
     return awaitCatalogSync(run(), CATALOG_SYNC_TIMEOUT_MS, 'loadAllData')
   }
 
+  const idleTimeout = cacheFresh ? 2500 : usable ? 8000 : 2000
+  const fallbackDelay = cacheFresh ? 400 : usable ? 1200 : 350
+
   if (typeof requestIdleCallback === 'function') {
-    requestIdleCallback(() => void run(), { timeout: usable ? 12000 : 2000 })
+    requestIdleCallback(() => void run(), { timeout: idleTimeout })
   } else {
-    setTimeout(() => void run(), usable ? 2500 : 350)
+    setTimeout(() => void run(), fallbackDelay)
   }
   return Promise.resolve()
 }

@@ -14,6 +14,7 @@ import {
   isPastDue,
   P2P_CONFIG,
   p2pOrderStepIndex,
+  mergeP2pOrder,
 } from './p2pUtils'
 
 describe('p2pUtils', () => {
@@ -48,8 +49,15 @@ describe('p2pUtils', () => {
 
   it('maps order steps and countdown helpers', () => {
     expect(p2pOrderStepIndex('created')).toBe(0)
-    expect(p2pOrderStepIndex('waiting_payment')).toBe(1)
+    expect(p2pOrderStepIndex('seller_accepted')).toBe(1)
+    expect(p2pOrderStepIndex('waiting_payment')).toBe(2)
     expect(p2pOrderStepIndex('completed')).toBe(3)
+    expect(
+      mergeP2pOrder(
+        { id: '1', status: 'seller_accepted', timeline: [{ status: 'seller_accepted' }] },
+        { id: '1', status: 'created', timeline: [{ status: 'created' }] },
+      )?.status,
+    ).toBe('seller_accepted')
     expect(formatCountdown(90_000)).toBe('01:30')
     expect(isPastDue(new Date(Date.now() - 1000).toISOString())).toBe(true)
   })

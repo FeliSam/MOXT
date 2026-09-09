@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import reducer, {
   acceptOffer,
+  addOrderComment,
   addOrderProof,
   createOffer,
   updateOfferStatus,
@@ -40,7 +41,7 @@ describe('P2P', () => {
     expect(accepted.offers[0].status).toBe('accepted')
     expect(accepted.orders[0].offerId).toBe(offer.id)
     expect(accepted.orders[0].fee).toBe(0)
-    expect(accepted.orders[0].paymentDueAt).toBeTruthy()
+    expect(accepted.orders[0].paymentDueAt).toBeFalsy()
     expect(accepted.orders[0].status).toBe('created')
   })
 
@@ -107,7 +108,17 @@ describe('P2P', () => {
       }),
     )
     const orderId = accepted.orders[0].id
-    const paid = reducer(accepted, updateOrderStatus({ id: orderId, status: 'waiting_payment' }))
+    const skippedPay = reducer(accepted, updateOrderStatus({ id: orderId, status: 'waiting_payment' }))
+    expect(skippedPay.orders[0].status).toBe('created')
+
+    const sellerReady = reducer(
+      accepted,
+      updateOrderStatus({ id: orderId, status: 'seller_accepted' }),
+    )
+    expect(sellerReady.orders[0].status).toBe('seller_accepted')
+    expect(sellerReady.orders[0].paymentDueAt).toBeTruthy()
+
+    const paid = reducer(sellerReady, updateOrderStatus({ id: orderId, status: 'waiting_payment' }))
     const blocked = reducer(paid, updateOrderStatus({ id: orderId, status: 'completed' }))
     expect(blocked.orders[0].status).toBe('waiting_payment')
 
@@ -124,5 +135,26 @@ describe('P2P', () => {
     )
     const completed = reducer(withProof, updateOrderStatus({ id: orderId, status: 'completed' }))
     expect(completed.orders[0].status).toBe('completed')
+  })
+
+  it('ajoute un commentaire sur la commande', () => {
+    const offered = reducer({ offers: [], orders: [] }, createOffer(offerValues))
+    const accepted = reducer(
+      offered,
+      acceptOffer({
+        offer: offered.offers[0],
+        buyer: { id: 'buyer', firstName: 'Amina', lastName: 'Demo' },
+      }),
+    )
+    const withComment = reducer(
+      accepted,
+      addOrderComment({
+        id: accepted.orders[0].id,
+        userId: 'buyer',
+        userName: 'Amina Demo',
+        text: 'Envoi au nom de mon frère',
+      }),
+    )
+    expect(withComment.orders[0].timeline.some((event) => event.status === 'comment')).toBe(true)
   })
 })

@@ -50,7 +50,7 @@ export const refreshP2pData = createAsyncThunk(
     dispatch(
       setAll({
         offers: mergeRemoteById(state.p2p.offers || [], remoteOffers),
-        orders: mergeRemoteById(state.p2p.orders || [], remoteOrders),
+        orders: remoteOrders,
       }),
     )
     return true

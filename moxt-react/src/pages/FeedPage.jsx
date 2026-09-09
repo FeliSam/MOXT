@@ -105,8 +105,7 @@ export function FeedPage() {
 
   useEffect(() => {
     if (!user?.id || guestMode) return
-    import('../app/catalogSync.js').then(({ hasUsableFeedCatalog, scheduleCatalogSync }) => {
-      if (hasUsableFeedCatalog()) return
+    import('../app/catalogSync.js').then(({ scheduleCatalogSync }) => {
       void scheduleCatalogSync(store)
     })
   }, [store, user?.id, guestMode])

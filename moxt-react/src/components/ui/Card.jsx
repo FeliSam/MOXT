@@ -12,7 +12,7 @@
 
 const variants = {
   default:
-    'rounded-[var(--radius-card-lg)] border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--shadow-card)] sm:p-6',
+    'min-w-0 max-w-full rounded-[var(--radius-card-lg)] border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--shadow-card)] sm:p-6',
 
   interactive:
     'rounded-[var(--radius-card-lg)] border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--shadow-card)] sm:p-6 cursor-pointer transition-all duration-[var(--transition-base)] hover:-translate-y-1 hover:border-brand-200 hover:shadow-[var(--shadow-card-hover)] active:translate-y-0 active:shadow-[var(--shadow-card)] dark:hover:border-brand-800',

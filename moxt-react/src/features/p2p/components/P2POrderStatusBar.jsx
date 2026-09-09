@@ -16,12 +16,12 @@ export function P2POrderStatusBar({ status }) {
   const isDisputed = status === 'disputed'
 
   return (
-    <ol className="grid grid-cols-4 gap-1 sm:gap-2" aria-label={t('p2p.order.stepsLabel')}>
+    <ol className="grid min-w-0 grid-cols-4 gap-1 sm:gap-2" aria-label={t('p2p.order.stepsLabel')}>
       {P2P_ORDER_STEPS.map((step, index) => {
         const done = !isTerminalFail && index < activeIndex
         const current = !isTerminalFail && index === activeIndex
         return (
-          <li key={step} className="grid justify-items-center gap-1.5 text-center">
+          <li key={step} className="grid min-w-0 justify-items-center gap-1.5 text-center">
             <span
               className={`grid size-8 place-items-center rounded-full text-xs font-black transition sm:size-9 ${
                 isDisputed && current
@@ -36,7 +36,7 @@ export function P2POrderStatusBar({ status }) {
               {done || status === 'completed' ? <FiCheck /> : index + 1}
             </span>
             <span
-              className={`max-w-full truncate text-[10px] font-bold leading-tight sm:text-xs ${
+              className={`max-w-full break-words text-[10px] font-bold leading-tight sm:text-xs ${
                 current ? 'text-[var(--app-text)]' : 'text-[var(--app-text-muted)]'
               }`}
             >

@@ -1,8 +1,8 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { createId } from '../../services/createId'
 import { createLocalStorage } from '../../services/createLocalStorage'
-import { addMs, calculateP2PFee, P2P_CONFIG } from './p2pUtils'
-import { mergeRemoteById } from '@moxt/shared/utils/mergeRemoteById.js'
+import { addMs, calculateP2PFee, mergeP2pOrder, mergeP2pOrderLists, P2P_CONFIG } from './p2pUtils'
+import { mergeRemoteByIdPruningWindow } from '@moxt/shared/utils/mergeRemoteById.js'
 
 const offersStorage = createLocalStorage('moxt-p2p-offers-v1')
 const ordersStorage = createLocalStorage('moxt-p2p-orders-v1')
@@ -45,10 +45,10 @@ const p2pSlice = createSlice({
   reducers: {
     setAll(state, action) {
       if (action.payload.offers) {
-        state.offers = mergeRemoteById(state.offers, action.payload.offers)
+        state.offers = mergeRemoteByIdPruningWindow(state.offers, action.payload.offers)
       }
       if (action.payload.orders) {
-        state.orders = mergeRemoteById(state.orders, action.payload.orders)
+        state.orders = mergeP2pOrderLists(state.orders, action.payload.orders)
       }
     },
     createOffer: {
@@ -107,11 +107,18 @@ const p2pSlice = createSlice({
       if (!order?.id) return
       const index = state.orders.findIndex((item) => item.id === order.id)
       if (index === -1) state.orders.unshift(order)
-      else state.orders[index] = { ...state.orders[index], ...order }
+      else state.orders[index] = mergeP2pOrder(state.orders[index], order)
     },
     /** Reçu via Supabase Realtime (DELETE distant). */
     removeRemoteOrder(state, action) {
       state.orders = state.orders.filter((item) => item.id !== action.payload)
+    },
+    replaceOrder(state, action) {
+      const order = action.payload
+      if (!order?.id) return
+      const index = state.orders.findIndex((item) => item.id === order.id)
+      if (index === -1) return
+      state.orders[index] = order
     },
     acceptOffer: {
       reducer(state, action) {
@@ -147,7 +154,7 @@ const p2pSlice = createSlice({
             proofs: [],
             ratings: [],
             createdAt: now,
-            paymentDueAt: addMs(now, P2P_CONFIG.paymentWindowMs),
+            paymentDueAt: null,
             confirmDueAt: null,
             timeline: [
               {
@@ -190,6 +197,8 @@ const p2pSlice = createSlice({
       if (!order) return
       const next = action.payload.status
       if (order.status === next) return
+      if (next === 'seller_accepted' && order.status !== 'created') return
+      if (next === 'waiting_payment' && order.status !== 'seller_accepted') return
       // L'initiateur (vendeur) doit joindre une preuve avant de finaliser.
       if (next === 'completed') {
         const sellerProof = (order.proofs || []).some((proof) => proof.userId === order.sellerId)
@@ -197,12 +206,16 @@ const p2pSlice = createSlice({
       }
       order.status = next
       const at = new Date().toISOString()
+      order.updatedAt = at
       order.timeline ||= []
       order.timeline.push({
         status: next,
         at,
         note: action.payload.note || null,
       })
+      if (next === 'seller_accepted') {
+        order.paymentDueAt = addMs(at, P2P_CONFIG.paymentWindowMs)
+      }
       if (next === 'waiting_payment') {
         order.confirmDueAt = addMs(at, P2P_CONFIG.confirmWindowMs)
       }
@@ -212,7 +225,7 @@ const p2pSlice = createSlice({
     },
     expireOrder(state, action) {
       const order = state.orders.find((item) => item.id === action.payload.id)
-      if (!order || order.status !== 'created') return
+      if (!order || order.status !== 'seller_accepted') return
       const at = new Date().toISOString()
       order.status = 'cancelled'
       order.timeline ||= []
@@ -233,8 +246,7 @@ const p2pSlice = createSlice({
       const isStaff = ['admin', 'superadmin', 'moderator'].includes(action.payload.actorRole)
       if (!isStaff) return
       const next = action.payload.status
-      if (!['completed', 'cancelled', 'waiting_payment', 'disputed'].includes(next)) return
-      if (order.status === next) return
+      if (!['completed', 'cancelled', 'waiting_payment', 'seller_accepted', 'disputed'].includes(next)) return
       order.status = next
       order.timeline ||= []
       order.timeline.push({
@@ -262,6 +274,21 @@ const p2pSlice = createSlice({
         createdAt: new Date().toISOString(),
       })
     },
+    addOrderComment(state, action) {
+      const order = state.orders.find((item) => item.id === action.payload.id)
+      if (!order) return
+      const text = String(action.payload.text || '').trim()
+      if (!text) return
+      order.timeline ||= []
+      order.timeline.push({
+        status: 'comment',
+        at: new Date().toISOString(),
+        userId: action.payload.userId,
+        userName: action.payload.userName || '',
+        text: text.slice(0, 500),
+      })
+      order.updatedAt = new Date().toISOString()
+    },
     rateOrder(state, action) {
       const order = state.orders.find((item) => item.id === action.payload.id)
       if (!order || order.status !== 'completed') return
@@ -282,6 +309,7 @@ const p2pSlice = createSlice({
 export const {
   acceptOffer,
   addOrderProof,
+  addOrderComment,
   createOffer,
   deleteOffer,
   expireOrder,
@@ -292,6 +320,7 @@ export const {
   receiveRemoteOrder,
   removeRemoteOffer,
   removeRemoteOrder,
+  replaceOrder,
   setAll,
   updateOffer,
   updateOfferStatus,

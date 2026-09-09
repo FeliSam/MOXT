@@ -25,5 +25,6 @@ export async function adminUpdateAppModuleFlags(flags) {
   const payload = normalizeDevModuleFlags(flags)
   const { data, error } = await supabase.rpc('admin_update_app_module_flags', { p_config: payload })
   if (error) throw error
-  return normalizeDevModuleFlags(data || payload)
+  const remote = data && typeof data === 'object' && !Array.isArray(data) ? data : {}
+  return normalizeDevModuleFlags({ ...payload, ...remote })
 }

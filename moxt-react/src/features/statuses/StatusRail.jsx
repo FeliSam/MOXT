@@ -94,7 +94,7 @@ function StatusBubble({
 }
 
 export function StatusRail({
-  hideWhenNoCommunity: _hideWhenNoCommunity = false,
+  hideWhenNoCommunity = false,
   composerOpen: composerOpenProp,
   onComposerOpenChange,
   renderComposer = true,
@@ -183,9 +183,10 @@ export function StatusRail({
   }, [dispatch, user?.id])
 
   if (!user) return null
+  if (hideWhenNoCommunity && groups.length === 0 && !composerOpen) return null
 
   return (
-    <div className="min-w-0">
+    <div className="min-w-0 overflow-x-clip">
       <div className="scrollbar-hidden -mx-4 flex touch-pan-x items-start gap-3 overflow-x-auto px-4 py-1 sm:gap-3.5">
         <StatusBubble
           label={t('status.rail.you')}

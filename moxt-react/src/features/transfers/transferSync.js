@@ -77,12 +77,14 @@ function isAbortError(error) {
 /** Charge un transfert manquant (lien notification / autre appareil). */
 export const ensureTransferFromRemote = createAsyncThunk(
   'transfers/ensureTransferFromRemote',
-  async (transferId, { dispatch, getState, signal }) => {
+  async (arg, { dispatch, getState, signal }) => {
+    const transferId = typeof arg === 'string' ? arg : arg?.id
+    const force = Boolean(typeof arg === 'object' && arg?.force)
     if (!transferId || !supabase) return null
     if (signal?.aborted) return null
 
     const existing = getState().transfers.items.find((item) => item.id === transferId)
-    if (existing) return existing
+    if (existing && !force) return existing
 
     const { data, error } = await supabase
       .from('transfers')
@@ -95,7 +97,7 @@ export const ensureTransferFromRemote = createAsyncThunk(
       if (isAbortError(error)) return null
       throw error
     }
-    if (!data) return null
+    if (!data) return existing || null
 
     const transfer = transferFromRemoteRow(data)
     dispatch(receiveRemoteTransfer(transfer))

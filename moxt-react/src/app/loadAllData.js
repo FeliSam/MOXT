@@ -823,7 +823,7 @@ export const loadAllData = createAsyncThunk(
       }))
       dispatch(setP2P({
         offers: safeRows(p2pOffersRes, 'des offres P2P').map(p2pOfferFromRemoteRow),
-        orders: mergeRemoteItems(getState().p2p.orders, p2pOrders),
+        orders: p2pOrders,
       }))
       dispatch(setReviews({ items: remoteReviews, pruneRecentMissing: !reviewsRes?.error }))
       dispatch(setDisputes({ items: fromRows(disputesRes.data) }))
@@ -1069,6 +1069,9 @@ export const loadAllData = createAsyncThunk(
     dispatch(runExpireOverdueTransfers())
     const { markCatalogSynced } = await import('./catalogSync.js')
     markCatalogSynced(uid)
+    void import('../services/realtimeService.js').then(({ startRealtimeSubscription }) => {
+      void startRealtimeSubscription(uid, dispatch, getState, { force: true })
+    })
     } catch (error) {
       console.error('[MOXT] Échec du chargement des données:', error)
       return rejectWithValue(

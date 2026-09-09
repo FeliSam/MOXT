@@ -1,9 +1,7 @@
 import { DEFAULT_DEV_MODULE_FLAGS, normalizeDevModuleFlags } from '../../config/devModules'
-import { isAdminRole } from '../auth/roleUtils'
 
 export function canAccessDevModule(user, flags, moduleId) {
   if (!moduleId) return true
-  if (isAdminRole(user)) return true
   const normalized = normalizeDevModuleFlags(flags || DEFAULT_DEV_MODULE_FLAGS)
   return Boolean(normalized[moduleId])
 }

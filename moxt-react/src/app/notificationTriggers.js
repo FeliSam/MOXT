@@ -39,6 +39,7 @@ async function notifyAdminsRemote({ title, message, type, link, priority }, dedu
 
 const P2P_STATUS_KEYS = {
   created: 'shared.notifications.p2p.status.created',
+  seller_accepted: 'shared.notifications.p2p.status.sellerAccepted',
   waiting_payment: 'shared.notifications.p2p.status.waitingPayment',
   completed: 'shared.notifications.p2p.status.completed',
   cancelled: 'shared.notifications.p2p.status.cancelled',
@@ -418,6 +419,27 @@ export function createNotificationDispatcher(store) {
           message: notifyT('shared.notifications.p2p.proofBody', { id: order.id }),
           type: 'p2p',
           link: `/p2p/orders/${order.id}`,
+        },
+        'notifTransfers',
+      )
+    },
+    handleP2POrderComment(after, action, actorId) {
+      const order = after.p2p.orders.find((item) => item.id === action.payload.id)
+      if (!order) return
+      const text = String(action.payload.text || '').trim()
+      if (!text) return
+      const recipient = order.buyerId === actorId ? order.sellerId : order.buyerId
+      notifyUser(
+        recipient,
+        {
+          title: notifyT('shared.notifications.p2p.chatTitle'),
+          message: notifyT('shared.notifications.p2p.chatBody', {
+            name: action.payload.userName || notifyT('shared.notifications.someone'),
+            text: text.slice(0, 100),
+          }),
+          type: 'p2p',
+          link: `/p2p/orders/${order.id}`,
+          priority: 'high',
         },
         'notifTransfers',
       )

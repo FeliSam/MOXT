@@ -72,7 +72,7 @@ export function Button({
   const buttonRef = useRef(null)
 
   const base =
-    'btn-press inline-flex shrink-0 items-center justify-center font-semibold focus-visible:ring-2 focus-visible:ring-[var(--app-teal)] focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none select-none'
+    'btn-press inline-flex max-w-full shrink-0 items-center justify-center font-semibold focus-visible:ring-2 focus-visible:ring-[var(--app-teal)] focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none select-none'
 
   const sizeClass = iconOnly ? iconSizes[size] ?? iconSizes.md : sizes[size] ?? sizes.md
 

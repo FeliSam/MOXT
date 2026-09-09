@@ -15,12 +15,89 @@ export const P2P_CONFIG = {
 /** Étapes UX de la barre de progression (clés techniques stables). */
 export const P2P_ORDER_STEPS = ['engagement', 'payment', 'confirmation', 'done']
 
+/** Ordre du parcours nominal — un pull périmé ne doit pas reculer le statut. */
+const P2P_FORWARD_RANK = {
+  created: 0,
+  seller_accepted: 1,
+  waiting_payment: 2,
+  completed: 3,
+}
+
+export function mergeP2pTimelines(local = [], remote = []) {
+  const seen = new Set()
+  const out = []
+  for (const event of [...(local || []), ...(remote || [])]) {
+    if (!event) continue
+    const key = `${event.status}|${event.at || ''}|${event.text || event.note || ''}|${event.userId || ''}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(event)
+  }
+  return out.sort((a, b) => Date.parse(a.at || 0) - Date.parse(b.at || 0))
+}
+
+export function p2pOrderComments(timeline = []) {
+  return (timeline || []).filter((event) => event?.status === 'comment' && String(event.text || '').trim())
+}
+
+export function familyNameFromFullName(fullName) {
+  const parts = String(fullName || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+  return parts.at(-1) || String(fullName || '').trim()
+}
+
+export function mergeP2pOrder(local, remote) {
+  if (!remote) return local || null
+  if (!local) return remote
+  if (['cancelled', 'disputed'].includes(remote.status)) {
+    return {
+      ...local,
+      ...remote,
+      timeline: mergeP2pTimelines(local.timeline, remote.timeline),
+    }
+  }
+  const localRank = P2P_FORWARD_RANK[local.status]
+  const remoteRank = P2P_FORWARD_RANK[remote.status]
+  if (Number.isFinite(localRank) && Number.isFinite(remoteRank) && remoteRank < localRank) {
+    return {
+      ...remote,
+      ...local,
+      status: local.status,
+      timeline: mergeP2pTimelines(local.timeline, remote.timeline),
+      paymentDueAt: local.paymentDueAt || remote.paymentDueAt,
+      confirmDueAt: local.confirmDueAt || remote.confirmDueAt,
+      proofs: (local.proofs?.length || 0) >= (remote.proofs?.length || 0) ? local.proofs : remote.proofs,
+    }
+  }
+  return {
+    ...local,
+    ...remote,
+    timeline: mergeP2pTimelines(local.timeline, remote.timeline),
+  }
+}
+
+export function mergeP2pOrderLists(localItems = [], remoteItems = []) {
+  const merged = new Map()
+  for (const item of localItems || []) {
+    if (item?.id) merged.set(item.id, item)
+  }
+  for (const item of remoteItems || []) {
+    if (!item?.id) continue
+    merged.set(item.id, mergeP2pOrder(merged.get(item.id), item))
+  }
+  return [...merged.values()]
+}
+
 export function p2pOrderStepIndex(status) {
   switch (status) {
     case 'created':
       return 0
-    case 'waiting_payment':
+    case 'seller_accepted':
       return 1
+    case 'waiting_payment':
+      return 2
     case 'completed':
       return 3
     case 'cancelled':

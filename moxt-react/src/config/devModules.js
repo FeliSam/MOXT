@@ -49,8 +49,14 @@ export const DEV_MODULE_META = {
   },
 }
 
+export function constrainDevModuleFlags(flags = {}) {
+  const next = { ...flags }
+  if (!next.feed) next.videos = false
+  return next
+}
+
 export function normalizeDevModuleFlags(raw = {}) {
-  return DEV_MODULE_IDS.reduce((acc, id) => {
+  const normalized = DEV_MODULE_IDS.reduce((acc, id) => {
     if (raw != null && Object.prototype.hasOwnProperty.call(raw, id)) {
       acc[id] = Boolean(raw[id])
     } else {
@@ -58,6 +64,7 @@ export function normalizeDevModuleFlags(raw = {}) {
     }
     return acc
   }, {})
+  return constrainDevModuleFlags(normalized)
 }
 
 export function devModuleForPath(pathname = '') {

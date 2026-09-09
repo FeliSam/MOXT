@@ -6,13 +6,20 @@ describe('devModuleAccess', () => {
   const admin = { id: 'a1', role: 'admin' }
   const user = { id: 'u1', role: 'user' }
 
-  it('donne toujours accès aux admins', () => {
-    expect(canAccessDevModule(admin, { stars: false, feed: false, videos: false }, 'stars')).toBe(true)
+  it('respecte les flags aussi pour les admins (navigation = réglages)', () => {
+    expect(canAccessDevModule(admin, { stars: false, feed: false, videos: false }, 'stars')).toBe(
+      false,
+    )
     expect(canAccessDevModule(admin, { stars: true, feed: true, videos: true }, 'feed')).toBe(true)
     expect(canAccessDevModule(admin, { events: false, jobs: false, parcels: false }, 'events')).toBe(
-      true,
+      false,
     )
-    expect(canAccessDevModule(admin, { news: false }, 'news')).toBe(true)
+    expect(canAccessDevModule(admin, { news: false }, 'news')).toBe(false)
+  })
+
+  it('empêche Vidéos sans Fil d’actualité', () => {
+    expect(normalizeDevModuleFlags({ feed: false, videos: true }).videos).toBe(false)
+    expect(normalizeDevModuleFlags({ feed: true, videos: true }).videos).toBe(true)
   })
 
   it('respecte les flags pour les utilisateurs', () => {

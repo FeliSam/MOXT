@@ -83,9 +83,17 @@ export const ADMIN_FR_SOURCES = {
   'admin.nav.stars': 'MOXT Stars',
   'admin.modules.title': 'Modules',
   'admin.modules.description':
-    'Activez ou désactivez des modules pour tous les utilisateurs. Les admins y accèdent toujours.',
+    'Activez ou désactivez des modules pour tout le monde, y compris les admins. La navigation suit cette configuration.',
   'admin.modules.adminHint':
-    'Stars, Fil et Vidéos sont off par défaut. Événements, Jobs et Colis sont on par défaut.',
+    'Le module Vidéos nécessite le Fil d’actualité. Stars et Vidéos sont off par défaut.',
+  'admin.modules.videosNeedsFeedTitle': 'Fil d’actualité requis',
+  'admin.modules.videosNeedsFeedBody':
+    'Activez d’abord le Fil d’actualité pour pouvoir activer Vidéos.',
+  'admin.modules.enableVideosTitle': 'Activer aussi Vidéos ?',
+  'admin.modules.enableVideosBody':
+    'Le Fil d’actualité est activé. Voulez-vous aussi activer le module Vidéos (feed vertical) ?',
+  'admin.modules.enableVideosConfirm': 'Activer Vidéos',
+  'admin.modules.enableVideosSkip': 'Plus tard',
   'admin.modules.stars': 'MOXT Stars',
   'admin.modules.starsHint': 'Wallet, achat de packs et quotas de publication.',
   'admin.modules.feed': 'Fil d’actualité',

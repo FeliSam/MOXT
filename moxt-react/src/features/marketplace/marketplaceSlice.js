@@ -3,7 +3,7 @@ import { ensurePhoneCountry } from '../../config/phone'
 import { sanitizeListingByType } from '../../config/listingConfig'
 import { createLocalStorage } from '../../services/createLocalStorage'
 import { storageService } from '../../services/storageService'
-import { mergeRemoteById } from '@moxt/shared/utils/mergeRemoteById.js'
+import { mergeRemoteById, mergeRemoteByIdPruningWindow } from '@moxt/shared/utils/mergeRemoteById.js'
 import { createId } from '../../services/createId'
 import { saveListingRemote } from './marketplaceRemote'
 import { normalizeListingImages } from './listingImageUtils'
@@ -122,7 +122,9 @@ const marketplaceSlice = createSlice({
   reducers: {
     setAll(state, action) {
       const { items, reports } = action.payload
-      if (items) state.items = mergeRemoteById(state.items, items).map(normalizeListing)
+      if (items) {
+        state.items = mergeRemoteByIdPruningWindow(state.items, items).map(normalizeListing)
+      }
       if (reports) state.reports = mergeRemoteById(state.reports, reports)
     },
     createListing: {

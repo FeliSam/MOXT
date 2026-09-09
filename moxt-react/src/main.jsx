@@ -80,16 +80,9 @@ async function bootstrap() {
       const { scheduleCatalogSync } = await import('./app/catalogSync')
       void scheduleCatalogSync(store)
 
-      const scheduleRealtime = () => {
-        void import('./services/realtimeService').then(({ startRealtimeSubscription }) => {
-          void startRealtimeSubscription(user.id, store.dispatch, store.getState)
-        })
-      }
-      if (typeof requestIdleCallback === 'function') {
-        requestIdleCallback(scheduleRealtime, { timeout: 4000 })
-      } else {
-        setTimeout(scheduleRealtime, 600)
-      }
+      void import('./services/realtimeService').then(({ startRealtimeSubscription }) => {
+        void startRealtimeSubscription(user.id, store.dispatch, store.getState)
+      })
     })
   })
 

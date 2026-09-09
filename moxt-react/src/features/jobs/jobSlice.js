@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { createLocalStorage } from '../../services/createLocalStorage'
-import { mergeRemoteById } from '@moxt/shared/utils/mergeRemoteById.js'
+import { mergeRemoteById, mergeRemoteByIdPruningWindow } from '@moxt/shared/utils/mergeRemoteById.js'
 import { jobApplicationFromRemoteRow } from './jobRemote'
 
 const jobsStorage = createLocalStorage('moxt-jobs-v1')
@@ -19,7 +19,7 @@ const jobSlice = createSlice({
       const { items, applications, reports } = action.payload
       if (items) {
         const localById = new Map(state.items.map((item) => [item.id, item]))
-        state.items = mergeRemoteById(state.items, items).map((job) => {
+        state.items = mergeRemoteByIdPruningWindow(state.items, items).map((job) => {
           const local = localById.get(job.id)
           if (local?.images?.length && !job.images?.length) {
             return { ...job, images: local.images }

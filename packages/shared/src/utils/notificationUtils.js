@@ -132,6 +132,7 @@ export function resolveDisputePartyIds(state, dispute) {
 
 export const P2P_STATUS_LABELS = {
   created: 'Commande créée',
+  seller_accepted: 'Vendeur disponible',
   waiting_payment: 'Paiement envoyé',
   completed: 'Transaction terminée',
   cancelled: 'Transaction annulée',

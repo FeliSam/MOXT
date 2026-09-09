@@ -24,6 +24,8 @@ import { authService } from '../features/auth/authService'
 import { selectAccountPreferences } from '../features/account/accountSlice'
 import { buildTransferRemotePayload } from '../features/transfers/transferRemote'
 import { setAdminUsers } from '../features/administration/administrationSlice'
+import { replaceOrder } from '../features/p2p/p2pSlice'
+import { addToast } from '../features/ui/uiSlice'
 
 async function triggerEmail(transferId, event) {
   await supabase.functions.invoke('send-email', {
@@ -1329,6 +1331,12 @@ const handlers = {
     const offer = state.p2p.offers.find((item) => item.id === order.offerId)
     await syncP2pOrder(order, offer || null)
   },
+  'p2p/addOrderComment': async (payload, state) => {
+    const order = state.p2p.orders.find((item) => item.id === payload.id)
+    if (!order) return
+    const offer = state.p2p.offers.find((item) => item.id === order.offerId)
+    await syncP2pOrder(order, offer || null)
+  },
   'p2p/rateOrder': async (payload, state) => {
     const order = state.p2p.orders.find((item) => item.id === payload.id)
     if (!order) return
@@ -2334,6 +2342,19 @@ export const supabaseMiddleware = (store) => (next) => (action) => {
       }
       if (action.type === 'administration/purgeUserAccount') {
         store.dispatch(setAdminUsers(beforeState.administration?.users || []))
+      }
+      if (action.type === 'p2p/updateOrderStatus' || action.type === 'p2p/expireOrder') {
+        const previous = beforeState.p2p?.orders?.find((item) => item.id === action.payload?.id)
+        if (previous) store.dispatch(replaceOrder(previous))
+        store.dispatch(
+          addToast({
+            title: 'Confirmation non enregistrée',
+            message:
+              err?.message ||
+              'Le serveur a refusé la mise à jour. Réessayez — la commande est revenue à son état précédent.',
+            tone: 'error',
+          }),
+        )
       }
       // Documents : ne jamais supprimer le fichier storage ni la fiche locale —
       // réessai sync / réparation auto (cron + Admin → Réparer).

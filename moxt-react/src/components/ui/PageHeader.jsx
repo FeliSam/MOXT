@@ -45,8 +45,8 @@ export function HeaderIslandButton({
 
 export function PageHeader({ eyebrow, title, description, actions, stats }) {
   return (
-    <header className="flex min-w-0 max-w-full flex-col gap-4 overflow-visible rounded-[var(--radius-card-lg)] border-0 bg-[var(--app-surface)]/80 p-4 shadow-[var(--shadow-card)] backdrop-blur-xl sm:gap-5 sm:p-7">
-      <div className="flex min-w-0 items-center justify-between gap-3">
+    <header className="flex min-w-0 max-w-full flex-col gap-4 overflow-hidden rounded-[var(--radius-card-lg)] border-0 bg-[var(--app-surface)]/80 p-4 shadow-[var(--shadow-card)] backdrop-blur-xl sm:gap-5 sm:p-7">
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1 overflow-hidden">
           {eyebrow ? (
             <p className="mb-1 text-[11px] font-black uppercase tracking-[0.2em] text-brand-700 dark:text-brand-300">
@@ -63,7 +63,7 @@ export function PageHeader({ eyebrow, title, description, actions, stats }) {
           ) : null}
         </div>
         {actions ? (
-          <div className="relative z-20 flex shrink-0 flex-wrap items-center justify-end gap-2">
+          <div className="relative z-20 flex max-sm:w-full shrink-0 flex-wrap items-center justify-end gap-2 max-sm:justify-start">
             {actions}
           </div>
         ) : null}

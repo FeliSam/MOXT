@@ -28,7 +28,6 @@ import { avatarDisplayUrl } from '../../features/account/avatarDisplayUrl'
 import { GlobalSearch } from './GlobalSearch'
 import { FeedPublishMenu } from '../../features/feed/FeedPublishMenu'
 import { useDevModuleAccess } from '../../hooks/useDevModuleAccess'
-import { useIsFeedViewport } from '../../features/feed/feedViewport'
 
 function HeaderActionLabel({ children }) {
   return (
@@ -43,7 +42,7 @@ function pathMatches(pathname, prefix) {
 }
 
 /** Mobile header shortcuts — contextual per section. */
-function getMobileHeaderActions(pathname, { canFeed, canNews, isFeedViewport }) {
+export function getMobileHeaderActions(pathname, { canFeed, canNews }) {
   const isTransfers = pathMatches(pathname, '/transfers')
   const isParcels = pathMatches(pathname, '/parcels')
   const isNews = pathMatches(pathname, '/news')
@@ -60,8 +59,8 @@ function getMobileHeaderActions(pathname, { canFeed, canNews, isFeedViewport }) 
     !isTransfers && !isParcels && !isNews && !isMarketplace && !isFeed
   return {
     showPublishMenu: !isFeed && !isTransfers && !isOnPublishForm,
-    showNews: canNews && showContextualShortcuts && !(isFeedViewport && canFeed),
-    showFeed: !isFeed,
+    showNews: Boolean(canNews && !canFeed && showContextualShortcuts),
+    showFeed: Boolean(canFeed && !isFeed),
     showPublishVideo: false,
     showHistory: isTransfers,
     showMessages: !isFeed,
@@ -79,7 +78,6 @@ export function Header({ hideOnMobile = false }) {
   const messagesHeader = useMessagesHeaderContent()
   const canFeed = useDevModuleAccess('feed')
   const canNews = useDevModuleAccess('news')
-  const isFeedViewport = useIsFeedViewport()
   const isMessagesRoute = isMessagesPath(location.pathname)
   const isFeedRoute = location.pathname === '/feed' || location.pathname === '/videos'
   const isMessagesListView =
@@ -93,7 +91,6 @@ export function Header({ hideOnMobile = false }) {
   const mobileActions = getMobileHeaderActions(location.pathname, {
     canFeed,
     canNews,
-    isFeedViewport,
   })
   const showMessagesHeader = isMessagesRoute && messagesHeader?.content
 
