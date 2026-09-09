@@ -17,6 +17,7 @@ import { FeedBoostBadge } from './FeedBoostBadge'
 import { FeedPromoBadge, FeedTrendBadge } from './FeedTrendBadge'
 import { FeedCaption } from './FeedCaption'
 import { FeedItemActions } from './FeedItemActions'
+import { FeedDoubleTapLike } from './FeedDoubleTapLike'
 import { StarsGiftButton } from '../stars/StarsGiftSheet'
 import {
   FEED_META_INTERACTIVE_CLASS,
@@ -158,7 +159,7 @@ export function FeedSlideShell({
             {!item.isFeatured && item.isPromoted ? <FeedPromoBadge /> : null}
           </div>
         ) : null}
-        {children}
+        {item ? <FeedDoubleTapLike item={item}>{children}</FeedDoubleTapLike> : children}
         <div className={FEED_META_OVERLAY_CLASS}>
           <div className={`${FEED_META_INTERACTIVE_CLASS} flex min-w-0 max-w-full items-center gap-2`}>
             {publisher?.path ? (

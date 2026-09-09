@@ -186,17 +186,18 @@ export function ReviewsSection({
                 <span className="text-sm font-semibold">{t('reviews.yourRating')}</span>
                 <StarRating value={rating} onChange={setRating} size="lg" />
               </div>
-              <label className="grid gap-2 text-sm font-semibold">
-                {t('reviews.yourComment')}
+              <div className="grid gap-2">
+                <span className="text-sm font-semibold">{t('reviews.yourComment')}</span>
                 <textarea
-                  className="min-h-28 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3 text-base font-normal"
+                  className="min-h-28 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3 text-[16px] font-normal leading-snug"
+                  style={{ fontSize: 16 }}
                   placeholder={t('reviews.commentPlaceholder')}
                   value={comment}
                   onChange={(event) => setComment(event.target.value)}
                   minLength={5}
                   required
                 />
-              </label>
+              </div>
               <div className="flex flex-wrap gap-2">
                 <Button type="submit" icon={FiMessageCircle}>
                   {existingReview ? t('reviews.update') : t('reviews.publish')}

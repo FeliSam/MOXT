@@ -17,12 +17,18 @@ import {
 } from '../config/listingConfig'
 import { MarketplaceListingCard } from '../features/marketplace/MarketplaceListingCard'
 import { MarketplaceDiscoveryRail } from '../features/marketplace/MarketplaceDiscoveryRail'
+import { MarketplaceVideoRail } from '../features/marketplace/MarketplaceVideoRail'
 import {
   MARKETPLACE_DISCOVER_GRID_COLUMNS,
   MARKETPLACE_DISCOVER_GRID_GAP,
   MARKETPLACE_DISCOVERY_CARD_HEIGHT,
 } from '../features/marketplace/marketplaceDiscoveryLayout'
-import { buildMarketplaceDiscovery } from '../features/marketplace/marketplaceFeed'
+import {
+  buildMarketplaceDiscovery,
+  rankMarketplaceVideos,
+} from '../features/marketplace/marketplaceFeed'
+import { pickShuffledWindow } from '../features/feed/feedDiscoveryUtils'
+import { readSearchHistory, saveSearchTerm } from '../services/searchHistory.js'
 import { loadFeedBoosts } from '../features/stars/starsSlice'
 import {
   resetMarketplaceFilters,
@@ -78,11 +84,21 @@ export function MarketplacePage() {
   const viewedListings = useSelector((state) => state.account.viewedListings || [])
   const listingImpressions = useSelector((state) => state.account.listingImpressions || [])
   const feedBoosts = useSelector((state) => state.stars.feedBoosts || [])
+  const videos = useSelector((state) => state.videos.items || [])
   const discoverRef = useRef(null)
   const preferredCountry = resolveUserCountryCode(user)
   const searching = Boolean(
     filters.query || filters.category || filters.city || filters.min || filters.max,
   )
+  const searchTerms = useMemo(() => {
+    const history = readSearchHistory()
+    const live = String(filters.query || '').trim()
+    if (live.length >= 2 && !history.some((term) => term.toLowerCase() === live.toLowerCase())) {
+      return [live, ...history]
+    }
+    return history
+  }, [filters.query])
+  const suggestionSalt = `${user?.id || 'guest'}:${searchTerms.join('|')}:${favorites.length}`
   const feed = useMemo(() => {
     const filtered = listings.filter((item) => {
       if (item.status !== 'active') return false
@@ -131,16 +147,24 @@ export function MarketplacePage() {
       feedBoosts,
       searching,
       showRails: true,
+      searchTerms,
     }
     const localFeed = buildMarketplaceDiscovery(local.length ? local : filtered, ctx)
     const restFeed = local.length
       ? buildMarketplaceDiscovery(elsewhere, { ...ctx, showRails: false })
       : { discover: [] }
     return {
-      forYou: localFeed.forYou,
-      trending: localFeed.trending,
-      fresh: localFeed.fresh,
-      discover: [...localFeed.discover, ...restFeed.discover],
+      forYou: pickShuffledWindow(localFeed.forYou, `${suggestionSalt}:fy`, 0, localFeed.forYou.length),
+      trending: pickShuffledWindow(
+        localFeed.trending,
+        `${suggestionSalt}:tr`,
+        1,
+        localFeed.trending.length,
+      ),
+      fresh: pickShuffledWindow(localFeed.fresh, `${suggestionSalt}:fr`, 2, localFeed.fresh.length),
+      discover: restFeed.discover
+        ? [...localFeed.discover, ...restFeed.discover]
+        : localFeed.discover,
       total: filtered.length,
       personalized: localFeed.personalized,
     }
@@ -152,12 +176,27 @@ export function MarketplacePage() {
     listingImpressions,
     preferredCountry,
     searching,
+    searchTerms,
     subscriptions,
+    suggestionSalt,
     t,
     user?.city,
     user?.id,
     viewedListings,
   ])
+  const videoRail = useMemo(
+    () =>
+      pickShuffledWindow(
+        rankMarketplaceVideos(videos, {
+          userId: user?.id,
+          searchTerms,
+        }),
+        `${suggestionSalt}:vid`,
+        0,
+        12,
+      ),
+    [searchTerms, suggestionSalt, user?.id, videos],
+  )
   const visible = feed.discover
 
   const { visibleItems, sentinelRef, hasMore, shownCount } = useProgressiveReveal(visible, {
@@ -245,7 +284,10 @@ export function MarketplacePage() {
           count={feed.total}
           activeFilterCount={[filters.category, filters.city, filters.min, filters.max].filter(Boolean).length}
           query={filters.query}
-          onQueryChange={(query) => dispatch(setMarketplaceFilters({ query }))}
+          onQueryChange={(query) => {
+            dispatch(setMarketplaceFilters({ query }))
+            if (query.trim().length >= 2) saveSearchTerm(query)
+          }}
           onToggleAdvanced={() => setAdvancedOpen((value) => !value)}
           onClear={() => dispatch(resetMarketplaceFilters())}
           placeholder={mt('marketplace.page.searchPlaceholder')}
@@ -342,6 +384,15 @@ export function MarketplacePage() {
                     guestMode={guestMode}
                     onGuestInteract={() => requireAccount('aimer cette annonce')}
                     onViewAll={scrollToDiscover}
+                    scrollPrevLabel={mt('marketplace.common.previous')}
+                    scrollNextLabel={mt('marketplace.common.next')}
+                  />
+                  <MarketplaceVideoRail
+                    title={mt('marketplace.page.feed.videos')}
+                    badgeLabel={mt('marketplace.page.feed.badgeVideo')}
+                    viewAllLabel={mt('marketplace.page.feed.viewAll')}
+                    videos={videoRail}
+                    onViewAll={() => navigate('/feed?type=video')}
                     scrollPrevLabel={mt('marketplace.common.previous')}
                     scrollNextLabel={mt('marketplace.common.next')}
                   />

@@ -1,6 +1,7 @@
 import { isItemFromSubscribedPublisher } from '@moxt/shared/utils/subscriptionUtils.js'
 import { listingBoostBonus, marketplaceBoostLookup } from './marketplaceListingBoost.js'
 import { asArray, asIdLookup, mapGet } from '../feed/feedCollectionUtils.js'
+import { isActiveVideo } from '../videos/videoUtils.js'
 
 const MS_HOUR = 60 * 60 * 1000
 
@@ -110,6 +111,23 @@ export function scoreMarketplaceListing(listing, ctx) {
   if (ctx.viewedIds?.has(listing.id)) score -= 3
   if (ctx.impressionIds?.has(listing.id)) score -= 1.5
   if (listing.ownerId && listing.ownerId === ctx.userId) score -= 8
+
+  const haystack =
+    `${listing.title || ''} ${listing.category || ''} ${listing.city || ''} ${listing.description || ''} ${listing.businessName || ''}`.toLowerCase()
+  for (const term of ctx.searchTerms || []) {
+    const needle = String(term || '').trim().toLowerCase()
+    if (needle.length >= 2 && haystack.includes(needle)) score += 18
+  }
+
+  if (ctx.userId) {
+    for (const fav of ctx.favorites || []) {
+      if (fav.userId && fav.userId !== ctx.userId) continue
+      if (fav.relatedType !== 'listing') continue
+      if (String(fav.relatedId) !== String(listing.id)) continue
+      const likeHours = hoursSince(fav.createdAt || fav.updatedAt, now)
+      score += Math.max(0, 72 - likeHours) * 0.55
+    }
+  }
 
   return score
 }
@@ -221,4 +239,29 @@ export function buildMarketplaceDiscovery(listings, ctx = {}) {
     personalized,
     railListingIds: [...railUsed],
   }
+}
+
+/** Vidéos marketplace : likes, recherches, vues et récence. */
+export function rankMarketplaceVideos(videos = [], ctx = {}) {
+  const now = ctx.now || Date.now()
+  const terms = (ctx.searchTerms || [])
+    .map((term) => String(term || '').trim().toLowerCase())
+    .filter((term) => term.length >= 2)
+  const userId = ctx.userId
+
+  return (videos || [])
+    .filter(isActiveVideo)
+    .map((video) => {
+      const likes = Array.isArray(video.likes) ? video.likes.map(String) : []
+      let score = Math.max(0, 72 - hoursSince(video.createdAt, now)) * 0.4
+      score += Math.log10(1 + Number(video.viewCount || 0) + likes.length * 4) * 12
+      const haystack = `${video.title || ''} ${video.caption || ''} ${video.businessName || ''}`.toLowerCase()
+      for (const term of terms) {
+        if (haystack.includes(term)) score += 18
+      }
+      if (userId && likes.includes(String(userId))) score += 20
+      return { video, score }
+    })
+    .sort((a, b) => b.score - a.score || String(b.video.id).localeCompare(String(a.video.id)))
+    .map((row) => row.video)
 }

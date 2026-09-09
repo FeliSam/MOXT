@@ -840,11 +840,16 @@ const handlers = {
     const { error } = await supabase.from('videos').delete().eq('id', payload.id)
     if (error) throw error
   },
-  'videos/incrementVideoView': async (payload) => {
-    await supabase.rpc('moxt_increment_view', {
+  'videos/incrementVideoView': async (payload, _state, dispatch) => {
+    const { data, error } = await supabase.rpc('moxt_increment_view', {
       p_entity_type: 'video',
       p_entity_id: payload.id,
     })
+    if (error) return
+    const parsed = Number(data)
+    if (Number.isFinite(parsed) && parsed >= 0) {
+      dispatch({ type: 'videos/setVideoViewCount', payload: { id: payload.id, viewCount: parsed } })
+    }
   },
   'videos/toggleVideoLike': async (payload) => {
     const { error } = await supabase.rpc('moxt_video_toggle_like', {

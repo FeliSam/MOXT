@@ -24,6 +24,7 @@ import { loadGuestFeedCatalog } from '../features/guest/guestFeedService'
 import { buildEntityShareUrl } from '../features/share/shareLinkUtils'
 import { loadFeedBoosts } from '../features/stars/starsSlice'
 import { injectFeedDiscoverySlides } from '../features/feed/feedDiscoveryUtils'
+import { readSearchHistory } from '../services/searchHistory.js'
 import { useIsFeedViewport } from '../features/feed/feedViewport'
 import { CoverFeedSlide } from '../features/feed/slides/CoverFeedSlide'
 import { DiscoveryFeedSlide } from '../features/feed/slides/DiscoveryFeedSlide'
@@ -126,7 +127,11 @@ export function FeedPage() {
   )
 
   const rankCtx = useMemo(
-    () => ({ ...buildFeedRankContext(feedState, user), suggestionSalt }),
+    () => ({
+      ...buildFeedRankContext(feedState, user),
+      suggestionSalt,
+      searchTerms: readSearchHistory(),
+    }),
     [feedState, user, suggestionSalt],
   )
 

@@ -44,9 +44,17 @@ const videosSlice = createSlice({
   reducers: {
     setAll(state, action) {
       const { items } = action.payload || {}
-      if (items) {
-        state.items = mergeRemoteByIdPruningWindow(state.items, items.map(normalizeVideo))
-      }
+      if (!items) return
+      const previous = new Map(state.items.map((row) => [row.id, row]))
+      const merged = mergeRemoteByIdPruningWindow(state.items, items.map(normalizeVideo))
+      state.items = merged.map((row) => {
+        const local = previous.get(row.id)
+        if (!local) return row
+        return {
+          ...row,
+          viewCount: Math.max(Number(local.viewCount) || 0, Number(row.viewCount) || 0),
+        }
+      })
     },
     createVideo: {
       reducer(state, action) {
@@ -122,6 +130,13 @@ const videosSlice = createSlice({
       if (!video) return
       video.viewCount = (Number(video.viewCount) || 0) + 1
     },
+    setVideoViewCount(state, action) {
+      const video = state.items.find((item) => item.id === action.payload.id)
+      if (!video) return
+      const next = Number(action.payload.viewCount)
+      if (!Number.isFinite(next) || next < 0) return
+      video.viewCount = next
+    },
     toggleVideoLike(state, action) {
       const { videoId, userId } = action.payload
       const video = state.items.find((item) => item.id === videoId)
@@ -179,6 +194,7 @@ export const {
   moderateVideo,
   deleteVideo,
   incrementVideoView,
+  setVideoViewCount,
   toggleVideoLike,
   addVideoComment,
   deleteVideoComment,

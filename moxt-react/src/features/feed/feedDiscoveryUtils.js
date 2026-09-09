@@ -16,6 +16,36 @@ export const FEED_DISCOVERY_VARIANTS = [
   'spotlight',
 ]
 
+/** Mélange déterministe (sel de session) pour ne pas répéter le même ordre. */
+export function seededShuffle(list, salt) {
+  const arr = [...(list || [])]
+  let hash = 2166136261
+  const seed = String(salt || '')
+  for (let i = 0; i < seed.length; i += 1) {
+    hash ^= seed.charCodeAt(i)
+    hash = Math.imul(hash, 16777619)
+  }
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    hash = Math.imul(hash, 1664525) + 1013904223
+    hash >>>= 0
+    const j = hash % (i + 1)
+    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+  }
+  return arr
+}
+
+export function pickShuffledWindow(list, salt, offset, size) {
+  const shuffled = seededShuffle(list, salt)
+  if (!shuffled.length) return []
+  const count = Math.min(size, shuffled.length)
+  const start = ((offset % shuffled.length) + shuffled.length) % shuffled.length
+  const out = []
+  for (let i = 0; i < count; i += 1) {
+    out.push(shuffled[(start + i) % shuffled.length])
+  }
+  return out
+}
+
 export function discoveryFeedItemId(slotIndex, variant) {
   return feedItemKey('discovery', `${slotIndex}-${variant}`)
 }
@@ -100,7 +130,9 @@ export function buildDiscoveryPayloads(feedState, rankCtx, user, organicItems = 
     subscriptions: feedState?.account?.subscriptions,
     userCity: user?.city,
     feedBoosts: rankCtx?.feedBoosts,
-    railSize: 6,
+    searchTerms: rankCtx?.searchTerms,
+    now: rankCtx?.now,
+    railSize: 8,
     showRails: listings.length >= 4,
   }
   const rails = buildMarketplaceDiscovery(listings, marketplaceCtx)
@@ -130,13 +162,19 @@ export function buildDiscoveryPayloads(feedState, rankCtx, user, organicItems = 
     ...rails.trending.map(listingToDiscoveryCard),
   ].filter(Boolean)
 
+  const listingCards = takeUniqueCards(
+    [...rails.forYou.map(listingToDiscoveryCard), ...listings.map(listingToDiscoveryCard)],
+    24,
+    new Set(),
+  )
+
   return {
-    forYou: takeUniqueCards(rails.forYou.map(listingToDiscoveryCard), 8, new Set()),
-    trending: takeUniqueCards(rails.trending.map(listingToDiscoveryCard), 8, new Set()),
-    fresh: takeUniqueCards(rails.fresh.map(listingToDiscoveryCard), 8, new Set()),
+    forYou: listingCards,
+    trending: takeUniqueCards(rails.trending.map(listingToDiscoveryCard), 16, new Set()),
+    fresh: takeUniqueCards(rails.fresh.map(listingToDiscoveryCard), 16, new Set()),
     businesses: businessItems,
     subscriptions: subscribedCards,
-    spotlight: takeUniqueCards(spotlightPool, 8, new Set()),
+    spotlight: takeUniqueCards(spotlightPool, 16, new Set()),
   }
 }
 
@@ -172,6 +210,8 @@ export function injectFeedDiscoverySlides(
   if (!Array.isArray(items) || items.length < every || every < 2) return items
 
   const payloads = buildDiscoveryPayloads(feedState, rankCtx, user, items)
+  const salt = rankCtx?.suggestionSalt || 'disc'
+  const variants = seededShuffle(FEED_DISCOVERY_VARIANTS, `${salt}:variants`)
   const out = []
   let organicCount = 0
   let slotIndex = 0
@@ -182,22 +222,44 @@ export function injectFeedDiscoverySlides(
     organicCount += 1
     if (organicCount % every !== 0) continue
 
-    const variant = FEED_DISCOVERY_VARIANTS[slotIndex % FEED_DISCOVERY_VARIANTS.length]
+    const variant = variants[slotIndex % variants.length]
     let inserted = false
     if (variant === 'businesses') {
-      const businesses = payloads.businesses || []
+      const businesses = pickShuffledWindow(
+        payloads.businesses || [],
+        `${salt}:biz:${slotIndex}`,
+        slotIndex * 2,
+        8,
+      )
       if (businesses.length >= 2) {
         out.push(buildDiscoveryFeedItem(variant, slotIndex, [], businesses))
         inserted = true
       }
     } else {
-      const cards = payloads[variant] || []
+      const cards = pickShuffledWindow(
+        payloads[variant] || [],
+        `${salt}:${variant}:${slotIndex}`,
+        slotIndex * 3,
+        8,
+      )
       if (cards.length >= 2) {
         out.push(buildDiscoveryFeedItem(variant, slotIndex, cards))
         inserted = true
       }
     }
     if (inserted) slotIndex += 1
+    else if ((payloads.forYou || []).length >= 2) {
+      const cards = pickShuffledWindow(
+        payloads.forYou,
+        `${salt}:fallback:${slotIndex}`,
+        slotIndex * 5,
+        8,
+      )
+      if (cards.length >= 2) {
+        out.push(buildDiscoveryFeedItem('forYou', slotIndex, cards))
+        slotIndex += 1
+      }
+    }
   }
 
   return out

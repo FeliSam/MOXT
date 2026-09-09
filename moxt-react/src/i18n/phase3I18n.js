@@ -964,6 +964,7 @@ export const PHASE3_FR_SOURCES = {
   'feed.meta.postStats': '{likes} j’aime · {comments} commentaires',
   'feed.actions.like': 'J’aime',
   'feed.actions.comment': 'Commenter',
+  'feed.actions.home': 'Accueil',
   'feed.linkCopiedBody': 'Le lien est dans le presse-papiers.',
   'feed.openDetail': 'Ouvrir la fiche',
   'feed.seeMore': 'Voir plus',
@@ -1194,6 +1195,12 @@ export const PHASE3_FR_SOURCES = {
   'onboarding.tour.mobile.parcels.title': 'Colis',
   'onboarding.tour.mobile.parcels.body':
     'Trouvez un voyageur ou proposez un trajet pour faire voyager un colis.',
+  'onboarding.tour.mobile.messages.title': 'Messagerie',
+  'onboarding.tour.mobile.messages.body':
+    'Discutez avec les vendeurs, voyageurs et contacts depuis la barre du bas.',
+  'onboarding.tour.mobile.feed.title': 'Fil',
+  'onboarding.tour.mobile.feed.body':
+    'Retrouvez vidéos, annonces et contenus du fil depuis la barre du bas.',
   'onboarding.tour.mobile.more.title': 'Menu Plus',
   'onboarding.tour.mobile.more.body':
     'Ouvrez ici tous les autres services : MOXT, jobs, entreprise, et plus encore.',

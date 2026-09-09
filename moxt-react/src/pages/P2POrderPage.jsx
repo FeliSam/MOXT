@@ -739,15 +739,16 @@ export function P2POrderPage() {
                   </span>
                 </div>
               </div>
-              <label className="grid gap-2 text-sm font-semibold">
-                {t('p2p.order.commentPlaceholder')}
+              <div className="grid gap-2">
+                <span className="text-sm font-semibold">{t('p2p.order.commentPlaceholder')}</span>
                 <textarea
-                  className="min-h-24 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 text-base font-normal"
+                  className="min-h-24 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 text-[16px] font-normal leading-snug"
+                  style={{ fontSize: 16 }}
                   value={comment}
                   onChange={(event) => setComment(event.target.value)}
                   placeholder={t('p2p.order.commentPlaceholder')}
                 />
-              </label>
+              </div>
               <Button icon={FiStar} onClick={handleSaveRating}>
                 {myReview ? t('p2p.order.updateRating') : t('p2p.order.saveRating')}
               </Button>

@@ -42,7 +42,7 @@ describe('route metadata', () => {
       'transfers',
       'home',
       'marketplace',
-      'parcels',
+      'feed',
     ])
     expect(new Set(bottomNavigationItems.map((item) => item.id)).size).toBe(4)
     expect(new Set(bottomNavigationItems.map((item) => item.path)).size).toBe(4)

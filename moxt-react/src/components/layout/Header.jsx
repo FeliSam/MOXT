@@ -6,7 +6,7 @@ import {
   LuMessageCircle,
   LuMoon,
   LuNewspaper,
-  LuRss,
+  LuPackage,
   LuSun,
 } from 'react-icons/lu'
 import { useSelector } from 'react-redux'
@@ -42,7 +42,7 @@ function pathMatches(pathname, prefix) {
 }
 
 /** Mobile header shortcuts — contextual per section. */
-export function getMobileHeaderActions(pathname, { canFeed, canNews }) {
+export function getMobileHeaderActions(pathname, { canFeed, canNews, canParcels }) {
   const isTransfers = pathMatches(pathname, '/transfers')
   const isParcels = pathMatches(pathname, '/parcels')
   const isNews = pathMatches(pathname, '/news')
@@ -63,6 +63,7 @@ export function getMobileHeaderActions(pathname, { canFeed, canNews }) {
     showFeed: Boolean(canFeed && !isFeed),
     showPublishVideo: false,
     showHistory: isTransfers,
+    showParcels: Boolean(canParcels && !isFeed),
     showMessages: !isFeed,
   }
 }
@@ -78,6 +79,7 @@ export function Header({ hideOnMobile = false }) {
   const messagesHeader = useMessagesHeaderContent()
   const canFeed = useDevModuleAccess('feed')
   const canNews = useDevModuleAccess('news')
+  const canParcels = useDevModuleAccess('parcels')
   const isMessagesRoute = isMessagesPath(location.pathname)
   const isFeedRoute = location.pathname === '/feed' || location.pathname === '/videos'
   const isMessagesListView =
@@ -91,6 +93,7 @@ export function Header({ hideOnMobile = false }) {
   const mobileActions = getMobileHeaderActions(location.pathname, {
     canFeed,
     canNews,
+    canParcels,
   })
   const showMessagesHeader = isMessagesRoute && messagesHeader?.content
 
@@ -157,15 +160,15 @@ export function Header({ hideOnMobile = false }) {
             </Link>
           ) : null}
 
-          {mobileActions.showFeed ? (
+          {mobileActions.showParcels ? (
             <Link
-              to="/feed"
-              data-tour="header-feed"
+              to="/parcels"
+              data-tour="header-parcels"
               className="header-action-btn relative grid lg:hidden"
-              aria-label={t('nav.feed')}
+              aria-label={t('nav.parcels')}
             >
-              <LuRss className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
-              <HeaderActionLabel>{t('nav.feed')}</HeaderActionLabel>
+              <LuPackage className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
+              <HeaderActionLabel>{t('nav.parcels')}</HeaderActionLabel>
             </Link>
           ) : null}
 

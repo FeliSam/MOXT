@@ -161,17 +161,18 @@ export function ReceiveTransferScreen() {
               <span className="text-sm font-semibold">{t('reviews.yourRating')}</span>
               <StarRating value={rating} onChange={setRating} size="lg" />
             </div>
-            <label className="grid gap-2 text-sm font-semibold">
-              {t('transfers.receive.reviewComment')}
+            <div className="grid gap-2">
+              <span className="text-sm font-semibold">{t('transfers.receive.reviewComment')}</span>
               <textarea
-                className="min-h-28 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3 text-base font-normal"
+                className="min-h-28 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3 text-[16px] font-normal leading-snug"
+                style={{ fontSize: 16 }}
                 placeholder={t('transfers.receive.reviewCommentPlaceholder')}
                 value={comment}
                 onChange={(event) => setComment(event.target.value)}
                 minLength={5}
                 required
               />
-            </label>
+            </div>
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <Button type="button" variant="secondary" onClick={() => setReviewOpen(false)}>
                 {t('transfers.receive.reviewSkip')}

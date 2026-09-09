@@ -584,6 +584,87 @@ export async function preparePublishableVideo(file, { onProgress } = {}) {
   }
 }
 
+/** Capture un JPEG à N secondes d’une URL vidéo (vignette marketplace / cartes). */
+const VIDEO_FRAME_CACHE = new Map()
+
+export function captureVideoFrameAtSeconds(src, seconds = 5, quality = 0.82) {
+  if (!src || typeof document === 'undefined') return Promise.resolve('')
+  const key = `${src}#t=${seconds}`
+  if (VIDEO_FRAME_CACHE.has(key)) return Promise.resolve(VIDEO_FRAME_CACHE.get(key))
+
+  return new Promise((resolve) => {
+    const el = document.createElement('video')
+    el.preload = 'auto'
+    el.muted = true
+    el.playsInline = true
+    el.setAttribute('playsinline', 'true')
+    el.crossOrigin = 'anonymous'
+
+    let settled = false
+    const timer = setTimeout(finishEmpty, 18_000)
+
+    function finishEmpty() {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      el.removeAttribute('src')
+      el.load()
+      resolve('')
+    }
+
+    function finishUrl(url) {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      VIDEO_FRAME_CACHE.set(key, url)
+      el.removeAttribute('src')
+      el.load()
+      resolve(url)
+    }
+
+    el.addEventListener('loadedmetadata', () => {
+      const duration = Number(el.duration)
+      const maxSeek = Number.isFinite(duration) && duration > 0.2 ? duration - 0.12 : seconds
+      const seekTo = Math.max(0.05, Math.min(seconds, maxSeek))
+      try {
+        el.currentTime = seekTo
+      } catch {
+        finishEmpty()
+      }
+    })
+
+    el.addEventListener('seeked', () => {
+      try {
+        const canvas = document.createElement('canvas')
+        canvas.width = el.videoWidth || 720
+        canvas.height = el.videoHeight || 1280
+        const ctx = canvas.getContext('2d')
+        if (!ctx || !canvas.width || !canvas.height) {
+          finishEmpty()
+          return
+        }
+        ctx.drawImage(el, 0, 0, canvas.width, canvas.height)
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              finishEmpty()
+              return
+            }
+            finishUrl(URL.createObjectURL(blob))
+          },
+          'image/jpeg',
+          quality,
+        )
+      } catch {
+        finishEmpty()
+      }
+    })
+
+    el.addEventListener('error', finishEmpty)
+    el.src = src
+  })
+}
+
 /** Capture une vignette JPEG depuis le 1er frame approximatif. */
 export function captureVideoThumbnail(file, { seekSeconds = 0.1, quality = 0.82 } = {}) {
   return new Promise((resolve, reject) => {

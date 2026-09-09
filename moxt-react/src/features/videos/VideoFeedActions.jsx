@@ -1,4 +1,5 @@
-import { FiHeart, FiMessageCircle, FiMoreHorizontal, FiShare2, FiUserPlus } from 'react-icons/fi'
+import { FiHeart, FiHome, FiMessageCircle, FiMoreHorizontal, FiShare2, FiUserPlus } from 'react-icons/fi'
+import { Link } from 'react-router-dom'
 import { shallowEqual, useDispatch, useSelector } from 'react-redux'
 import { useLanguage } from '../../contexts/useLanguage'
 import { useGuestAction } from '../guest/useGuestAction'
@@ -10,6 +11,9 @@ import { selectPublisherSubscription } from '../account/subscriptionSelectors'
 import { phase3Text } from '../../i18n/phase3I18n'
 import {
   FEED_ACTION_BTN_CLASS,
+  FEED_ACTION_HOME_BTN_CLASS,
+  FEED_ACTION_HOME_LABEL_CLASS,
+  FEED_ACTION_HOME_WRAP_CLASS,
   FEED_ACTION_ICON_CLASS,
   FEED_ACTION_ICON_SM_CLASS,
   FEED_ACTION_ICON_WRAP_CLASS,
@@ -167,6 +171,18 @@ export function VideoFeedActions({
           <FiMoreHorizontal className={FEED_ACTION_ICON_SM_CLASS} />
         </span>
       </button>
+
+      <Link
+        to="/dashboard"
+        onPointerDown={stopTouchBubble}
+        onTouchStart={stopTouchBubble}
+        className={FEED_ACTION_HOME_BTN_CLASS}
+      >
+        <span className={FEED_ACTION_HOME_WRAP_CLASS}>
+          <FiHome className="text-[1.23rem]" aria-hidden />
+        </span>
+        <span className={FEED_ACTION_HOME_LABEL_CLASS}>{p3('feed.actions.home')}</span>
+      </Link>
     </div>
   )
 }

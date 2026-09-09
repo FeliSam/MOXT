@@ -186,7 +186,7 @@ export function BottomNavigation() {
         type="button"
         data-tour="nav-more"
         onClick={() => {
-          warmNavRoutes(['/messages', '/p2p', '/jobs', '/news', '/stars', '/notifications'])
+          warmNavRoutes(['/messages', '/p2p', '/jobs', '/news', '/stars', '/notifications', '/parcels'])
           setMoreOpen(true)
         }}
         aria-label={

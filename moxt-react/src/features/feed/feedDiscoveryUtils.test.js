@@ -5,6 +5,8 @@ import {
   discoveryFeedItemId,
   injectFeedDiscoverySlides,
   listingToDiscoveryCard,
+  pickShuffledWindow,
+  seededShuffle,
 } from './feedDiscoveryUtils.js'
 import { feedItemKey } from './feedItemUtils.js'
 
@@ -68,5 +70,46 @@ describe('feedDiscoveryUtils', () => {
     expect(slide.id).toBe(discoveryFeedItemId(0, 'forYou'))
     expect(slide.kind).toBe('discovery')
     expect(slide.variant).toBe('forYou')
+  })
+
+  it('mélange les cartes selon le sel de session', () => {
+    const cards = [
+      { type: 'listing', id: 'L1' },
+      { type: 'listing', id: 'L2' },
+      { type: 'listing', id: 'L3' },
+      { type: 'listing', id: 'L4' },
+    ]
+    const a = pickShuffledWindow(cards, 'salt-a', 0, 4).map((row) => row.id).join()
+    const b = pickShuffledWindow(cards, 'salt-b', 0, 4).map((row) => row.id).join()
+    expect(a).not.toBe(b)
+    expect(seededShuffle(['a', 'b', 'c'], 'x')).not.toEqual(seededShuffle(['a', 'b', 'c'], 'y'))
+  })
+
+  it('change l’ordre des slides découverte selon le sel', () => {
+    const items = Array.from({ length: 20 }, (_, index) => organicItem(`v${index + 1}`))
+    const feedState = {
+      marketplace: {
+        items: Array.from({ length: 8 }, (_, index) =>
+          sampleListing(`L${index + 1}`, `Listing ${index + 1}`),
+        ),
+      },
+      businesses: { items: [] },
+      account: { subscriptions: [], favorites: [], viewedListings: [] },
+    }
+    const first = injectFeedDiscoverySlides(items, {
+      feedState,
+      rankCtx: { suggestionSalt: 'alpha' },
+      user: { id: 'u1' },
+    })
+      .filter((row) => row.kind === 'discovery')
+      .map((row) => `${row.variant}:${row.cards.map((card) => card.id).join('-')}`)
+    const second = injectFeedDiscoverySlides(items, {
+      feedState,
+      rankCtx: { suggestionSalt: 'omega' },
+      user: { id: 'u1' },
+    })
+      .filter((row) => row.kind === 'discovery')
+      .map((row) => `${row.variant}:${row.cards.map((card) => card.id).join('-')}`)
+    expect(first).not.toEqual(second)
   })
 })

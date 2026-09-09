@@ -67,4 +67,5 @@ export const moreServicesExcludedPaths = new Set([
   ...bottomNavigationPaths,
   ...sidebarMobileHiddenPaths,
   '/videos',
+  '/feed',
 ]);

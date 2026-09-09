@@ -51,13 +51,13 @@ export const MOBILE_TOUR_STEPS = [
     bodyKey: 'onboarding.tour.mobile.marketplace.body',
   },
   {
-    id: 'nav-parcels',
-    selector: '[data-tour="nav-parcels"]',
+    id: 'nav-feed',
+    selector: '[data-tour="nav-feed"]',
     placement: 'top',
     pad: 8,
     radius: 14,
-    titleKey: 'onboarding.tour.mobile.parcels.title',
-    bodyKey: 'onboarding.tour.mobile.parcels.body',
+    titleKey: 'onboarding.tour.mobile.feed.title',
+    bodyKey: 'onboarding.tour.mobile.feed.body',
   },
   {
     id: 'nav-more',

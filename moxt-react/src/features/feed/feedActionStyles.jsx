@@ -6,7 +6,7 @@ import { CountBounce } from '../../components/ui/CountBounce'
  * sinon la bottom nav (z=100) capture les taps sur téléphone.
  */
 export const FEED_ACTION_RAIL_CLASS =
-  'pointer-events-auto fixed bottom-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] right-3 z-[var(--z-page-float)] flex flex-col items-center gap-3 touch-manipulation md:absolute md:bottom-10 md:z-30'
+  'pointer-events-auto fixed bottom-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] right-3 z-[var(--z-page-float)] flex flex-col items-end gap-3 touch-manipulation md:absolute md:bottom-10 md:z-30'
 
 /** Rail pré-monté sur les voisins : visible seulement sur la slide active (évite le délai au snap). */
 export function feedActionRailClass(visible = true) {
@@ -20,6 +20,15 @@ export const FEED_ACTION_BTN_CLASS =
 
 export const FEED_ACTION_ICON_WRAP_CLASS =
   'relative grid size-10 place-items-center rounded-full bg-black/62 shadow-[0_4px_14px_rgba(0,0,0,0.55)] ring-1 ring-white/35 backdrop-blur-md transition active:scale-95'
+
+export const FEED_ACTION_HOME_WRAP_CLASS =
+  'grid size-8 shrink-0 place-items-center text-black'
+
+export const FEED_ACTION_HOME_BTN_CLASS =
+  'relative flex h-10 shrink-0 flex-row items-center gap-1 self-end rounded-full bg-white py-0 pl-1.5 pr-3 text-black shadow-[0_4px_14px_rgba(0,0,0,0.55)] ring-1 ring-black/10 transition active:scale-95 touch-manipulation'
+
+export const FEED_ACTION_HOME_LABEL_CLASS =
+  'max-w-[4.5rem] truncate text-[11px] font-black leading-none text-black'
 
 export const FEED_ACTION_ICON_CLASS =
   'text-[1.23rem] drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]'

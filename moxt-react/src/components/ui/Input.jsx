@@ -165,7 +165,7 @@ export function Textarea({
         className={`
           min-w-0 w-full rounded-[var(--radius-input)] border
           bg-[var(--app-surface-muted)] px-4 py-3
-          text-[var(--app-text)] placeholder:text-[var(--app-text-faint)]
+          text-[16px] text-[var(--app-text)] placeholder:text-[var(--app-text-faint)]
           outline-none transition duration-[var(--transition-fast)] resize-y
           focus:bg-[var(--app-surface)]
           disabled:cursor-not-allowed disabled:opacity-50

@@ -225,6 +225,8 @@ export const MARKETPLACE_FR_SOURCES = {
   'marketplace.page.feed.trendingHint': 'Les annonces qui suscitent le plus d’intérêt en ce moment.',
   'marketplace.page.feed.fresh': 'Nouveautés',
   'marketplace.page.feed.freshHint': 'Les dernières publications, sans tout empiler par date.',
+  'marketplace.page.feed.videos': 'Vidéos',
+  'marketplace.page.feed.badgeVideo': 'Vidéo',
   'marketplace.page.feed.discover': 'Découvrir',
   'marketplace.page.feed.discoverHint': 'Un mix de catégories, pas une simple liste chronologique.',
   'marketplace.page.feed.results': 'Résultats',

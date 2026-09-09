@@ -7,6 +7,7 @@ import {
   FiExternalLink,
   FiFlag,
   FiHeart,
+  FiHome,
   FiMessageCircle,
   FiMoreHorizontal,
   FiPackage,
@@ -28,6 +29,9 @@ import { phase3Text } from '../../i18n/phase3I18n'
 import { liveFeedSocialStats } from './feedItemUtils'
 import {
   FEED_ACTION_BTN_CLASS,
+  FEED_ACTION_HOME_BTN_CLASS,
+  FEED_ACTION_HOME_LABEL_CLASS,
+  FEED_ACTION_HOME_WRAP_CLASS,
   FEED_ACTION_ICON_CLASS,
   FEED_ACTION_ICON_SM_CLASS,
   FEED_ACTION_ICON_WRAP_CLASS,
@@ -86,61 +90,57 @@ function FeedMoreSheet({ item, open, onClose }) {
 
   if (!open && !closing) return null
 
+  const rowClass =
+    'flex items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm font-semibold text-[var(--app-text)] transition hover:bg-[var(--app-surface-muted)] active:scale-[0.99]'
+  const iconClass = 'text-lg text-[var(--app-text-muted)]'
+
   return createPortal(
     <div className="fixed inset-0 z-[var(--z-modal)]">
       <button
         type="button"
         aria-label={p3('videos.feed.closeMore')}
         onClick={requestClose}
-        className={`absolute inset-0 bg-black/55 ${
+        className={`absolute inset-0 bg-slate-950/55 backdrop-blur-[1px] dark:bg-black/55 ${
           closing ? 'animate-[fadeOut_200ms_ease-in_forwards]' : 'animate-[fadeIn_200ms_ease-out_forwards]'
         }`}
       />
       <div
-        className={`absolute inset-x-0 bottom-0 rounded-t-[1.4rem] border border-b-0 border-white/10 bg-[#121212] text-white ${
+        className={`absolute inset-x-0 bottom-0 rounded-t-[1.4rem] border border-b-0 border-[var(--app-border)]/80 bg-[var(--app-surface)] text-[var(--app-text)] shadow-[var(--shadow-card-lg)] backdrop-blur-xl ${
           closing ? 'drawer-leave' : 'drawer-enter'
         }`}
         style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
       >
         <div className="flex justify-center pt-2.5">
-          <span className="h-1 w-9 rounded-full bg-white/25" />
+          <span className="h-1 w-9 rounded-full bg-[var(--app-border-md)]" />
         </div>
-        <div className="flex items-center justify-between px-4 pb-2 pt-1">
-          <p className="text-sm font-black">{p3('videos.feed.moreTitle')}</p>
+        <div className="flex items-center justify-between border-b border-[var(--app-border)]/70 px-4 pb-3 pt-1">
+          <p className="text-sm font-black text-[var(--app-text)]">{p3('videos.feed.moreTitle')}</p>
           <button
             type="button"
             onClick={requestClose}
-            className="grid size-9 place-items-center rounded-full bg-white/10"
+            className="grid size-9 place-items-center rounded-full border border-[var(--app-border)]/70 bg-[var(--app-surface-muted)] text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface)]"
             aria-label={p3('videos.feed.closeMore')}
           >
             <FiX />
           </button>
         </div>
-        <div className="grid gap-1 px-3 pb-4">
-          <button
-            type="button"
-            onClick={copyLink}
-            className="flex items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm font-semibold hover:bg-white/8"
-          >
-            <FiCopy className="text-lg opacity-80" />
+        <div className="grid gap-1 px-3 pb-4 pt-1">
+          <button type="button" onClick={copyLink} className={rowClass}>
+            <FiCopy className={iconClass} aria-hidden />
             {p3('videos.feed.copyLink')}
           </button>
           {item.href ? (
-            <Link
-              to={item.href}
-              onClick={requestClose}
-              className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold hover:bg-white/8"
-            >
-              <FiShare2 className="text-lg opacity-80" />
+            <Link to={item.href} onClick={requestClose} className={rowClass}>
+              <FiShare2 className={iconClass} aria-hidden />
               {p3('feed.openDetail')}
             </Link>
           ) : null}
           <Link
             to={`/support?topic=${encodeURIComponent(item.kind)}&id=${encodeURIComponent(item.entityId || '')}`}
             onClick={requestClose}
-            className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold hover:bg-white/8"
+            className={rowClass}
           >
-            <FiFlag className="text-lg opacity-80" />
+            <FiFlag className={iconClass} aria-hidden />
             {p3('videos.feed.report')}
           </Link>
         </div>
@@ -159,11 +159,11 @@ const OPEN_ICON = {
 }
 
 function railKeysForKind(kind) {
-  if (kind === 'post' || kind === 'listing') return ['like', 'comment', 'share', 'more']
+  if (kind === 'post' || kind === 'listing') return ['like', 'comment', 'share', 'more', 'home']
   if (kind === 'parcel' || kind === 'job' || kind === 'event' || kind === 'p2p' || kind === 'discovery') {
-    return ['open', 'share', 'more']
+    return ['open', 'share', 'more', 'home']
   }
-  return ['open', 'share', 'more']
+  return ['open', 'share', 'more', 'home']
 }
 
 /**
@@ -311,6 +311,22 @@ export function FeedItemActions({ item, visible = true }) {
             <FiShare2 className={FEED_ACTION_ICON_SM_CLASS} />
           </span>
         </button>
+      )
+    }
+    if (key === 'home') {
+      return (
+        <Link
+          key={key}
+          to="/dashboard"
+          onPointerDown={stopTouchBubble}
+          onTouchStart={stopTouchBubble}
+          className={FEED_ACTION_HOME_BTN_CLASS}
+        >
+          <span className={FEED_ACTION_HOME_WRAP_CLASS}>
+            <FiHome className="text-[1.23rem]" aria-hidden />
+          </span>
+          <span className={FEED_ACTION_HOME_LABEL_CLASS}>{p3('feed.actions.home')}</span>
+        </Link>
       )
     }
     return (

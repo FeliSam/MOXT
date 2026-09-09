@@ -63,6 +63,12 @@ export function scoreFeedItem(item, ctx = {}) {
     score += suggestionJitter(item.id, ctx.suggestionSalt)
   }
 
+  const haystack = `${item.title || ''} ${item.caption || ''} ${item.publisher?.name || ''}`.toLowerCase()
+  for (const term of ctx.searchTerms || []) {
+    const needle = String(term || '').trim().toLowerCase()
+    if (needle.length >= 2 && haystack.includes(needle)) score += 14
+  }
+
   return score
 }
 

@@ -1,4 +1,4 @@
-import { FiBox, FiBriefcase, FiFileText, FiGrid, FiHome, FiMessageSquare, FiRepeat, FiShoppingBag, FiTrendingUp } from 'react-icons/fi'
+import { FiBox, FiBriefcase, FiFileText, FiGrid, FiHome, FiMessageSquare, FiRepeat, FiRss, FiShoppingBag, FiTrendingUp } from 'react-icons/fi'
 
 /** Sidebar — ordre complet (messagerie + entreprise owner + actualité en fin desktop) */
 export const primaryNavigationItems = [
@@ -42,8 +42,8 @@ const primaryById = Object.fromEntries(primaryNavigationItems.map((item) => [ite
 export const bottomNavigationItems = [
   primaryById.transfers,
   { ...primaryById.home, label: 'Moxt', labelKey: null },
-  primaryById.marketplace,
-  primaryById.parcels,
+  { ...primaryById.marketplace, label: 'Market', labelKey: null },
+  { id: 'feed', label: 'Fil', labelKey: 'nav.feed', path: '/feed', icon: FiRss, devModule: 'feed' },
 ]
 
 export const bottomNavigationPaths = new Set(bottomNavigationItems.map((item) => item.path))

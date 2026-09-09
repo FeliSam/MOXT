@@ -4,6 +4,7 @@ import {
   buildMarketplaceDiscovery,
   diversifyMarketplaceFeed,
   hasListingPersonalization,
+  rankMarketplaceVideos,
   scoreMarketplaceListing,
 } from './marketplaceFeed'
 import { marketplaceBoostLookup } from './marketplaceListingBoost.js'
@@ -89,6 +90,38 @@ describe('marketplaceFeed', () => {
     ])
     expect(feed.discover.every((item) => !railIds.has(item.id))).toBe(true)
     expect(feed.discover.length).toBe(listings.length - railIds.size)
+  })
+
+  it('booste une annonce qui correspond à une recherche récente', () => {
+    const match = listing({ id: 'braid', title: 'X-Pression Ultra Braid', category: 'hair' })
+    const other = listing({ id: 'phone', title: 'iPhone', category: 'electronics' })
+    const ctx = { now, searchTerms: ['braid'] }
+    expect(scoreMarketplaceListing(match, ctx)).toBeGreaterThan(scoreMarketplaceListing(other, ctx))
+  })
+
+  it('classe les vidéos selon likes et recherches', () => {
+    const ranked = rankMarketplaceVideos(
+      [
+        {
+          id: 'V1',
+          status: 'active',
+          title: 'Recette agoun',
+          createdAt: '2026-08-20T12:00:00.000Z',
+          viewCount: 2,
+          likes: [],
+        },
+        {
+          id: 'V2',
+          status: 'active',
+          title: 'Tresses X-pression',
+          createdAt: '2026-08-20T12:00:00.000Z',
+          viewCount: 2,
+          likes: ['me'],
+        },
+      ],
+      { now, userId: 'me', searchTerms: ['tresses'] },
+    )
+    expect(ranked[0].id).toBe('V2')
   })
 
   it('masque les rails pendant une recherche', () => {

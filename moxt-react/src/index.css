@@ -175,6 +175,13 @@ html {
   scroll-behavior: smooth;
 }
 
+/* iOS zooms the viewport when a focused field is under 16px. */
+@media (max-width: 767px) {
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
 body {
   min-width: 320px;
   min-height: 100vh;
@@ -205,6 +212,17 @@ body {
   min-height: var(--feed-viewport-height, 100lvh);
   overflow: hidden;
   background: #000;
+}
+
+@keyframes feed-double-tap-heart {
+  0% { transform: scale(0.35); opacity: 0; }
+  28% { transform: scale(1.18); opacity: 1; }
+  100% { transform: scale(1.05); opacity: 0; }
+}
+
+.feed-double-tap-heart {
+  font-size: 5.25rem;
+  animation: feed-double-tap-heart 0.65s ease-out forwards;
 }
 
 .feed-snap-scroller {

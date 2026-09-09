@@ -47,13 +47,6 @@ import { useFeedVideoPlayback } from '../../videos/useFeedVideoPlayback'
 import { FeedSlideShell } from '../FeedSlideShell'
 import { liveFeedSocialStats } from '../feedItemUtils'
 
-function formatCount(value) {
-  const n = Number(value) || 0
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, '')}k`
-  return String(n)
-}
-
 function MoreActionRow({ icon: Icon, children, onClick, to, danger = false, onNavigate }) {
   const className = `flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm font-semibold transition hover:bg-[var(--app-surface-muted)] active:scale-[0.99] ${
     danger ? 'text-rose-600 dark:text-rose-300' : 'text-[var(--app-text)]'
@@ -347,7 +340,11 @@ export function VideoFeedSlide({ item, index, active }) {
   const dispatch = useDispatch()
   const { t } = useLanguage()
   const p3 = (key, vars) => phase3Text(t, key, vars)
-  const video = item?.source
+  const videoId = item?.entityId || item?.source?.id
+  const liveVideo = useSelector((state) =>
+    videoId ? state.videos.items.find((row) => row.id === videoId) : null,
+  )
+  const video = liveVideo || item?.source
   const user = useSelector((state) => state.auth.user)
   const feedBoosts = useSelector((state) => state.stars.feedBoosts)
   const starsBalance = useSelector((state) => state.stars.balance)
@@ -388,6 +385,7 @@ export function VideoFeedSlide({ item, index, active }) {
 
   const handleActivate = useCallback(
     (videoId) => {
+      if (isOwner) return
       if (viewed.current) return
       viewed.current = true
       if (viewTimerRef.current) window.clearTimeout(viewTimerRef.current)
@@ -395,7 +393,7 @@ export function VideoFeedSlide({ item, index, active }) {
         dispatch(incrementVideoView({ id: videoId }))
       }, 350)
     },
-    [dispatch],
+    [dispatch, isOwner],
   )
   const liked = useSelector((state) =>
     liveFeedSocialStats(state, 'video', video?.id, user?.id).liked,
@@ -533,7 +531,7 @@ export function VideoFeedSlide({ item, index, active }) {
       metaExtra={
         <p className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-white/55">
           <FiEye className="text-sm" aria-hidden />
-          {p3('videos.feed.views', { count: formatCount(video.viewCount) })}
+          {p3('videos.feed.views', { count: Number(video.viewCount) || 0 })}
         </p>
       }
     >
