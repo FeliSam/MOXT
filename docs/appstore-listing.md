@@ -36,7 +36,7 @@ Fichiers déjà en place :
 | `android` → `moxt-react/android` | Idem |
 | `npm run appflow:build` | Build web attendu par Appflow |
 
-**Obligatoire** : remplacer `REPLACE_WITH_APPFLOW_APP_ID` dans [`appflow.config.json`](../appflow.config.json) par l’App ID du dashboard Ionic (Overview de l’app MOXT). Sans ça, le bloc monorepo est ignoré (mais les fichiers racine + symlinks couvrent le cas courant).
+App ID Ionic : `b13c811c` (défini dans [`appflow.config.json`](../appflow.config.json)). Sans cet ID, Appflow ignore le bloc monorepo (`root: moxt-react`).
 
 ```bash
 npm run check:ios-store
