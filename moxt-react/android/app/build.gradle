@@ -14,7 +14,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // Aligner versionCode avec iOS CURRENT_PROJECT_VERSION (docs/google-play-listing.md).
-        versionCode 9
+        versionCode 11
         versionName "1.2.5"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
