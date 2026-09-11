@@ -29,6 +29,8 @@ import { PullToRefreshIndicator } from './PullToRefreshIndicator'
 
 import { Sidebar } from './Sidebar'
 
+import { KeyboardDismissChevron } from './KeyboardDismissChevron'
+
 import { WelcomeGate } from '../onboarding/WelcomeGate'
 
 import { PwaInstallBanner } from '../pwa/PwaInstallBanner'
@@ -320,6 +322,8 @@ export function AppLayout({ children }) {
       </div>
 
       {!hideBottomNav ? <BottomNavigation /> : null}
+
+      <KeyboardDismissChevron />
 
       <PullToRefreshIndicator disabled={hideAppChrome || isMessagesRoute || isFeedMobileFeed} />
 

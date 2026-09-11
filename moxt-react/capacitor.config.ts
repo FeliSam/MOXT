@@ -35,7 +35,7 @@ const config: CapacitorConfig = {
   },
   ios: {
     backgroundColor: '#ffffff',
-    contentInset: 'automatic',
+    contentInset: 'never',
     scheme: 'MOXT',
     webContentsDebuggingEnabled: isDevServer,
   },
@@ -51,9 +51,10 @@ const config: CapacitorConfig = {
     StatusBar: {
       style: 'DARK',
       backgroundColor: '#ffffff',
+      overlaysWebView: true,
     },
     Keyboard: {
-      resize: 'none',
+      resize: 'native',
       resizeOnFullScreen: true,
     },
     PushNotifications: {

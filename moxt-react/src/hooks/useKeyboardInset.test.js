@@ -7,6 +7,7 @@ import {
   isMessagesThreadImmersive,
   measureKeyboardInset,
   resyncViewportBottomGap,
+  setIosNativeKeyboardOpen,
   syncKeyboardState,
 } from './useKeyboardInset.js'
 
@@ -110,5 +111,24 @@ describe('useKeyboardInset helpers', () => {
     expect(root.style.getPropertyValue('--composer-keyboard-bottom')).toBe('0px')
     expect(root.classList.contains('keyboard-open')).toBe(true)
     input.remove()
+  })
+
+  it('iOS natif : clavier Native sans double offset overlay', () => {
+    const root = document.createElement('html')
+    root.classList.add('capacitor-ios')
+    setIosNativeKeyboardOpen(true)
+    syncKeyboardState(root, {
+      height: window.innerHeight,
+      offsetTop: 0,
+    })
+    expect(root.classList.contains('keyboard-open')).toBe(true)
+    expect(root.style.getPropertyValue('--keyboard-inset')).toBe('0px')
+    expect(root.style.getPropertyValue('--composer-keyboard-bottom')).toBe('0px')
+    setIosNativeKeyboardOpen(false)
+    syncKeyboardState(root, {
+      height: window.innerHeight,
+      offsetTop: 0,
+    })
+    expect(root.classList.contains('keyboard-open')).toBe(false)
   })
 })

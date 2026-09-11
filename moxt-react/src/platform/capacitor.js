@@ -52,15 +52,21 @@ export async function initCapacitor() {
     ])
 
   try {
-    // None: layout viewport stays full so fixed bottom chrome is not lifted.
-    // Composer/chat use --keyboard-inset from visualViewport instead.
-    await Keyboard.setResizeMode({ mode: KeyboardResize.None })
+    if (nativePlatform === 'ios') {
+      await Keyboard.setResizeMode({ mode: KeyboardResize.Native })
+      await Keyboard.setAccessoryBarVisible({ isVisible: false })
+    } else {
+      await Keyboard.setResizeMode({ mode: KeyboardResize.None })
+    }
   } catch {
     /* plugin indisponible sur certaines plateformes */
   }
 
   try {
     const isDark = document.documentElement.classList.contains('dark')
+    if (nativePlatform === 'ios') {
+      await StatusBar.setOverlaysWebView({ overlay: true })
+    }
     await StatusBar.setStyle({ style: isDark ? Style.Light : Style.Dark })
     if (nativePlatform === 'android') {
       await StatusBar.setBackgroundColor({ color: isDark ? '#0c0c0e' : '#ffffff' })
@@ -105,7 +111,7 @@ export async function syncCapacitorStatusBar(isDark) {
   if (!isNative) return
   try {
     const { StatusBar, Style } = await import('@capacitor/status-bar')
-    await StatusBar.setStyle({ style: isDark ? Style.Dark : Style.Light })
+    await StatusBar.setStyle({ style: isDark ? Style.Light : Style.Dark })
     if (nativePlatform === 'android') {
       await StatusBar.setBackgroundColor({ color: isDark ? '#0c0c0e' : '#08705f' })
     }

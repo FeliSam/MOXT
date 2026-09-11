@@ -1,6 +1,7 @@
 import { createSelector } from '@reduxjs/toolkit'
 import { selectActiveBusinessForOwner } from './businesses/businessVisibility'
 import { normalizeConversation } from './communications/communicationSlice'
+import { isAvailableBrowseParcel } from './parcels/parcelUtils'
 
 export const selectCurrentUser = (state) => state.auth.user
 export const selectBusinesses = (state) => state.businesses.items
@@ -47,4 +48,9 @@ export const selectUnreadMessageCount = createSelector(
   [selectUserConversations, selectCurrentUser],
   (conversations, user) =>
     conversations.reduce((total, item) => total + (item.unreadBy?.[user?.id] || 0), 0),
+)
+
+export const selectAvailableParcelCount = createSelector(
+  [(state) => state.parcels?.items || []],
+  (parcels) => parcels.filter((parcel) => isAvailableBrowseParcel(parcel)).length,
 )

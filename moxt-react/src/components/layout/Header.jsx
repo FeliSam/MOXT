@@ -14,7 +14,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { getRouteMetadata } from '../../config/routeMeta'
 import { useTheme } from '../../contexts/useTheme'
 import { useLanguage } from '../../contexts/useLanguage'
-import { selectUnreadMessageCount, selectUnreadNotificationCount } from '../../features/selectors'
+import { selectAvailableParcelCount, selectUnreadMessageCount, selectUnreadNotificationCount } from '../../features/selectors'
 import { useSmartNavbar } from '../../hooks/useSmartNavbar'
 import { useMessagesHeaderContent } from '../../contexts/MessagesHeaderContext'
 import { APP_HEADER_PILL_CLASS, HEADER_ICON_STROKE } from './headerLayout'
@@ -74,6 +74,7 @@ export function Header({ hideOnMobile = false }) {
   const user = useSelector((state) => state.auth.user)
   const unreadCount = useSelector(selectUnreadNotificationCount)
   const unreadMessagesCount = useSelector(selectUnreadMessageCount)
+  const availableParcelCount = useSelector(selectAvailableParcelCount)
   const { isDark, toggleTheme } = useTheme()
   const { t, translateLabel } = useLanguage()
   const messagesHeader = useMessagesHeaderContent()
@@ -165,9 +166,19 @@ export function Header({ hideOnMobile = false }) {
               to="/parcels"
               data-tour="header-parcels"
               className="header-action-btn relative grid lg:hidden"
-              aria-label={t('nav.parcels')}
+              aria-label={
+                availableParcelCount
+                  ? t('nav.parcelsAvailableAria', { count: availableParcelCount })
+                  : t('nav.parcels')
+              }
             >
               <LuPackage className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
+              {availableParcelCount ? (
+                <CountBounce
+                  value={availableParcelCount}
+                  className="absolute right-0 top-0 z-[1] grid min-w-[1.05rem] place-items-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-sm"
+                />
+              ) : null}
               <HeaderActionLabel>{t('nav.parcels')}</HeaderActionLabel>
             </Link>
           ) : null}

@@ -22,6 +22,16 @@ export function measureKeyboardInset(vv) {
   return Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop))
 }
 
+let iosNativeKeyboardOpen = false
+
+export function setIosNativeKeyboardOpen(open) {
+  iosNativeKeyboardOpen = Boolean(open)
+}
+
+function isIosNativeShell(root) {
+  return root.classList.contains('capacitor-ios')
+}
+
 /** @param {HTMLElement} root */
 export function isMessagesScrollLock(root) {
   return root.classList.contains('messages-route-lock')
@@ -113,6 +123,14 @@ export function syncKeyboardState(root, vv) {
   const editing = isEditableField(document.activeElement)
   const raw = measureKeyboardInset(vv)
 
+  if (isIosNativeShell(root) && iosNativeKeyboardOpen) {
+    root.style.setProperty('--keyboard-inset', '0px')
+    root.classList.add('keyboard-open')
+    syncViewportBottomGap(root, 0, { keyboardOpen: true })
+    clearComposerKeyboardBottom(root)
+    return
+  }
+
   if (!editing) {
     forceKeyboardClosed(root)
     return
@@ -176,7 +194,34 @@ export function useKeyboardInset() {
     vv?.addEventListener('resize', update)
     vv?.addEventListener('scroll', update)
 
+    let removeShow
+    let removeHide
+    let cancelled = false
+    if (root.classList.contains('capacitor-ios')) {
+      import('@capacitor/keyboard')
+        .then(({ Keyboard }) => {
+          if (cancelled) return
+          return Promise.all([
+            Keyboard.addListener('keyboardWillShow', () => {
+              setIosNativeKeyboardOpen(true)
+              update()
+            }),
+            Keyboard.addListener('keyboardWillHide', () => {
+              setIosNativeKeyboardOpen(false)
+              update()
+            }),
+          ]).then(([showHandle, hideHandle]) => {
+            removeShow = () => showHandle.remove()
+            removeHide = () => hideHandle.remove()
+          })
+        })
+        .catch(() => {})
+    }
+
     return () => {
+      cancelled = true
+      removeShow?.()
+      removeHide?.()
       window.removeEventListener('resize', update)
       window.removeEventListener('scroll', update)
       document.removeEventListener('focusin', onFocusIn, true)
@@ -185,6 +230,7 @@ export function useKeyboardInset() {
       vv?.removeEventListener('scroll', update)
       blurSyncTimers.forEach((id) => clearTimeout(id))
       blurSyncTimers.clear()
+      setIosNativeKeyboardOpen(false)
       root.style.removeProperty('--keyboard-inset')
       root.style.removeProperty('--viewport-bottom-gap')
       root.style.removeProperty('--visual-viewport-offset-top')

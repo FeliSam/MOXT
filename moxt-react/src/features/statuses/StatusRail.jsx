@@ -15,6 +15,7 @@ import { supabase } from '../../services/supabaseClient'
 import { receiveRemoteStatus, removeRemoteStatus } from './statusesSlice'
 import { statusFromRemoteRow } from './statusRemote'
 import { refreshStatusesData, hydrateStatusRailIfEmpty } from './statusSync'
+import { writeStatusRailCache } from './statusRailCache'
 
 /** Emprise visuelle unique (anneau inclus) pour aligner toutes les bulles. */
 const BUBBLE_OUTER = 'size-[3.75rem]'
@@ -136,6 +137,12 @@ export function StatusRail({
     hydrateStatusRailIfEmpty(store.getState, store.dispatch)
   }, [store, user?.id])
 
+  const persistRail = () => {
+    const uid = store.getState().auth.user?.id
+    const items = store.getState().statuses?.items
+    if (uid && Array.isArray(items)) writeStatusRailCache(uid, items)
+  }
+
   useEffect(() => {
     if (!supabase || !user?.id) return undefined
     const timer = window.setTimeout(() => {
@@ -146,7 +153,9 @@ export function StatusRail({
           { event: 'INSERT', schema: 'public', table: 'statuses' },
           (payload) => {
             const remote = statusFromRemoteRow(payload.new)
-            if (remote?.id) dispatch(receiveRemoteStatus(remote))
+            if (!remote?.id) return
+            dispatch(receiveRemoteStatus(remote))
+            persistRail()
           },
         )
         .on(
@@ -154,14 +163,18 @@ export function StatusRail({
           { event: 'UPDATE', schema: 'public', table: 'statuses' },
           (payload) => {
             const remote = statusFromRemoteRow(payload.new)
-            if (remote?.id) dispatch(receiveRemoteStatus(remote))
+            if (!remote?.id) return
+            dispatch(receiveRemoteStatus(remote))
+            persistRail()
           },
         )
         .on(
           'postgres_changes',
           { event: 'DELETE', schema: 'public', table: 'statuses' },
           (payload) => {
-            if (payload.old?.id) dispatch(removeRemoteStatus(payload.old.id))
+            if (!payload.old?.id) return
+            dispatch(removeRemoteStatus(payload.old.id))
+            persistRail()
           },
         )
         .subscribe()
@@ -174,12 +187,21 @@ export function StatusRail({
         channelRef.current = null
       }
     }
-  }, [dispatch, user?.id])
+  }, [dispatch, store, user?.id])
 
   useEffect(() => {
     if (!user?.id) return undefined
     dispatch(refreshStatusesData())
-    return undefined
+    const onVisible = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return
+      dispatch(refreshStatusesData({ force: true }))
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', onVisible)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', onVisible)
+    }
   }, [dispatch, user?.id])
 
   if (!user) return null

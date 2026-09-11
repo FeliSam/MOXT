@@ -13,7 +13,7 @@
   },
   "ios": {
     "backgroundColor": "#ffffff",
-    "contentInset": "automatic",
+    "contentInset": "never",
     "scheme": "MOXT",
     "webContentsDebuggingEnabled": false
   },
@@ -28,10 +28,11 @@
     },
     "StatusBar": {
       "style": "DARK",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#ffffff",
+      "overlaysWebView": true
     },
     "Keyboard": {
-      "resize": "none",
+      "resize": "native",
       "resizeOnFullScreen": true
     },
     "PushNotifications": {

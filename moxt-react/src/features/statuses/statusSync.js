@@ -8,7 +8,6 @@ import {
   mergeViewedByLists,
 } from './statusViewUtils'
 import {
-  isStatusRailCacheFresh,
   readStatusRailCache,
   writeStatusRailCache,
 } from './statusRailCache'
@@ -56,6 +55,8 @@ function mapStatusRows(rows, localStatusesById) {
 }
 
 /** Recharge léger des statuts (rail) — indépendant du mega loadAllData. */
+let statusesRefreshInFlight = null
+
 export const refreshStatusesData = createAsyncThunk(
   'statuses/refreshStatusesData',
   async ({ force = false } = {}, { dispatch, getState, rejectWithValue }) => {
@@ -65,26 +66,41 @@ export const refreshStatusesData = createAsyncThunk(
 
     hydrateStatusRailIfEmpty(getState, dispatch)
 
-    if (!force && isStatusRailCacheFresh(uid) && getState().statuses?.items?.length) {
-      return getState().statuses.items.length
+    if (statusesRefreshInFlight && !force) {
+      try {
+        return await statusesRefreshInFlight
+      } catch (error) {
+        return rejectWithValue(error instanceof Error ? error.message : String(error))
+      }
     }
 
-    const { data, error } = await supabase
-      .from('statuses')
-      .select(STATUS_RAIL_COLUMNS)
-      .gt('expires_at', new Date().toISOString())
-      .order('created_at', { ascending: false })
-      .limit(60)
+    const job = (async () => {
+      const { data, error } = await supabase
+        .from('statuses')
+        .select(STATUS_RAIL_COLUMNS)
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(60)
 
-    if (error) return rejectWithValue(error.message)
+      if (error) throw new Error(error.message)
 
-    const localStatusesById = new Map((getState().statuses?.items || []).map((item) => [item.id, item]))
-    const mapped = mapStatusRows(data, localStatusesById)
+      const localStatusesById = new Map((getState().statuses?.items || []).map((item) => [item.id, item]))
+      const mapped = mapStatusRows(data, localStatusesById)
 
-    const hydrated = applySeenLedgerToStatuses(mapped, uid)
-    dispatch(setStatuses({ items: hydrated }))
-    writeStatusRailCache(uid, hydrated)
-    return mapped.length
+      const hydrated = applySeenLedgerToStatuses(mapped, uid)
+      dispatch(setStatuses({ items: hydrated }))
+      writeStatusRailCache(uid, hydrated)
+      return mapped.length
+    })()
+
+    statusesRefreshInFlight = job
+    try {
+      return await job
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : String(error))
+    } finally {
+      if (statusesRefreshInFlight === job) statusesRefreshInFlight = null
+    }
   },
 )
 

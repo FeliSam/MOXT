@@ -417,6 +417,42 @@ html.capacitor-native .app-top-header {
   padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
 }
 
+html.capacitor-ios,
+html.capacitor-ios body {
+  height: 100%;
+  max-height: 100%;
+  overscroll-behavior: none;
+}
+
+html.capacitor-ios #root {
+  min-height: 100%;
+  height: 100%;
+}
+
+.keyboard-dismiss-chevron {
+  display: none;
+}
+
+html.capacitor-ios.keyboard-open .keyboard-dismiss-chevron {
+  display: grid;
+  position: fixed;
+  z-index: calc(var(--z-modal) + 24);
+  right: max(0.7rem, env(safe-area-inset-right, 0px));
+  bottom: 0.45rem;
+  width: 2.35rem;
+  height: 2.35rem;
+  place-items: center;
+  margin: 0;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--app-border) 80%, transparent);
+  background: color-mix(in srgb, var(--app-surface) 92%, transparent);
+  color: var(--app-text);
+  box-shadow: 0 8px 22px rgb(15 23 42 / 14%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
 html.capacitor-native .capacitor-safe-bottom {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
 }
