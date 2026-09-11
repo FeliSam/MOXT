@@ -41,11 +41,22 @@ function runFirebase(args) {
 function parseJsonBlob(text) {
   const start = text.indexOf('{')
   if (start < 0) return null
-  try {
-    return JSON.parse(text.slice(start))
-  } catch {
-    return null
+  let depth = 0
+  for (let i = start; i < text.length; i++) {
+    const c = text[i]
+    if (c === '{') depth += 1
+    else if (c === '}') {
+      depth -= 1
+      if (depth === 0) {
+        try {
+          return JSON.parse(text.slice(start, i + 1))
+        } catch {
+          return null
+        }
+      }
+    }
   }
+  return null
 }
 
 function resolveProjectId() {
