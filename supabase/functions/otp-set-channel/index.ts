@@ -53,13 +53,15 @@ Deno.serve(async (req) => {
     return json({ error: 'Numéro russe invalide' }, 400, req)
   }
 
-  const { error } = await admin.from('otp_delivery').upsert({
-    phone,
-    channel,
-    otp: null,
-    expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
-    updated_at: new Date().toISOString(),
-  })
+  const { error } = await admin.from('otp_delivery').upsert(
+    {
+      phone,
+      channel,
+      expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'phone' },
+  )
   if (error) {
     console.error('[otp-set-channel]', error.message)
     return json({ error: 'Enregistrement du canal impossible' }, 500, req)

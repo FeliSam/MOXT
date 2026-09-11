@@ -1197,7 +1197,7 @@ describe('authService', () => {
 
     expect(auth.updateUser).toHaveBeenCalledWith({ phone: '+79000000010' })
     expect(auth.resend).not.toHaveBeenCalled()
-    expect(result).toEqual({ phone: '+79000000010', otpType: 'phone_change' })
+    expect(result).toEqual({ phone: '+79000000010', otpType: 'phone_change', otpChannel: 'sms' })
   })
 
   it('ne retente pas un second verifyOtp avec un autre type', async () => {

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { FiCheckCircle, FiSmartphone } from 'react-icons/fi'
+import { FiCheck, FiCheckCircle, FiMessageSquare, FiPhone, FiSmartphone } from 'react-icons/fi'
+import { FaTelegramPlane } from 'react-icons/fa'
 import { useDispatch, useSelector } from 'react-redux'
 import { Alert } from '../../components/ui/Alert'
 import { Button } from '../../components/ui/Button'
@@ -20,6 +21,16 @@ import { addToast } from '../ui/uiSlice'
 import { useLanguage } from '../../contexts/useLanguage'
 import { OTP_RESEND_COOLDOWN_SECONDS } from '@moxt/shared/auth/otpCooldown.js'
 
+const CHANNELS = [
+  { id: 'sms', icon: FiMessageSquare, titleKey: 'auth.register.channel.smsTitle', hintKey: 'auth.register.channel.smsHint' },
+  { id: 'telegram', icon: FaTelegramPlane, titleKey: 'auth.register.channel.telegramTitle', hintKey: 'auth.register.channel.telegramHint' },
+  { id: 'flashcall', icon: FiPhone, titleKey: 'auth.register.channel.callTitle', hintKey: 'auth.register.channel.callHint' },
+]
+
+function isSuperAdmin(user) {
+  return user?.role === 'superadmin'
+}
+
 export function PhoneVerificationCard({ className = '' }) {
   const dispatch = useDispatch()
   const { t } = useLanguage()
@@ -31,6 +42,8 @@ export function PhoneVerificationCard({ className = '' }) {
   const [otpSent, setOtpSent] = useState(false)
   const [otp, setOtp] = useState('')
   const [otpType, setOtpType] = useState('phone_change')
+  const [otpChannel, setOtpChannel] = useState('sms')
+  const [retestMode, setRetestMode] = useState(false)
   const [phone, setPhone] = useState(user?.phone || '+7')
   const [resendCooldown, setResendCooldown] = useState(0)
   const [assistOpen, setAssistOpen] = useState(false)
@@ -68,10 +81,28 @@ export function PhoneVerificationCard({ className = '' }) {
 
   if (!user) return null
 
-  if (isPhoneVerified(user)) {
+  const superAdmin = isSuperAdmin(user)
+  const alreadyVerified = isPhoneVerified(user)
+  const otpLen = otpChannel === 'flashcall' ? 4 : 6
+  const allowRetest = superAdmin && retestMode
+
+  if (alreadyVerified && !allowRetest) {
     return (
       <Alert variant="success" title={t('security.phone.verifiedTitle')} className={className}>
-        {t('security.phone.verifiedBody', { phone: user.phone })}
+        <p>{t('security.phone.verifiedBody', { phone: user.phone })}</p>
+        {superAdmin ? (
+          <button
+            type="button"
+            className="mt-3 text-sm font-bold text-brand-800 underline-offset-2 hover:underline dark:text-brand-300"
+            onClick={() => {
+              setRetestMode(true)
+              setOtpSent(false)
+              setOtp('')
+            }}
+          >
+            {t('security.phone.testChannelsCta')}
+          </button>
+        ) : null}
       </Alert>
     )
   }
@@ -89,9 +120,15 @@ export function PhoneVerificationCard({ className = '' }) {
     }
     setBusy(true)
     try {
-      const result = await dispatch(requestPhoneVerificationOtp(phone))
+      const result = await dispatch(
+        requestPhoneVerificationOtp({
+          phone,
+          otpChannel,
+          forceRetest: superAdmin && retestMode && alreadyVerified,
+        }),
+      )
       if (!requestPhoneVerificationOtp.fulfilled.match(result)) return
-      if (result.payload.user) {
+      if (result.payload.user && !(superAdmin && retestMode)) {
         dispatch(
           addToast({
             title: t('security.phone.alreadyConfirmedTitle'),
@@ -104,12 +141,20 @@ export function PhoneVerificationCard({ className = '' }) {
       setOtpSent(true)
       setOtp('')
       setOtpType(result.payload.otpType || 'phone_change')
-      setResendCooldown(OTP_RESEND_COOLDOWN_SECONDS)
+      if (result.payload.otpChannel) setOtpChannel(result.payload.otpChannel)
+      setResendCooldown(superAdmin ? 0 : OTP_RESEND_COOLDOWN_SECONDS)
       dispatch(clearAuthError())
       dispatch(
         addToast({
           title: t('security.phone.codeSentTitle'),
-          message: t('security.phone.codeSentBody', { phone: result.payload.phone }),
+          message: t(
+            otpChannel === 'flashcall'
+              ? 'security.phone.codeSentBodyCall'
+              : otpChannel === 'telegram'
+                ? 'security.phone.codeSentBodyTelegram'
+                : 'security.phone.codeSentBody',
+            { phone: result.payload.phone },
+          ),
           tone: 'info',
         }),
       )
@@ -119,13 +164,14 @@ export function PhoneVerificationCard({ className = '' }) {
   }
 
   async function confirmCode() {
-    if (!/^\d{6}$/.test(otp)) return
+    if (otp.length !== otpLen) return
     setBusy(true)
     try {
       const result = await dispatch(confirmPhoneVerification({ phone, token: otp, otpType }))
       if (!confirmPhoneVerification.fulfilled.match(result)) return
       setOtp('')
       setOtpSent(false)
+      setRetestMode(false)
       dispatch(
         addToast({
           title: t('security.phone.confirmedTitle'),
@@ -193,8 +239,26 @@ export function PhoneVerificationCard({ className = '' }) {
   }
 
   const loading = busy || authStatus === 'loading'
-  const sentAlertText = t('security.phone.sentAlert', { phone })
+  const sentAlertKey =
+    otpChannel === 'flashcall'
+      ? 'security.phone.sentAlertCall'
+      : otpChannel === 'telegram'
+        ? 'security.phone.sentAlertTelegram'
+        : 'security.phone.sentAlert'
+  const sentAlertText = t(sentAlertKey, { phone })
   const sentAlertPhoneIndex = sentAlertText.indexOf(phone)
+  const sendLabel =
+    otpChannel === 'flashcall'
+      ? t('security.phone.sendCodeCall')
+      : otpChannel === 'telegram'
+        ? t('security.phone.sendCodeTelegram')
+        : t('security.phone.sendCode')
+  const otpLabel =
+    otpChannel === 'flashcall'
+      ? t('security.phone.otpLabelCall')
+      : otpChannel === 'telegram'
+        ? t('security.phone.otpLabelTelegram')
+        : t('security.phone.otpLabel')
 
   return (
     <Card className={`grid min-w-0 gap-4 ${className}`}>
@@ -204,7 +268,9 @@ export function PhoneVerificationCard({ className = '' }) {
         </span>
         <div className="min-w-0">
           <h2 className="font-black">{t('security.phone.title')}</h2>
-          <p className="mt-1 text-sm text-[var(--app-text-muted)]">{t('security.phone.description')}</p>
+          <p className="mt-1 text-sm text-[var(--app-text-muted)]">
+            {allowRetest ? t('security.phone.testChannelsHint') : t('security.phone.description')}
+          </p>
         </div>
       </div>
 
@@ -226,9 +292,54 @@ export function PhoneVerificationCard({ className = '' }) {
             value={phone}
             onChange={(event) => setPhone(constrainPhone(event.target.value, '+7', 10))}
           />
+          <div className="grid gap-2" role="radiogroup" aria-label={t('security.phone.channelTitle')}>
+            <p className="text-sm font-black">{t('security.phone.channelTitle')}</p>
+            {CHANNELS.map((channel) => {
+              const Icon = channel.icon
+              const selected = otpChannel === channel.id
+              return (
+                <button
+                  key={channel.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => setOtpChannel(channel.id)}
+                  className={`flex w-full items-start gap-3 rounded-2xl border-2 p-3 text-left transition-all ${
+                    selected
+                      ? 'border-brand-600 bg-[var(--app-accent-soft)]'
+                      : 'border-[var(--app-border)] bg-[var(--app-surface)] hover:border-brand-300'
+                  }`}
+                >
+                  <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-600/10 text-brand-700">
+                    <Icon className="text-lg" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <strong className="block text-sm font-black">{t(channel.titleKey)}</strong>
+                    <span className="mt-0.5 block text-xs text-[var(--app-text-muted)]">
+                      {t(channel.hintKey)}
+                    </span>
+                  </span>
+                  {selected ? <FiCheck className="mt-1 shrink-0 text-brand-700" /> : null}
+                </button>
+              )
+            })}
+          </div>
           <Button type="button" icon={FiSmartphone} loading={loading} onClick={sendCode}>
-            {t('security.phone.sendCode')}
+            {sendLabel}
           </Button>
+          {allowRetest ? (
+            <button
+              type="button"
+              className="justify-self-start text-sm font-bold text-[var(--app-text-muted)] underline-offset-2 hover:underline"
+              onClick={() => {
+                setRetestMode(false)
+                setOtpSent(false)
+                dispatch(clearAuthError())
+              }}
+            >
+              {t('security.phone.testChannelsCancel')}
+            </button>
+          ) : null}
         </>
       ) : (
         <>
@@ -245,12 +356,12 @@ export function PhoneVerificationCard({ className = '' }) {
           </Alert>
           <Input
             id="phone-verify-otp"
-            label={t('security.phone.otpLabel')}
+            label={otpLabel}
             inputMode="numeric"
             autoComplete="one-time-code"
-            maxLength={6}
+            maxLength={otpLen}
             value={otp}
-            onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
+            onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, otpLen))}
           />
           <Button type="button" icon={FiCheckCircle} loading={loading} onClick={confirmCode}>
             {t('security.phone.confirm')}
@@ -267,6 +378,21 @@ export function PhoneVerificationCard({ className = '' }) {
                 : t('security.phone.resend')}
             </button>
           </div>
+          {resendCooldown <= 0 || superAdmin ? (
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={loading}
+              onClick={() => {
+                setOtpSent(false)
+                setOtp('')
+                setOtpType('phone_change')
+                dispatch(clearAuthError())
+              }}
+            >
+              {t('security.phone.tryAnotherMethod')}
+            </Button>
+          ) : null}
           <button
             type="button"
             className="text-sm font-bold text-[var(--app-text-muted)] underline-offset-2 hover:underline"
@@ -282,7 +408,7 @@ export function PhoneVerificationCard({ className = '' }) {
         </>
       )}
 
-      {!pendingAssist ? (
+      {!pendingAssist && !allowRetest ? (
         <button
           type="button"
           onClick={openAssist}

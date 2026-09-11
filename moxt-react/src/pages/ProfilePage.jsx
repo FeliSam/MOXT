@@ -11,7 +11,6 @@ import { ProfileSecuritySummary } from '../features/profile/components/ProfileSe
 import { PhoneVerificationCard } from '../features/security/PhoneVerificationCard'
 import { useLanguage } from '../contexts/useLanguage'
 import { useScopedProfileReviews } from '../features/reviews/useScopedTargetReviews'
-import { isPhoneVerified } from '@moxt/shared/auth/userSecurity.js'
 import {
   accountSections,
   profileCompletionPercent,
@@ -66,7 +65,7 @@ export function ProfilePage() {
   return (
     <div className="grid gap-6">
       <ProfileHeroCard profileCompletion={profileCompletion} user={user} />
-      {!isPhoneVerified(user) ? <PhoneVerificationCard /> : null}
+      <PhoneVerificationCard />
       <Card className="flex flex-wrap items-center justify-between gap-3 p-4">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.08em] text-brand-700 dark:text-brand-300">

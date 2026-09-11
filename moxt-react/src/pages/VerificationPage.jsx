@@ -202,7 +202,7 @@ export function VerificationPage() {
         actions={<BackButton appearance="link" />}
       />
 
-      {!phoneConfirmed ? <PhoneVerificationCard /> : null}
+      <PhoneVerificationCard />
       {!emailConfirmed ? <EmailVerificationCard /> : null}
 
       {requestStale ? (

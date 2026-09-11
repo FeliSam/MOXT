@@ -11,6 +11,7 @@ import { Input } from '../components/ui/Input'
 import { Modal } from '../components/ui/Modal'
 import { PageHeader } from '../components/ui/PageHeader'
 import { EmailVerificationCard } from '../features/security/EmailVerificationCard'
+import { PhoneVerificationCard } from '../features/security/PhoneVerificationCard'
 import {
   selectAccountPreferences,
   updateAccountPreferences,
@@ -284,6 +285,7 @@ export function SecurityPage() {
           </div>
         </Alert>
       ) : null}
+      <PhoneVerificationCard />
       <div
         id="security-email-verify"
         className={

@@ -91,9 +91,15 @@ export function createAuthSlice(authService) {
 
   const requestPhoneVerificationOtp = createAsyncThunk(
     'auth/requestPhoneVerificationOtp',
-    async (phone, { getState, rejectWithValue }) => {
+    async (payload, { getState, rejectWithValue }) => {
       try {
-        return await authService.requestPhoneVerificationOtp(getState().auth.user, phone)
+        const phone = typeof payload === 'string' ? payload : payload?.phone
+        const otpChannel = typeof payload === 'object' ? payload?.otpChannel : undefined
+        const forceRetest = Boolean(payload?.forceRetest)
+        return await authService.requestPhoneVerificationOtp(getState().auth.user, phone, {
+          otpChannel,
+          forceRetest,
+        })
       } catch (error) {
         return rejectWithValue(error.message)
       }

@@ -223,14 +223,25 @@ export function createAuthService(supabase, redirects = {}) {
   const getPasswordResetRedirectUrl = redirects.getPasswordResetRedirectUrl ?? (() => '')
 
   async function rememberOtpDeliveryChannel(phone, channel) {
-    if (!supabase) return
-    const normalized = normalizeRussianAuthPhone(phone)
     const next = normalizeOtpChannel(channel)
+    if (!supabase) {
+      if (next !== 'sms') throw new Error('Canal OTP indisponible.')
+      return
+    }
+    const normalized = normalizeRussianAuthPhone(phone)
     try {
-      await supabase.functions.invoke('otp-set-channel', {
+      const { data, error } = await supabase.functions.invoke('otp-set-channel', {
         body: { phone: normalized, channel: next },
       })
+      if (error || data?.error) {
+        const detail = data?.error || error?.message || 'Canal OTP indisponible.'
+        if (next !== 'sms') throw new Error(detail)
+        console.warn('[MOXT] otp-set-channel', detail)
+      }
     } catch (error) {
+      if (next !== 'sms') {
+        throw error instanceof Error ? error : new Error(String(error))
+      }
       console.warn('[MOXT] otp-set-channel', error?.message || error)
     }
   }
@@ -1853,77 +1864,126 @@ export function createAuthService(supabase, redirects = {}) {
       })
     },
 
-    async requestPhoneVerificationOtp(currentUser, phone) {
+    async requestPhoneVerificationOtp(currentUser, phone, options = {}) {
       if (!supabase || !currentUser) throw new Error('Session expirée.')
       const normalizedPhone = normalizeRussianAuthPhone(phone)
       if (!/^\+7\d{10}$/.test(normalizedPhone)) {
         throw new Error('Numéro de téléphone invalide. Vérifiez le format (+7XXXXXXXXXX).')
       }
 
+      const otpChannel = normalizeOtpChannel(options.otpChannel)
+      const forceRetest =
+        Boolean(options.forceRetest) && currentUser.role === 'superadmin'
       const authUser = await getAuthenticatedAuthUser()
       const phoneContext = { channel: 'phone', intent: 'phone_verification' }
-      const syncedUser = await syncPhoneVerifiedFromAuth(authUser, currentUser.id)
-      if (syncedUser && normalizeRussianAuthPhone(syncedUser.phone || '') === normalizedPhone) {
-        return { phone: normalizedPhone, user: syncedUser }
+      if (!forceRetest) {
+        const syncedUser = await syncPhoneVerifiedFromAuth(authUser, currentUser.id)
+        if (syncedUser && normalizeRussianAuthPhone(syncedUser.phone || '') === normalizedPhone) {
+          return { phone: normalizedPhone, user: syncedUser }
+        }
       }
 
       const authPhone = isValidAuthPhone(authUser.phone)
         ? normalizeRussianAuthPhone(authUser.phone)
         : ''
       const otpType = resolvePhoneVerificationOtpType(authUser, normalizedPhone)
-      if (!otpType) {
+      if (!otpType && !forceRetest) {
+        const syncedUser = await syncPhoneVerifiedFromAuth(authUser, currentUser.id)
         return { phone: normalizedPhone, user: syncedUser }
       }
 
+      await rememberOtpDeliveryChannel(normalizedPhone, otpChannel)
+
       if (authPhone === normalizedPhone) {
-        guardOtpSend('phone', normalizedPhone)
-        const { error } = await supabase.auth.resend({
-          type: otpType,
+        if (currentUser.role !== 'superadmin') {
+          guardOtpSend('phone', normalizedPhone)
+        }
+        // resend(phone_change) often does nothing when the number is already confirmed,
+        // so Telegram/FlashCall never hit Sigma. signInWithOtp triggers the Send SMS hook.
+        const otpResult = await supabase.auth.signInWithOtp({
           phone: normalizedPhone,
+          options: { channel: 'sms', shouldCreateUser: false },
         })
-        if (error) {
-          throw new Error(translateAuthError(error, phoneContext))
+        let sendError = otpResult.error
+        if (sendError && otpType) {
+          const retry = await supabase.auth.resend({
+            type: otpType,
+            phone: normalizedPhone,
+          })
+          sendError = retry.error
+        }
+        if (sendError) {
+          throw new Error(translateAuthError(sendError, phoneContext))
         }
         trackOtpSend('phone', normalizedPhone)
-        return { phone: normalizedPhone, otpType }
+        return {
+          phone: normalizedPhone,
+          otpType: otpType || 'sms',
+          otpChannel,
+        }
       }
 
       await assertIdentityAvailable('phone', normalizedPhone, currentUser.id, phoneContext)
 
-      guardOtpSend('phone', normalizedPhone)
+      if (currentUser.role !== 'superadmin') {
+        guardOtpSend('phone', normalizedPhone)
+      }
       const { error } = await supabase.auth.updateUser({ phone: normalizedPhone })
       if (error) throw new Error(translateAuthError(error, phoneContext))
       trackOtpSend('phone', normalizedPhone)
-      return { phone: normalizedPhone, otpType: 'phone_change' }
+      return { phone: normalizedPhone, otpType: 'phone_change', otpChannel }
     },
 
     async confirmPhoneVerification(currentUser, { phone, token, otpType }) {
       if (!supabase || !currentUser) throw new Error('Session expirée.')
       const normalizedPhone = normalizeRussianAuthPhone(phone)
       const phoneContext = { channel: 'phone', intent: 'phone_verification' }
+      const trimmedToken = String(token || '').trim()
 
-      const authUser = await getAuthenticatedAuthUser()
-      const syncedUser = await syncPhoneVerifiedFromAuth(authUser, currentUser.id)
-      if (syncedUser && normalizeRussianAuthPhone(syncedUser.phone || '') === normalizedPhone) {
-        return syncedUser
+      let authUser = await getAuthenticatedAuthUser()
+      if (!trimmedToken) {
+        const syncedUser = await syncPhoneVerifiedFromAuth(authUser, currentUser.id)
+        if (syncedUser && normalizeRussianAuthPhone(syncedUser.phone || '') === normalizedPhone) {
+          return syncedUser
+        }
       }
 
       const verifyType =
         otpType === 'sms' || otpType === 'phone_change'
           ? otpType
           : resolvePhoneVerificationOtpType(authUser, normalizedPhone) || 'phone_change'
-      const trimmedToken = String(token || '').trim()
 
-      const verifyResult = await supabase.auth.verifyOtp({
-        phone: normalizedPhone,
-        token: trimmedToken,
-        type: verifyType,
-      })
-      if (verifyResult.error) {
-        throw new Error(translateAuthError(verifyResult.error, phoneContext))
+      let verifiedAuthUser = authUser
+      if (/^\d{4}$/.test(trimmedToken)) {
+        const flash = await supabase.functions.invoke('verify-flashcall', {
+          body: { phone: normalizedPhone, digits: trimmedToken },
+        })
+        if (flash.error || !flash.data?.access_token) {
+          throw new Error(
+            flash.data?.error ||
+              flash.error?.message ||
+              'Ces chiffres ne correspondent pas au numéro qui a appelé.',
+          )
+        }
+        const sessionResult = await supabase.auth.setSession({
+          access_token: flash.data.access_token,
+          refresh_token: flash.data.refresh_token,
+        })
+        if (sessionResult.error) {
+          throw new Error(translateAuthError(sessionResult.error, phoneContext))
+        }
+        verifiedAuthUser = sessionResult.data?.user || (await getAuthenticatedAuthUser())
+      } else {
+        const verifyResult = await supabase.auth.verifyOtp({
+          phone: normalizedPhone,
+          token: trimmedToken,
+          type: verifyType,
+        })
+        if (verifyResult.error) {
+          throw new Error(translateAuthError(verifyResult.error, phoneContext))
+        }
+        verifiedAuthUser = verifyResult.data?.user || authUser
       }
-
-      const verifiedAuthUser = verifyResult.data?.user || authUser
       await syncAuthProfileMetadata(verifiedAuthUser, currentUser, normalizedPhone)
 
       const now = new Date().toISOString()
