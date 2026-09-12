@@ -8,11 +8,11 @@
   },
   "android": {
     "allowMixedContent": false,
-    "backgroundColor": "#ffffff",
+    "backgroundColor": "#f7f8fa",
     "webContentsDebuggingEnabled": false
   },
   "ios": {
-    "backgroundColor": "#ffffff",
+    "backgroundColor": "#f7f8fa",
     "contentInset": "never",
     "scheme": "MOXT",
     "webContentsDebuggingEnabled": false
@@ -21,19 +21,27 @@
     "SplashScreen": {
       "launchShowDuration": 0,
       "launchAutoHide": false,
-      "backgroundColor": "#ffffff",
+      "backgroundColor": "#f7f8fa",
       "androidSplashResourceName": "splash",
       "androidScaleType": "FIT_CENTER",
       "showSpinner": false
     },
     "StatusBar": {
-      "style": "DARK",
-      "backgroundColor": "#ffffff",
+      "style": "LIGHT",
+      "backgroundColor": "#f7f8fa",
       "overlaysWebView": true
+    },
+    "SystemBars": {
+      "insetsHandling": "css",
+      "style": "LIGHT"
     },
     "Keyboard": {
       "resize": "native",
       "resizeOnFullScreen": true
+    },
+    "Badge": {
+      "persist": true,
+      "autoClear": false
     },
     "PushNotifications": {
       "presentationOptions": ["badge", "sound", "alert"]

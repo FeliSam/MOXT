@@ -9,7 +9,7 @@ import { PUBLIC_LANDING_CATALOGS } from './publicLandingCatalog'
 import { STATUS_META } from '../config/statuses.js'
 
 export const SOURCE_LANGUAGE = 'fr'
-export const DEFAULT_APP_LANGUAGE = 'ru'
+export const DEFAULT_APP_LANGUAGE = 'fr'
 export const SUPPORTED_LANGUAGES = ['fr', 'en', 'ru', 'pt', 'es']
 
 export const LANGUAGE_LABELS = {
@@ -1680,8 +1680,8 @@ export function cycleLanguage(current) {
   return SUPPORTED_LANGUAGES[(index + 1) % SUPPORTED_LANGUAGES.length]
 }
 
-export function normalizeStoredLanguage(stored) {
-  return SUPPORTED_LANGUAGES.includes(stored) ? stored : DEFAULT_APP_LANGUAGE
+export function normalizeStoredLanguage(stored, fallback = DEFAULT_APP_LANGUAGE) {
+  return SUPPORTED_LANGUAGES.includes(stored) ? stored : fallback
 }
 
 /** Mappe navigator.language (ex. ru-RU, pt-BR) vers une langue MOXT supportée. */
@@ -1692,10 +1692,10 @@ export function detectBrowserLanguage(navigatorLanguage = '') {
   return SUPPORTED_LANGUAGES.includes(primary) ? primary : DEFAULT_APP_LANGUAGE
 }
 
-/** Préférence sauvegardée, sinon russe par défaut (langue officielle MOXT). */
-export function resolveInitialLanguage(stored) {
+/** Préférence sauvegardée, sinon langue de repli (store / admin). */
+export function resolveInitialLanguage(stored, fallback = DEFAULT_APP_LANGUAGE) {
   if (stored && SUPPORTED_LANGUAGES.includes(stored)) return stored
-  return DEFAULT_APP_LANGUAGE
+  return SUPPORTED_LANGUAGES.includes(fallback) ? fallback : DEFAULT_APP_LANGUAGE
 }
 
 export { PHRASES, ENGLISH_PHRASES }

@@ -29,7 +29,7 @@ function applyResolvedTheme(isDark, { animate }) {
   if (animate) root.classList.add('theme-animating')
   root.classList.toggle('dark', isDark)
   root.style.backgroundColor = isDark ? '#0c0c0e' : '#f7f8fa'
-  import('../platform/capacitor').then(({ syncCapacitorStatusBar }) => syncCapacitorStatusBar(isDark))
+  import('../platform/capacitor').then(({ syncCapacitorStatusBar }) => syncCapacitorStatusBar())
   if (!animate) return undefined
   const t = window.setTimeout(() => root.classList.remove('theme-animating'), 420)
   return () => window.clearTimeout(t)

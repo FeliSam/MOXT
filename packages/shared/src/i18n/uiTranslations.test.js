@@ -87,7 +87,7 @@ describe('normalizeStoredLanguage', () => {
   })
 
   it('reinitialise une langue inconnue vers la langue par defaut', () => {
-    expect(normalizeStoredLanguage('zz')).toBe('ru')
+    expect(normalizeStoredLanguage('zz')).toBe('fr')
   })
 })
 
@@ -101,8 +101,8 @@ describe('detectBrowserLanguage', () => {
   })
 
   it('retombe sur la langue par defaut pour une locale non supportee', () => {
-    expect(detectBrowserLanguage('de-DE')).toBe('ru')
-    expect(detectBrowserLanguage('')).toBe('ru')
+    expect(detectBrowserLanguage('de-DE')).toBe('fr')
+    expect(detectBrowserLanguage('')).toBe('fr')
   })
 })
 
@@ -111,18 +111,10 @@ describe('resolveInitialLanguage', () => {
     expect(resolveInitialLanguage('en')).toBe('en')
   })
 
-  it('utilise la langue du navigateur sans preference sauvegardee', () => {
-    const previous = globalThis.navigator
-    Object.defineProperty(globalThis, 'navigator', {
-      configurable: true,
-      value: { language: 'ru-RU' },
-    })
-    expect(resolveInitialLanguage(null)).toBe('ru')
-    expect(resolveInitialLanguage(undefined)).toBe('ru')
-    Object.defineProperty(globalThis, 'navigator', {
-      configurable: true,
-      value: previous,
-    })
+  it('utilise le repli fourni, sinon le français', () => {
+    expect(resolveInitialLanguage(null)).toBe('fr')
+    expect(resolveInitialLanguage(undefined, 'ru')).toBe('ru')
+    expect(resolveInitialLanguage('', 'en')).toBe('en')
   })
 })
 

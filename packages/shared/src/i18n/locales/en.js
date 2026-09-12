@@ -2078,9 +2078,10 @@ export const en = {
       changeNumber: "Change number",
       tryAnotherMethod: "Try another method",
       assistCta: "I am not receiving a code on my number",
+      assistAfterAttempts: "Still nothing? Contact an administrator",
       assistModalTitle: "Phone validation request",
       assistModalBody:
-        "If the SMS never arrives, leave a request. A MOXT admin will manually verify your Russian number.",
+        "If SMS, Telegram, and the call all fail, leave a request. A MOXT admin will manually verify your Russian number.",
       assistPhoneLabel: "Number to validate",
       assistNoteLabel: "Message (optional)",
       assistNotePlaceholder: "E.g. no SMS after several tries, carrier…",

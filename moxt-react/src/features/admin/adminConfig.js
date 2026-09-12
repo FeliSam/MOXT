@@ -4,6 +4,7 @@ import {
   FiCalendar,
   FiEdit3,
   FiFileText,
+  FiGlobe,
   FiHeadphones,
   FiInbox,
   FiLayers,
@@ -22,6 +23,7 @@ import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 export const MAIN_VIEWS = [
   { id: 'overview', label: 'Vue generale', labelKey: 'admin.nav.overview', icon: FiShield },
   { id: 'modules', label: 'Modules', labelKey: 'admin.nav.modules', icon: FiSliders },
+  { id: 'stores', label: 'Stores', labelKey: 'admin.nav.stores', icon: FiGlobe },
   { id: 'transfers', label: 'Transferts', labelKey: 'admin.nav.transfers', icon: FiRepeat },
   { id: 'p2p', label: 'P2P', labelKey: 'admin.nav.p2p', icon: FiUsers },
   { id: 'rates', label: 'Taux', labelKey: 'admin.nav.rates', icon: FiTrendingUp },
@@ -69,6 +71,7 @@ export const VIEW_FILTERS = {
   documents: ['all', 'pending', 'verified', 'rejected'],
   overview: [],
   modules: [],
+  stores: [],
   rates: [],
   queues: [],
   audit: [],

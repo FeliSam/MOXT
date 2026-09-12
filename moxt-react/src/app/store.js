@@ -16,6 +16,7 @@ import accountReducer from '../features/account/accountSlice'
 import administrationReducer from '../features/administration/administrationSlice'
 import platformRatesReducer from '../features/admin/platformRatesSlice'
 import platformModulesReducer from '../features/platform/platformModulesSlice'
+import storeLocalesReducer from '../features/platform/storeLocalesSlice'
 import profileDirectoryReducer from '../features/profile/profileDirectorySlice'
 import reviewsReducer from '../features/reviews/reviewSlice'
 import postsReducer from '../features/posts/postsSlice'
@@ -40,6 +41,7 @@ export const store = configureStore({
     administration: administrationReducer,
     platformRates: platformRatesReducer,
     platformModules: platformModulesReducer,
+    storeLocales: storeLocalesReducer,
     profileDirectory: profileDirectoryReducer,
     auth: authReducer,
     ui: uiReducer,

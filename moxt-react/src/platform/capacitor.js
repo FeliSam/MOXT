@@ -38,18 +38,71 @@ export async function hideNativeSplash() {
   }
 }
 
+const STATUS_BAR_BG = {
+  light: '#f7f8fa',
+  dark: '#0c0c0e',
+}
+
+/** Fond sombre de l’app (pas le mode nuit du téléphone). */
+function isDarkAppBackground() {
+  if (typeof document === 'undefined') return false
+  const root = document.documentElement
+  if (root.classList.contains('feed-mobile-immersive')) return true
+  if (root.classList.contains('dark')) return true
+  const raw = getComputedStyle(root).backgroundColor || ''
+  const m = raw.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i)
+  if (!m) return false
+  const r = Number(m[1])
+  const g = Number(m[2])
+  const b = Number(m[3])
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) < 140
+}
+
+/**
+ * Capacitor 8 SystemBars / StatusBar :
+ * LIGHT = texte et icônes noirs (fond clair)
+ * DARK  = texte et icônes blancs (fond sombre)
+ */
+async function applyNativeStatusBar() {
+  if (!isNative) return
+  const darkBg = isDarkAppBackground()
+  const bg = darkBg ? STATUS_BAR_BG.dark : STATUS_BAR_BG.light
+
+  try {
+    const core = await import('@capacitor/core')
+    if (core.SystemBars?.setStyle && core.SystemBarsStyle) {
+      await core.SystemBars.setStyle({
+        style: darkBg ? core.SystemBarsStyle.Dark : core.SystemBarsStyle.Light,
+      })
+    }
+  } catch {
+    /* SystemBars absent sur un core trop ancien */
+  }
+
+  const { StatusBar, Style } = await import('@capacitor/status-bar')
+  if (nativePlatform === 'ios') {
+    await StatusBar.setOverlaysWebView({ overlay: true })
+  }
+  await StatusBar.setStyle({ style: darkBg ? Style.Dark : Style.Light })
+  if (nativePlatform === 'android') {
+    try {
+      await StatusBar.setBackgroundColor({ color: bg })
+    } catch {
+      /* Android 15+ ignore souvent la couleur de fond (edge-to-edge). */
+    }
+  }
+}
+
 /** Initialise le shell natif (splash, status bar, clavier, bouton retour). */
 export async function initCapacitor() {
   if (!isNative) return
 
   markNativeShell()
 
-  const [{ App }, { StatusBar, Style }, { Keyboard, KeyboardResize }] =
-    await Promise.all([
-      import('@capacitor/app'),
-      import('@capacitor/status-bar'),
-      import('@capacitor/keyboard'),
-    ])
+  const [{ App }, { Keyboard, KeyboardResize }] = await Promise.all([
+    import('@capacitor/app'),
+    import('@capacitor/keyboard'),
+  ])
 
   try {
     if (nativePlatform === 'ios') {
@@ -63,14 +116,7 @@ export async function initCapacitor() {
   }
 
   try {
-    const isDark = document.documentElement.classList.contains('dark')
-    if (nativePlatform === 'ios') {
-      await StatusBar.setOverlaysWebView({ overlay: true })
-    }
-    await StatusBar.setStyle({ style: isDark ? Style.Light : Style.Dark })
-    if (nativePlatform === 'android') {
-      await StatusBar.setBackgroundColor({ color: isDark ? '#0c0c0e' : '#ffffff' })
-    }
+    await applyNativeStatusBar()
   } catch {
     /* status bar optionnelle */
   }
@@ -86,6 +132,7 @@ export async function initCapacitor() {
   App.addListener('appStateChange', ({ isActive }) => {
     if (isActive) {
       document.documentElement.classList.remove('capacitor-paused')
+      void applyNativeStatusBar()
     } else {
       document.documentElement.classList.add('capacitor-paused')
     }
@@ -106,15 +153,11 @@ export async function initCapacitor() {
     })
 }
 
-/** Met à jour la barre de statut quand le thème change (dark/light). */
-export async function syncCapacitorStatusBar(isDark) {
+/** Met à jour la barre de statut quand le thème ou le fond immersif change. */
+export async function syncCapacitorStatusBar() {
   if (!isNative) return
   try {
-    const { StatusBar, Style } = await import('@capacitor/status-bar')
-    await StatusBar.setStyle({ style: isDark ? Style.Light : Style.Dark })
-    if (nativePlatform === 'android') {
-      await StatusBar.setBackgroundColor({ color: isDark ? '#0c0c0e' : '#08705f' })
-    }
+    await applyNativeStatusBar()
   } catch {
     /* ignore */
   }

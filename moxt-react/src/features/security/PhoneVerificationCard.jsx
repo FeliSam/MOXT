@@ -45,6 +45,7 @@ export function PhoneVerificationCard({ className = '' }) {
   const [otpChannel, setOtpChannel] = useState('sms')
   const [retestMode, setRetestMode] = useState(false)
   const [phone, setPhone] = useState(user?.phone || '+7')
+  const [sendCount, setSendCount] = useState(0)
   const [resendCooldown, setResendCooldown] = useState(0)
   const [assistOpen, setAssistOpen] = useState(false)
   const [assistNote, setAssistNote] = useState('')
@@ -142,6 +143,7 @@ export function PhoneVerificationCard({ className = '' }) {
       setOtp('')
       setOtpType(result.payload.otpType || 'phone_change')
       if (result.payload.otpChannel) setOtpChannel(result.payload.otpChannel)
+      setSendCount((count) => count + 1)
       setResendCooldown(superAdmin ? 0 : OTP_RESEND_COOLDOWN_SECONDS)
       dispatch(clearAuthError())
       dispatch(
@@ -409,13 +411,19 @@ export function PhoneVerificationCard({ className = '' }) {
       )}
 
       {!pendingAssist && !allowRetest ? (
-        <button
-          type="button"
-          onClick={openAssist}
-          className="justify-self-start text-left text-sm font-bold text-[var(--app-text-muted)] underline-offset-2 transition hover:text-[var(--app-accent)] hover:underline"
-        >
-          {t('security.phone.assistCta')}
-        </button>
+        otpSent && (resendCooldown <= 0 || sendCount >= 2) ? (
+          <Button type="button" variant="secondary" onClick={openAssist}>
+            {t('security.phone.assistAfterAttempts')}
+          </Button>
+        ) : (
+          <button
+            type="button"
+            onClick={openAssist}
+            className="justify-self-start text-left text-sm font-bold text-[var(--app-text-muted)] underline-offset-2 transition hover:text-[var(--app-accent)] hover:underline"
+          >
+            {t('security.phone.assistCta')}
+          </button>
+        )
       ) : null}
 
       <Modal

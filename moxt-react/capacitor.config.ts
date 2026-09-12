@@ -30,11 +30,11 @@ const config: CapacitorConfig = {
   },
   android: {
     allowMixedContent: isDevServer,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f7f8fa',
     webContentsDebuggingEnabled: isDevServer,
   },
   ios: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f7f8fa',
     contentInset: 'never',
     scheme: 'MOXT',
     webContentsDebuggingEnabled: isDevServer,
@@ -49,13 +49,22 @@ const config: CapacitorConfig = {
       showSpinner: false,
     },
     StatusBar: {
-      style: 'DARK',
-      backgroundColor: '#ffffff',
+      // LIGHT = icônes noires (fond clair). DARK = icônes blanches (fond sombre).
+      style: 'LIGHT',
+      backgroundColor: '#f7f8fa',
       overlaysWebView: true,
+    },
+    SystemBars: {
+      insetsHandling: 'css',
+      style: 'LIGHT',
     },
     Keyboard: {
       resize: 'native',
       resizeOnFullScreen: true,
+    },
+    Badge: {
+      persist: true,
+      autoClear: false,
     },
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],

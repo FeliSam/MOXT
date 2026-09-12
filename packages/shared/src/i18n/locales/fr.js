@@ -2080,9 +2080,10 @@ export const fr = {
       changeNumber: "Modifier le numéro",
       tryAnotherMethod: "Essayer une autre méthode",
       assistCta: "Je ne reçois pas de code sur mon numéro",
+      assistAfterAttempts: "Toujours rien ? Contacter un administrateur",
       assistModalTitle: "Demande de validation du numéro",
       assistModalBody:
-        "Si le SMS n’arrive pas, laissez une demande. Un administrateur MOXT vérifiera manuellement votre numéro russe.",
+        "Si SMS, Telegram et l’appel n’aboutissent pas, laissez une demande. Un administrateur MOXT vérifiera manuellement votre numéro russe.",
       assistPhoneLabel: "Numéro à valider",
       assistNoteLabel: "Message (optionnel)",
       assistNotePlaceholder: "Ex. : pas de SMS après plusieurs essais, opérateur…",

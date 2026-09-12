@@ -120,6 +120,9 @@ export function AppLayout({ children }) {
     const root = document.documentElement
 
     root.classList.toggle('feed-mobile-immersive', isFeedMobileFeed)
+    void import('../../platform/capacitor').then(({ syncCapacitorStatusBar }) => {
+      syncCapacitorStatusBar()
+    })
 
     return () => {
       root.classList.remove('feed-mobile-immersive')

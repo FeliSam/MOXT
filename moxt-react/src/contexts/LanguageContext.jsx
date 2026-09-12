@@ -9,11 +9,18 @@ import {
 } from '../config/uiTranslations'
 import { ensureLocaleLoaded, isLocaleLoaded, translate } from '../i18n/translate'
 import { LanguageContext } from './language-context'
+import {
+  detectDistributionStore,
+  hasExplicitLanguageChoice,
+  localeForStore,
+  markExplicitLanguageChoice,
+} from '../config/storeLocales'
 
 const STORAGE_KEY = 'moxt-language'
 
 function initialLanguage() {
-  return resolveInitialLanguage(localStorage.getItem(STORAGE_KEY))
+  const storeDefault = localeForStore(detectDistributionStore())
+  return resolveInitialLanguage(localStorage.getItem(STORAGE_KEY), storeDefault)
 }
 
 export function LanguageProvider({ children }) {
@@ -38,8 +45,10 @@ export function LanguageProvider({ children }) {
   const accountLanguage = useSelector((state) =>
     userId ? state.account.preferences?.[userId]?.language : null,
   )
+  const storeLocales = useSelector((state) => state.storeLocales?.locales)
 
   function setLanguage(next) {
+    markExplicitLanguageChoice()
     setLanguageState(normalizeStoredLanguage(next))
   }
 
@@ -52,9 +61,16 @@ export function LanguageProvider({ children }) {
     setPrevAccountLanguage(accountLanguage)
     if (userId && accountLanguage) {
       const normalized = normalizeStoredLanguage(accountLanguage)
+      markExplicitLanguageChoice()
       setLanguageState((current) => (current === normalized ? current : normalized))
     }
   }
+
+  useEffect(() => {
+    if (hasExplicitLanguageChoice() || accountLanguage) return
+    const next = localeForStore(detectDistributionStore(), storeLocales)
+    setLanguageState((current) => (current === next ? current : next))
+  }, [accountLanguage, storeLocales])
 
   useEffect(() => {
     document.documentElement.lang = language

@@ -34,7 +34,9 @@ async function bootstrap() {
       import('./config/uiTranslations'),
     ])
 
-  const initialLanguage = resolveInitialLanguage(localStorage.getItem('moxt-language'))
+  const { detectDistributionStore, localeForStore } = await import('./config/storeLocales')
+  const storeDefault = localeForStore(detectDistributionStore())
+  const initialLanguage = resolveInitialLanguage(localStorage.getItem('moxt-language'), storeDefault)
   if (initialLanguage !== 'fr') {
     await ensureLocaleLoaded(initialLanguage)
   }
@@ -46,7 +48,9 @@ async function bootstrap() {
   hydrateStatusRailIfEmpty(store.getState, store.dispatch)
 
   const { loadPlatformModules } = await import('./features/platform/platformModulesSlice')
+  const { loadStoreLocales } = await import('./features/platform/storeLocalesSlice')
   void store.dispatch(loadPlatformModules())
+  void store.dispatch(loadStoreLocales())
 
   createRoot(document.getElementById('root')).render(
     <StrictMode>

@@ -1936,9 +1936,10 @@ export const pt = {
       changeNumber: "Alterar número",
       tryAnotherMethod: "Tentar outro método",
       assistCta: "Não recebo o código no meu número",
+      assistAfterAttempts: "Ainda nada? Contactar um administrador",
       assistModalTitle: "Pedido de validação do número",
       assistModalBody:
-        "Se o SMS não chegar, deixe um pedido. Um administrador MOXT validará manualmente o seu número russo.",
+        "Se SMS, Telegram e a chamada falharem, deixe um pedido. Um administrador MOXT validará manualmente o seu número russo.",
       assistPhoneLabel: "Número a validar",
       assistNoteLabel: "Mensagem (opcional)",
       assistNotePlaceholder: "Ex.: sem SMS após várias tentativas…",

@@ -2075,9 +2075,10 @@ export const es = {
       changeNumber: "Alterar número",
       tryAnotherMethod: "Probar otro método",
       assistCta: "No recibo el código en mi número",
+      assistAfterAttempts: "¿Sigue sin llegar? Contactar a un administrador",
       assistModalTitle: "Solicitud de validación del número",
       assistModalBody:
-        "Si el SMS no llega, deja una solicitud. Un administrador MOXT validará manualmente tu número ruso.",
+        "Si SMS, Telegram y la llamada fallan, deja una solicitud. Un administrador MOXT validará manualmente tu número ruso.",
       assistPhoneLabel: "Número a validar",
       assistNoteLabel: "Mensaje (opcional)",
       assistNotePlaceholder: "Ej.: no llega SMS tras varios intentos…",
