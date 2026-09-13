@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { p2pOfferFromRemoteRow, p2pOrderToRemoteRow, reportToRemoteRow } from './entityRemote'
+import { p2pOfferFromRemoteRow, p2pOrderFromRemoteRow, p2pOrderToRemoteRow, reportToRemoteRow } from './entityRemote'
 
 describe('entityRemote', () => {
   it('mappe un signalement annonce', () => {
@@ -29,9 +29,20 @@ describe('entityRemote', () => {
       paymentDueAt: '2026-01-01T12:30:00.000Z',
       confirmDueAt: null,
     })
+    expect(row.offer_id).toBe('P2P-1')
     expect(row.proofs).toHaveLength(1)
     expect(row.ratings[0].rating).toBe(5)
     expect(row.payment_due_at).toBe('2026-01-01T12:30:00.000Z')
+  })
+
+  it('reprend offer_id snake_case si offerId est absent', () => {
+    const row = p2pOrderToRemoteRow({
+      id: 'ORD-2',
+      offer_id: 'P2P-legacy',
+      buyerId: 'b1',
+      sellerId: 's1',
+    })
+    expect(p2pOrderFromRemoteRow({ id: 'ORD-3', offer_id: 'P2P-db' }).offerId).toBe('P2P-db')
   })
 
   it("restaure les détails métier d'une offre P2P distante", () => {

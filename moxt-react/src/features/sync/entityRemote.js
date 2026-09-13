@@ -12,6 +12,10 @@ function parseJson(value, fallback) {
   return fallback
 }
 
+export function resolveP2pOfferId(order, offer = null) {
+  return String(order?.offerId || order?.offer_id || offer?.id || '').trim()
+}
+
 export function p2pOrderFromRemoteRow(row) {
   if (!row) return null
   const base = fromRow(row)
@@ -19,6 +23,7 @@ export function p2pOrderFromRemoteRow(row) {
   const createdMeta = timeline.find((event) => event?.status === 'created') || {}
   return {
     ...base,
+    offerId: resolveP2pOfferId(base, row),
     proofs: parseJson(row.proofs ?? base.proofs, []),
     ratings: parseJson(row.ratings ?? base.ratings, []),
     timeline,
@@ -100,7 +105,7 @@ export function p2pOrderToRemoteRow(order) {
   }
   return {
     id: order.id,
-    offer_id: order.offerId,
+    offer_id: resolveP2pOfferId(order),
     buyer_id: order.buyerId,
     buyer_name: order.buyerName || '',
     seller_id: order.sellerId,

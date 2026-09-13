@@ -55,6 +55,7 @@ export function mergeP2pOrder(local, remote) {
     return {
       ...local,
       ...remote,
+      offerId: remote.offerId || remote.offer_id || local.offerId || local.offer_id,
       timeline: mergeP2pTimelines(local.timeline, remote.timeline),
     }
   }
@@ -64,6 +65,7 @@ export function mergeP2pOrder(local, remote) {
     return {
       ...remote,
       ...local,
+      offerId: local.offerId || local.offer_id || remote.offerId || remote.offer_id,
       status: local.status,
       timeline: mergeP2pTimelines(local.timeline, remote.timeline),
       paymentDueAt: local.paymentDueAt || remote.paymentDueAt,
@@ -74,6 +76,7 @@ export function mergeP2pOrder(local, remote) {
   return {
     ...local,
     ...remote,
+    offerId: remote.offerId || remote.offer_id || local.offerId || local.offer_id,
     timeline: mergeP2pTimelines(local.timeline, remote.timeline),
   }
 }
