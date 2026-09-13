@@ -76,6 +76,41 @@ const STEPS = [
   { key: 'verification', labelKey: 'auth.register.steps.verification', icon: FiCheck },
 ]
 
+const PHONE_OTP_COPY = {
+  sms: {
+    title: 'auth.register.verify.title',
+    bodyShort: 'auth.register.verify.bodyShort',
+    sendingTitle: 'auth.register.verify.sendingTitle',
+    codeLabel: 'auth.register.verify.codeLabel',
+    resend: 'auth.register.resendSms',
+    notReceived: 'auth.register.codeNotReceivedSms',
+    resent: 'auth.register.codeResentSms',
+  },
+  telegram: {
+    title: 'auth.register.verify.telegramTitle',
+    bodyShort: 'auth.register.verify.telegramBodyShort',
+    sendingTitle: 'auth.register.verify.sendingTitleTelegram',
+    codeLabel: 'auth.register.verify.telegramCodeLabel',
+    resend: 'auth.register.resendTelegram',
+    notReceived: 'auth.register.codeNotReceivedTelegram',
+    resent: 'auth.register.codeResentTelegram',
+  },
+  flashcall: {
+    title: 'auth.register.verify.callTitle',
+    bodyShort: 'auth.register.verify.callBodyShort',
+    sendingTitle: 'auth.register.verify.sendingTitleCall',
+    codeLabel: 'auth.register.verify.callCodeLabel',
+    resend: 'auth.register.resendCall',
+    notReceived: 'auth.register.codeNotReceivedCall',
+    resent: 'auth.register.codeResentCall',
+  },
+}
+
+function resolvePhoneOtpChannel(otpChannel) {
+  if (otpChannel === 'telegram' || otpChannel === 'flashcall') return otpChannel
+  return 'sms'
+}
+
 import { OTP_RESEND_COOLDOWN_SECONDS, SMS_REGISTRATION_MAX_RESENDS } from '@moxt/shared/auth/otpCooldown.js'
 import {
   clearPendingRegistration,
@@ -410,7 +445,9 @@ export function RegisterPage() {
   })
 
   const authBusy = status === 'loading' || formik.isSubmitting
-  const isFlashcallOtp = pendingVerification?.otpChannel === 'flashcall'
+  const phoneOtpChannel = resolvePhoneOtpChannel(pendingVerification?.otpChannel)
+  const phoneOtpCopy = PHONE_OTP_COPY[phoneOtpChannel]
+  const isFlashcallOtp = phoneOtpChannel === 'flashcall'
   const otpExpectedLen = isFlashcallOtp ? 4 : 6
 
   function openOtpSession(payload, values, method) {
@@ -781,7 +818,9 @@ export function RegisterPage() {
             title: t('auth.register.codeResentTitle'),
             message: isEmail
               ? t('auth.register.codeResentEmail', { email: pendingVerification.email })
-              : t('auth.register.codeResentSms', { phone: pendingVerification.phone }),
+              : t(PHONE_OTP_COPY[resolvePhoneOtpChannel(pendingVerification.otpChannel)].resent, {
+                  phone: pendingVerification.phone,
+                }),
             tone: 'success',
           }),
         )
@@ -1466,10 +1505,8 @@ export function RegisterPage() {
                 pendingVerification.method === 'email'
                   ? t('auth.register.verify.emailTitle')
                   : pendingVerification.sendingSms
-                    ? t('auth.register.verify.sendingTitle')
-                    : isFlashcallOtp
-                      ? t('auth.register.verify.callTitle')
-                      : t('auth.register.verify.title')
+                    ? t(phoneOtpCopy.sendingTitle)
+                    : t(phoneOtpCopy.title)
               }
               variant="info"
             >
@@ -1481,9 +1518,7 @@ export function RegisterPage() {
                   ? t('auth.register.verify.sendingBodyShort', {
                       phone: pendingVerification.phone,
                     })
-                  : isFlashcallOtp
-                    ? t('auth.register.verify.callBodyShort', { phone: pendingVerification.phone })
-                    : t('auth.register.verify.bodyShort', { phone: pendingVerification.phone })}
+                  : t(phoneOtpCopy.bodyShort, { phone: pendingVerification.phone })}
             </Alert>
             {otpCapMessage ? (
               <Alert title={t('auth.register.otpCapTitle')} variant="warning">
@@ -1495,9 +1530,7 @@ export function RegisterPage() {
               label={
                 pendingVerification.method === 'email'
                   ? t('auth.register.verify.emailCodeLabel')
-                  : isFlashcallOtp
-                    ? t('auth.register.verify.callCodeLabel')
-                    : t('auth.register.verify.codeLabel')
+                  : t(phoneOtpCopy.codeLabel)
               }
               inputMode="numeric"
               autoComplete="one-time-code"
@@ -1537,7 +1570,7 @@ export function RegisterPage() {
                 {pendingVerification.method === 'email'
                   ? t('auth.register.codeNotReceivedEmail')
                   : resendCooldown > 0
-                    ? t('auth.register.codeNotReceivedSms')
+                    ? t(phoneOtpCopy.notReceived)
                     : t('auth.register.emailFallback.afterCooldownHint')}
               </p>
               {pendingVerification.method === 'phone' ? (
@@ -1553,7 +1586,7 @@ export function RegisterPage() {
                     >
                       {resendCooldown > 0
                         ? t('auth.register.resendCooldown', { seconds: resendCooldown })
-                        : t('auth.register.resendSms')}
+                        : t(phoneOtpCopy.resend)}
                     </Button>
                   ) : null}
                   <Button

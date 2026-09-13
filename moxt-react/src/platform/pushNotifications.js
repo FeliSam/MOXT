@@ -4,7 +4,9 @@ import { isNative } from './capacitor'
 import { disableDeviceSubscription, syncNativeTokenToSupabase } from '../services/deviceSubscriptions'
 
 const PUSH_TOKEN_KEY = 'moxt-native-push-token'
+const ANDROID_CHANNEL_ID = 'moxt_default'
 let listenersBound = false
+let androidChannelReady = false
 let activeUserId = null
 
 function storePushToken(token) {
@@ -27,6 +29,24 @@ export function setNativePushUserId(userId) {
   }
 }
 
+async function ensureAndroidChannel(PushNotifications) {
+  if (androidChannelReady || Capacitor.getPlatform() !== 'android') return
+  try {
+    await PushNotifications.createChannel({
+      id: ANDROID_CHANNEL_ID,
+      name: 'MOXT',
+      description: 'Messages, transferts et alertes MOXT',
+      importance: 5,
+      visibility: 1,
+      vibration: true,
+      sound: 'default',
+    })
+    androidChannelReady = true
+  } catch (error) {
+    console.warn('[MOXT] Canal de notification Android', error)
+  }
+}
+
 async function bindPushListeners(PushNotifications) {
   if (listenersBound) return
   listenersBound = true
@@ -46,11 +66,11 @@ async function bindPushListeners(PushNotifications) {
   })
 
   await PushNotifications.addListener('pushNotificationReceived', (event) => {
-    console.info('[MOXT] Push reçu (foreground)', event.notification?.title)
+    console.info('[MOXT] Push reçu (foreground)', event.notification?.title || event.title)
   })
 
   await PushNotifications.addListener('pushNotificationActionPerformed', (event) => {
-    const path = event.notification?.data?.path
+    const path = event.notification?.data?.path || event.notification?.data?.url
     if (typeof path === 'string' && path.trim()) {
       const target = path.startsWith('moxt://') || path.startsWith('http')
         ? path
@@ -58,6 +78,10 @@ async function bindPushListeners(PushNotifications) {
       navigateDeepLink(target)
     }
   })
+}
+
+function needsPushPrompt(receive) {
+  return receive === 'prompt' || receive === 'prompt-with-rationale'
 }
 
 /** @returns {'granted'|'denied'|'prompt'|'unsupported'} */
@@ -86,9 +110,10 @@ export async function initNativePushNotifications({ requestPermission = false } 
   try {
     const { PushNotifications } = await import('@capacitor/push-notifications')
     await bindPushListeners(PushNotifications)
+    await ensureAndroidChannel(PushNotifications)
 
     let permission = await PushNotifications.checkPermissions()
-    if (requestPermission && permission.receive === 'prompt') {
+    if (requestPermission && needsPushPrompt(permission.receive)) {
       permission = await PushNotifications.requestPermissions()
     }
 
@@ -114,6 +139,11 @@ export async function syncNativePushPreference(enabled) {
   try {
     const { PushNotifications } = await import('@capacitor/push-notifications')
     await PushNotifications.removeAllDeliveredNotifications()
+    try {
+      await PushNotifications.unregister()
+    } catch {
+      /* unregister optionnel selon OS */
+    }
     const token = getStoredPushToken()
     if (activeUserId && token) {
       await disableDeviceSubscription(activeUserId, token)

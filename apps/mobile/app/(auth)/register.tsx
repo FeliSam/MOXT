@@ -75,13 +75,20 @@ export default function RegisterScreen() {
   const [acceptTerms, setAcceptTerms] = useState(false);
 
   // Step 4 - Verification
-  const [verificationMethod, setVerificationMethod] = useState<'sms' | 'email'>('email');
+  const [verificationMethod, setVerificationMethod] = useState<
+    'sms' | 'telegram' | 'flashcall' | 'email'
+  >('sms');
 
   const isLoading = status === 'loading';
 
   useEffect(() => {
     if (registrationEmail) {
-      const methodParam = verificationMethod === 'email' ? 'email' : 'sms';
+      const methodParam =
+        verificationMethod === 'email'
+          ? 'email'
+          : verificationMethod === 'telegram' || verificationMethod === 'flashcall'
+            ? verificationMethod
+            : 'sms';
       router.push(
         `/verify?method=${methodParam}&email=${encodeURIComponent(registrationEmail)}&phone=${encodeURIComponent(russianPhone)}` as any,
       );
@@ -106,6 +113,10 @@ export default function RegisterScreen() {
         password,
         originCountry,
         verificationMethod: verificationMethod === 'email' ? 'email' : 'phone',
+        otpChannel:
+          verificationMethod === 'telegram' || verificationMethod === 'flashcall'
+            ? verificationMethod
+            : 'sms',
         language,
         city,
         residenceCity: city,
@@ -389,28 +400,49 @@ export default function RegisterScreen() {
         Comment recevoir votre code ?
       </Text>
       <Text style={[styles.sectionSub, { color: colors.textMuted }]}>
-        Choisissez SMS ou e-mail. L’autre identifiant restera à confirmer dans Sécurité pour publier.
+        Numéro +7 : SMS, Telegram ou appel. E-mail : code uniquement par e-mail. L’autre identifiant restera à confirmer dans Sécurité pour publier.
       </Text>
 
-      {/* SMS option */}
-      <Pressable
-        style={[
-          styles.verifyOption,
-          { borderColor: verificationMethod === 'sms' ? brand[700] : colors.border, backgroundColor: verificationMethod === 'sms' ? brand[50] : colors.surface },
-          verificationMethod === 'sms' && { borderWidth: 2 },
-        ]}
-        onPress={() => setVerificationMethod('sms')}>
-        <Text style={styles.verifyIcon}>💬</Text>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.verifyTitle, { color: colors.text }]}>Par SMS</Text>
-          <Text style={[styles.verifySub, { color: colors.textMuted }]}>
-            {russianPhone ? (russianPhone.startsWith('+') ? russianPhone : `+7${russianPhone}`) : '+7…'}
-          </Text>
-          <Text style={[styles.verifySub, { color: colors.textMuted, marginTop: 2 }]}>
-            Code à 6 chiffres, en général en quelques secondes.
-          </Text>
-        </View>
-      </Pressable>
+      {([
+        {
+          id: 'sms' as const,
+          icon: '💬',
+          title: 'Par SMS',
+          hint: 'Code à 6 chiffres, en général en quelques secondes.',
+        },
+        {
+          id: 'telegram' as const,
+          icon: '✈️',
+          title: 'Par Telegram',
+          hint: 'Code à 6 chiffres dans Telegram. Le +7 doit être lié à un compte Telegram.',
+        },
+        {
+          id: 'flashcall' as const,
+          icon: '📞',
+          title: 'Par appel',
+          hint: 'Saisissez les 4 derniers chiffres du numéro qui appelle.',
+        },
+      ]).map((option) => (
+        <Pressable
+          key={option.id}
+          style={[
+            styles.verifyOption,
+            { borderColor: verificationMethod === option.id ? brand[700] : colors.border, backgroundColor: verificationMethod === option.id ? brand[50] : colors.surface },
+            verificationMethod === option.id && { borderWidth: 2 },
+          ]}
+          onPress={() => setVerificationMethod(option.id)}>
+          <Text style={styles.verifyIcon}>{option.icon}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.verifyTitle, { color: colors.text }]}>{option.title}</Text>
+            <Text style={[styles.verifySub, { color: colors.textMuted }]}>
+              {russianPhone ? (russianPhone.startsWith('+') ? russianPhone : `+7${russianPhone}`) : '+7…'}
+            </Text>
+            <Text style={[styles.verifySub, { color: colors.textMuted, marginTop: 2 }]}>
+              {option.hint}
+            </Text>
+          </View>
+        </Pressable>
+      ))}
 
       {/* Email option */}
       <Pressable

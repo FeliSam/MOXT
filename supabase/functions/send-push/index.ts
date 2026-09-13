@@ -7,6 +7,12 @@ import {
   shouldDispatchWebPush,
 } from '../_shared/pushDispatch.ts'
 import { isStaleFcmError, sendFcmToDevice } from '../_shared/fcmPush.ts'
+import {
+  hasApnsCredentials,
+  isLikelyApnsDeviceToken,
+  isStaleApnsError,
+  sendApnsToDevice,
+} from '../_shared/apnsPush.ts'
 
 const ALLOWED_ORIGINS = new Set([
   'https://moxtapp.ru',
@@ -133,7 +139,10 @@ async function dispatchNativePush(
   payload: ReturnType<typeof buildWebPushPayload>,
 ) {
   const fcmJson = Deno.env.get('FCM_SERVICE_ACCOUNT_JSON') || ''
-  if (!fcmJson.trim() || !subscriptions.length) {
+  if (!subscriptions.length) {
+    return { delivered: 0, staleIds: [] as string[] }
+  }
+  if (!fcmJson.trim() && !hasApnsCredentials()) {
     return { delivered: 0, staleIds: [] as string[] }
   }
 
@@ -142,17 +151,30 @@ async function dispatchNativePush(
 
   for (const subscription of subscriptions) {
     try {
-      await sendFcmToDevice(fcmJson, subscription.endpoint, {
-        title: payload.title,
-        body: payload.body,
-        data: payload.data,
-      })
+      const token = subscription.endpoint
+      const useApns =
+        subscription.platform === 'ios' && (isLikelyApnsDeviceToken(token) || hasApnsCredentials())
+      if (useApns && isLikelyApnsDeviceToken(token)) {
+        await sendApnsToDevice(token, {
+          title: payload.title,
+          body: payload.body,
+          data: payload.data,
+        })
+      } else if (!fcmJson.trim()) {
+        throw new Error('FCM_SERVICE_ACCOUNT_JSON manquant pour ce jeton.')
+      } else {
+        await sendFcmToDevice(fcmJson, token, {
+          title: payload.title,
+          body: payload.body,
+          data: payload.data,
+        })
+      }
       delivered += 1
     } catch (error) {
-      if (isStaleFcmError(error)) {
+      if (isStaleFcmError(error) || isStaleApnsError(error)) {
         staleIds.push(subscription.id)
       }
-      console.error('[send-push/fcm]', subscription.platform, subscription.endpoint, error)
+      console.error('[send-push/native]', subscription.platform, subscription.endpoint, error)
     }
   }
 

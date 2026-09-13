@@ -6,4 +6,5 @@
     <string name="custom_url_scheme">com.moxt.app</string>
     <string name="camera_permission_rationale">MOXT utilise la caméra uniquement pour scanner les QR codes (profils, entreprises, invitations).</string>
     <string name="push_permission_rationale">Recevez des alertes sur vos messages, transferts et activités MOXT.</string>
+    <string name="default_notification_channel_id">moxt_default</string>
 </resources>

@@ -133,6 +133,9 @@ export async function initCapacitor() {
     if (isActive) {
       document.documentElement.classList.remove('capacitor-paused')
       void applyNativeStatusBar()
+      void import('./pushNotifications')
+        .then(({ initNativePushNotifications }) => initNativePushNotifications())
+        .catch(() => {})
     } else {
       document.documentElement.classList.add('capacitor-paused')
     }

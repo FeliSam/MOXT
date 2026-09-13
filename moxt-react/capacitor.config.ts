@@ -67,7 +67,7 @@ const config: CapacitorConfig = {
       autoClear: false,
     },
     PushNotifications: {
-      presentationOptions: ['badge', 'sound', 'alert'],
+      presentationOptions: ['badge', 'sound', 'alert', 'banner', 'list'],
     },
     Camera: {
       permissions: ['camera'],

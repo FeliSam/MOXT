@@ -350,7 +350,7 @@ async function syncSessionToStore(
     const { isNative } = await import('../platform/capacitor')
     if (isNative) {
       const { initNativePushNotifications } = await import('../platform/pushNotifications')
-      void initNativePushNotifications()
+      void initNativePushNotifications({ requestPermission: true })
     } else {
       const { ensureWebPushSubscription } = await import('../platform/webPush')
       void ensureWebPushSubscription(payload.user.id)

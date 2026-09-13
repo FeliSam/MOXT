@@ -146,6 +146,32 @@ async function main() {
     process.exit(1)
   }
 
+  const apnsKey = vars.APNS_KEY_P8 || process.env.APNS_KEY_P8
+  const apnsKeyId = vars.APNS_KEY_ID || process.env.APNS_KEY_ID
+  const apnsTeamId = vars.APNS_TEAM_ID || process.env.APNS_TEAM_ID
+  if (apnsKey && apnsKeyId && apnsTeamId) {
+    log('Supabase', 'secrets APNs iOS')
+    if (
+      runSupabase(
+        [
+          'secrets',
+          'set',
+          `APNS_KEY_P8=${apnsKey}`,
+          `APNS_KEY_ID=${apnsKeyId}`,
+          `APNS_TEAM_ID=${apnsTeamId}`,
+          `APNS_BUNDLE_ID=${vars.APNS_BUNDLE_ID || 'com.moxt.app'}`,
+          `APNS_PRODUCTION=${vars.APNS_PRODUCTION || 'true'}`,
+        ],
+        supabaseEnv,
+      ) !== 0
+    ) {
+      process.exit(1)
+    }
+  } else {
+    console.warn('  ⚠ APNs iOS : ajoutez APNS_KEY_P8 / APNS_KEY_ID / APNS_TEAM_ID dans phase2.env')
+    console.warn('    (Capacitor iOS envoie un jeton APNs, pas FCM.)')
+  }
+
   if (runSupabase(['functions', 'deploy', 'send-push', '--no-verify-jwt'], supabaseEnv) !== 0) {
     process.exit(1)
   }

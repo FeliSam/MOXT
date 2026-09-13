@@ -106,10 +106,17 @@ export async function sendFcmToDevice(
             body: payload.body,
           },
           data,
-          android: { priority: 'HIGH' },
+          android: {
+            priority: 'HIGH',
+            notification: {
+              channelId: 'moxt_default',
+              sound: 'default',
+              icon: 'ic_stat_moxt',
+            },
+          },
           apns: {
             headers: { 'apns-priority': '10' },
-            payload: { aps: { sound: 'default', badge: 1 } },
+            payload: { aps: { sound: 'default', badge: 1, 'mutable-content': 1 } },
           },
         },
       }),

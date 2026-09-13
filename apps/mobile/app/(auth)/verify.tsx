@@ -35,13 +35,34 @@ export default function VerifyScreen() {
   }>();
   const { error, status } = useAppSelector((state) => state.auth);
   const [code, setCode] = useState('');
-  const [activeMethod, setActiveMethod] = useState(
-    method === 'email' || method === 'mail' ? 'email' : 'sms',
-  );
+  const channel =
+    method === 'telegram' || method === 'flashcall' || method === 'email' || method === 'mail'
+      ? method === 'mail'
+        ? 'email'
+        : method
+      : 'sms';
+  const [activeMethod, setActiveMethod] = useState(channel);
 
   const isLoading = status === 'loading';
   const isEmail = activeMethod === 'email';
+  const isFlashcall = activeMethod === 'flashcall';
+  const isTelegram = activeMethod === 'telegram';
   const identifier = isEmail ? email : phone;
+  const codeLen = isFlashcall ? 4 : 6;
+  const channelTitle = isEmail
+    ? 'Par e-mail'
+    : isTelegram
+      ? 'Par Telegram'
+      : isFlashcall
+        ? 'Par appel'
+        : 'Par SMS';
+  const description = isEmail
+    ? `Entrez le code à 6 chiffres reçu par e-mail à ${identifier || '…'}. Vérifiez aussi vos courriers indésirables (spam).`
+    : isFlashcall
+      ? `Décrochez ou laissez sonner : saisissez les 4 derniers chiffres du numéro qui appelle ${identifier || '…'}.`
+      : isTelegram
+        ? `Entrez le code à 6 chiffres envoyé sur Telegram au ${identifier || '…'}.`
+        : `Entrez le code à 6 chiffres reçu par SMS au ${identifier || '…'}.`;
 
   const handleVerify = () => {
     dispatch(clearAuthError());
@@ -99,22 +120,26 @@ export default function VerifyScreen() {
             <View style={[styles.dot, { backgroundColor: brand[700] }]} />
             <Text style={[styles.eyebrow, { color: brand[700] }]}>VÉRIFICATION</Text>
           </View>
-          <Text style={[styles.title, { color: colors.text }]}>Confirmez votre identité</Text>
-          <Text style={[styles.description, { color: colors.textMuted }]}>
-            Entrez le code à 6 chiffres reçu par {isEmail ? 'e-mail' : 'SMS'} à{' '}
-            <Text style={{ fontWeight: '700', color: colors.text }}>{identifier}</Text>
+          <Text style={[styles.title, { color: colors.text }]}>
             {isEmail
-              ? '. Vérifiez que l’adresse e-mail est correctement saisie et consultez vos courriers indésirables (spam) si vous ne le recevez pas.'
-              : '.'}
+              ? 'Confirmez votre e-mail'
+              : isFlashcall
+                ? 'Confirmez l’appel'
+                : isTelegram
+                  ? 'Confirmez via Telegram'
+                  : 'Confirmez votre numéro'}
+          </Text>
+          <Text style={[styles.description, { color: colors.textMuted }]}>
+            {description}
           </Text>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           {/* Method indicator */}
           <View style={[styles.methodBadge, { backgroundColor: brand[50], borderColor: brand[200] }]}>
-            <Text style={styles.methodIcon}>{isEmail ? '✉️' : '💬'}</Text>
+            <Text style={styles.methodIcon}>{isEmail ? '✉️' : isFlashcall ? '📞' : isTelegram ? '✈️' : '💬'}</Text>
             <Text style={[styles.methodText, { color: brand[800] }]}>
-              {isEmail ? 'Par e-mail' : 'Par SMS'}
+              {channelTitle}
             </Text>
           </View>
 
@@ -124,8 +149,8 @@ export default function VerifyScreen() {
             autoCapitalize="none"
             autoFocus
             keyboardType="number-pad"
-            maxLength={6}
-            placeholder="0 0 0 0 0 0"
+            maxLength={codeLen}
+            placeholder={isFlashcall ? '0 0 0 0' : '0 0 0 0 0 0'}
             placeholderTextColor={colors.textFaint}
             style={[styles.codeInput, { borderColor: brand[700], color: colors.text }]}
             value={code}
@@ -134,11 +159,11 @@ export default function VerifyScreen() {
 
           {/* Buttons */}
           <Pressable
-            disabled={isLoading || code.length < 6}
+            disabled={isLoading || code.length < codeLen}
             style={[
               styles.button,
               { backgroundColor: brand[800] },
-              (isLoading || code.length < 6) && styles.buttonDisabled,
+              (isLoading || code.length < codeLen) && styles.buttonDisabled,
             ]}
             onPress={handleVerify}>
             {isLoading ? (
@@ -158,7 +183,7 @@ export default function VerifyScreen() {
               style={[styles.backButton, { borderColor: brand[300], marginTop: spacing.sm }]}
               onPress={switchToEmail}>
               <Text style={[styles.backButtonText, { color: brand[700] }]}>
-                Je n’ai pas reçu le SMS — recevoir par e-mail
+                Je n’ai pas reçu {isTelegram ? 'le code Telegram' : isFlashcall ? 'l’appel' : 'le SMS'} — recevoir par e-mail
               </Text>
             </Pressable>
           ) : null}

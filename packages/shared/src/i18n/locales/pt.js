@@ -32,13 +32,19 @@ export const pt = {
     },
     register: {
       resendSms: "Reenviar SMS",
+      resendTelegram: "Reenviar no Telegram",
+      resendCall: "Ligar novamente",
       resendEmail: "Reenviar e-mail",
       resendCooldown: "Reenviar em {seconds}s",
       codeNotReceivedSms: "Não recebeu o SMS?",
+      codeNotReceivedTelegram: "Não recebeu o código no Telegram?",
+      codeNotReceivedCall: "Não recebeu a chamada?",
       codeNotReceivedEmail: "Não recebeu o código?",
       codeResentTitle: "Código reenviado",
       codeResentEmail: "Um novo e-mail foi enviado para {email}.",
       codeResentSms: "Um novo SMS foi enviado para {phone}.",
+      codeResentTelegram: "Um novo código Telegram foi enviado para {phone}.",
+      codeResentCall: "Uma nova chamada foi feita para {phone}.",
       abandonOtp: "Voltar ao formulário",
       otpCapTitle: "Limite de envio",
       steps: {
@@ -76,22 +82,22 @@ export const pt = {
       fallbackRussia: "Rússia",
       oauthLastStepAlert: "Último passo: indique a residência na Rússia e o número +7 para ativar a conta.",
       submit: "Criar a minha conta",
-      submitting: "A enviar SMS...",
+      submitting: "A enviar o código...",
       oauthSubmit: "Concluir o meu perfil",
       oauthSubmitting: "A guardar...",
       haveAccount: "Já tem conta?",
       loginLink: "Entrar",
       helpButton: "Ajuda",
       helpTitle: "Ajuda com o código de confirmação",
-      helpIntro: "O código de 6 dígitos conclui a criação da conta. Processo atual:",
+      helpIntro: "O código conclui a criação da conta. Processo atual:",
       helpStep1:
-        "No passo Verificação, escolha SMS (número +7) ou e-mail. O código chega geralmente em poucos segundos; para SMS, aguarde até 1–2 minutos antes de se preocupar.",
+        "No passo Verificação, para um número +7 escolha SMS, Telegram ou chamada (4 últimos dígitos). Por e-mail, o código chega só por e-mail. SMS: até 1–2 minutos; Telegram e e-mail: em geral segundos.",
       helpStep2:
-        "Sem SMS? Use de imediato «Receber o código por e-mail» — não é preciso esperar o temporizador. «Reenviar SMS» só fica disponível após o contador (um único reenvio SMS).",
+        "Sem código no canal escolhido? Mude de método (SMS, Telegram, chamada) ou use «Receber o código por e-mail». O reenvio só fica disponível após o contador.",
       helpStep3:
         "Após a confirmação, o outro identificador (e-mail ou +7) deve ser validado em Segurança para publicar. Se nada chegar, contacte-nos em «Precisa de ajuda?» na página de entrada.",
       helpOriginPhoneHint: "Opcional — útil para contactos no país de origem.",
-      loginNoticePendingOtp: "Se o registo estiver concluído, entre com o número +7 e a palavra-passe escolhida. Caso contrário, introduza primeiro o código SMS recebido acima.",
+      loginNoticePendingOtp: "Se o registo estiver concluído, entre com o número +7 e a palavra-passe escolhida. Caso contrário, introduza primeiro o código recebido acima.",
       verify: {
         title: "Confirme o seu número",
         body: "Foi enviado um código de 6 dígitos para {phone} por SMS. A entrega pode demorar 1–2 minutos. Só um código de cada vez — a conta é criada após a confirmação.",
@@ -112,6 +118,13 @@ export const pt = {
           "Atenda ou deixe tocar: introduza os 4 últimos dígitos do número que chama {phone}.",
         callBodyShort: "4 últimos dígitos de quem chama {phone}.",
         callCodeLabel: "4 últimos dígitos do número que chama",
+        sendingTitleCall: "A chamar…",
+        telegramTitle: "Confirme pelo Telegram",
+        telegramBody:
+          "Foi enviado um código de 6 dígitos para {phone} no Telegram. Abra o Telegram e introduza-o. Só um código de cada vez — a conta é criada após a confirmação.",
+        telegramBodyShort: "Código Telegram enviado para {phone}.",
+        telegramCodeLabel: "Código recebido no Telegram",
+        sendingTitleTelegram: "A enviar Telegram…",
       },
       emailFallback: {
         title: "SMS indisponível para este número",
@@ -123,9 +136,9 @@ export const pt = {
         afterSmsResends:
           "Foi enviado um código para {email} para concluir o registo por e-mail.",
         smsResendLimitHint:
-          "Pode reenviar o SMS uma vez (após o contador), ou receber o código por e-mail de imediato.",
+          "Pode reenviar o código uma vez (após o contador), ou recebê-lo por e-mail de imediato.",
         afterCooldownHint:
-          "Reenvie o SMS ou receba o código por e-mail agora.",
+          "Reenvie o código ou receba-o por e-mail agora.",
       },
       channel: {
         title: "Como deseja receber o código?",
@@ -155,7 +168,7 @@ export const pt = {
         registerFailedTitle: "Registo impossível",
         profileDoneTitle: "Perfil concluído",
         profileDoneBody: "O seu perfil está completo. Bem-vindo ao MOXT.",
-        resendFailedTitle: "Reenvio de SMS impossível",
+        resendFailedTitle: "Reenvio do código impossível",
         resendFailedFallback: "Não foi possível reenviar o código.",
         welcomeTitle: "Bem-vindo ao MOXT",
         welcomeDeferredBody: "Número confirmado. Confirme o e-mail em Segurança quando quiser.",

@@ -117,8 +117,13 @@ function main() {
   console.log('\nCapacitor iOS')
   if (existsSync(iosPlist)) ok('GoogleService-Info.plist présent')
   else warn('GoogleService-Info.plist absent — ajoutez depuis Firebase')
-  if (existsSync(iosEntitlements)) ok('App.entitlements présent (aps-environment)')
-  else warn('App.entitlements absent — activez Push Notifications dans Xcode')
+  const appDelegate = path.join(root, 'moxt-react', 'ios', 'App', 'App', 'AppDelegate.swift')
+  if (existsSync(appDelegate) && readFileSync(appDelegate, 'utf8').includes('capacitorDidRegisterForRemoteNotifications')) {
+    ok('AppDelegate relaie le jeton APNs vers Capacitor')
+  } else {
+    fail('AppDelegate.swift sans capacitorDidRegisterForRemoteNotifications — push iOS inactif')
+    issues += 1
+  }
 
   if (existsSync(capConfig)) {
     ok('cap:prod:sync embarque dist/ sans localhost')
