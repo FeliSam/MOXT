@@ -5,7 +5,7 @@ import { supabase } from '../../services/supabaseClient'
 import { fromRow, fromRows } from '../../services/remoteRowMapper'
 import { createLocalStorage } from '../../services/createLocalStorage'
 import { findConversationByParticipants, participantKey } from './conversationUtils'
-import { persistConversationRemote, resolveMessageLoadScope } from './conversationPersist'
+import { isPersistedConversationId, persistConversationRemote, resolveMessageLoadScope } from './conversationPersist'
 import {
   buildParticipantProfilesMap,
   fetchParticipantProfilesFromRemote,
@@ -1188,6 +1188,7 @@ export const loadConversationMessages = createAsyncThunk(
       const { canonicalId, conversationIds, remoteRow } = await resolveMessageLoadScope(
         conversationId,
         localConversation,
+        { skipSiblings: isPersistedConversationId(conversationId) },
       )
 
       if (canonicalId !== conversationId && remoteRow) {
@@ -1293,9 +1294,9 @@ export const preloadInboxMessages = createAsyncThunk(
     const targets = conversations
       .filter((item) => conversationNeedsInitialMessageLoad(item))
       .slice(0, limit)
-    for (const conversation of targets) {
-      await dispatch(loadConversationMessages(conversation.id))
-    }
+    await Promise.all(
+      targets.map((conversation) => dispatch(loadConversationMessages(conversation.id))),
+    )
     return targets.length
   },
 )

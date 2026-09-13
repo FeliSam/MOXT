@@ -10,7 +10,7 @@ import { setAll as setVideos } from '../features/videos/videosSlice'
 import { setAll as setBusinesses } from '../features/businesses/businessSlice'
 import { setAll as setTransfers, runExpireOverdueTransfers } from '../features/transfers/transferSlice'
 import { setAll as setP2P } from '../features/p2p/p2pSlice'
-import { setAll as setCommunications, mergeConversations, normalizeConversation } from '../features/communications/communicationSlice'
+import { setAll as setCommunications, mergeConversations, normalizeConversation, preloadInboxMessages } from '../features/communications/communicationSlice'
 import { setAll as setReviews } from '../features/reviews/reviewSlice'
 import { setAll as setDisputes } from '../features/disputes/disputeSlice'
 import { setAll as setFinance } from '../features/finance/financeSlice'
@@ -287,6 +287,8 @@ export const loadAllData = createAsyncThunk(
       _helpArticlesRes,
       supportTicketsRes,
       recipientAddressesRes,
+      conversationsRpcRes,
+      supportConversationsRes,
     ] = await Promise.all([
       supabase.from('listings').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
       supabase.from('parcels').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
@@ -370,6 +372,10 @@ export const loadAllData = createAsyncThunk(
             .order('updated_at', { ascending: false })
             .limit(50),
       supabase.from('recipient_addresses').select('*').eq('user_id', uid).order('updated_at', { ascending: false }).limit(USER_LIMIT),
+      fetchUserConversations(supabase, uid, { limit: 80 }),
+      isAdmin
+        ? supabase.rpc('list_support_conversations', { p_limit: 80 })
+        : Promise.resolve({ data: [], error: null }),
     ])
 
     let auditLogRes = { data: [], error: null }
@@ -591,32 +597,27 @@ export const loadAllData = createAsyncThunk(
       incomingEventRegistrations,
     )
 
-    const { data: conversationRows, error: conversationsError } = await fetchUserConversations(
-      supabase,
-      uid,
-      { limit: 100 },
-    )
-    if (conversationsError) {
-      console.warn('[MOXT] Chargement des conversations:', conversationsError.message)
+    const conversationRows = conversationsRpcRes?.data || []
+    if (conversationsRpcRes?.error) {
+      console.warn('[MOXT] Chargement des conversations:', conversationsRpcRes.error.message)
     }
 
     let supportConversationRows = []
     if (isAdmin) {
-      const supportRes = await supabase.rpc('list_support_conversations', { p_limit: 100 })
-      if (supportRes.error) {
+      if (supportConversationsRes.error) {
         const fallback = await supabase
           .from('conversations')
           .select('*')
           .eq('related_type', 'support')
           .order('updated_at', { ascending: false })
-          .limit(100)
+          .limit(80)
         if (fallback.error) {
           console.warn('[MOXT] Chargement conversations support:', fallback.error.message)
         } else {
           supportConversationRows = fallback.data || []
         }
       } else {
-        supportConversationRows = supportRes.data || []
+        supportConversationRows = supportConversationsRes.data || []
       }
     }
 
@@ -977,6 +978,8 @@ export const loadAllData = createAsyncThunk(
         }
       }
     })
+
+    void dispatch(preloadInboxMessages({ limit: 4 }))
 
     // Admin: ensure verification documentIds are present even if the global docs limit omitted them.
     if (isAdmin) {

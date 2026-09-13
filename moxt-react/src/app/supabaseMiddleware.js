@@ -4,7 +4,7 @@ import { saveJobApplicationRemote, saveJobRemote } from '../features/jobs/jobRem
 import { saveBusinessRemote, upsertBusinessDocumentRemote, upsertBusinessMemberRemote, upsertBusinessRequestRemote } from '../features/businesses/businessRemote'
 import { syncReviewRemote, syncReviewOwnerRemote, deleteReviewRemote } from '../features/reviews/reviewRemote'
 import { identityToRemoteRow } from '../features/identity/identityRemote'
-import { p2pOfferToRemoteRow, p2pOrderToRemoteRow, reportToRemoteRow, subscriberBanToRemoteRow, subscriberReportToRemoteRow } from '../features/sync/entityRemote'
+import { p2pOfferToRemoteRow, p2pOrderToRemoteRow, reportToRemoteRow, resolveP2pOfferId, subscriberBanToRemoteRow, subscriberReportToRemoteRow } from '../features/sync/entityRemote'
 import {
   eventRegistrationToRemoteRow,
   parcelRequestToRemoteRow,
@@ -258,8 +258,13 @@ async function upsert(table, data) {
 
 /** Upsert offre (si fournie) + commande via RPC — respecte la FK offer_id. */
 async function syncP2pOrder(order, offer = null) {
+  const offerId = resolveP2pOfferId(order, offer)
+  const remoteOrder = p2pOrderToRemoteRow({ ...order, offerId })
+  if (!remoteOrder.offer_id) {
+    throw new Error('Offre P2P introuvable pour cette commande. Rouvrez l’offre puis réessayez.')
+  }
   const { error } = await supabase.rpc('moxt_sync_p2p_order', {
-    p_order: p2pOrderToRemoteRow(order),
+    p_order: remoteOrder,
     p_offer: offer ? p2pOfferToRemoteRow(offer) : null,
   })
   if (!error) return
@@ -281,7 +286,7 @@ async function syncP2pOrder(order, offer = null) {
       if (!isRls) throw offerError
     }
   }
-  await upsert('p2p_orders', p2pOrderToRemoteRow(order))
+  await upsert('p2p_orders', remoteOrder)
 }
 
 async function insertRow(table, data) {
@@ -1001,26 +1006,7 @@ const handlers = {
     if (conversation.relatedType === 'support' && Array.isArray(conversation.participantIds)) {
       conversationPatch.participant_ids = conversation.participantIds
     }
-    await supabase.from('conversations').update(conversationPatch).eq('id', canonicalId)
-
-    // Le trigger DB crée les lignes notifications ; on pousse ensuite vers les appareils.
-    const muted = new Set((conversation.mutedBy || []).map(String))
-    const blocked = new Set((conversation.blockedBy || []).map(String))
-    const recipients = (conversation.participantIds || [])
-      .map(String)
-      .filter((id) => id && id !== senderId && !muted.has(id) && !blocked.has(id))
-    if (recipients.length && msg.id) {
-      const { dispatchPushNotification } = await import('../services/pushDispatch')
-      for (const recipientId of recipients) {
-        const notificationId = `msg_${msg.id}_${recipientId}`
-        for (let attempt = 0; attempt < 6; attempt += 1) {
-          const result = await dispatchPushNotification(notificationId)
-          if (result.ok) break
-          // 404 / not_found = trigger pas encore prêt — retenter
-          await new Promise((resolve) => setTimeout(resolve, 300 * (attempt + 1)))
-        }
-      }
-    }
+    void supabase.from('conversations').update(conversationPatch).eq('id', canonicalId)
   },
   'communications/resendMessage': async (payload, state, dispatch) => {
     const conversation = state.communications.conversations.find(
@@ -1309,43 +1295,43 @@ const handlers = {
   'p2p/updateOrderStatus': async (payload, state) => {
     const order = state.p2p.orders.find((item) => item.id === payload.id)
     if (!order) return
-    const offer = state.p2p.offers.find((item) => item.id === order.offerId)
+    const offer = state.p2p.offers.find((item) => item.id === resolveP2pOfferId(order))
     await syncP2pOrder(order, offer || null)
   },
   'p2p/updateOrderReceiveDetails': async (payload, state) => {
     const order = state.p2p.orders.find((item) => item.id === payload.id)
     if (!order) return
-    const offer = state.p2p.offers.find((item) => item.id === order.offerId)
+    const offer = state.p2p.offers.find((item) => item.id === resolveP2pOfferId(order))
     await syncP2pOrder(order, offer || null)
   },
   'p2p/expireOrder': async (payload, state) => {
     const order = state.p2p.orders.find((item) => item.id === payload.id)
     if (!order) return
-    const offer = state.p2p.offers.find((item) => item.id === order.offerId)
+    const offer = state.p2p.offers.find((item) => item.id === resolveP2pOfferId(order))
     await syncP2pOrder(order, offer || null)
   },
   'p2p/moderateOrder': async (payload, state) => {
     const order = state.p2p.orders.find((item) => item.id === payload.id)
     if (!order) return
-    const offer = state.p2p.offers.find((item) => item.id === order.offerId)
+    const offer = state.p2p.offers.find((item) => item.id === resolveP2pOfferId(order))
     await syncP2pOrder(order, offer || null)
   },
   'p2p/addOrderProof': async (payload, state) => {
     const order = state.p2p.orders.find((item) => item.id === payload.id)
     if (!order) return
-    const offer = state.p2p.offers.find((item) => item.id === order.offerId)
+    const offer = state.p2p.offers.find((item) => item.id === resolveP2pOfferId(order))
     await syncP2pOrder(order, offer || null)
   },
   'p2p/addOrderComment': async (payload, state) => {
     const order = state.p2p.orders.find((item) => item.id === payload.id)
     if (!order) return
-    const offer = state.p2p.offers.find((item) => item.id === order.offerId)
+    const offer = state.p2p.offers.find((item) => item.id === resolveP2pOfferId(order))
     await syncP2pOrder(order, offer || null)
   },
   'p2p/rateOrder': async (payload, state) => {
     const order = state.p2p.orders.find((item) => item.id === payload.id)
     if (!order) return
-    const offer = state.p2p.offers.find((item) => item.id === order.offerId)
+    const offer = state.p2p.offers.find((item) => item.id === resolveP2pOfferId(order))
     await syncP2pOrder(order, offer || null)
   },
 

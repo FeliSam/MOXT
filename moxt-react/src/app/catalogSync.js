@@ -1,8 +1,8 @@
 /** Délai avant un nouveau pull Supabase complet si le catalogue feed est déjà en cache. */
 export const CATALOG_SYNC_TTL_MS = 20 * 60 * 1000
 
-/** Durée max d’un refresh forcé (pull-to-refresh) avant de libérer l’UI. */
-export const CATALOG_SYNC_TIMEOUT_MS = 45_000
+/** Durée max d’un refresh forcé avant de libérer l’UI (le reste continue en fond). */
+export const CATALOG_SYNC_TIMEOUT_MS = 12_000
 
 function awaitCatalogSync(promise, ms = CATALOG_SYNC_TIMEOUT_MS, label = 'catalogSync') {
   let timer

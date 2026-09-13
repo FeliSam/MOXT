@@ -29,7 +29,7 @@ const CONVERSATION_SELECT_COLUMNS = [
 ].join(',')
 
 /** Résout l'id canonique et tous les ids liés (doublons participant_key) pour charger les messages. */
-export async function resolveMessageLoadScope(conversationId, conversation) {
+export async function resolveMessageLoadScope(conversationId, conversation, options = {}) {
   const conversationIds = new Set([conversationId])
   let canonicalId = conversationId
   let participantKeyValue = conversation ? participantKey(conversation.participantIds) : null
@@ -53,7 +53,7 @@ export async function resolveMessageLoadScope(conversationId, conversation) {
     participantKeyValue ||= row.participant_key
   }
 
-  if (participantKeyValue) {
+  if (participantKeyValue && !options?.skipSiblings) {
     const { data: siblings, error: siblingsError } = await supabase
       .from('conversations')
       .select('id, updated_at')
@@ -120,25 +120,26 @@ export async function persistConversationRemote(conversation) {
   return targetId
 }
 
+export function isPersistedConversationId(id) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    String(id || ''),
+  )
+}
+
 /** Enregistre un message — la conversation doit déjà exister en base. */
 export async function persistMessageRemote(message, conversationId) {
   if (!supabase) return conversationId
 
-  const { data: conversationRow, error: lookupError } = await supabase
-    .from('conversations')
-    .select('id')
-    .eq('id', conversationId)
-    .maybeSingle()
-  if (lookupError) throw lookupError
-  if (!conversationRow) {
-    throw new Error(
-      `Conversation introuvable (${conversationId}). Réouvrez la discussion avant d'envoyer.`,
-    )
-  }
-
   const row = messageToRemoteRow(message, conversationId)
   const { error } = await supabase.from('messages').upsert(row, { onConflict: 'id' })
-  if (error) throw error
+  if (error) {
+    if (String(error.code) === '23503' || /conversation/i.test(String(error.message || ''))) {
+      throw new Error(
+        `Conversation introuvable (${conversationId}). Réouvrez la discussion avant d'envoyer.`,
+      )
+    }
+    throw error
+  }
   return conversationId
 }
 
@@ -167,6 +168,14 @@ export async function resolveCanonicalConversationId(conversation, onReconciled)
  * (évite la violation FK messages.conversation_id).
  */
 export async function persistMessageForConversation(message, conversation, onReconciled) {
+  if (isPersistedConversationId(conversation?.id)) {
+    try {
+      await persistMessageRemote(message, conversation.id)
+      return conversation.id
+    } catch (error) {
+      if (!/introuvable/i.test(String(error?.message || ''))) throw error
+    }
+  }
   const canonicalId = await resolveCanonicalConversationId(conversation, onReconciled)
   await persistMessageRemote(message, canonicalId)
   return canonicalId

@@ -202,8 +202,11 @@ export function FeedPage() {
       }
       return
     }
-    const { scheduleCatalogSync } = await import('../app/catalogSync.js')
-    await scheduleCatalogSync(store, { force: true })
+    const { refreshPublicationsData } = await import('../features/publications/useRefreshPublicationsData.js')
+    await dispatch(refreshPublicationsData())
+    void import('../app/catalogSync.js').then(({ scheduleCatalogSync }) => {
+      void scheduleCatalogSync(store)
+    })
   }, [dispatch, guestMode, store])
 
   if (!isFeedViewport && !itemParam) {

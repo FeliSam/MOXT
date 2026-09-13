@@ -12,6 +12,9 @@ import { setAll as setParcels } from '../parcels/parcelSlice'
 import { setAll as setJobs } from '../jobs/jobSlice'
 import { setAll as setEvents } from '../events/eventSlice'
 import { setAll as setVideos } from '../videos/videosSlice'
+import { setAll as setPosts } from '../posts/postsSlice'
+import { setAll as setBusinesses } from '../businesses/businessSlice'
+import { businessFromRemoteRow } from '../businesses/businessRemote'
 import { receiveRemoteOffer } from '../p2p/p2pSlice'
 import { p2pOfferFromRemoteRow } from '../sync/entityRemote'
 import { jobsFromRemoteRows } from '../jobs/jobRemote'
@@ -41,7 +44,7 @@ export const refreshPublicationsData = createAsyncThunk(
     const uid = getState().auth.user?.id
     if (!uid) return null
 
-    const [listingsRes, parcelsRes, jobsRes, eventsRes, videosRes, offersRes] = await Promise.all([
+    const [listingsRes, parcelsRes, jobsRes, eventsRes, videosRes, offersRes, postsRes, businessesRes] = await Promise.all([
       supabase
         .from('listings')
         .select('*')
@@ -72,6 +75,13 @@ export const refreshPublicationsData = createAsyncThunk(
         .select('*')
         .order('created_at', { ascending: false })
         .limit(PUBLIC_LIMIT),
+      supabase
+        .from('posts')
+        .select('*')
+        .or(`status.eq.published,author_id.eq.${uid}`)
+        .order('created_at', { ascending: false })
+        .limit(40),
+      supabase.from('businesses').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
     ])
 
     if (!listingsRes.error) {
@@ -105,6 +115,16 @@ export const refreshPublicationsData = createAsyncThunk(
         const offer = p2pOfferFromRemoteRow(row)
         if (offer?.id) dispatch(receiveRemoteOffer(offer))
       }
+    }
+    if (!postsRes.error) {
+      dispatch(setPosts({ items: fromRows(postsRes.data || []) }))
+    }
+    if (!businessesRes.error) {
+      dispatch(
+        setBusinesses({
+          items: (businessesRes.data || []).map(businessFromRemoteRow).filter(Boolean),
+        }),
+      )
     }
     return true
   },
