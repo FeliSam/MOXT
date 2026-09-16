@@ -244,41 +244,76 @@ export function FeedSnapScroller({
     }
   }, [])
 
+  const hintListReady = items.length >= 2
+
   useEffect(() => {
     const scroller = scrollerRef.current
     if (!scroller || hintDoneRef.current) return undefined
     if (!playEntryHint || clampedInitial !== 0 || prefersReducedMotion()) {
       hintDoneRef.current = true
+      scroller.dataset.feedHint = prefersReducedMotion() ? 'skipped-motion' : 'skipped'
       return undefined
     }
-    if (items.length < 2) return undefined
+    if (!hintListReady) return undefined
 
     hintCancelRef.current = false
     hintActiveRef.current = true
     jumpLockRef.current = true
+    scroller.dataset.feedHint = 'pending'
     let started = false
+    let layoutTimer = 0
+    let attempts = 0
 
     function cancelHint() {
       hintCancelRef.current = true
     }
 
-    const timer = window.setTimeout(() => {
+    function finishHint(reason = 'done') {
+      hintActiveRef.current = false
+      jumpLockRef.current = false
+      hintDoneRef.current = true
+      scroller.dataset.feedHint = reason
+    }
+
+    function startWhenLaidOut() {
+      if (hintCancelRef.current || hintDoneRef.current) {
+        if (hintCancelRef.current) finishHint('cancelled')
+        return
+      }
+      const height = Number(scroller.clientHeight) || 0
+      if (height < 48 && attempts < 20) {
+        attempts += 1
+        layoutTimer = window.setTimeout(startWhenLaidOut, 100)
+        return
+      }
+      if (height < 48) {
+        finishHint('skipped')
+        return
+      }
       started = true
+      scroller.dataset.feedHint = 'playing'
       void playFeedEntryHint(scroller, {
         shouldCancel: () => hintCancelRef.current,
-      }).finally(() => {
-        hintActiveRef.current = false
-        jumpLockRef.current = false
-        hintDoneRef.current = true
+      }).then((reason) => {
+        if (reason === 'skipped' && !hintCancelRef.current && attempts < 20) {
+          attempts += 1
+          started = false
+          scroller.dataset.feedHint = 'pending'
+          layoutTimer = window.setTimeout(startWhenLaidOut, 120)
+          return
+        }
+        finishHint(reason === 'cancelled' ? 'cancelled' : reason === 'skipped' ? 'skipped' : 'done')
       })
-    }, 280)
+    }
+
+    layoutTimer = window.setTimeout(startWhenLaidOut, 240)
 
     scroller.addEventListener('touchstart', cancelHint, { passive: true })
     scroller.addEventListener('wheel', cancelHint, { passive: true })
     scroller.addEventListener('pointerdown', cancelHint)
 
     return () => {
-      window.clearTimeout(timer)
+      window.clearTimeout(layoutTimer)
       scroller.removeEventListener('touchstart', cancelHint)
       scroller.removeEventListener('wheel', cancelHint)
       scroller.removeEventListener('pointerdown', cancelHint)
@@ -288,7 +323,7 @@ export function FeedSnapScroller({
         jumpLockRef.current = false
       }
     }
-  }, [playEntryHint, clampedInitial, items.length, itemSetKey])
+  }, [playEntryHint, clampedInitial, hintListReady])
 
   const showPull = pullPx > 6 || refreshing
 
@@ -312,6 +347,7 @@ export function FeedSnapScroller({
         ref={scrollerRef}
         data-navbar-ignore
         data-testid={testId}
+        data-feed-hint=""
         className={`feed-snap-scroller scrollbar-hidden h-full w-full snap-y snap-mandatory overflow-y-auto overscroll-y-contain bg-black ${className}`}
       >
         {displayItems.map((item, index) => {
