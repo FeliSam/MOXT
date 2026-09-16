@@ -85,6 +85,10 @@ export function scheduleCatalogSync(store, { force = false } = {}) {
   const userId = store.getState()?.auth?.user?.id
   if (!userId) return Promise.resolve()
 
+  void import('../features/statuses/statusSync.js').then(({ primeStatusRail }) => {
+    void primeStatusRail(store)
+  })
+
   const usable = hasUsableFeedCatalog()
   const cacheFresh = usable && isCatalogSyncFresh(userId)
 

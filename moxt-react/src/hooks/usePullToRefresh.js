@@ -3,6 +3,7 @@ import { NATIVE_PAUSE_EVENT, NATIVE_RESUME_EVENT } from '../platform/capacitor'
 
 const THRESHOLD_PX = 72
 const MAX_PULL_PX = 120
+const MAX_REFRESH_MS = 4000
 
 function getScrollTop() {
   return window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0
@@ -32,7 +33,10 @@ export function usePullToRefresh({ onRefresh, disabled = false }) {
     if (refreshingRef.current) return
     setRefreshing(true)
     try {
-      await onRefresh?.()
+      await Promise.race([
+        Promise.resolve(onRefresh?.()),
+        new Promise((resolve) => setTimeout(resolve, MAX_REFRESH_MS)),
+      ])
     } finally {
       setRefreshing(false)
       setPull(0)

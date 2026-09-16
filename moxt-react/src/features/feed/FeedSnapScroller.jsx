@@ -5,6 +5,7 @@ import { playFeedEntryHint, prefersReducedMotion } from './feedEntryHint.js'
 
 export const FEED_LOOP_MAX_ITEMS = 64
 export const FEED_PULL_REFRESH_PX = 64
+const FEED_PULL_REFRESH_MAX_MS = 4000
 /** Slides montées autour de l’index actif (±N) — le reste est placeholder hauteur fixe. */
 export const FEED_MOUNT_RADIUS = 2
 
@@ -223,7 +224,10 @@ export function FeedSnapScroller({
       setRefreshing(true)
       setPullPx(FEED_PULL_REFRESH_PX)
       try {
-        await onRefreshRef.current()
+        await Promise.race([
+          onRefreshRef.current(),
+          new Promise((resolve) => setTimeout(resolve, FEED_PULL_REFRESH_MAX_MS)),
+        ])
       } finally {
         pullPxRef.current = 0
         setPullPx(0)
@@ -249,6 +253,7 @@ export function FeedSnapScroller({
     if (!scroller) return undefined
 
     function resetAfterBackground() {
+      if (hintActiveRef.current) return
       pullingRef.current = false
       pullPxRef.current = 0
       setPullPx(0)
@@ -301,10 +306,19 @@ export function FeedSnapScroller({
     }
 
     function finishHint(reason = 'done') {
+      const home = baseOffset + clampedInitial
+      applyHintHome(home)
       hintActiveRef.current = false
-      jumpLockRef.current = false
       hintDoneRef.current = true
       scroller.dataset.feedHint = reason
+      window.setTimeout(() => {
+        jumpLockRef.current = false
+      }, 80)
+    }
+
+    function applyHintHome(home) {
+      setActiveIndex(home)
+      scrollToIndex(home, 'auto')
     }
 
     function startWhenLaidOut() {

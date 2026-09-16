@@ -35,7 +35,7 @@ describe('statusRailCache', () => {
     expect(readStatusRailCache('user-1')).toBeNull()
   })
 
-  it('allowStale sert le cache jusqu’à STATUS_RAIL_CACHE_STALE_MS', () => {
+  it('allowStale sert le cache même au-delà du TTL réseau', () => {
     const items = [{ id: 'st-1', expiresAt: new Date(Date.now() + 60_000).toISOString() }]
     localStorage.setItem(
       'moxt-statuses-rail-v1',
@@ -47,6 +47,20 @@ describe('statusRailCache', () => {
       }),
     )
     expect(readStatusRailCache('user-1')).toBeNull()
+    expect(readStatusRailCache('user-1', { allowStale: true })).toEqual(items)
+  })
+
+  it('allowStale ignore l’âge du cache pour l’affichage immédiat', () => {
+    const items = [{ id: 'st-1', expiresAt: new Date(Date.now() + 60_000).toISOString() }]
+    localStorage.setItem(
+      'moxt-statuses-rail-v1',
+      JSON.stringify({
+        'user-1': {
+          savedAt: Date.now() - STATUS_RAIL_CACHE_STALE_MS - 60_000,
+          items,
+        },
+      }),
+    )
     expect(readStatusRailCache('user-1', { allowStale: true })).toEqual(items)
   })
 

@@ -30,6 +30,9 @@ function finishLogin(dispatch, store, navigate, location, searchParams) {
   navigate(destination, { replace: true })
 
   // Imports lourds hors du chunk Login — ne bloquent ni l'ouverture ni la navigation.
+  void import('../features/statuses/statusSync').then(({ primeStatusRail }) => {
+    void primeStatusRail(store)
+  })
   void import('../app/catalogSync').then(({ scheduleCatalogSync }) => {
     void scheduleCatalogSync(store, { force: true })
   })

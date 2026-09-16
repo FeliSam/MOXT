@@ -8,9 +8,12 @@ import {
   mergeViewedByLists,
 } from './statusViewUtils'
 import {
+  isStatusRailCacheFresh,
   readStatusRailCache,
   writeStatusRailCache,
 } from './statusRailCache'
+
+const STATUS_FETCH_TIMEOUT_MS = 4000
 
 const STATUS_RAIL_COLUMNS =
   'id, author_id, author_name, author_avatar_url, business_id, images, viewed_by, created_at, expires_at, is_official'
@@ -66,6 +69,10 @@ export const refreshStatusesData = createAsyncThunk(
 
     hydrateStatusRailIfEmpty(getState, dispatch)
 
+    if (!force && isStatusRailCacheFresh(uid) && getState().statuses?.items?.length) {
+      return getState().statuses.items.length
+    }
+
     if (statusesRefreshInFlight && !force) {
       try {
         return await statusesRefreshInFlight
@@ -75,14 +82,26 @@ export const refreshStatusesData = createAsyncThunk(
     }
 
     const job = (async () => {
-      const { data, error } = await supabase
+      const controller = typeof AbortController !== 'undefined' ? new AbortController() : null
+      const abortTimer = controller
+        ? setTimeout(() => controller.abort(), STATUS_FETCH_TIMEOUT_MS)
+        : null
+      let query = supabase
         .from('statuses')
         .select(STATUS_RAIL_COLUMNS)
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false })
         .limit(60)
+      if (controller) query = query.abortSignal(controller.signal)
+      const { data, error } = await query
+      if (abortTimer) clearTimeout(abortTimer)
 
-      if (error) throw new Error(error.message)
+      if (error) {
+        const aborted =
+          error?.name === 'AbortError' || /abort/i.test(String(error.message || ''))
+        if (aborted) return getState().statuses?.items?.length || 0
+        throw new Error(error.message)
+      }
 
       const localStatusesById = new Map((getState().statuses?.items || []).map((item) => [item.id, item]))
       const mapped = mapStatusRows(data, localStatusesById)
@@ -103,5 +122,13 @@ export const refreshStatusesData = createAsyncThunk(
     }
   },
 )
+
+/** Cache immédiat + fetch réseau (login / bootstrap), sans attendre le rail. */
+export function primeStatusRail(store) {
+  hydrateStatusRailIfEmpty(store.getState, store.dispatch)
+  const uid = store.getState()?.auth?.user?.id
+  if (!uid) return Promise.resolve()
+  return store.dispatch(refreshStatusesData())
+}
 
 export { mapStatusRows, STATUS_RAIL_COLUMNS }

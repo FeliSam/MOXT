@@ -30,9 +30,13 @@ export function isStatusRailCacheFresh(userId, ttlMs = STATUS_RAIL_CACHE_TTL_MS)
 export function readStatusRailCache(userId, { allowStale = false } = {}) {
   const entry = readEntry(userId)
   if (!entry || !Array.isArray(entry.items)) return null
-  const maxAge = allowStale ? STATUS_RAIL_CACHE_STALE_MS : STATUS_RAIL_CACHE_TTL_MS
-  if (!entry.savedAt || Date.now() - entry.savedAt > maxAge) return null
-  return entry.items.filter((item) => new Date(item.expiresAt).getTime() > Date.now())
+  if (!allowStale) {
+    if (!entry.savedAt || Date.now() - entry.savedAt > STATUS_RAIL_CACHE_TTL_MS) return null
+  }
+  return entry.items.filter((item) => {
+    const expires = item?.expiresAt ? new Date(item.expiresAt).getTime() : NaN
+    return !Number.isFinite(expires) || expires > Date.now()
+  })
 }
 
 export function writeStatusRailCache(userId, items) {

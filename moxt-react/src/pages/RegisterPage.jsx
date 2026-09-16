@@ -336,6 +336,9 @@ export function RegisterPage() {
       )
       startRealtimeSubscription(registeredUserId, dispatch, store.getState)
     }
+    void import('../features/statuses/statusSync').then(({ primeStatusRail }) => {
+      void primeStatusRail(store)
+    })
     void import('../app/catalogSync').then(({ scheduleCatalogSync }) => {
       void scheduleCatalogSync(store, { force: true })
     })

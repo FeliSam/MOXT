@@ -633,7 +633,14 @@ export async function softRefreshSession(store) {
   lastAuthUserRefresh = 0
   lastDataRefresh = 0
   lastProactiveRefresh = 0
-  await onForeground(dispatch, getState, { forceAuth: true })
-  const { scheduleCatalogSync } = await import('../app/catalogSync')
-  await scheduleCatalogSync(store, { force: true })
+  const { refreshStatusesData } = await import('../features/statuses/statusSync')
+  const statuses = dispatch(refreshStatusesData({ force: true }))
+  const foreground = onForeground(dispatch, getState, { forceAuth: true })
+  void import('../app/catalogSync').then(({ scheduleCatalogSync }) => {
+    void scheduleCatalogSync(store, { force: true })
+  })
+  await Promise.race([
+    Promise.allSettled([foreground, statuses]),
+    new Promise((resolve) => setTimeout(resolve, 3500)),
+  ])
 }

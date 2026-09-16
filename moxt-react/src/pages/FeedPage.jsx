@@ -230,7 +230,12 @@ export function FeedPage() {
     }
     const { refreshPublicationsData } =
       await import('../features/publications/useRefreshPublicationsData.js')
-    await dispatch(refreshPublicationsData())
+    const { refreshStatusesData } = await import('../features/statuses/statusSync.js')
+    void dispatch(refreshStatusesData({ force: true }))
+    await Promise.race([
+      dispatch(refreshPublicationsData()),
+      new Promise((resolve) => setTimeout(resolve, 4000)),
+    ])
     void import('../app/catalogSync.js').then(({ scheduleCatalogSync }) => {
       void scheduleCatalogSync(store)
     })

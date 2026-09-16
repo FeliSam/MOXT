@@ -179,6 +179,7 @@ export const loadAllData = createAsyncThunk(
     }
 
     const uid = user.id
+    void dispatch(refreshStatusesData())
 
     try {
     const { loadPlatformModules } = await import('../features/platform/platformModulesSlice')
@@ -266,8 +267,6 @@ export const loadAllData = createAsyncThunk(
         dispatch(setUser({ ...user, ...profilePatch }))
       }
     }
-
-    void dispatch(refreshStatusesData())
 
     const [
       listingsRes, parcelsRes, parcelRequestsRes,

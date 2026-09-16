@@ -194,7 +194,7 @@ export function StatusRail({
     dispatch(refreshStatusesData())
     const onVisible = () => {
       if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return
-      dispatch(refreshStatusesData({ force: true }))
+      dispatch(refreshStatusesData())
     }
     document.addEventListener('visibilitychange', onVisible)
     window.addEventListener('focus', onVisible)
@@ -205,7 +205,6 @@ export function StatusRail({
   }, [dispatch, user?.id])
 
   if (!user) return null
-  if (hideWhenNoCommunity && groups.length === 0 && !composerOpen) return null
 
   return (
     <div className="min-w-0 overflow-x-clip">

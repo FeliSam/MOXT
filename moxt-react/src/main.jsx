@@ -66,8 +66,8 @@ async function bootstrap() {
   const { hydrateAuthFromBootstrapCache } = await import('./services/authBootstrapCache')
   hydrateAuthFromBootstrapCache(store.dispatch)
 
-  const { hydrateStatusRailIfEmpty } = await import('./features/statuses/statusSync')
-  hydrateStatusRailIfEmpty(store.getState, store.dispatch)
+  const { primeStatusRail } = await import('./features/statuses/statusSync')
+  void primeStatusRail(store)
 
   const { loadPlatformModules } = await import('./features/platform/platformModulesSlice')
   const { loadStoreLocales } = await import('./features/platform/storeLocalesSlice')
@@ -103,6 +103,8 @@ async function bootstrap() {
       }
       if (isE2eHarnessActive()) return
 
+      const { primeStatusRail } = await import('./features/statuses/statusSync')
+      void primeStatusRail(store)
       const { scheduleCatalogSync } = await import('./app/catalogSync')
       void scheduleCatalogSync(store)
 
