@@ -6,6 +6,7 @@ import {
   isMessagesScrollLock,
   isMessagesThreadImmersive,
   measureKeyboardInset,
+  resetKeyboardAfterBackground,
   resyncViewportBottomGap,
   setIosNativeKeyboardOpen,
   syncKeyboardState,
@@ -130,5 +131,24 @@ describe('useKeyboardInset helpers', () => {
       offsetTop: 0,
     })
     expect(root.classList.contains('keyboard-open')).toBe(false)
+  })
+
+  it('resetKeyboardAfterBackground lâche le latch iOS et keyboard-open', () => {
+    const root = document.createElement('html')
+    root.classList.add('capacitor-ios', 'keyboard-open')
+    setIosNativeKeyboardOpen(true)
+    const input = document.createElement('textarea')
+    document.body.appendChild(input)
+    input.focus()
+    resetKeyboardAfterBackground(root)
+    expect(root.classList.contains('keyboard-open')).toBe(false)
+    expect(root.style.getPropertyValue('--keyboard-inset')).toBe('0px')
+    expect(document.activeElement === input).toBe(false)
+    syncKeyboardState(root, {
+      height: window.innerHeight,
+      offsetTop: 0,
+    })
+    expect(root.classList.contains('keyboard-open')).toBe(false)
+    input.remove()
   })
 })

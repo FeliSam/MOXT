@@ -429,6 +429,11 @@ html.capacitor-ios #root {
   height: 100%;
 }
 
+/* Brief compositor rebuild after iOS background — see recoverNativeUiAfterResume. */
+html.capacitor-native.capacitor-thawing #root {
+  transform: translateZ(0);
+}
+
 .keyboard-dismiss-chevron {
   display: none;
 }

@@ -6,6 +6,7 @@ import { markBootSplashConsumed } from '../components/layout/bootSplash'
 import { ScrollToTop } from '../components/routing/ScrollToTop'
 import { DocumentTitle } from '../components/routing/DocumentTitle'
 import { DeepLinkListener } from '../components/routing/DeepLinkListener'
+import { NativeBootRedirect } from '../components/routing/NativeBootRedirect'
 import { ThemeProvider } from '../contexts/ThemeContext'
 import { ConfirmDialogProvider } from '../contexts/ConfirmDialogProvider'
 import { LanguageProvider } from '../contexts/LanguageContext'
@@ -36,15 +37,16 @@ export function AppProviders({ children }) {
       <LanguageProvider>
         <ThemeProvider>
           <ConfirmDialogProvider>
-          <BrowserRouter>
-            <ScrollToTop />
-            <DocumentTitle />
-            <DeepLinkListener />
-            <AppBadgeBridge />
-            <BootSplashBridge />
-            <GlobalNetworkMonitor />
-            {children}
-          </BrowserRouter>
+            <BrowserRouter>
+              <ScrollToTop />
+              <DocumentTitle />
+              <DeepLinkListener />
+              <NativeBootRedirect />
+              <AppBadgeBridge />
+              <BootSplashBridge />
+              <GlobalNetworkMonitor />
+              {children}
+            </BrowserRouter>
           </ConfirmDialogProvider>
         </ThemeProvider>
       </LanguageProvider>
