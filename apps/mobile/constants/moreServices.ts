@@ -43,7 +43,6 @@ const WEB_TO_MOBILE: Record<string, string> = {
   '/notifications': '/notifications',
   '/favorites': '/favorites',
   '/referral': '/referral',
-  '/publications/mine': '/listing/mine',
   '/marketplace/mine': '/listing/mine',
   '/profile': '/profile/edit',
   '/admin': '/admin',
