@@ -66,11 +66,10 @@ export function LanguageProvider({ children }) {
     }
   }
 
-  useEffect(() => {
-    if (hasExplicitLanguageChoice() || accountLanguage) return
+  if (!hasExplicitLanguageChoice() && !accountLanguage) {
     const next = localeForStore(detectDistributionStore(), storeLocales)
-    setLanguageState((current) => (current === next ? current : next))
-  }, [accountLanguage, storeLocales])
+    if (language !== next) setLanguageState(next)
+  }
 
   useEffect(() => {
     document.documentElement.lang = language

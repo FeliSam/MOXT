@@ -42,6 +42,7 @@ describe('entityRemote', () => {
       buyerId: 'b1',
       sellerId: 's1',
     })
+    expect(row.offer_id).toBe('P2P-legacy')
     expect(p2pOrderFromRemoteRow({ id: 'ORD-3', offer_id: 'P2P-db' }).offerId).toBe('P2P-db')
   })
 

@@ -31,14 +31,16 @@ export function AdminStoreLocalesPanel() {
   const saveStatus = useSelector((state) => state.storeLocales.saveStatus)
   const updatedAt = useSelector((state) => state.storeLocales.updatedAt)
   const [draft, setDraft] = useState(remote)
+  const remoteKey = STORE_CHANNELS.map((id) => remote[id]).join('|')
+  const [syncedRemoteKey, setSyncedRemoteKey] = useState(remoteKey)
+  if (remoteKey !== syncedRemoteKey) {
+    setSyncedRemoteKey(remoteKey)
+    setDraft(remote)
+  }
 
   useEffect(() => {
     dispatch(loadStoreLocales())
   }, [dispatch])
-
-  useEffect(() => {
-    setDraft(remote)
-  }, [remote])
 
   const dirty = STORE_CHANNELS.some((id) => draft[id] !== remote[id])
 
