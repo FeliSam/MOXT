@@ -25,9 +25,23 @@ export function feedEntryHintOffset(t, delta, peakAt = FEED_ENTRY_HINT_PEAK_AT) 
   return delta * progress
 }
 
+function hintSlides(scroller) {
+  if (typeof scroller.querySelectorAll !== 'function') return []
+  return [...scroller.querySelectorAll('[data-feed-slide]')]
+}
+
+function applyHintShift(slides, y) {
+  const value = y ? `translate3d(0, ${-y}px, 0)` : ''
+  for (const slide of slides) {
+    if (!slide?.style) continue
+    slide.style.transform = value
+    slide.style.willChange = y ? 'transform' : ''
+  }
+}
+
 /**
- * Scroll down ~30% of the viewport then back to the start. Total ~3 seconds.
- * Disables CSS scroll-snap for the duration so snap-mandatory cannot yank to the next slide.
+ * Peek ~30% of the next slide then settle. Uses transforms, not scrollTop,
+ * so CSS snap / virtualization cannot land on an empty black placeholder.
  */
 export function playFeedEntryHint(scroller, options = {}) {
   const {
@@ -45,16 +59,12 @@ export function playFeedEntryHint(scroller, options = {}) {
       return
     }
 
-    const startTop = Number(scroller.scrollTop) || 0
+    const slides = hintSlides(scroller)
     const delta = Math.round((Number(scroller.clientHeight) || 0) * distanceRatio)
     if (delta < 8) {
       resolve('skipped')
       return
     }
-
-    const style = scroller.style
-    const previousSnap = style?.scrollSnapType
-    if (style) style.scrollSnapType = 'none'
 
     let rafId = 0
     let startTs = null
@@ -64,8 +74,7 @@ export function playFeedEntryHint(scroller, options = {}) {
       if (settled) return
       settled = true
       if (rafId) cancelRaf(rafId)
-      scroller.scrollTop = startTop
-      if (style) style.scrollSnapType = previousSnap || ''
+      applyHintShift(hintSlides(scroller), 0)
       resolve(reason)
     }
 
@@ -76,7 +85,7 @@ export function playFeedEntryHint(scroller, options = {}) {
       }
       if (startTs == null) startTs = ts
       const t = Math.min(1, (ts - startTs) / durationMs)
-      scroller.scrollTop = startTop + feedEntryHintOffset(t, delta, peakAt)
+      applyHintShift(slides, feedEntryHintOffset(t, delta, peakAt))
       if (t >= 1) {
         finish('done')
         return

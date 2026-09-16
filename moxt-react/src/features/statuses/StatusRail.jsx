@@ -95,7 +95,7 @@ function StatusBubble({
 }
 
 export function StatusRail({
-  hideWhenNoCommunity = false,
+  hideWhenNoCommunity: _hideWhenNoCommunity = false,
   composerOpen: composerOpenProp,
   onComposerOpenChange,
   renderComposer = true,

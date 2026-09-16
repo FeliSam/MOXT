@@ -7,6 +7,15 @@ import {
   prefersReducedMotion,
 } from './feedEntryHint.js'
 
+function fakeScroller(height = 800) {
+  const slide = { style: { transform: '', willChange: '' } }
+  return {
+    clientHeight: height,
+    querySelectorAll: () => [slide],
+    slide,
+  }
+}
+
 describe('feedEntryHint', () => {
   it('revient au point de départ à t=0 et t=1, pic vers 30% viewport', () => {
     const delta = 800 * FEED_ENTRY_HINT_DISTANCE_RATIO
@@ -21,12 +30,8 @@ describe('feedEntryHint', () => {
     expect(prefersReducedMotion({ matches: false })).toBe(false)
   })
 
-  it('anime scrollTop puis restaure la position', async () => {
-    const scroller = {
-      scrollTop: 400,
-      clientHeight: 800,
-      style: { scrollSnapType: 'y mandatory' },
-    }
+  it('anime un transform puis le retire (sans changer le snap)', async () => {
+    const scroller = fakeScroller()
     const frames = []
     const promise = playFeedEntryHint(scroller, {
       raf: (cb) => {
@@ -37,21 +42,15 @@ describe('feedEntryHint', () => {
     })
     expect(frames).toHaveLength(1)
     frames[0](0)
-    expect(scroller.style.scrollSnapType).toBe('none')
     frames.at(-1)(1260)
-    expect(scroller.scrollTop).toBeGreaterThan(400)
+    expect(scroller.slide.style.transform).toMatch(/translate3d/)
     frames.at(-1)(3000)
     await expect(promise).resolves.toBe('done')
-    expect(scroller.scrollTop).toBe(400)
-    expect(scroller.style.scrollSnapType).toBe('y mandatory')
+    expect(scroller.slide.style.transform).toBe('')
   })
 
-  it('annule et revient au départ si shouldCancel', async () => {
-    const scroller = {
-      scrollTop: 0,
-      clientHeight: 800,
-      style: { scrollSnapType: 'y mandatory' },
-    }
+  it('annule et retire le transform si shouldCancel', async () => {
+    const scroller = fakeScroller()
     const frames = []
     let cancel = false
     const promise = playFeedEntryHint(scroller, {
@@ -64,11 +63,10 @@ describe('feedEntryHint', () => {
     })
     frames[0](0)
     frames.at(-1)(800)
-    expect(scroller.scrollTop).toBeGreaterThan(0)
+    expect(scroller.slide.style.transform).toMatch(/translate3d/)
     cancel = true
     frames.at(-1)(900)
     await expect(promise).resolves.toBe('cancelled')
-    expect(scroller.scrollTop).toBe(0)
-    expect(scroller.style.scrollSnapType).toBe('y mandatory')
+    expect(scroller.slide.style.transform).toBe('')
   })
 })
