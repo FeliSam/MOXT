@@ -73,6 +73,7 @@
     "fix": "node scripts/moxt.mjs fix",
     "check:push": "node scripts/check-push.mjs",
     "check:rustore": "node scripts/check-rustore.mjs",
+    "rustore:publish": "node scripts/publish-rustore.mjs",
     "rustore:wrap-key": "node scripts/wrap-rustore-key.mjs",
     "setup:production": "node scripts/setup-production.mjs",
     "i18n:check": "npm run test -w @moxt/shared -- src/i18n/locales/locales.test.js",
@@ -110,7 +111,9 @@
     "test": "npm run shared:test && npm run web:test",
     "i18n:export": "node scripts/i18n-translations.mjs export",
     "i18n:import": "node scripts/i18n-translations.mjs import",
-    "i18n:import:apply": "node scripts/i18n-translations.mjs import --apply"
+    "i18n:import:apply": "node scripts/i18n-translations.mjs import --apply",
+    "html:to-figma": "node scripts/html-to-figma.mjs",
+    "html:to-figma:balance": "node scripts/html-to-figma.mjs --balance"
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.1085.0",

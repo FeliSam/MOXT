@@ -119,6 +119,7 @@ Safari : au retour d’onglet / bfcache, l’app re-sync `email_confirmed_at` vi
 | `npm run check:play-store` | Checklist fichiers Google Play (sans compte) |
 | `npm run check:stores` | App Store + Google Play (les deux checklists) |
 | `npm run check:rustore` | Auth RuStore (keyId + PEM ou Base64 modal) |
+| `npm run rustore:publish` | Upload APK release + soumission modération RuStore |
 | `npm run rustore:wrap-key` | Enveloppe Base64 RuStore → `scripts/rustore-private-key.pem` |
 | `npm run check:site` | Smoke test moxtapp.ru |
 | `npm run check:smsc` | Solde et mode test SMSC |
@@ -219,7 +220,7 @@ Voir `npm run check:push` pour le diagnostic à jour.
 
 ## RuStore (store Android RU)
 
-Aucune pipeline d’upload AAB automatisée pour l’instant — seulement le branchement sûr de la clé API (comme Firebase).
+Publication APK via l’API : `npm run android:apk` puis `npm run rustore:publish`. L’AAB reste optionnel (console / `--aab`).
 
 La console RuStore (UI FR) n’envoie **pas toujours** un fichier `.pem` : modal « Clé API » avec un long Base64 PKCS#8 (sous-titre *Signature requise pour la demande de jeton d'accès*). **Copier immédiatement** avant de fermer — affichage unique.
 

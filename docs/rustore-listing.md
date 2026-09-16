@@ -191,7 +191,7 @@ Sans keytool : Android Studio → **Build → Generate Signed Bundle / APK**.
 
 Sauvegarder le `.jks` + `key.properties` hors du repo. RuStore exige le **même** certificat pour les mises à jour.
 
-Auth API RuStore (clés seulement, pas d’upload fiche) : `npm run check:rustore` — voir `scripts/RACCOURCIS.md`.
+Auth + upload APK : `npm run check:rustore` puis `npm run rustore:publish` — voir `scripts/RACCOURCIS.md`.
 
 ---
 

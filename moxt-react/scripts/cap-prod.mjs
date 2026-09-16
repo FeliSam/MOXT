@@ -10,7 +10,7 @@
  * Puis   : npm run cap:prod:android  ou  gradlew assembleRelease / bundleRelease
  */
 import { spawnSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -79,6 +79,25 @@ if (existsSync(iosCapConfig)) {
   }
 } else {
   console.warn('⚠ capacitor.config.json iOS introuvable après sync.')
+}
+
+// AGP 9 refuse proguard-android.txt (plugin SQLite encore en AGP 8).
+const sqliteGradle = path.join(
+  root,
+  '..',
+  'node_modules',
+  '@capacitor-community',
+  'sqlite',
+  'android',
+  'build.gradle',
+)
+if (existsSync(sqliteGradle)) {
+  const src = readFileSync(sqliteGradle, 'utf8')
+  const next = src.replace("getDefaultProguardFile('proguard-android.txt')", "getDefaultProguardFile('proguard-android-optimize.txt')")
+  if (next !== src) {
+    writeFileSync(sqliteGradle, next)
+    console.log('✓ Patch SQLite AGP 9 (proguard-android-optimize).')
+  }
 }
 
 console.log(`
