@@ -45,6 +45,10 @@ export function scoreFeedItem(item, ctx = {}) {
 
   if (item.kind === 'video') {
     score += Math.min(Number(item.stats?.views || 0) / 8, 18)
+    const likes = item.source?.likes
+    if (ctx.userId && Array.isArray(likes) && likes.includes(ctx.userId)) {
+      score += 22
+    }
   }
 
   if (isSubscribedFeedPublisher(item, ctx)) {

@@ -1,8 +1,8 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { NATIVE_PAUSE_EVENT, NATIVE_RESUME_EVENT } from '../../platform/capacitor'
 import { FEED_SLIDE_SECTION_CLASS } from './feedActionStyles.jsx'
 import { playFeedEntryHint, prefersReducedMotion } from './feedEntryHint.js'
 
-/** Au-delà, 3 copies feraient trop de placeholders — wrap en fin de liste. */
 export const FEED_LOOP_MAX_ITEMS = 64
 export const FEED_PULL_REFRESH_PX = 64
 /** Slides montées autour de l’index actif (±N) — le reste est placeholder hauteur fixe. */
@@ -241,6 +241,38 @@ export function FeedSnapScroller({
       scroller.removeEventListener('touchmove', onTouchMove)
       scroller.removeEventListener('touchend', onTouchEnd)
       scroller.removeEventListener('touchcancel', onTouchEnd)
+    }
+  }, [])
+
+  useEffect(() => {
+    const scroller = scrollerRef.current
+    if (!scroller) return undefined
+
+    function resetAfterBackground() {
+      pullingRef.current = false
+      pullPxRef.current = 0
+      setPullPx(0)
+      jumpLockRef.current = false
+      const height = scroller.clientHeight || 1
+      const slideCount = loopingRef.current ? loopSizeRef.current * 3 : loopSizeRef.current
+      const max = Math.max(slideCount - 1, 0)
+      const index = Math.max(0, Math.min(max, Math.round(scroller.scrollTop / height)))
+      setActiveIndex(index)
+      const slide = scroller.querySelector(`[data-feed-slide][data-index="${index}"]`)
+      slide?.scrollIntoView({ block: 'start', behavior: 'auto' })
+    }
+
+    function onVisibility() {
+      if (document.visibilityState === 'visible') resetAfterBackground()
+    }
+
+    document.addEventListener('visibilitychange', onVisibility)
+    window.addEventListener(NATIVE_PAUSE_EVENT, resetAfterBackground)
+    window.addEventListener(NATIVE_RESUME_EVENT, resetAfterBackground)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener(NATIVE_PAUSE_EVENT, resetAfterBackground)
+      window.removeEventListener(NATIVE_RESUME_EVENT, resetAfterBackground)
     }
   }, [])
 

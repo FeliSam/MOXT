@@ -64,9 +64,20 @@ export function useFeedVideoPlayback(videoRef, { active, muted, playbackUrl, vid
       playNow()
     }
 
+    let resumeTries = 0
+
+    function onPause() {
+      if (cancelled || userPausedRef.current) return
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return
+      if (resumeTries >= 4) return
+      resumeTries += 1
+      window.setTimeout(playNow, 60)
+    }
+
     playNow()
     el.addEventListener('loadeddata', playNow)
     el.addEventListener('canplay', playNow)
+    el.addEventListener('pause', onPause)
     document.addEventListener('visibilitychange', onForeground)
     window.addEventListener(NATIVE_RESUME_EVENT, onForeground)
 
@@ -74,6 +85,7 @@ export function useFeedVideoPlayback(videoRef, { active, muted, playbackUrl, vid
       cancelled = true
       el.removeEventListener('loadeddata', playNow)
       el.removeEventListener('canplay', playNow)
+      el.removeEventListener('pause', onPause)
       document.removeEventListener('visibilitychange', onForeground)
       window.removeEventListener(NATIVE_RESUME_EVENT, onForeground)
     }

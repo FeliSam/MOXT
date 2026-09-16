@@ -189,11 +189,14 @@ export function FeedPage() {
   const orderCacheRef = useRef({ signature: '', items: [] })
   /* eslint-disable react-hooks/refs -- stable feed order cache between re-ranks */
   const organicItems = useMemo(() => {
-    const next = preserveFeedOrder(orderCacheRef.current, rawItems, orderSignature)
-    const leadFirst = ensureLeadVideo(next.items, rankCtx)
+    const previous = orderCacheRef.current
+    const next = preserveFeedOrder(previous, rawItems, orderSignature)
+    const reshuffle = previous.signature !== next.signature
+    const leadFirst =
+      reshuffle && !itemParam ? ensureLeadVideo(next.items, rankCtx) : next.items
     orderCacheRef.current = { signature: next.signature, items: leadFirst }
     return leadFirst
-  }, [rawItems, orderSignature, rankCtx])
+  }, [rawItems, orderSignature, rankCtx, itemParam])
   /* eslint-enable react-hooks/refs */
   const items = useMemo(() => {
     if (typeFilter !== 'all') return organicItems
