@@ -130,6 +130,7 @@ const vapidPublic =
   readPhase2VapidPublic()
 
 const mediaEnv = resolveMediaEnv()
+const distributionStore = String(process.env.VITE_DISTRIBUTION_STORE || '').trim()
 
 if (vapidPublic) {
   upsertEnvKey(outDevPath, 'VITE_VAPID_PUBLIC_KEY', vapidPublic)
@@ -150,7 +151,8 @@ if (vapidPublic) lines.push(`VITE_VAPID_PUBLIC_KEY=${vapidPublic}`)
 for (const [key, value] of Object.entries(mediaEnv)) {
   if (value) lines.push(`${key}=${value}`)
 }
+if (distributionStore) lines.push(`VITE_DISTRIBUTION_STORE=${distributionStore}`)
 writeFileSync(outProdPath, `${lines.join('\n')}\n`, 'utf8')
 console.log(
-  `[MOXT] .env.production prêt (${url}${vapidPublic ? ', VAPID inclus' : ', VAPID absent'}${mediaEnv.VITE_MEDIA_YANDEX_ENABLED === 'true' ? ', média Yandex activé' : ''})`,
+  `[MOXT] .env.production prêt (${url}${vapidPublic ? ', VAPID inclus' : ', VAPID absent'}${mediaEnv.VITE_MEDIA_YANDEX_ENABLED === 'true' ? ', média Yandex activé' : ''}${distributionStore ? `, store ${distributionStore}` : ''})`,
 )
