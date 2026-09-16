@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { shouldHoldNativeHomeForAuth, shouldRedirectNativeHome } from './nativeBootRedirect'
+import { shouldHoldNativeHomeForAuth, shouldRedirectNativeHome } from './nativeHomeRedirect'
 
 describe('shouldRedirectNativeHome', () => {
   it('envoie un utilisateur connecté vers le dashboard au cold start natif', () => {

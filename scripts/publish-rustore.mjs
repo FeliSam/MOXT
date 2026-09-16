@@ -97,7 +97,7 @@ async function main() {
   const draftBody = {
     appType: 'MAIN',
     publishType: 'INSTANTLY',
-    whatsNew: `MOXT ${pkg.version} (versionCode 13) — сборка RuStore.`,
+    whatsNew: `MOXT ${pkg.version} (versionCode 14) — сборка RuStore.`,
     shortDescription: 'Переводы, посылки, маркетплейс и работа — диаспора Африка ↔ Россия',
     developerContacts: {
       email: 'support@moxtapp.ru',

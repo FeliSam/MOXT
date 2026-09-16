@@ -2,7 +2,7 @@ import { useSelector } from 'react-redux'
 import { Navigate, useLocation } from 'react-router-dom'
 import { AuthLoadingScreen } from '../layout/AuthLoadingScreen'
 import { isNative } from '../../platform/capacitor'
-import { shouldHoldNativeHomeForAuth, shouldRedirectNativeHome } from './nativeBootRedirect'
+import { shouldHoldNativeHomeForAuth, shouldRedirectNativeHome } from './nativeHomeRedirect'
 
 export function NativeBootRedirect() {
   const userId = useSelector((state) => state.auth.user?.id)
