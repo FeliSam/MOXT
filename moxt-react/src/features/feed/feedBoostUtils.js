@@ -2,6 +2,7 @@ import { feedItemKey } from './feedItemUtils.js'
 import {
   annotateTrendingItems,
   diversifyFeedItems,
+  ensureLeadVideo,
   sortByFeedScore,
 } from './feedRankUtils.js'
 import { asArray, ensureMap, mapGet, mapHas } from './feedCollectionUtils.js'
@@ -29,7 +30,13 @@ const BOOST_FORMULA_WEIGHT = {
 }
 
 export function entityTypeToFeedKind(entityType) {
-  return ENTITY_TO_KIND[String(entityType || '').trim().toLowerCase()] || null
+  return (
+    ENTITY_TO_KIND[
+      String(entityType || '')
+        .trim()
+        .toLowerCase()
+    ] || null
+  )
 }
 
 export function feedItemIdFromBoost(boost) {
@@ -78,7 +85,9 @@ export function buildBoostLookup(boosts = [], now = Date.now()) {
 }
 
 function sortByRecency(items) {
-  return [...items].sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))
+  return [...items].sort((a, b) =>
+    String(b.createdAt || '').localeCompare(String(a.createdAt || '')),
+  )
 }
 
 function sortByBoostPriority(items, now = Date.now()) {
@@ -106,17 +115,19 @@ export function sortFeedItemsWithBoosts(items, boostLookup = new Map(), rankCtx 
 
   if (!lookup.size) {
     const organic = diversifyFeedItems(sortByFeedScore(annotated, rankCtx))
-    return annotateTrendingItems(organic)
+    return ensureLeadVideo(annotateTrendingItems(organic), rankCtx)
   }
 
   const boosted = sortByBoostPriority(
     annotated.filter((item) => item.isFeatured),
     now,
   )
-  const organic = diversifyFeedItems(sortByFeedScore(
-    annotated.filter((item) => !item.isFeatured),
-    rankCtx,
-  ))
+  const organic = diversifyFeedItems(
+    sortByFeedScore(
+      annotated.filter((item) => !item.isFeatured),
+      rankCtx,
+    ),
+  )
 
   const result = []
 
@@ -145,7 +156,7 @@ export function sortFeedItemsWithBoosts(items, boostLookup = new Map(), rankCtx 
     }
   }
 
-  return annotateTrendingItems(result)
+  return ensureLeadVideo(annotateTrendingItems(result), rankCtx)
 }
 
 /** @deprecated use sortByFeedScore via sortFeedItemsWithBoosts */

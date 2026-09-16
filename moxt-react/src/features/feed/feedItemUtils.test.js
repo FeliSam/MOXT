@@ -37,7 +37,20 @@ describe('feedItemUtils', () => {
       resolveFeedDesktopRedirect({
         typeFilter: 'all',
         itemParam: 'listing:LST-1',
-        state: { marketplace: { items: [{ id: 'LST-1', status: 'active', title: 'Phone', price: 100, currency: 'RUB', images: [] }] } },
+        state: {
+          marketplace: {
+            items: [
+              {
+                id: 'LST-1',
+                status: 'active',
+                title: 'Phone',
+                price: 100,
+                currency: 'RUB',
+                images: [],
+              },
+            ],
+          },
+        },
       }),
     ).toBe('/marketplace/LST-1')
     expect(listing.href).toBe('/marketplace/LST-1')
@@ -273,7 +286,7 @@ describe('feedItemUtils', () => {
       },
       businesses: { items: [] },
     })
-    expect(items.map((item) => item.id)).toEqual(['listing:LST-1', 'video:VID-1'])
+    expect(items.map((item) => item.id)).toEqual(['video:VID-1', 'listing:LST-1'])
   })
 
   it('filtre par type', () => {

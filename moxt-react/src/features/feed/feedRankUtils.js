@@ -4,6 +4,7 @@ import {
   hoursSince,
   scoreMarketplaceListing,
 } from '../marketplace/marketplaceFeed.js'
+import { readWatchedVideoIds, watchedVideoIndex } from '../videos/videoWatchHistory.js'
 
 /** Engagement unifié (vues, likes, commentaires, partages). */
 export function feedEngagement(item) {
@@ -63,9 +64,12 @@ export function scoreFeedItem(item, ctx = {}) {
     score += suggestionJitter(item.id, ctx.suggestionSalt)
   }
 
-  const haystack = `${item.title || ''} ${item.caption || ''} ${item.publisher?.name || ''}`.toLowerCase()
+  const haystack =
+    `${item.title || ''} ${item.caption || ''} ${item.publisher?.name || ''}`.toLowerCase()
   for (const term of ctx.searchTerms || []) {
-    const needle = String(term || '').trim().toLowerCase()
+    const needle = String(term || '')
+      .trim()
+      .toLowerCase()
     if (needle.length >= 2 && haystack.includes(needle)) score += 14
   }
 
@@ -103,8 +107,78 @@ export function sortByFeedScore(items, ctx = {}) {
     .map((item) => ({ ...item, feedScore: scoreFeedItem(item, ctx) }))
     .sort(
       (a, b) =>
-        b.feedScore - a.feedScore || String(b.createdAt || '').localeCompare(String(a.createdAt || '')),
+        b.feedScore - a.feedScore ||
+        String(b.createdAt || '').localeCompare(String(a.createdAt || '')),
     )
+}
+
+function videoEntityId(item) {
+  return String(item?.entityId || item?.source?.id || '').trim()
+}
+
+function userLikedVideo(item, ctx) {
+  const userId = ctx?.userId
+  if (!userId) return false
+  const likes = item?.source?.likes
+  if (Array.isArray(likes) && likes.map(String).includes(String(userId))) return true
+  return false
+}
+
+/**
+ * Slot #1 ranking: unseen + recency/engagement + follows/likes/search,
+ * with a light salt so the opener is not always the same video.
+ */
+export function scoreLeadVideo(item, ctx = {}) {
+  if (item?.kind !== 'video') return Number.NEGATIVE_INFINITY
+  let score = scoreFeedItem(item, ctx)
+  const videoId = videoEntityId(item)
+  const watchedIds = ctx.watchedVideoIds || []
+  const seenAt = watchedVideoIndex(videoId, watchedIds)
+  if (seenAt < 0) {
+    score += 16
+  } else {
+    score -= Math.max(6, 30 - seenAt)
+  }
+  if (userLikedVideo(item, ctx)) score += 12
+  if (ctx.suggestionSalt) {
+    score += leadSuggestionJitter(item.id, ctx.suggestionSalt)
+  }
+  return score
+}
+
+/** FNV-1a + avalanche so similar ids/salts do not stay in lockstep. */
+function mixHash(raw) {
+  let hash = 2166136261
+  for (let i = 0; i < raw.length; i += 1) {
+    hash ^= raw.charCodeAt(i)
+    hash = Math.imul(hash, 16777619)
+  }
+  hash = Math.imul(hash ^ (hash >>> 16), 2246822519)
+  hash = Math.imul(hash ^ (hash >>> 13), 3266489917)
+  return (hash ^ (hash >>> 16)) >>> 0
+}
+
+function leadSuggestionJitter(id, salt) {
+  return (mixHash(`lead:${id}:${salt}`) % 47) - 23
+}
+
+export function pickLeadVideo(items, ctx = {}) {
+  const videos = (items || []).filter((item) => item?.kind === 'video')
+  if (!videos.length) return null
+  return [...videos].sort((a, b) => {
+    const diff = scoreLeadVideo(b, ctx) - scoreLeadVideo(a, ctx)
+    if (diff !== 0) return diff
+    return String(b.createdAt || '').localeCompare(String(a.createdAt || ''))
+  })[0]
+}
+
+/** First organic slot is always a video when the mixed feed has any. */
+export function ensureLeadVideo(items, ctx = {}) {
+  if (!Array.isArray(items) || !items.length) return items
+  const lead = pickLeadVideo(items, ctx)
+  if (!lead) return items
+  if (items[0]?.id === lead.id) return items
+  return [lead, ...items.filter((item) => item.id !== lead.id)]
 }
 
 /** Évite d’empiler le même type / le même éditeur. */
@@ -148,6 +222,7 @@ export function buildFeedRankContext(state = {}, user = null) {
       viewedListings,
       userId: user?.id,
     }),
+    watchedVideoIds: readWatchedVideoIds(),
     now: Date.now(),
   }
 }

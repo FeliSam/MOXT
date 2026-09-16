@@ -60,6 +60,7 @@ describe('feedDiscoveryUtils', () => {
     expect(discovery.length).toBe(2)
     expect(next.indexOf(discovery[0])).toBe(FEED_DISCOVERY_EVERY)
     expect(next.indexOf(discovery[1])).toBe(FEED_DISCOVERY_EVERY * 2 + 1)
+    expect(next[0].kind).toBe('video')
   })
 
   it('génère un id stable pour une slide découverte', () => {
@@ -79,8 +80,12 @@ describe('feedDiscoveryUtils', () => {
       { type: 'listing', id: 'L3' },
       { type: 'listing', id: 'L4' },
     ]
-    const a = pickShuffledWindow(cards, 'salt-a', 0, 4).map((row) => row.id).join()
-    const b = pickShuffledWindow(cards, 'salt-b', 0, 4).map((row) => row.id).join()
+    const a = pickShuffledWindow(cards, 'salt-a', 0, 4)
+      .map((row) => row.id)
+      .join()
+    const b = pickShuffledWindow(cards, 'salt-b', 0, 4)
+      .map((row) => row.id)
+      .join()
     expect(a).not.toBe(b)
     expect(seededShuffle(['a', 'b', 'c'], 'x')).not.toEqual(seededShuffle(['a', 'b', 'c'], 'y'))
   })
