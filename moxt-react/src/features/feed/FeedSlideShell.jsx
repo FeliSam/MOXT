@@ -2,10 +2,7 @@ import { FiUserPlus } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { EntityAvatar } from '../account/EntityAvatar'
-import {
-  removePublisherSubscription,
-  upsertPublisherSubscription,
-} from '../account/accountSlice'
+import { removePublisherSubscription, upsertPublisherSubscription } from '../account/accountSlice'
 import { selectPublisherSubscription } from '../account/subscriptionSelectors'
 import { EntityVerifiedName } from '../../components/ui/EntityVerifiedName'
 import { useGuestAction } from '../guest/useGuestAction'
@@ -37,7 +34,8 @@ export function FeedSubscribeChip({ publisher, guestKey = 'videos.feed.guestSubs
     selectPublisherSubscription(state, user?.id, publisherType, publisherId),
   )
   const isOwner = Boolean(
-    user?.id && (publisher?.ownerId === user.id || (publisherType === 'user' && publisherId === user.id)),
+    user?.id &&
+    (publisher?.ownerId === user.id || (publisherType === 'user' && publisherId === user.id)),
   )
   const isSubscribed = Boolean(subscription)
 
@@ -110,14 +108,17 @@ export function FeedSlideShell({
   const p3 = (key, vars) => phase3Text(t, key, vars)
   const currentUser = useSelector((state) => state.auth.user)
   const directoryEntry = useSelector((state) =>
-    publisher?.type === 'user' && publisher?.id ? state.profileDirectory?.byId?.[publisher.id] : null,
+    publisher?.type === 'user' && publisher?.id
+      ? state.profileDirectory?.byId?.[publisher.id]
+      : null,
   )
   const { profile } = usePublicationProfile(
     publisher?.type === 'user' ? publisher.id : '',
     currentUser,
   )
   const profileName = `${profile?.firstName || ''} ${profile?.lastName || ''}`.trim()
-  const directoryName = `${directoryEntry?.firstName || ''} ${directoryEntry?.lastName || ''}`.trim()
+  const directoryName =
+    `${directoryEntry?.firstName || ''} ${directoryEntry?.lastName || ''}`.trim()
   const name =
     [profileName, directoryName, publisher?.name].find((value) => !isGenericPublisherName(value)) ||
     p3('feed.publisherFallback')
@@ -149,6 +150,7 @@ export function FeedSlideShell({
     <section
       data-feed-slide
       data-index={index}
+      data-feed-kind={item?.kind || undefined}
       className={`${FEED_SLIDE_SECTION_CLASS} ${className}`}
     >
       <div className={FEED_SLIDE_FRAME_CLASS}>
@@ -161,7 +163,9 @@ export function FeedSlideShell({
         ) : null}
         {item ? <FeedDoubleTapLike item={item}>{children}</FeedDoubleTapLike> : children}
         <div className={FEED_META_OVERLAY_CLASS}>
-          <div className={`${FEED_META_INTERACTIVE_CLASS} flex min-w-0 max-w-full items-center gap-2`}>
+          <div
+            className={`${FEED_META_INTERACTIVE_CLASS} flex min-w-0 max-w-full items-center gap-2`}
+          >
             {publisher?.path ? (
               <Link to={publisher.path} className="shrink-0 hover:opacity-95">
                 {avatar}
@@ -187,7 +191,9 @@ export function FeedSlideShell({
             ) : null}
           </div>
           {title ? (
-            <h2 className={`${FEED_META_INTERACTIVE_CLASS} mt-2 truncate text-[1.05rem] font-black leading-snug`}>
+            <h2
+              className={`${FEED_META_INTERACTIVE_CLASS} mt-2 truncate text-[1.05rem] font-black leading-snug`}
+            >
               {title}
             </h2>
           ) : null}

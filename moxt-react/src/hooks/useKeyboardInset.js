@@ -114,6 +114,20 @@ export function forceKeyboardClosed(root) {
 }
 
 /**
+ * iOS often skips keyboardWillHide when the app is backgrounded.
+ * Clear the native-open latch so resume cannot leave `.keyboard-open`
+ * (bottom nav `pointer-events: none`) or a mismatched WKWebView frame.
+ */
+export function resetKeyboardAfterBackground(root = document.documentElement) {
+  setIosNativeKeyboardOpen(false)
+  if (typeof document !== 'undefined') {
+    const active = document.activeElement
+    if (isEditableField(active)) active.blur()
+  }
+  forceKeyboardClosed(root)
+}
+
+/**
  * Point de sync unique : bottom nav, clavier global, composer messagerie.
  * @param {HTMLElement} root
  * @param {VisualViewport | null | undefined} vv
@@ -206,13 +220,27 @@ export function useKeyboardInset() {
               setIosNativeKeyboardOpen(true)
               update()
             }),
+            Keyboard.addListener('keyboardDidShow', () => {
+              setIosNativeKeyboardOpen(true)
+              update()
+            }),
             Keyboard.addListener('keyboardWillHide', () => {
               setIosNativeKeyboardOpen(false)
               update()
             }),
-          ]).then(([showHandle, hideHandle]) => {
-            removeShow = () => showHandle.remove()
-            removeHide = () => hideHandle.remove()
+            Keyboard.addListener('keyboardDidHide', () => {
+              setIosNativeKeyboardOpen(false)
+              update()
+            }),
+          ]).then(([willShow, didShow, willHide, didHide]) => {
+            removeShow = () => {
+              willShow.remove()
+              didShow.remove()
+            }
+            removeHide = () => {
+              willHide.remove()
+              didHide.remove()
+            }
           })
         })
         .catch(() => {})

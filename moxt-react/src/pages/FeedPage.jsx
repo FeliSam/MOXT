@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { buildFeedRankContext } from '../features/feed/feedRankUtils'
+import { buildFeedRankContext, ensureLeadVideo } from '../features/feed/feedRankUtils'
 import { FiLayers } from 'react-icons/fi'
 import { useDispatch, useSelector, useStore } from 'react-redux'
 import { Link, Navigate, useOutletContext, useSearchParams } from 'react-router-dom'
@@ -123,7 +123,19 @@ export function FeedPage() {
       businesses,
       account: { subscriptions, favorites, viewedListings },
     }),
-    [videos, marketplace, parcels, jobs, events, posts, p2p, businesses, subscriptions, favorites, viewedListings],
+    [
+      videos,
+      marketplace,
+      parcels,
+      jobs,
+      events,
+      posts,
+      p2p,
+      businesses,
+      subscriptions,
+      favorites,
+      viewedListings,
+    ],
   )
 
   const rankCtx = useMemo(
@@ -149,7 +161,8 @@ export function FeedPage() {
   )
 
   const allItems = useMemo(
-    () => buildUnifiedFeedItems(feedState, { typeFilter: 'all', boosts: feedBoosts, rankCtx, user }),
+    () =>
+      buildUnifiedFeedItems(feedState, { typeFilter: 'all', boosts: feedBoosts, rankCtx, user }),
     [feedState, feedBoosts, rankCtx, user],
   )
   const kindCounts = useMemo(() => countFeedKinds(allItems), [allItems])
@@ -157,7 +170,12 @@ export function FeedPage() {
     () =>
       requestedType === 'all'
         ? allItems
-        : buildUnifiedFeedItems(feedState, { typeFilter: requestedType, boosts: feedBoosts, rankCtx, user }),
+        : buildUnifiedFeedItems(feedState, {
+            typeFilter: requestedType,
+            boosts: feedBoosts,
+            rankCtx,
+            user,
+          }),
     [allItems, feedState, requestedType, feedBoosts, rankCtx, user],
   )
 
@@ -172,20 +190,25 @@ export function FeedPage() {
   /* eslint-disable react-hooks/refs -- stable feed order cache between re-ranks */
   const organicItems = useMemo(() => {
     const next = preserveFeedOrder(orderCacheRef.current, rawItems, orderSignature)
-    orderCacheRef.current = next
-    return next.items
-  }, [rawItems, orderSignature])
+    const leadFirst = ensureLeadVideo(next.items, rankCtx)
+    orderCacheRef.current = { signature: next.signature, items: leadFirst }
+    return leadFirst
+  }, [rawItems, orderSignature, rankCtx])
   /* eslint-enable react-hooks/refs */
   const items = useMemo(() => {
     if (typeFilter !== 'all') return organicItems
-    return injectFeedDiscoverySlides(organicItems, { feedState, rankCtx, user })
+    return ensureLeadVideo(
+      injectFeedDiscoverySlides(organicItems, { feedState, rankCtx, user }),
+      rankCtx,
+    )
   }, [organicItems, typeFilter, feedState, rankCtx, user])
 
   const initialIndex = pickInitialFeedIndex(items, itemParam, feedState)
   const focusedItem = useMemo(() => {
     if (!itemParam || !items.length) return items[initialIndex] || null
-    const resolvedId = items.find((row) => row.id === itemParam)?.id
-      || items.find((row) => row.id.endsWith(`:${itemParam.split(':').pop()}`))?.id
+    const resolvedId =
+      items.find((row) => row.id === itemParam)?.id ||
+      items.find((row) => row.id.endsWith(`:${itemParam.split(':').pop()}`))?.id
     return items.find((row) => row.id === (resolvedId || itemParam)) || items[initialIndex] || null
   }, [itemParam, items, initialIndex])
 
@@ -202,7 +225,8 @@ export function FeedPage() {
       }
       return
     }
-    const { refreshPublicationsData } = await import('../features/publications/useRefreshPublicationsData.js')
+    const { refreshPublicationsData } =
+      await import('../features/publications/useRefreshPublicationsData.js')
     await dispatch(refreshPublicationsData())
     void import('../app/catalogSync.js').then(({ scheduleCatalogSync }) => {
       void scheduleCatalogSync(store)
@@ -271,6 +295,7 @@ export function FeedPage() {
           renderSlide={renderFeedSlide}
           onRefresh={refreshFeed}
           refreshNonce={refreshNonce}
+          playEntryHint={!itemParam}
         />
       </div>
     </div>

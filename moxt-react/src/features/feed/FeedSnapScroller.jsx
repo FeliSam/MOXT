@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { FEED_SLIDE_SECTION_CLASS } from './feedActionStyles.jsx'
+import { playFeedEntryHint, prefersReducedMotion } from './feedEntryHint.js'
 
 /** Au-delà, 3 copies feraient trop de placeholders — wrap en fin de liste. */
 export const FEED_LOOP_MAX_ITEMS = 64
@@ -46,6 +47,7 @@ export function FeedSnapScroller({
   refreshNonce = 0,
   className = '',
   testId = 'feed-snap-scroll',
+  playEntryHint = true,
 }) {
   const scrollerRef = useRef(null)
   const looping = items.length >= 2
@@ -59,10 +61,7 @@ export function FeedSnapScroller({
   const clampedInitial = Math.max(0, Math.min(initialIndex, Math.max(items.length - 1, 0)))
   const [activeIndex, setActiveIndex] = useState(baseOffset + clampedInitial)
   const itemSetKey = useMemo(
-    () =>
-      [...new Set(items.map((item) => item.id))]
-        .sort()
-        .join('|'),
+    () => [...new Set(items.map((item) => item.id))].sort().join('|'),
     [items],
   )
   const jumpLockRef = useRef(false)
@@ -76,6 +75,9 @@ export function FeedSnapScroller({
   const pullStartYRef = useRef(0)
   const pullingRef = useRef(false)
   const onRefreshRef = useRef(onRefresh)
+  const hintDoneRef = useRef(false)
+  const hintCancelRef = useRef(false)
+  const hintActiveRef = useRef(false)
 
   useEffect(() => {
     activeIndexRef.current = activeIndex
@@ -102,10 +104,11 @@ export function FeedSnapScroller({
     const next = baseOffset + clampedInitial
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reposition scroll when feed items change
     setActiveIndex(next)
+    if (hintActiveRef.current) return undefined
     jumpLockRef.current = true
     scrollToIndex(next, 'auto')
     const t = window.setTimeout(() => {
-      jumpLockRef.current = false
+      if (!hintActiveRef.current) jumpLockRef.current = false
     }, 120)
     return () => window.clearTimeout(t)
   }, [baseOffset, clampedInitial, itemSetKey, refreshNonce])
@@ -241,6 +244,87 @@ export function FeedSnapScroller({
     }
   }, [])
 
+  const hintListReady = items.length >= 2
+
+  useEffect(() => {
+    const scroller = scrollerRef.current
+    if (!scroller || hintDoneRef.current) return undefined
+    if (!playEntryHint || clampedInitial !== 0 || prefersReducedMotion()) {
+      hintDoneRef.current = true
+      scroller.dataset.feedHint = prefersReducedMotion() ? 'skipped-motion' : 'skipped'
+      return undefined
+    }
+    if (!hintListReady) return undefined
+
+    hintCancelRef.current = false
+    hintActiveRef.current = true
+    jumpLockRef.current = true
+    scroller.dataset.feedHint = 'pending'
+    let started = false
+    let layoutTimer = 0
+    let attempts = 0
+
+    function cancelHint() {
+      hintCancelRef.current = true
+    }
+
+    function finishHint(reason = 'done') {
+      hintActiveRef.current = false
+      jumpLockRef.current = false
+      hintDoneRef.current = true
+      scroller.dataset.feedHint = reason
+    }
+
+    function startWhenLaidOut() {
+      if (hintCancelRef.current || hintDoneRef.current) {
+        if (hintCancelRef.current) finishHint('cancelled')
+        return
+      }
+      const height = Number(scroller.clientHeight) || 0
+      if (height < 48 && attempts < 20) {
+        attempts += 1
+        layoutTimer = window.setTimeout(startWhenLaidOut, 100)
+        return
+      }
+      if (height < 48) {
+        finishHint('skipped')
+        return
+      }
+      started = true
+      scroller.dataset.feedHint = 'playing'
+      void playFeedEntryHint(scroller, {
+        shouldCancel: () => hintCancelRef.current,
+      }).then((reason) => {
+        if (reason === 'skipped' && !hintCancelRef.current && attempts < 20) {
+          attempts += 1
+          started = false
+          scroller.dataset.feedHint = 'pending'
+          layoutTimer = window.setTimeout(startWhenLaidOut, 120)
+          return
+        }
+        finishHint(reason === 'cancelled' ? 'cancelled' : reason === 'skipped' ? 'skipped' : 'done')
+      })
+    }
+
+    layoutTimer = window.setTimeout(startWhenLaidOut, 240)
+
+    scroller.addEventListener('touchstart', cancelHint, { passive: true })
+    scroller.addEventListener('wheel', cancelHint, { passive: true })
+    scroller.addEventListener('pointerdown', cancelHint)
+
+    return () => {
+      window.clearTimeout(layoutTimer)
+      scroller.removeEventListener('touchstart', cancelHint)
+      scroller.removeEventListener('wheel', cancelHint)
+      scroller.removeEventListener('pointerdown', cancelHint)
+      hintCancelRef.current = true
+      if (!started) {
+        hintActiveRef.current = false
+        jumpLockRef.current = false
+      }
+    }
+  }, [playEntryHint, clampedInitial, hintListReady])
+
   const showPull = pullPx > 6 || refreshing
 
   return (
@@ -263,6 +347,7 @@ export function FeedSnapScroller({
         ref={scrollerRef}
         data-navbar-ignore
         data-testid={testId}
+        data-feed-hint=""
         className={`feed-snap-scroller scrollbar-hidden h-full w-full snap-y snap-mandatory overflow-y-auto overscroll-y-contain bg-black ${className}`}
       >
         {displayItems.map((item, index) => {

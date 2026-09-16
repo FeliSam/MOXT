@@ -1,15 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { NATIVE_PAUSE_EVENT, NATIVE_RESUME_EVENT } from '../platform/capacitor'
 
 const THRESHOLD_PX = 72
 const MAX_PULL_PX = 120
 
 function getScrollTop() {
-  return (
-    window.scrollY ||
-    document.documentElement.scrollTop ||
-    document.body.scrollTop ||
-    0
-  )
+  return window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0
 }
 
 /**
@@ -47,12 +43,15 @@ export function usePullToRefresh({ onRefresh, disabled = false }) {
     if (disabled) return undefined
 
     function onTouchStart(event) {
+      tracking.current = false
       if (refreshingRef.current) return
       if (getScrollTop() > 2) return
       const target = event.target
       if (target instanceof Element) {
         if (target.closest('.messages-thread-immersive, [data-no-pull-refresh]')) return
-        const scrollParent = target.closest('[data-scroll-container], .overflow-y-auto, .overflow-auto')
+        const scrollParent = target.closest(
+          '[data-scroll-container], .overflow-y-auto, .overflow-auto',
+        )
         if (scrollParent && scrollParent.scrollTop > 2) return
       }
       tracking.current = true
@@ -89,16 +88,31 @@ export function usePullToRefresh({ onRefresh, disabled = false }) {
       }
     }
 
+    function resetGesture() {
+      tracking.current = false
+      setPull(0)
+    }
+
+    function onVisibility() {
+      if (document.visibilityState === 'hidden') resetGesture()
+    }
+
     document.addEventListener('touchstart', onTouchStart, { passive: true })
     document.addEventListener('touchmove', onTouchMove, { passive: false })
     document.addEventListener('touchend', onTouchEnd)
     document.addEventListener('touchcancel', onTouchEnd)
+    document.addEventListener('visibilitychange', onVisibility)
+    window.addEventListener(NATIVE_PAUSE_EVENT, resetGesture)
+    window.addEventListener(NATIVE_RESUME_EVENT, resetGesture)
 
     return () => {
       document.removeEventListener('touchstart', onTouchStart)
       document.removeEventListener('touchmove', onTouchMove)
       document.removeEventListener('touchend', onTouchEnd)
       document.removeEventListener('touchcancel', onTouchEnd)
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener(NATIVE_PAUSE_EVENT, resetGesture)
+      window.removeEventListener(NATIVE_RESUME_EVENT, resetGesture)
     }
   }, [disabled, runRefresh])
 

@@ -6,10 +6,12 @@ import './index.css'
 
 function scheduleDeferredMaintenance() {
   const run = () => {
-    void import('./services/legacyMigration').then(({ migrateLegacyStorage, cleanupLocalStorage }) => {
-      migrateLegacyStorage()
-      cleanupLocalStorage()
-    })
+    void import('./services/legacyMigration').then(
+      ({ migrateLegacyStorage, cleanupLocalStorage }) => {
+        migrateLegacyStorage()
+        cleanupLocalStorage()
+      },
+    )
     void import('./services/seedDemoContent').then(({ clearDemoContent }) => clearDemoContent())
   }
   if (typeof requestIdleCallback === 'function') {
@@ -23,22 +25,42 @@ async function bootstrap() {
   ensureClientCacheVersion()
   scheduleDeferredMaintenance()
 
-  const [{ AppProviders }, { AppRouter }, { AppErrorBoundary }, { ToastViewport }, { store }, { ensureLocaleLoaded }, { resolveInitialLanguage }] =
-    await Promise.all([
-      import('./app/providers'),
-      import('./app/router'),
-      import('./components/feedback/AppErrorBoundary'),
-      import('./components/ui/Toast'),
-      import('./app/store'),
-      import('./i18n/translate'),
-      import('./config/uiTranslations'),
-    ])
+  // Capacitor: hide splash as soon as JS runs — do not wait for plugins / locale / routes.
+  void import('./platform/capacitor').then(({ hideNativeSplash }) => {
+    void hideNativeSplash()
+  })
+  // Warm the first screens while the shell modules parse (local WKWebView chunk parse is the wait).
+  void import('./pages/DashboardPage')
+  void import('./pages/LoginPage')
+  void import('./pages/PublicHomePage')
+
+  const [
+    { AppProviders },
+    { AppRouter },
+    { AppErrorBoundary },
+    { ToastViewport },
+    { store },
+    { ensureLocaleLoaded },
+    { resolveInitialLanguage },
+  ] = await Promise.all([
+    import('./app/providers'),
+    import('./app/router'),
+    import('./components/feedback/AppErrorBoundary'),
+    import('./components/ui/Toast'),
+    import('./app/store'),
+    import('./i18n/translate'),
+    import('./config/uiTranslations'),
+  ])
 
   const { detectDistributionStore, localeForStore } = await import('./config/storeLocales')
   const storeDefault = localeForStore(detectDistributionStore())
-  const initialLanguage = resolveInitialLanguage(localStorage.getItem('moxt-language'), storeDefault)
+  const initialLanguage = resolveInitialLanguage(
+    localStorage.getItem('moxt-language'),
+    storeDefault,
+  )
   if (initialLanguage !== 'fr') {
-    await ensureLocaleLoaded(initialLanguage)
+    // LanguageProvider re-renders when the dictionary arrives — do not block first paint.
+    void ensureLocaleLoaded(initialLanguage)
   }
 
   const { hydrateAuthFromBootstrapCache } = await import('./services/authBootstrapCache')
@@ -109,11 +131,13 @@ bootstrap()
 if (import.meta.env.PROD) {
   void import('./platform/capacitor').then(({ isNative }) => {
     if (isNative) return
-    void import('./pwa').then(({ registerServiceWorker, listenForInstallPrompt, listenForServiceWorkerMessages }) => {
-      registerServiceWorker()
-      listenForInstallPrompt()
-      listenForServiceWorkerMessages()
-    })
+    void import('./pwa').then(
+      ({ registerServiceWorker, listenForInstallPrompt, listenForServiceWorkerMessages }) => {
+        registerServiceWorker()
+        listenForInstallPrompt()
+        listenForServiceWorkerMessages()
+      },
+    )
     void import('./services/releaseWatcher').then(({ startReleaseWatcher }) => {
       void import('./app/store').then(({ store }) => {
         startReleaseWatcher(store)

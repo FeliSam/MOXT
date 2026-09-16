@@ -43,7 +43,8 @@ import { useLanguage } from '../../../contexts/useLanguage'
 import { addToast } from '../../ui/uiSlice'
 import { phase3Text } from '../../../i18n/phase3I18n'
 import { useVideoFeedMuted } from '../../videos/videoFeedAudio'
-import { useFeedVideoPlayback } from '../../videos/useFeedVideoPlayback'
+import { primeFeedVideoElement, useFeedVideoPlayback } from '../../videos/useFeedVideoPlayback'
+import { rememberWatchedVideo } from '../../videos/videoWatchHistory'
 import { FeedSlideShell } from '../FeedSlideShell'
 import { liveFeedSocialStats } from '../feedItemUtils'
 
@@ -146,7 +147,9 @@ function VideoMoreSheet({
         aria-label={p3('videos.feed.closeMore')}
         onClick={requestClose}
         className={`absolute inset-0 bg-slate-950/55 backdrop-blur-[1px] dark:bg-black/55 ${
-          closing ? 'animate-[fadeOut_200ms_ease-in_forwards]' : 'animate-[fadeIn_200ms_ease-out_forwards]'
+          closing
+            ? 'animate-[fadeOut_200ms_ease-in_forwards]'
+            : 'animate-[fadeIn_200ms_ease-out_forwards]'
         }`}
       />
       <div
@@ -198,7 +201,10 @@ function VideoMoreSheet({
               {isActive && starsEnabled ? (
                 activeBoost ? (
                   <div className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold text-amber-700 dark:text-amber-200/90">
-                    <FiTrendingUp className="text-lg text-amber-700 dark:text-amber-200/90" aria-hidden="true" />
+                    <FiTrendingUp
+                      className="text-lg text-amber-700 dark:text-amber-200/90"
+                      aria-hidden="true"
+                    />
                     {p3('publications.cards.boostActive')}
                   </div>
                 ) : (
@@ -265,6 +271,11 @@ function FeedVideoPlayer({ video, active, onActivate }) {
   })
   const playbackUrl = src || video.videoUrl
 
+  const setVideoNode = useCallback((node) => {
+    videoRef.current = node
+    primeFeedVideoElement(node)
+  }, [])
+
   const playback = useFeedVideoPlayback(videoRef, {
     active,
     muted,
@@ -297,12 +308,14 @@ function FeedVideoPlayer({ video, active, onActivate }) {
   return (
     <div className="relative h-full w-full overflow-hidden bg-black">
       <video
-        ref={videoRef}
+        ref={setVideoNode}
         key={video.id}
         src={playbackUrl}
         poster={video.thumbnailUrl || undefined}
         className="h-full w-full object-cover"
         playsInline
+        webkit-playsinline=""
+        autoPlay={active}
         loop
         muted={muted}
         preload={active ? 'auto' : 'metadata'}
@@ -349,9 +362,7 @@ export function VideoFeedSlide({ item, index, active }) {
   const feedBoosts = useSelector((state) => state.stars.feedBoosts)
   const starsBalance = useSelector((state) => state.stars.balance)
   const business = useSelector((state) =>
-    video?.businessId
-      ? state.businesses.items.find((row) => row.id === video.businessId)
-      : null,
+    video?.businessId ? state.businesses.items.find((row) => row.id === video.businessId) : null,
   )
   const { requireAccount, promptAccount } = useGuestAction()
   const boostFlow = useStarsBoostFlow()
@@ -367,9 +378,7 @@ export function VideoFeedSlide({ item, index, active }) {
     user?.id && video && (video.ownerId === user.id || business?.ownerId === user.id),
   )
   const videoActive = isActiveVideo(video)
-  const activeBoost = video?.id
-    ? activeBoostForEntity(feedBoosts, 'video', video.id)
-    : null
+  const activeBoost = video?.id ? activeBoostForEntity(feedBoosts, 'video', video.id) : null
 
   useEffect(() => {
     if (!starsEnabled || !isOwner || !moreOpen) return
@@ -384,19 +393,20 @@ export function VideoFeedSlide({ item, index, active }) {
   }, [video?.id])
 
   const handleActivate = useCallback(
-    (videoId) => {
+    (id) => {
+      rememberWatchedVideo(id)
       if (isOwner) return
       if (viewed.current) return
       viewed.current = true
       if (viewTimerRef.current) window.clearTimeout(viewTimerRef.current)
       viewTimerRef.current = window.setTimeout(() => {
-        dispatch(incrementVideoView({ id: videoId }))
+        dispatch(incrementVideoView({ id }))
       }, 350)
     },
     [dispatch, isOwner],
   )
-  const liked = useSelector((state) =>
-    liveFeedSocialStats(state, 'video', video?.id, user?.id).liked,
+  const liked = useSelector(
+    (state) => liveFeedSocialStats(state, 'video', video?.id, user?.id).liked,
   )
   const caption = String(video?.caption || '').trim()
   const publisher = {

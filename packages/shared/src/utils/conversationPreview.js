@@ -4,7 +4,7 @@
  *
  * @param {object} conversation
  * @param {string} [userId]
- * @returns {{ text: string, senderId: string, createdAt: string | null, source: 'meta' | 'message' } | null}
+ * @returns {{ text: string, senderId: string, createdAt: string | null, source: 'meta' | 'message', message?: object | null } | null}
  */
 export function resolveConversationPreviewMessage(conversation, userId) {
   if (!conversation) return null

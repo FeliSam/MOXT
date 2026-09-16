@@ -38,12 +38,41 @@ describe('feedBoostUtils', () => {
     const boostLookup = new Map([
       [
         'listing:B',
-        { entity_type: 'marketplace', entity_id: 'B', formula_key: 'featured_24h', expires_at: '2099-01-01T00:00:00.000Z' },
+        {
+          entity_type: 'marketplace',
+          entity_id: 'B',
+          formula_key: 'featured_24h',
+          expires_at: '2099-01-01T00:00:00.000Z',
+        },
       ],
     ])
     const sorted = sortFeedItemsWithBoosts(items, boostLookup)
     expect(sorted[0].id).toBe('listing:B')
     expect(sorted[0].isFeatured).toBe(true)
+  })
+
+  it('force une vidéo en slot 1 même si une annonce est vedette', () => {
+    const items = [
+      { id: 'listing:A', kind: 'listing', createdAt: '2026-08-03T00:00:00.000Z' },
+      {
+        id: 'video:V1',
+        kind: 'video',
+        entityId: 'V1',
+        createdAt: '2026-08-01T00:00:00.000Z',
+        stats: { views: 4 },
+      },
+    ]
+    const sorted = sortFeedItemsWithBoosts(items, [
+      {
+        entity_type: 'marketplace',
+        entity_id: 'A',
+        status: 'active',
+        expires_at: '2099-01-01T00:00:00.000Z',
+        formula_key: 'featured_24h',
+      },
+    ])
+    expect(sorted[0].kind).toBe('video')
+    expect(sorted.some((item) => item.id === 'listing:A' && item.isFeatured)).toBe(true)
   })
 
   it('accepte un tableau de boosts à la place d’une Map', () => {

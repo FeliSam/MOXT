@@ -1,8 +1,13 @@
 import { Capacitor } from '@capacitor/core'
+import { resetKeyboardAfterBackground } from '../hooks/useKeyboardInset'
 import { navigateDeepLink } from './deepLinks'
 
 export const isNative = Capacitor.isNativePlatform()
 export const nativePlatform = Capacitor.getPlatform()
+
+/** Dispatched on the window after a Capacitor foreground so UI can unstick overlays. */
+export const NATIVE_RESUME_EVENT = 'moxt:native-resume'
+export const NATIVE_PAUSE_EVENT = 'moxt:native-pause'
 
 /** Appliquer dès le chargement du module — avant le 1er paint React. */
 function markNativeShell() {
@@ -55,7 +60,7 @@ function isDarkAppBackground() {
   const r = Number(m[1])
   const g = Number(m[2])
   const b = Number(m[3])
-  return (0.2126 * r + 0.7152 * g + 0.0722 * b) < 140
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b < 140
 }
 
 /**
@@ -93,16 +98,92 @@ async function applyNativeStatusBar() {
   }
 }
 
+function dispatchCustomEvent(name) {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new CustomEvent(name))
+}
+
+function forceWebViewHitTestRebuild(root) {
+  root.classList.add('capacitor-thawing')
+  void root.offsetHeight
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(() => {
+      root.classList.remove('capacitor-thawing')
+    })
+    return
+  }
+  window.setTimeout(() => root.classList.remove('capacitor-thawing'), 0)
+}
+
+/**
+ * iOS WKWebView often freezes compositing / keyboard chrome after sleep.
+ * Clear stuck overlays and force a layout pass so taps hit the visible buttons.
+ */
+export function recoverNativeUiAfterResume(root = document.documentElement) {
+  root.classList.remove('capacitor-paused')
+  if (typeof document !== 'undefined' && !document.querySelector('.moxt-loading-screen')) {
+    root.classList.remove('moxt-splash-lock')
+  }
+
+  resetKeyboardAfterBackground(root)
+  forceWebViewHitTestRebuild(root)
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('resize'))
+    window.visualViewport?.dispatchEvent?.(new Event('resize'))
+  }
+  dispatchCustomEvent(NATIVE_RESUME_EVENT)
+}
+
+export function markNativePaused(root = document.documentElement) {
+  root.classList.add('capacitor-paused')
+  resetKeyboardAfterBackground(root)
+  dispatchCustomEvent(NATIVE_PAUSE_EVENT)
+}
+
+async function hideNativeKeyboard() {
+  if (!isNative) return
+  try {
+    const { Keyboard } = await import('@capacitor/keyboard')
+    await Keyboard.hide()
+  } catch {
+    /* plugin indisponible */
+  }
+}
+
+function handleNativePause() {
+  markNativePaused()
+}
+
+function handleNativeResume() {
+  recoverNativeUiAfterResume()
+  void hideNativeSplash()
+  void hideNativeKeyboard()
+  void applyNativeStatusBar()
+  void import('./pushNotifications')
+    .then(({ initNativePushNotifications }) => initNativePushNotifications())
+    .catch(() => {})
+}
+
 /** Initialise le shell natif (splash, status bar, clavier, bouton retour). */
 export async function initCapacitor() {
   if (!isNative) return
 
   markNativeShell()
+  void hideNativeSplash()
 
   const [{ App }, { Keyboard, KeyboardResize }] = await Promise.all([
     import('@capacitor/app'),
     import('@capacitor/keyboard'),
   ])
+
+  App.addListener('appStateChange', ({ isActive }) => {
+    if (isActive) {
+      handleNativeResume()
+      return
+    }
+    handleNativePause()
+  })
 
   try {
     if (nativePlatform === 'ios') {
@@ -127,18 +208,6 @@ export async function initCapacitor() {
       return
     }
     App.exitApp()
-  })
-
-  App.addListener('appStateChange', ({ isActive }) => {
-    if (isActive) {
-      document.documentElement.classList.remove('capacitor-paused')
-      void applyNativeStatusBar()
-      void import('./pushNotifications')
-        .then(({ initNativePushNotifications }) => initNativePushNotifications())
-        .catch(() => {})
-    } else {
-      document.documentElement.classList.add('capacitor-paused')
-    }
   })
 
   await bindDeepLinks(App)
