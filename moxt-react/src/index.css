@@ -248,13 +248,6 @@ body {
   scroll-snap-stop: always;
 }
 
-/* +50 % de luminosité sur le média du fil (vidéos, photos, posters). */
-.feed-snap-scroller [data-feed-slide] img,
-.feed-snap-scroller [data-feed-slide] video,
-.feed-snap-scroller [data-feed-slide] picture {
-  filter: brightness(1.5);
-}
-
 .feed-snap-scroller::-webkit-scrollbar {
   display: none;
   width: 0;

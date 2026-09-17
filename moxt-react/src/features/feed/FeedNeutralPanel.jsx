@@ -18,7 +18,7 @@ export function FeedNeutralPanel({
   return (
     <div className={`relative h-full w-full bg-gradient-to-br ${gradient}`}>
       {showImage ? <FeedMediaImage src={url} onError={() => setBroken(true)} /> : null}
-      <div className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-b from-black/15 via-transparent to-black/25" />
+      <div className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-b from-black/30 via-transparent to-black/50" />
       <div className="absolute inset-x-0 top-[var(--feed-chrome-top)] z-10 min-w-0 max-w-full px-5">
         {children}
       </div>
