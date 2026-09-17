@@ -4,14 +4,14 @@ import { useLanguage } from '../../contexts/useLanguage'
 import { LOADING_STUCK_MS } from './loadingRetry'
 
 /** Query matches brand cache-bust style (`mark.png?v=…`); bump when replacing the PNG. */
-const SPLASH_SRC = '/assets/logos/Moxt-splash.png?v=20260714'
+const SPLASH_SRC = '/assets/logos/Moxt-splash.png?v=20260917'
 
 const SPLASH_LOCK_CLASS = 'moxt-splash-lock'
 
 /**
  * Full-viewport boot / auth / route Suspense fallback with Moxt splash art.
  * Overlay is splash-scoped (portal + CSS); does not alter theme-init / ThemeContext /
- * Capacitor chrome. While mounted, `moxt-splash-lock` keeps html/body solid white so
+ * Capacitor chrome. While mounted, `moxt-splash-lock` keeps html/body solid black so
  * mobile Safari/Chrome cannot flash mismatched app bg in safe-area / overscroll gaps.
  * When `autoRetry` is on, calls `onStuck` after {@link LOADING_STUCK_MS} so the
  * parent can soft-remount / re-trigger auth+data load.

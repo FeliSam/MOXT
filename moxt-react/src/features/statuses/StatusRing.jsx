@@ -7,6 +7,10 @@
 export function StatusRing({ children, hasStatus = false, hasUnseen = false, size = 10, className = '' }) {
   if (!hasStatus) return children
 
+  const sized = !className.includes('size-full')
+    ? { width: `calc(${size / 4}rem + 4px)`, height: `calc(${size / 4}rem + 4px)` }
+    : undefined
+
   return (
     <span
       className={`inline-grid shrink-0 place-items-center rounded-full p-[2px] ${
@@ -14,7 +18,7 @@ export function StatusRing({ children, hasStatus = false, hasUnseen = false, siz
           ? 'bg-gradient-to-tr from-brand-500 via-brand-600 to-[var(--app-cobalt)]'
           : 'bg-[var(--app-border)]'
       } ${className}`}
-      style={{ width: `calc(${size / 4}rem + 4px)`, height: `calc(${size / 4}rem + 4px)` }}
+      style={sized}
     >
       <span className="grid size-full place-items-center rounded-full bg-[var(--app-surface)] p-[2px]">
         {children}

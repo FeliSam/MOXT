@@ -12,6 +12,8 @@ import { resyncViewportBottomGap, forceKeyboardClosed, useKeyboardInset } from '
 
 import { useMediaQuery } from '../../hooks/useMediaQuery'
 import { FEED_VIEWPORT_MEDIA_QUERY } from '../../features/feed/feedViewport'
+import { setFeedPlaybackAllowed } from '../../features/videos/feedPlaybackSession'
+import { pauseAllDocumentMedia } from '../../platform/mediaPlayback'
 
 import { resetMessagesScroll } from '../../hooks/useScrollToTopOnStep'
 
@@ -70,6 +72,11 @@ export function AppLayout({ children }) {
   useContentLifecycle()
 
   useKeyboardInset()
+
+  useEffect(() => {
+    setFeedPlaybackAllowed(isFeedMobileRoute)
+    if (!isFeedMobileRoute) pauseAllDocumentMedia()
+  }, [isFeedMobileRoute])
 
 
 

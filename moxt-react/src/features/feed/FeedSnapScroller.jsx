@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
-import { NATIVE_PAUSE_EVENT, NATIVE_RESUME_EVENT } from '../../platform/capacitor'
+import { NATIVE_RESUME_EVENT } from '../../platform/capacitor'
 import { FEED_SLIDE_SECTION_CLASS } from './feedActionStyles.jsx'
 import { playFeedEntryHint, prefersReducedMotion } from './feedEntryHint.js'
 
@@ -272,11 +272,9 @@ export function FeedSnapScroller({
     }
 
     document.addEventListener('visibilitychange', onVisibility)
-    window.addEventListener(NATIVE_PAUSE_EVENT, resetAfterBackground)
     window.addEventListener(NATIVE_RESUME_EVENT, resetAfterBackground)
     return () => {
       document.removeEventListener('visibilitychange', onVisibility)
-      window.removeEventListener(NATIVE_PAUSE_EVENT, resetAfterBackground)
       window.removeEventListener(NATIVE_RESUME_EVENT, resetAfterBackground)
     }
   }, [])

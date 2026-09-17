@@ -55,6 +55,7 @@ const targets = {
 }
 
 const white = { r: 255, g: 255, b: 255, alpha: 1 }
+const black = { r: 0, g: 0, b: 0, alpha: 1 }
 
 async function ensureExists(file) {
   await fs.access(file)
@@ -92,7 +93,8 @@ async function run() {
     targets.iosSplash.map((file) =>
       overwriteMatchingSize(sources.splash, file, {
         fit: 'contain',
-        background: white,
+        background: black,
+        flatten: true,
       }),
     ),
   )
@@ -115,7 +117,7 @@ async function run() {
     targets.androidSplash.map((file) =>
       overwriteMatchingSize(sources.splash, file, {
         fit: 'contain',
-        background: white,
+        background: black,
         flatten: true,
       }),
     ),

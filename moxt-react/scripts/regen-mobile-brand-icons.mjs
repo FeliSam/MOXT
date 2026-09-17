@@ -7,7 +7,7 @@ const brand = path.join(root, 'public', 'assets', 'brand', 'mark.png')
 const splashArt = path.join(root, 'public', 'assets', 'logos', 'Moxt-splash.png')
 const mobile = path.join(root, '..', 'apps', 'mobile', 'assets', 'images')
 const dark = { r: 10, g: 14, b: 24, alpha: 1 }
-const white = { r: 255, g: 255, b: 255, alpha: 1 }
+const black = { r: 0, g: 0, b: 0, alpha: 1 }
 
 /**
  * Carré plein (pas de coins arrondis dans le PNG).
@@ -40,8 +40,8 @@ await sharp({
   .toFile(path.join(mobile, 'android-icon-background.png'))
 
 await sharp(splashArt)
-  .resize(1024, 1536, { fit: 'inside', background: white })
-  .flatten({ background: white })
+  .resize(1024, 1536, { fit: 'inside', background: black })
+  .flatten({ background: black })
   .png()
   .toFile(path.join(mobile, 'splash-icon.png'))
 

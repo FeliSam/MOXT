@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { groupActiveStatusesByAuthor } from './statusSelectors'
+import { groupActiveStatusesByAuthor, isActiveStatus } from './statusSelectors'
 
 const future = new Date(Date.now() + 60 * 60 * 1000).toISOString()
 
@@ -63,5 +63,19 @@ describe('groupActiveStatusesByAuthor', () => {
     )
     expect(groups).toHaveLength(1)
     expect(groups[0].items).toHaveLength(2)
+  })
+
+  it('garde un statut avec expires_at snake_case encore valide', () => {
+    const groups = groupActiveStatusesByAuthor(
+      [status({ id: 'S1', authorId: 'U2', expiresAt: undefined, expires_at: future })],
+      'U1',
+    )
+    expect(groups).toHaveLength(1)
+    expect(groups[0].items[0].id).toBe('S1')
+  })
+
+  it('isActiveStatus ignore une date absente plutôt que de masquer le rail', () => {
+    expect(isActiveStatus({ id: 'S1' })).toBe(true)
+    expect(isActiveStatus({ expiresAt: '2000-01-01T00:00:00.000Z' })).toBe(false)
   })
 })

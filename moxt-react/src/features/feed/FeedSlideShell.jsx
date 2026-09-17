@@ -155,7 +155,7 @@ export function FeedSlideShell({
     >
       <div className={FEED_SLIDE_FRAME_CLASS}>
         {item?.isFeatured || item?.isTrending || item?.isPromoted ? (
-          <div className="pointer-events-none absolute right-3 z-[2] flex flex-col items-end gap-1.5 top-[calc(env(safe-area-inset-top,0px)+3.35rem)]">
+          <div className="pointer-events-none absolute right-3 z-[2] flex flex-col items-end gap-1.5 top-[var(--feed-chrome-top)]">
             {item.isFeatured ? <FeedBoostBadge boost={item.boost} /> : null}
             {!item.isFeatured && item.isTrending ? <FeedTrendBadge /> : null}
             {!item.isFeatured && item.isPromoted ? <FeedPromoBadge /> : null}

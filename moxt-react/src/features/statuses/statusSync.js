@@ -2,6 +2,7 @@ import { createAsyncThunk } from '@reduxjs/toolkit'
 import { supabase } from '../../services/supabaseClient'
 import { fromRows } from '../../services/remoteRowMapper'
 import { setAll as setStatuses } from './statusesSlice'
+import { isActiveStatus } from './statusSelectors'
 import {
   applySeenLedgerToStatuses,
   mergeStatusViewers,
@@ -48,13 +49,26 @@ function mapStatusRows(rows, localStatusesById) {
     const local = localStatusesById.get(s.id)
     return {
       ...s,
+      authorId: s.authorId || s.author_id,
+      authorName: s.authorName || s.author_name || '',
+      authorAvatarUrl: s.authorAvatarUrl || s.author_avatar_url || null,
+      businessId: s.businessId || s.business_id || null,
       images: parseJsonField(s.images, []).filter((url) => typeof url === 'string' && url).slice(0, 4),
       viewedBy: mergeViewedByLists(remoteViewedBy, local?.viewedBy),
       viewers: mergeStatusViewers(local?.viewers || {}, {}),
       reactions: local?.reactions || {},
       isOfficial: s.isOfficial === true || s.is_official === true,
+      createdAt: s.createdAt || s.created_at,
+      expiresAt: s.expiresAt || s.expires_at,
     }
   })
+}
+
+/** Un fetch vide ne doit pas effacer un rail déjà hydraté (RLS / abort / course). */
+export function shouldPreserveLocalStatuses(fetched, existing, { force = false } = {}) {
+  if (force) return false
+  if (Array.isArray(fetched) && fetched.length > 0) return false
+  return Array.isArray(existing) && existing.length > 0
 }
 
 /** Recharge léger des statuts (rail) — indépendant du mega loadAllData. */
@@ -103,10 +117,15 @@ export const refreshStatusesData = createAsyncThunk(
         throw new Error(error.message)
       }
 
-      const localStatusesById = new Map((getState().statuses?.items || []).map((item) => [item.id, item]))
+      const existing = getState().statuses?.items || []
+      const localStatusesById = new Map(existing.map((item) => [item.id, item]))
       const mapped = mapStatusRows(data, localStatusesById)
 
-      const hydrated = applySeenLedgerToStatuses(mapped, uid)
+      if (shouldPreserveLocalStatuses(mapped, existing, { force })) {
+        return existing.length
+      }
+
+      const hydrated = applySeenLedgerToStatuses(mapped, uid).filter((item) => isActiveStatus(item))
       dispatch(setStatuses({ items: hydrated }))
       writeStatusRailCache(uid, hydrated)
       return mapped.length
