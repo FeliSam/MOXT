@@ -17,8 +17,19 @@ export function buildEntitySharePreviewUrl({ kind, entityId } = {}) {
   })
 }
 
-/** URL absolue partagée avec les humains (copier / partager natif). */
+/**
+ * URL absolue partagée (WhatsApp / copier / share natif).
+ * Préfère l'Edge Function share-preview pour que les crawlers reçoivent
+ * le bon Open Graph ; les humains sont redirigés vers la cible in-app.
+ * Sinon, retombe sur le deep link public moxtapp.ru.
+ */
 export function buildEntityShareUrl(item = {}) {
+  const preview = buildEntitySharePreviewUrl({
+    kind: item.kind,
+    entityId: item.entityId,
+  })
+  if (preview) return preview
+
   const target = resolvePublicShareTarget({
     kind: item.kind,
     entityId: item.entityId,

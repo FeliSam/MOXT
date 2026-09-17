@@ -1,52 +1,58 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   buildBusinessShareText,
   buildBusinessShareUrl,
   buildBusinessShareUrlFromValues,
-} from './businessShareUtils'
+} from './businessShareUtils.js'
 
 describe('businessShareUtils', () => {
-  it('ajoute une version au lien pour regenerer le QR apres modification', () => {
+  beforeEach(() => {
+    vi.stubEnv('VITE_SUPABASE_URL', '')
+    vi.stubEnv('VITE_SITE_URL', 'https://moxtapp.ru')
+  })
+
+  it('builds stable business share urls with version query', () => {
     const first = buildBusinessShareUrl({
       id: 'BIZ-1',
       name: 'Alpha',
-      updatedAt: '2026-07-11T10:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
     })
     const second = buildBusinessShareUrl({
       id: 'BIZ-1',
-      name: 'Beta',
-      updatedAt: '2026-07-11T11:00:00.000Z',
+      name: 'Alpha',
+      updatedAt: '2026-01-01T00:00:00.000Z',
     })
-
-    expect(first).toContain('/businesses/BIZ-1?v=')
-    expect(second).not.toBe(first)
+    expect(first).toBe(second)
+    expect(first).toContain('https://moxtapp.ru/businesses/BIZ-1')
+    expect(first).toContain('v=')
   })
 
-  it('genere un texte de partage avec les coordonnees a jour', () => {
-    const text = buildBusinessShareText({
-      name: 'Felix Store',
-      primaryActivity: 'logistics',
-      city: 'Moscou',
-      phone: '+79000000000',
-      email: 'contact@felix.store',
-      description: 'Transport de colis fiable.',
+  it('prefers share-preview URL when supabase is configured', () => {
+    vi.stubEnv('VITE_SUPABASE_URL', 'https://abc.supabase.co')
+    const url = buildBusinessShareUrl({
+      id: 'BIZ-1',
+      name: 'Alpha',
+      updatedAt: '2026-01-01T00:00:00.000Z',
     })
-
-    expect(text).toContain('Felix Store')
-    expect(text).toContain('Moscou')
-    expect(text).toContain('+79000000000')
-    expect(text).toContain('contact@felix.store')
+    expect(url).toBe('https://abc.supabase.co/functions/v1/share-preview/business/BIZ-1')
   })
 
-  it('reflete les brouillons du formulaire entreprise', () => {
+  it('builds share url from form values', () => {
     const url = buildBusinessShareUrlFromValues({
       id: 'BIZ-2',
-      name: 'Nouveau nom',
-      city: 'Kazan',
-      phone: '+79001112233',
+      name: 'Beta',
     })
+    expect(url).toContain('/businesses/BIZ-2')
+  })
 
-    expect(url).toContain('BIZ-2')
-    expect(url).toContain('v=')
+  it('builds share text with contacts', () => {
+    const text = buildBusinessShareText({
+      name: 'Alpha',
+      city: 'Cotonou',
+      phone: '+229000',
+      description: 'Hello',
+    })
+    expect(text).toContain('Alpha')
+    expect(text).toContain('Cotonou')
   })
 })

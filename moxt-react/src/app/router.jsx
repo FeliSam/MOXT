@@ -183,6 +183,10 @@ const PublicationShell = lazyPage(
   () => import('../components/routing/PublicationShell'),
   'PublicationShell',
 )
+const GuestCatalogDetailGate = lazyPage(
+  () => import('../components/routing/GuestCatalogDetailGate'),
+  'GuestCatalogDetailGate',
+)
 const FeedAccessShell = lazyPage(
   () => import('../components/routing/FeedAccessShell'),
   'FeedAccessShell',
@@ -222,6 +226,44 @@ export function AppRouter() {
           <Route
             path="/sale-detail"
             element={<LegacyDetailRedirect fallback="/marketplace" target="/marketplace" />}
+          />
+          <Route
+            path="/parcels/:parcelId"
+            element={
+              <DevModuleRoute moduleId="parcels" fallback="/discover">
+                <GuestCatalogDetailGate kind="parcel" paramName="parcelId">
+                  <ParcelDetailPage />
+                </GuestCatalogDetailGate>
+              </DevModuleRoute>
+            }
+          />
+          <Route
+            path="/jobs/:jobId"
+            element={
+              <DevModuleRoute moduleId="jobs" fallback="/discover">
+                <GuestCatalogDetailGate kind="job" paramName="jobId">
+                  <JobDetailPage />
+                </GuestCatalogDetailGate>
+              </DevModuleRoute>
+            }
+          />
+          <Route
+            path="/events/:eventId"
+            element={
+              <DevModuleRoute moduleId="events" fallback="/discover">
+                <GuestCatalogDetailGate kind="event" paramName="eventId">
+                  <EventDetailPage />
+                </GuestCatalogDetailGate>
+              </DevModuleRoute>
+            }
+          />
+          <Route
+            path="/p2p/:offerId"
+            element={
+              <GuestCatalogDetailGate kind="p2p" paramName="offerId">
+                <P2PDetailPage />
+              </GuestCatalogDetailGate>
+            }
           />
         </Route>
 
@@ -393,14 +435,6 @@ export function AppRouter() {
               }
             />
             <Route
-              path="/parcels/:parcelId"
-              element={
-                <DevModuleRoute moduleId="parcels">
-                  <ParcelDetailPage />
-                </DevModuleRoute>
-              }
-            />
-            <Route
               path="/parcel-detail"
               element={<LegacyDetailRedirect fallback="/parcels" target="/parcels" />}
             />
@@ -408,7 +442,6 @@ export function AppRouter() {
             <Route path="/p2p/publish" element={<PublishP2PPage />} />
             <Route path="/p2p/orders/:orderId" element={<P2POrderPage />} />
             <Route path="/p2p/:offerId/edit" element={<EditP2POfferPage />} />
-            <Route path="/p2p/:offerId" element={<P2PDetailPage />} />
             <Route
               path="/p2p-order-detail"
               element={<LegacyDetailRedirect fallback="/p2p" target="/p2p/orders" />}
@@ -457,14 +490,6 @@ export function AppRouter() {
               }
             />
             <Route
-              path="/jobs/:jobId"
-              element={
-                <DevModuleRoute moduleId="jobs">
-                  <JobDetailPage />
-                </DevModuleRoute>
-              }
-            />
-            <Route
               path="/job-detail"
               element={<LegacyDetailRedirect fallback="/jobs" target="/jobs" />}
             />
@@ -489,14 +514,6 @@ export function AppRouter() {
               element={
                 <DevModuleRoute moduleId="events">
                   <EditEventPage />
-                </DevModuleRoute>
-              }
-            />
-            <Route
-              path="/events/:eventId"
-              element={
-                <DevModuleRoute moduleId="events">
-                  <EventDetailPage />
                 </DevModuleRoute>
               }
             />
