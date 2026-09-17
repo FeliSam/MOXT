@@ -117,9 +117,9 @@ export function ParcelFeedSlide({ item, index, active = true }) {
     >
       <div className="relative h-full w-full bg-gradient-to-br from-sky-700 via-blue-900 to-indigo-950">
         {showImage ? <FeedMediaImage src={cover} onError={() => setBroken(true)} /> : null}
-        <div className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-b from-black/12 via-transparent to-black/22" />
+        <div className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-b from-black/25 via-transparent to-black/45" />
 
-        <div className="absolute inset-x-0 top-[calc(env(safe-area-inset-top,0px)+4.25rem)] z-10 px-5">
+        <div className="absolute inset-x-0 top-[var(--feed-chrome-top)] z-10 px-5">
           <div className="relative mx-auto max-w-sm rounded-[1.5rem] border border-white/15 bg-black/35 p-4 shadow-[0_12px_40px_rgba(0,0,0,0.35)] backdrop-blur-md">
             {(price || remaining) && (
               <div className="pointer-events-none absolute -top-3 right-3 z-20 flex max-w-[calc(100%-1rem)] flex-wrap justify-end gap-1.5">

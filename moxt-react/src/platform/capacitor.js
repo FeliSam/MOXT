@@ -1,6 +1,7 @@
 import { Capacitor } from '@capacitor/core'
 import { resetKeyboardAfterBackground } from '../hooks/useKeyboardInset'
 import { navigateDeepLink } from './deepLinks'
+import { pauseAllDocumentMedia } from './mediaPlayback'
 
 export const isNative = Capacitor.isNativePlatform()
 export const nativePlatform = Capacitor.getPlatform()
@@ -138,6 +139,7 @@ export function recoverNativeUiAfterResume(root = document.documentElement) {
 export function markNativePaused(root = document.documentElement) {
   root.classList.add('capacitor-paused')
   resetKeyboardAfterBackground(root)
+  pauseAllDocumentMedia()
   dispatchCustomEvent(NATIVE_PAUSE_EVENT)
 }
 

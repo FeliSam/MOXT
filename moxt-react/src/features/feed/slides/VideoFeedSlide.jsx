@@ -326,14 +326,14 @@ function FeedVideoPlayer({ video, active, onActivate }) {
         <button
           type="button"
           onClick={() => setMuted(false)}
-          className="pointer-events-auto absolute left-3 z-10 grid size-10 place-items-center rounded-full bg-black/45 text-white backdrop-blur-sm top-[calc(env(safe-area-inset-top,0px)+3.35rem)]"
+          className="pointer-events-auto absolute left-3 z-10 grid size-10 place-items-center rounded-full bg-black/45 text-white backdrop-blur-sm top-[var(--feed-chrome-top)]"
           aria-label={p3('videos.feed.unmute')}
         >
           <FiVolumeX />
         </button>
       ) : null}
       {!muted && !error ? (
-        <span className="pointer-events-none absolute left-3 z-10 grid size-10 place-items-center rounded-full bg-black/35 text-white/80 top-[calc(env(safe-area-inset-top,0px)+3.35rem)]">
+        <span className="pointer-events-none absolute left-3 z-10 grid size-10 place-items-center rounded-full bg-black/35 text-white/80 top-[var(--feed-chrome-top)]">
           <FiVolume2 />
         </span>
       ) : null}

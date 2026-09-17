@@ -1,5 +1,17 @@
 import { statusHasBeenViewedBy } from './statusViewUtils'
 
+/** `expiresAt` camelCase, `expires_at` brut, ou actif si la date est absente. */
+export function statusExpiryMs(status) {
+  const raw = status?.expiresAt ?? status?.expires_at
+  if (!raw) return Number.POSITIVE_INFINITY
+  const ms = new Date(raw).getTime()
+  return Number.isFinite(ms) ? ms : Number.POSITIVE_INFINITY
+}
+
+export function isActiveStatus(status, now = Date.now()) {
+  return statusExpiryMs(status) > now
+}
+
 /**
  * Regroupe les statuts actifs (non expirés) par auteur, triés :
  * - les groupes "officiels MOXT" en premier (même avant mon propre statut)
@@ -11,7 +23,7 @@ import { statusHasBeenViewedBy } from './statusViewUtils'
  */
 export function groupActiveStatusesByAuthor(statuses, viewerId) {
   const now = Date.now()
-  const active = statuses.filter((s) => new Date(s.expiresAt).getTime() > now)
+  const active = statuses.filter((s) => isActiveStatus(s, now))
   const viewerKey = viewerId == null ? '' : String(viewerId)
 
   // Une entreprise publie sous sa propre identité : un même auteur (personne

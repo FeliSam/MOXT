@@ -19,7 +19,7 @@ export const FEED_ACTION_BTN_CLASS =
   'relative flex touch-manipulation items-center justify-center text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.85)]'
 
 export const FEED_ACTION_ICON_WRAP_CLASS =
-  'relative grid size-10 place-items-center rounded-full bg-black/40 shadow-[0_4px_14px_rgba(0,0,0,0.35)] ring-1 ring-white/40 backdrop-blur-md transition active:scale-95'
+  'relative grid size-10 place-items-center rounded-full bg-black/62 shadow-[0_4px_14px_rgba(0,0,0,0.55)] ring-1 ring-white/35 backdrop-blur-md transition active:scale-95'
 
 export const FEED_ACTION_HOME_WRAP_CLASS =
   'grid size-8 shrink-0 place-items-center text-black'
@@ -35,9 +35,9 @@ export const FEED_ACTION_ICON_CLASS =
 export const FEED_ACTION_ICON_SM_CLASS =
   'text-[1.15rem] drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]'
 
-/** Overlay meta bas — dégradé léger pour laisser l’image lisible. */
+/** Overlay meta bas — dégradé d’origine pour le contraste texte / média. */
 export const FEED_META_OVERLAY_CLASS =
-  'pointer-events-none absolute inset-x-0 bottom-0 z-[5] bg-gradient-to-t from-black/40 via-black/16 to-transparent p-4 pt-16 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] pr-16 text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.95),0_2px_10px_rgba(0,0,0,0.65),0_0_18px_rgba(0,0,0,0.4)]'
+  'pointer-events-none absolute inset-x-0 bottom-0 z-[5] bg-gradient-to-t from-black/78 via-black/32 to-transparent p-4 pt-16 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] pr-16 text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.95),0_2px_10px_rgba(0,0,0,0.65),0_0_18px_rgba(0,0,0,0.4)]'
 
 export const FEED_META_INTERACTIVE_CLASS = 'pointer-events-auto'
 

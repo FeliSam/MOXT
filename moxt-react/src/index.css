@@ -213,6 +213,11 @@ body {
   min-height: var(--feed-viewport-height, 100lvh);
   overflow: hidden;
   background: #000;
+  --feed-chrome-top: calc(env(safe-area-inset-top, 0px) + 3.35rem);
+}
+
+.feed-mobile-shell.feed-mobile-shell--with-statuses {
+  --feed-chrome-top: calc(env(safe-area-inset-top, 0px) + 8.15rem);
 }
 
 @keyframes feed-double-tap-heart {
@@ -241,13 +246,6 @@ body {
   min-height: 100%;
   height: 100%;
   scroll-snap-stop: always;
-}
-
-/* +50 % de luminosité sur le média du fil (vidéos, photos, posters). */
-.feed-snap-scroller [data-feed-slide] img,
-.feed-snap-scroller [data-feed-slide] video,
-.feed-snap-scroller [data-feed-slide] picture {
-  filter: brightness(1.5);
 }
 
 .feed-snap-scroller::-webkit-scrollbar {
@@ -286,12 +284,12 @@ body {
   }
 }
 
-/* ─── Web splash (MoxtLoadingScreen only) — edge-to-edge #ffffff ────────────
+/* ─── Web splash (MoxtLoadingScreen only) — edge-to-edge #000 ──────────────
    Full-viewport cover while splash is mounted (portal + moxt-splash-lock).
    Cleared on unmount — does not change global theme / Capacitor chrome. */
 html.moxt-splash-lock,
 html.moxt-splash-lock body {
-  background: #ffffff !important;
+  background: #000000 !important;
   background-image: none !important;
   overscroll-behavior: none;
 }
@@ -317,20 +315,20 @@ html.moxt-splash-lock body {
     max(1rem, env(safe-area-inset-bottom, 0px))
     max(1rem, env(safe-area-inset-left, 0px));
   margin: 0;
-  background-color: #ffffff;
+  background-color: #000000;
   overscroll-behavior: none;
   touch-action: none;
   -webkit-user-select: none;
   user-select: none;
 }
 
-/* Bleed past the viewport so rubber-band / address-bar resize stays white. */
+/* Bleed past the viewport so rubber-band / address-bar resize stays black. */
 .moxt-loading-screen::before {
   content: '';
   position: absolute;
   inset: -50vmax;
   z-index: -1;
-  background-color: #ffffff;
+  background-color: #000000;
   pointer-events: none;
 }
 
@@ -340,9 +338,8 @@ html.moxt-splash-lock body {
   display: block;
   width: auto;
   height: auto;
-  /* −40% puis −20% par rapport à l’origine (min(92vw, 28rem) / min(88dvh, 42rem)). */
-  max-width: min(44.16vw, 13.44rem);
-  max-height: min(42.24dvh, 20.16rem);
+  max-width: min(92vw, 28rem);
+  max-height: min(88dvh, 42rem);
   object-fit: contain;
   pointer-events: none;
 }

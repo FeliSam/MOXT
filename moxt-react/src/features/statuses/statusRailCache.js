@@ -34,7 +34,9 @@ export function readStatusRailCache(userId, { allowStale = false } = {}) {
     if (!entry.savedAt || Date.now() - entry.savedAt > STATUS_RAIL_CACHE_TTL_MS) return null
   }
   return entry.items.filter((item) => {
-    const expires = item?.expiresAt ? new Date(item.expiresAt).getTime() : NaN
+    const raw = item?.expiresAt ?? item?.expires_at
+    if (!raw) return true
+    const expires = new Date(raw).getTime()
     return !Number.isFinite(expires) || expires > Date.now()
   })
 }

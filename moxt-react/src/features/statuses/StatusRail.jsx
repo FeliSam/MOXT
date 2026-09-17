@@ -50,13 +50,15 @@ function StatusBubble({
   addLabel = null,
   onAdd = null,
   mutedAvatar = false,
+  tone = 'light',
 }) {
+  const feed = tone === 'feed'
   return (
     <div className="flex w-[4.25rem] shrink-0 flex-col items-center gap-1.5 text-center">
       <button type="button" onClick={onOpen} className="relative grid place-items-center">
-        <span className={`relative grid ${BUBBLE_OUTER} place-items-center`}>
+        <span className={`relative grid ${BUBBLE_OUTER} place-items-center overflow-visible`}>
           {hasStatus ? (
-            <StatusRing hasStatus hasUnseen={hasUnseen} size={14}>
+            <StatusRing hasStatus hasUnseen={hasUnseen} className="size-full">
               <AvatarFace src={avatarUrl} initial={initial} shapeClass={shapeClass} />
             </StatusRing>
           ) : (
@@ -80,14 +82,20 @@ function StatusBubble({
                 e.stopPropagation()
                 onAdd()
               }}
-              className="absolute bottom-0 right-0 z-[1] grid size-5 place-items-center rounded-full bg-brand-700 text-white shadow-sm ring-2 ring-[var(--app-bg)] dark:bg-brand-600"
+              className={`absolute bottom-0 right-0 z-[1] grid size-5 place-items-center rounded-full bg-brand-700 text-white shadow-sm ring-2 dark:bg-brand-600 ${
+                feed ? 'ring-black' : 'ring-[var(--app-bg)]'
+              }`}
             >
               <FiPlus className="text-[11px]" />
             </span>
           ) : null}
         </span>
       </button>
-      <span className="line-clamp-1 w-full text-[11px] font-semibold leading-tight text-[var(--app-text-muted)]">
+      <span
+        className={`line-clamp-1 w-full text-[11px] font-semibold leading-tight ${
+          feed ? 'text-white/80' : 'text-[var(--app-text-muted)]'
+        }`}
+      >
         {label}
       </span>
     </div>
@@ -95,10 +103,11 @@ function StatusBubble({
 }
 
 export function StatusRail({
-  hideWhenNoCommunity: _hideWhenNoCommunity = false,
+  hideWhenNoCommunity = false,
   composerOpen: composerOpenProp,
   onComposerOpenChange,
   renderComposer = true,
+  tone = 'light',
 }) {
   const { t } = useLanguage()
   const dispatch = useDispatch()
@@ -140,7 +149,7 @@ export function StatusRail({
   const persistRail = () => {
     const uid = store.getState().auth.user?.id
     const items = store.getState().statuses?.items
-    if (uid && Array.isArray(items)) writeStatusRailCache(uid, items)
+    if (uid && Array.isArray(items) && items.length) writeStatusRailCache(uid, items)
   }
 
   useEffect(() => {
@@ -205,10 +214,15 @@ export function StatusRail({
   }, [dispatch, user?.id])
 
   if (!user) return null
+  if (hideWhenNoCommunity && groups.length === 0 && !composerOpen) return null
 
   return (
-    <div className="min-w-0 overflow-x-clip">
-      <div className="scrollbar-hidden -mx-4 flex touch-pan-x items-start gap-3 overflow-x-auto px-4 py-1 sm:gap-3.5">
+    <div className="min-w-0 max-w-full" data-testid={tone === 'feed' ? 'feed-status-rail' : 'status-rail'}>
+      <div
+        className={`scrollbar-hidden flex w-full min-w-0 touch-pan-x items-start gap-3 overflow-x-auto overflow-y-visible overscroll-x-contain py-1.5 sm:gap-3.5 ${
+          tone === 'feed' ? 'px-2.5' : '-mx-4 px-4'
+        }`}
+      >
         <StatusBubble
           label={t('status.rail.you')}
           onOpen={() => (myGroup ? setViewerIndex(groups.indexOf(myGroup)) : setComposerOpen(true))}
@@ -219,6 +233,7 @@ export function StatusRail({
           mutedAvatar={!myGroup}
           addLabel={t('status.rail.addYours')}
           onAdd={() => setComposerOpen(true)}
+          tone={tone}
         />
 
         {myBusinessGroup ? (
@@ -230,6 +245,7 @@ export function StatusRail({
             shapeClass="rounded-2xl"
             hasStatus
             hasUnseen={myBusinessGroup.hasUnseen}
+            tone={tone}
           />
         ) : null}
 
@@ -244,6 +260,7 @@ export function StatusRail({
             hasStatus
             hasUnseen={group.hasUnseen}
             badge="MOXT"
+            tone={tone}
           />
         ))}
 
@@ -257,6 +274,7 @@ export function StatusRail({
             shapeClass={group.businessId ? 'rounded-2xl' : 'rounded-full'}
             hasStatus
             hasUnseen={group.hasUnseen}
+            tone={tone}
           />
         ))}
 

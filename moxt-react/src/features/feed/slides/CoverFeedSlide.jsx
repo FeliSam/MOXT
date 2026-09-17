@@ -113,8 +113,8 @@ export function CoverFeedSlide({ item, index, active = true }) {
             <Icon className="text-5xl" />
           </div>
         )}
-        <div className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/15 via-transparent to-black/8" />
-        <span className="pointer-events-none absolute left-3 z-10 rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white backdrop-blur-sm top-[calc(env(safe-area-inset-top,0px)+3.35rem)]">
+        <div className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/30 via-transparent to-black/15" />
+        <span className="pointer-events-none absolute left-3 z-10 rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white backdrop-blur-sm top-[var(--feed-chrome-top)]">
           {p3(`feed.kind.${item.kind}`)}
         </span>
       </div>
