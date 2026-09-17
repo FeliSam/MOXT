@@ -187,24 +187,52 @@ export function FeedPage() {
     [rawItems, suggestionSalt],
   )
   const orderCacheRef = useRef({ signature: '', items: [] })
+  const itemsOrderCacheRef = useRef({ signature: '', items: [] })
   /* eslint-disable react-hooks/refs -- stable feed order cache between re-ranks */
   const organicItems = useMemo(() => {
     const previous = orderCacheRef.current
     const next = preserveFeedOrder(previous, rawItems, orderSignature)
+    // Lead only on first committed signature (or refresh via suggestionSalt → new signature).
+    // Do not re-run when rankCtx alone updates after paint — that was the dice reshuffle.
     const reshuffle = previous.signature !== next.signature
     const leadFirst =
       reshuffle && !itemParam ? ensureLeadVideo(next.items, rankCtx) : next.items
     orderCacheRef.current = { signature: next.signature, items: leadFirst }
     return leadFirst
-  }, [rawItems, orderSignature, rankCtx, itemParam])
+  }, [rawItems, orderSignature, itemParam, rankCtx])
   /* eslint-enable react-hooks/refs */
   const items = useMemo(() => {
     if (typeFilter !== 'all') return organicItems
-    return ensureLeadVideo(
-      injectFeedDiscoverySlides(organicItems, { feedState, rankCtx, user }),
+    const withDiscovery = injectFeedDiscoverySlides(organicItems, {
+      feedState,
       rankCtx,
-    )
-  }, [organicItems, typeFilter, feedState, rankCtx, user])
+      user,
+    })
+    const previous = itemsOrderCacheRef.current
+    const signatureChanged = previous.signature !== orderSignature
+    let nextItems
+    if (itemParam) {
+      // Deep link: keep discovery injection but do not move index 0 for lead video.
+      nextItems = withDiscovery
+    } else if (signatureChanged || !previous.items.length) {
+      nextItems = ensureLeadVideo(withDiscovery, rankCtx)
+    } else {
+      // Freeze previously painted lead across rankCtx / feedState churn.
+      const prevLeadId = previous.items[0]?.id
+      if (prevLeadId && withDiscovery[0]?.id === prevLeadId) {
+        nextItems = withDiscovery
+      } else if (prevLeadId) {
+        const lead = withDiscovery.find((row) => row.id === prevLeadId)
+        nextItems = lead
+          ? [lead, ...withDiscovery.filter((row) => row.id !== prevLeadId)]
+          : withDiscovery
+      } else {
+        nextItems = withDiscovery
+      }
+    }
+    itemsOrderCacheRef.current = { signature: orderSignature, items: nextItems }
+    return nextItems
+  }, [organicItems, typeFilter, feedState, rankCtx, user, orderSignature, itemParam])
 
   const initialIndex = pickInitialFeedIndex(items, itemParam, feedState)
   const focusedItem = useMemo(() => {
@@ -303,7 +331,7 @@ export function FeedPage() {
           renderSlide={renderFeedSlide}
           onRefresh={refreshFeed}
           refreshNonce={refreshNonce}
-          playEntryHint={!itemParam}
+          playEntryHint={false}
         />
       </div>
     </div>
