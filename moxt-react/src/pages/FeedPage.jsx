@@ -200,7 +200,6 @@ export function FeedPage() {
     orderCacheRef.current = { signature: next.signature, items: leadFirst }
     return leadFirst
   }, [rawItems, orderSignature, itemParam, rankCtx])
-  /* eslint-enable react-hooks/refs */
   const items = useMemo(() => {
     if (typeFilter !== 'all') return organicItems
     const withDiscovery = injectFeedDiscoverySlides(organicItems, {
@@ -233,6 +232,7 @@ export function FeedPage() {
     itemsOrderCacheRef.current = { signature: orderSignature, items: nextItems }
     return nextItems
   }, [organicItems, typeFilter, feedState, rankCtx, user, orderSignature, itemParam])
+  /* eslint-enable react-hooks/refs */
 
   const initialIndex = pickInitialFeedIndex(items, itemParam, feedState)
   const focusedItem = useMemo(() => {
