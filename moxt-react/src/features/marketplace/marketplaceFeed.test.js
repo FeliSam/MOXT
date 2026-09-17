@@ -65,7 +65,7 @@ describe('marketplaceFeed', () => {
     expect(mixed.map((item) => item.id)).toEqual(['a', 'c', 'b'])
   })
 
-  it('construit des rails distincts sans doublons dans Découvrir', () => {
+  it('construit des rails distincts sans vider Découvrir', () => {
     const listings = Array.from({ length: 8 }, (_, index) =>
       listing({
         id: `ANN-${index}`,
@@ -83,13 +83,62 @@ describe('marketplaceFeed', () => {
     expect(feed.forYou).toHaveLength(2)
     expect(feed.trending.length).toBeGreaterThan(0)
     expect(feed.fresh[0].id).toBe('ANN-0')
-    const railIds = new Set([
+    const railIds = [
       ...feed.forYou.map((item) => item.id),
       ...feed.trending.map((item) => item.id),
       ...feed.fresh.map((item) => item.id),
-    ])
-    expect(feed.discover.every((item) => !railIds.has(item.id))).toBe(true)
-    expect(feed.discover.length).toBe(listings.length - railIds.size)
+    ]
+    expect(new Set(railIds).size).toBe(railIds.length)
+    expect(feed.discover).toHaveLength(listings.length)
+    expect(feed.discover.map((item) => item.id).sort()).toEqual(
+      listings.map((item) => item.id).sort(),
+    )
+  })
+
+  it('garde tout le catalogue dans Découvrir sur un petit catalogue (6–10)', () => {
+    for (const size of [6, 8, 10]) {
+      const listings = Array.from({ length: size }, (_, index) =>
+        listing({
+          id: `ANN-${index}`,
+          category: index % 3 ? 'beauty' : 'electronics',
+          views: size - index,
+          createdAt: new Date(now - index * 3600_000).toISOString(),
+        }),
+      )
+      const feed = buildMarketplaceDiscovery(listings, {
+        now,
+        showRails: true,
+        searching: false,
+        railSize: 8,
+      })
+      expect(feed.forYou.length).toBeGreaterThan(0)
+      expect(feed.trending.length).toBeGreaterThan(0)
+      expect(feed.fresh.length).toBeGreaterThan(0)
+      expect(feed.discover).toHaveLength(size)
+      expect(new Set(feed.discover.map((item) => item.id)).size).toBe(size)
+    }
+  })
+
+  it('garde tout le catalogue classé dans Découvrir sur un grand catalogue', () => {
+    const listings = Array.from({ length: 24 }, (_, index) =>
+      listing({
+        id: `ANN-${index}`,
+        category: ['beauty', 'electronics', 'fashion'][index % 3],
+        views: index,
+        createdAt: new Date(now - index * 3600_000).toISOString(),
+      }),
+    )
+    const feed = buildMarketplaceDiscovery(listings, {
+      now,
+      showRails: true,
+      searching: false,
+      railSize: 8,
+    })
+    expect(feed.forYou).toHaveLength(8)
+    expect(feed.discover).toHaveLength(24)
+    expect(feed.discover.map((item) => item.id).sort()).toEqual(
+      listings.map((item) => item.id).sort(),
+    )
   })
 
   it('booste une annonce qui correspond à une recherche récente', () => {

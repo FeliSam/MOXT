@@ -219,10 +219,8 @@ export function buildMarketplaceDiscovery(listings, ctx = {}) {
     )
   }
 
-  const discoverScored = showRails
-    ? scored.filter((item) => !railUsed.has(item.listing.id))
-    : scored
-  const discover = diversifyMarketplaceFeed(discoverScored.length ? discoverScored : scored)
+  // Rails are highlights; Découvrir keeps the full ranked catalog (not leftovers).
+  const discover = diversifyMarketplaceFeed(scored)
 
   const personalized = hasListingPersonalization({
     favorites: ctx.favorites,
