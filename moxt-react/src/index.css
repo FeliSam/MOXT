@@ -216,9 +216,6 @@ body {
   --feed-chrome-top: calc(env(safe-area-inset-top, 0px) + 3.35rem);
 }
 
-.feed-mobile-shell.feed-mobile-shell--with-statuses {
-  --feed-chrome-top: calc(env(safe-area-inset-top, 0px) + 8.15rem);
-}
 
 @keyframes feed-double-tap-heart {
   0% { transform: scale(0.35); opacity: 0; }

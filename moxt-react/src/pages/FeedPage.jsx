@@ -34,7 +34,6 @@ import { ListingFeedSlide } from '../features/feed/slides/ListingFeedSlide'
 import { ParcelFeedSlide } from '../features/feed/slides/ParcelFeedSlide'
 import { P2pFeedSlide } from '../features/feed/slides/P2pFeedSlide'
 import { VideoFeedSlide } from '../features/feed/slides/VideoFeedSlide'
-import { StatusRail } from '../features/statuses/StatusRail'
 import { phase3Text } from '../i18n/phase3I18n'
 
 function renderFeedSlide(item, { index, active }) {
@@ -291,18 +290,13 @@ export function FeedPage() {
           url={buildEntityShareUrl(focusedItem)}
         />
       ) : null}
-      <div className={`feed-mobile-shell md:contents ${guestMode ? '' : 'feed-mobile-shell--with-statuses'}`}>
+      <div className="feed-mobile-shell md:contents">
         <FeedTypeChips
           counts={kindCounts}
           totalCount={allItems.length}
           showPublish={!guestMode}
           backHref={guestMode ? '/' : '/dashboard'}
         />
-        {!guestMode ? (
-          <div className="pointer-events-auto absolute inset-x-0 z-20 top-[calc(env(safe-area-inset-top,0px)+3.15rem)]">
-            <StatusRail tone="feed" />
-          </div>
-        ) : null}
         <FeedSnapScroller
           items={items}
           initialIndex={initialIndex}
