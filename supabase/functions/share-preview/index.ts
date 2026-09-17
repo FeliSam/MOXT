@@ -2,7 +2,17 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const SITE_URL = (Deno.env.get('MOXT_SITE_URL') || 'https://moxtapp.ru').replace(/\/$/, '')
 const DEFAULT_OG_IMAGE = 'https://moxtapp.ru/assets/logos/X.png'
-const SHARE_KINDS = new Set(['listing', 'parcel', 'job', 'event', 'post', 'video', 'p2p'])
+const SHARE_KINDS = new Set([
+  'listing',
+  'parcel',
+  'job',
+  'event',
+  'post',
+  'video',
+  'p2p',
+  'business',
+  'user',
+])
 
 function htmlEscape(value = '') {
   return String(value)
@@ -40,6 +50,12 @@ function firstImage(row: Record<string, unknown>, keys = ['images', 'image_url',
 
 function resolveTargetPath(kind: string, entityId: string) {
   if (kind === 'listing') return `/marketplace/${entityId}`
+  if (kind === 'business') return `/businesses/${entityId}`
+  if (kind === 'user') return `/users/${entityId}/publications`
+  if (kind === 'parcel') return `/parcels/${entityId}`
+  if (kind === 'job') return `/jobs/${entityId}`
+  if (kind === 'event') return `/events/${entityId}`
+  if (kind === 'p2p') return `/p2p/${entityId}`
   if (kind === 'video') {
     return `/feed?type=video&item=${encodeURIComponent(`video:${entityId}`)}`
   }
@@ -65,6 +81,8 @@ async function resolveShareMeta(kind: string, entityId: string) {
     post: 'posts',
     video: 'videos',
     p2p: 'p2p_offers',
+    business: 'businesses',
+    user: 'profiles',
   }
   const table = tableByKind[kind]
   if (!table) return null
@@ -79,13 +97,31 @@ async function resolveShareMeta(kind: string, entityId: string) {
   if (kind === 'post' && data.status !== 'published') return null
   if (kind === 'video' && data.status !== 'active') return null
   if (kind === 'p2p' && !['active', 'open'].includes(String(data.status || ''))) return null
+  if (kind === 'business' && !['verified', 'approved', 'active'].includes(String(data.status || ''))) {
+    return null
+  }
+  if (kind === 'user' && String(data.activity_visibility || 'public') !== 'public') return null
 
-  const title =
+  let title =
     String(data.title || data.name || data.route || data.company_name || '').trim() || 'MOXT'
+  if (kind === 'user') {
+    const full = `${data.first_name || ''} ${data.last_name || ''}`.trim()
+    title = full || title
+  }
   const description = truncateShareText(
-    data.description || data.caption || data.notes || data.conditions || data.summary || title,
+    data.description ||
+      data.caption ||
+      data.notes ||
+      data.conditions ||
+      data.summary ||
+      data.bio ||
+      title,
   )
-  const image = pickShareImage([firstImage(data), firstImage(data, ['thumbnail_url']), firstImage(data, ['image_url'])])
+  const image = pickShareImage([
+    firstImage(data),
+    firstImage(data, ['thumbnail_url', 'logo_url', 'avatar_url']),
+    firstImage(data, ['image_url']),
+  ])
   const targetPath = resolveTargetPath(kind, entityId)
 
   return {

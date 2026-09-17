@@ -29,7 +29,7 @@ describe('shareLinkUtils', () => {
     ).toBe('/marketplace/ANN-1')
   })
 
-  it('shares marketplace links publicly but feed links for protected modules', () => {
+  it('shares catalog detail paths publicly when href is a public prefix', () => {
     expect(
       resolvePublicShareTarget({
         kind: 'listing',
@@ -46,7 +46,7 @@ describe('shareLinkUtils', () => {
         href: '/parcels/PAR-1',
         feedHref: '/feed?item=parcel%3APAR-1',
       }),
-    ).toBe('/feed?item=parcel%3APAR-1')
+    ).toBe('/parcels/PAR-1')
 
     expect(
       resolvePublicShareTarget({
@@ -67,14 +67,14 @@ describe('shareLinkUtils', () => {
     ).toBe('/feed?type=video&item=video%3AVID-1')
   })
 
-  it('builds feed fallback when only kind and id are known', () => {
+  it('builds catalog path when only kind and id are known', () => {
     expect(
       resolvePublicShareTarget({
         kind: 'job',
         entityId: 'JOB-9',
         href: '/jobs/JOB-9',
       }),
-    ).toBe('/feed?item=job%3AJOB-9')
+    ).toBe('/jobs/JOB-9')
   })
 
   it('picks first https image', () => {

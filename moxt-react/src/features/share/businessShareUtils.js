@@ -1,5 +1,6 @@
 import { activityByValue } from '../../config/businessActivities'
 import { buildAbsoluteUrl } from '../../utils/siteUrl'
+import { buildEntitySharePreviewUrl } from './shareLinkUtils'
 
 export function businessPublicationsPath(businessId) {
   return `/businesses/${businessId}`
@@ -26,6 +27,11 @@ export function businessShareVersion(business = {}) {
 export function buildBusinessShareUrl(business, { absolute = true } = {}) {
   if (!business?.id) {
     return absolute ? buildAbsoluteUrl('/businesses') : '/businesses'
+  }
+  // WhatsApp/crawlers: OG via Edge Function (humains redirigés vers /businesses/:id)
+  if (absolute) {
+    const preview = buildEntitySharePreviewUrl({ kind: 'business', entityId: business.id })
+    if (preview) return preview
   }
   const path = businessPublicationsPath(business.id)
   const version = businessShareVersion(business)

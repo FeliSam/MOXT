@@ -1,10 +1,18 @@
 export const DEFAULT_SHARE_OG_IMAGE = 'https://moxtapp.ru/assets/logos/X.png'
 export const CANONICAL_SHARE_SITE = 'https://moxtapp.ru'
 
-const SHARE_KINDS = new Set(['listing', 'parcel', 'job', 'event', 'post', 'video', 'p2p'])
+const SHARE_KINDS = new Set(['listing', 'parcel', 'job', 'event', 'post', 'video', 'p2p', 'business', 'user'])
 
 /** Détail accessible sans connexion (PublicationShell). */
-const PUBLIC_SHARE_PATH_PREFIXES = ['/marketplace/', '/businesses/', '/users/']
+const PUBLIC_SHARE_PATH_PREFIXES = [
+  '/marketplace/',
+  '/businesses/',
+  '/users/',
+  '/parcels/',
+  '/jobs/',
+  '/events/',
+  '/p2p/',
+]
 
 export function isPublicSharePath(path) {
   const value = String(path || '').trim()
@@ -15,6 +23,13 @@ export function buildFeedSharePath(kind, entityId, { typeFilter = '' } = {}) {
   const safeKind = String(kind || '').trim()
   const safeId = String(entityId || '').trim()
   if (!safeKind || !safeId) return '/feed'
+  if (safeKind === 'listing') return `/marketplace/${safeId}`
+  if (safeKind === 'business') return `/businesses/${safeId}`
+  if (safeKind === 'user') return `/users/${safeId}/publications`
+  if (safeKind === 'parcel') return `/parcels/${safeId}`
+  if (safeKind === 'job') return `/jobs/${safeId}`
+  if (safeKind === 'event') return `/events/${safeId}`
+  if (safeKind === 'p2p') return `/p2p/${safeId}`
   const params = new URLSearchParams()
   if (typeFilter && typeFilter !== 'all') params.set('type', typeFilter)
   params.set('item', `${safeKind}:${safeId}`)
