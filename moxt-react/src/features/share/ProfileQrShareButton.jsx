@@ -6,6 +6,7 @@ import { selectAccountPreferences } from '../account/accountSlice'
 import { useLanguage } from '../../contexts/useLanguage'
 import { buildAbsoluteUrl } from '../../utils/siteUrl'
 import { QrSharePanel } from './QrSharePanel'
+import { buildEntityShareUrl } from './shareLinkUtils'
 
 export function ProfileQrShareButton({
   activityVisibility: activityVisibilityProp,
@@ -30,10 +31,30 @@ export function ProfileQrShareButton({
   )
   const [open, setOpen] = useState(false)
   const sizeClass = size === 'sm' ? 'size-8 text-base' : 'size-10 text-lg'
-  const shareUrl = useMemo(
-    () => shareUrlProp || buildAbsoluteUrl(targetPath),
-    [shareUrlProp, targetPath],
-  )
+  const shareUrl = useMemo(() => {
+    if (shareUrlProp) return shareUrlProp
+    if (type === 'user' && targetPath) {
+      const match = String(targetPath).match(/^\/users\/([^/]+)/)
+      if (match?.[1]) {
+        return buildEntityShareUrl({
+          kind: 'user',
+          entityId: match[1],
+          href: targetPath,
+        })
+      }
+    }
+    if (type === 'business' && targetPath) {
+      const match = String(targetPath).match(/^\/businesses\/([^/]+)/)
+      if (match?.[1]) {
+        return buildEntityShareUrl({
+          kind: 'business',
+          entityId: match[1],
+          href: targetPath,
+        })
+      }
+    }
+    return targetPath ? buildAbsoluteUrl(targetPath) : ''
+  }, [shareUrlProp, targetPath, type])
   const isBusiness = type === 'business'
   const activityVisibility =
     activityVisibilityProp || (!isBusiness ? preferences?.activityVisibility : undefined)

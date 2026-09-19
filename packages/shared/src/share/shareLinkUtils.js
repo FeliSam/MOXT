@@ -17,6 +17,27 @@ export const CANONICAL_SHARE_SITE =
 
 const SHARE_KINDS = new Set(['listing', 'parcel', 'job', 'event', 'post', 'video', 'p2p', 'business', 'user'])
 
+/** Aliases callers may pass (ContactButton "profile", plurals, etc.). */
+const SHARE_KIND_ALIASES = {
+  profile: 'user',
+  profiles: 'user',
+  users: 'user',
+  listings: 'listing',
+  videos: 'video',
+  posts: 'post',
+  parcels: 'parcel',
+  jobs: 'job',
+  events: 'event',
+  businesses: 'business',
+}
+
+/** Normalize UI relatedType / kind to a singular SHARE_KINDS value. */
+export function normalizeShareKind(kind) {
+  const raw = String(kind || '').trim()
+  if (!raw) return ''
+  return SHARE_KIND_ALIASES[raw] || raw
+}
+
 /** Détail accessible sans connexion (PublicationShell). */
 const PUBLIC_SHARE_PATH_PREFIXES = [
   '/marketplace/',
@@ -34,7 +55,7 @@ export function isPublicSharePath(path) {
 }
 
 export function buildFeedSharePath(kind, entityId, { typeFilter = '' } = {}) {
-  const safeKind = String(kind || '').trim()
+  const safeKind = normalizeShareKind(kind)
   const safeId = String(entityId || '').trim()
   if (!safeKind || !safeId) return '/feed'
   if (safeKind === 'listing') return `/marketplace/${safeId}`
@@ -51,12 +72,12 @@ export function buildFeedSharePath(kind, entityId, { typeFilter = '' } = {}) {
 }
 
 export function isSharePreviewKind(kind) {
-  return SHARE_KINDS.has(String(kind || '').trim())
+  return SHARE_KINDS.has(normalizeShareKind(kind))
 }
 
 /** Path served by the OG gateway / share.moxtapp.ru custom domain. */
 export function buildShareOgPath(kind, entityId) {
-  const safeKind = String(kind || '').trim()
+  const safeKind = normalizeShareKind(kind)
   const safeId = String(entityId || '').trim()
   if (!isSharePreviewKind(safeKind) || !safeId) return ''
   return `/share/${encodeURIComponent(safeKind)}/${encodeURIComponent(safeId)}`
@@ -81,7 +102,7 @@ export function resolveSharePreviewBaseUrl(supabaseUrl) {
 }
 
 export function buildSharePreviewPath(kind, entityId) {
-  const safeKind = String(kind || '').trim()
+  const safeKind = normalizeShareKind(kind)
   const safeId = String(entityId || '').trim()
   if (!isSharePreviewKind(safeKind) || !safeId) return ''
   return `/functions/v1/share-preview/${encodeURIComponent(safeKind)}/${encodeURIComponent(safeId)}`
@@ -89,7 +110,7 @@ export function buildSharePreviewPath(kind, entityId) {
 
 export function buildSharePreviewUrl({ kind, entityId, supabaseUrl }) {
   const base = resolveSharePreviewBaseUrl(supabaseUrl)
-  const safeKind = String(kind || '').trim()
+  const safeKind = normalizeShareKind(kind)
   const safeId = String(entityId || '').trim()
   if (!base || !isSharePreviewKind(safeKind) || !safeId) return ''
   return `${base}/${encodeURIComponent(safeKind)}/${encodeURIComponent(safeId)}`

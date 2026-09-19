@@ -3,6 +3,7 @@ import {
   CANONICAL_SHARE_SITE,
   buildShareOgUrl,
   buildSharePreviewUrl,
+  normalizeShareKind,
   pickShareImage,
   resolveInAppShareTarget,
   resolvePublicShareTarget,
@@ -10,6 +11,18 @@ import {
 } from './shareLinkUtils.js'
 
 describe('shareLinkUtils', () => {
+
+  it('normalizes relatedType aliases to singular share kinds', () => {
+    expect(normalizeShareKind('profile')).toBe('user')
+    expect(normalizeShareKind('listings')).toBe('listing')
+    expect(normalizeShareKind('videos')).toBe('video')
+    expect(normalizeShareKind('posts')).toBe('post')
+    expect(normalizeShareKind('listing')).toBe('listing')
+    expect(
+      buildShareOgUrl({ kind: 'profile', entityId: 'USR-1' }),
+    ).toBe(`${CANONICAL_SHARE_SITE}/share/user/USR-1`)
+  })
+
   it('builds share OG url on the canonical gateway host', () => {
     expect(
       buildShareOgUrl({
