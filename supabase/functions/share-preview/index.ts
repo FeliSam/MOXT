@@ -2,6 +2,135 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const SITE_URL = (Deno.env.get('MOXT_SITE_URL') || 'https://moxtapp.ru').replace(/\/$/, '')
 const DEFAULT_OG_IMAGE = 'https://moxtapp.ru/assets/logos/X.png'
+const SHARE_PUBLIC_ORIGIN = (Deno.env.get('MOXT_SHARE_ORIGIN') || 'https://share.moxtapp.ru').replace(/\/$/, '')
+
+const KIND_LABELS: Record<string, string> = {
+  listing: 'Marketplace',
+  parcel: 'Colis',
+  job: 'Emploi',
+  event: 'Événement',
+  post: 'Publication',
+  video: 'Vidéo',
+  p2p: 'P2P',
+  business: 'Entreprise',
+  user: 'Profil',
+}
+
+function xmlEscape(value = '') {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&apos;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+}
+
+function wrapSvgText(text: string, maxChars = 34, maxLines = 3): string[] {
+  const words = String(text || '').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean)
+  if (!words.length) return ['MOXT']
+  const lines: string[] = []
+  let current = ''
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word
+    if (next.length > maxChars && current) {
+      lines.push(current)
+      current = word
+      if (lines.length >= maxLines) break
+    } else {
+      current = next
+    }
+  }
+  if (lines.length < maxLines && current) lines.push(current)
+  if (lines.length === maxLines) {
+    const last = lines[maxLines - 1]
+    if (last.length >= maxChars) lines[maxLines - 1] = `${last.slice(0, maxChars - 1).trim()}…`
+  }
+  return lines.slice(0, maxLines)
+}
+
+/** Carte OG 1200×630 (SVG) — titre + type + branding quand aucune photo. */
+function buildOgCardSvg(meta: { title: string; description?: string; kind?: string }) {
+  const kindLabel = KIND_LABELS[String(meta.kind || '')] || 'MOXT'
+  const titleLines = wrapSvgText(String(meta.title || 'MOXT').replace(/\s*·\s*MOXT$/i, '').trim() || 'MOXT', 32, 3)
+  const desc = String(meta.description || '').replace(/\s+/g, ' ').trim().slice(0, 90)
+  const titleTspans = titleLines
+    .map((line, i) => `<tspan x="72" dy="${i === 0 ? 0 : 58}">${xmlEscape(line)}</tspan>`)
+    .join('')
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#064e3b"/>
+      <stop offset="55%" stop-color="#08705f"/>
+      <stop offset="100%" stop-color="#0e7490"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="1080" cy="90" r="160" fill="#ffffff" fill-opacity="0.06"/>
+  <circle cx="160" cy="560" r="200" fill="#ffffff" fill-opacity="0.05"/>
+  <rect x="48" y="48" width="1104" height="534" rx="28" fill="#ffffff" fill-opacity="0.08" stroke="#ffffff" stroke-opacity="0.18" stroke-width="2"/>
+  <text x="72" y="110" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" font-size="28" font-weight="800" fill="#a7f3d0" letter-spacing="0.08em">${xmlEscape(kindLabel.toUpperCase())}</text>
+  <text x="72" y="250" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" font-size="52" font-weight="900" fill="#ffffff">${titleTspans}</text>
+  <text x="72" y="470" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" font-size="26" font-weight="600" fill="#d1fae5">${xmlEscape(desc)}</text>
+  <text x="72" y="540" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" font-size="34" font-weight="900" fill="#ffffff">MOXT</text>
+  <text x="180" y="540" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" font-size="22" font-weight="600" fill="#a7f3d0">CONNECTER · ÉCHANGER · AVANCER</text>
+</svg>`
+}
+
+function buildOgCardUrl(kind: string, entityId: string) {
+  // Prefer share.moxtapp.ru once infra/share-html-proxy passes image/* for og-card.
+  // Until that Cloud Function version is live, serve PNG from the Edge Function
+  // so WhatsApp/Facebook get Content-Type: image/png (not text/html from the proxy).
+  const viaShareHost = (Deno.env.get('MOXT_OG_CARD_VIA_SHARE_HOST') || '') === '1'
+  const path = `og-card/${encodeURIComponent(kind)}/${encodeURIComponent(entityId)}`
+  if (viaShareHost) {
+    return `${SHARE_PUBLIC_ORIGIN}/share/${path}`
+  }
+  const supabaseUrl = (Deno.env.get('SUPABASE_URL') || '').replace(/\/$/, '')
+  if (supabaseUrl) {
+    return `${supabaseUrl}/functions/v1/share-preview/${path}`
+  }
+  return `${SHARE_PUBLIC_ORIGIN}/share/${path}`
+}
+
+/**
+ * Render OG card as PNG for WhatsApp/Facebook (they ignore SVG og:image).
+ * Uses @resvg/resvg-wasm from esm.sh; falls back to SVG if wasm init/render fails.
+ * NOTE: If the HTML proxy on share.moxtapp.ru still forces text/html, redeploy
+ * infra/share-html-proxy so /share/og-card/* passes through image/* + base64.
+ */
+let resvgReady: Promise<any> | null = null
+
+async function getResvg() {
+  if (!resvgReady) {
+    resvgReady = (async () => {
+      const mod = await import('https://esm.sh/@resvg/resvg-wasm@2.6.2')
+      const wasmUrl = 'https://esm.sh/@resvg/resvg-wasm@2.6.2/index_bg.wasm'
+      await mod.initWasm(fetch(wasmUrl))
+      return mod
+    })()
+  }
+  return resvgReady
+}
+
+async function renderOgCardPng(svg: string): Promise<Uint8Array | null> {
+  try {
+    const mod = await getResvg()
+    const resvg = new mod.Resvg(svg, {
+      fitTo: { mode: 'width', value: 1200 },
+      font: { loadSystemFonts: false },
+    })
+    const rendered = resvg.render()
+    const png = rendered.asPng()
+    rendered.free()
+    resvg.free()
+    return png
+  } catch (err) {
+    console.error('[share-preview] png render failed, falling back to SVG', err)
+    return null
+  }
+}
+
 const SHARE_KINDS = new Set([
   'listing',
   'parcel',
@@ -225,8 +354,9 @@ async function resolveShareMeta(kind: string, entityId: string) {
   return {
     title: `${title} · MOXT`,
     description,
-    image,
+    image: image === DEFAULT_OG_IMAGE ? buildOgCardUrl(kind, entityId) : image,
     targetUrl: `${SITE_URL}${targetPath}`,
+    kind,
   }
 }
 
@@ -260,6 +390,20 @@ function renderPreviewHtml(meta: { title: string; description: string; image: st
   <p><a href="${targetUrl}">Ouvrir sur MOXT</a></p>
 </body>
 </html>`
+}
+
+
+function parseOgCardPath(pathname: string) {
+  const parts = pathname.split('/').filter(Boolean)
+  const fnIndex = parts.indexOf('share-preview')
+  const slice = fnIndex >= 0 ? parts.slice(fnIndex + 1) : parts
+  const shareIndex = slice.indexOf('share')
+  const path = shareIndex >= 0 ? slice.slice(shareIndex + 1) : slice
+  if (path[0] !== 'og-card' || path.length < 3) return null
+  const kind = normalizeShareKind(decodeURIComponent(path[1] || ''))
+  const entityId = decodeURIComponent(path.slice(2).join('/'))
+  if (!SHARE_KINDS.has(kind) || !entityId) return null
+  return { kind, entityId }
 }
 
 function parseSharePath(pathname: string) {
@@ -298,6 +442,33 @@ Deno.serve(async (req) => {
 
   try {
     const url = new URL(req.url)
+    const ogParsed = parseOgCardPath(url.pathname)
+    if (ogParsed) {
+      const meta = await resolveShareMeta(ogParsed.kind, ogParsed.entityId)
+      const title = meta?.title || 'MOXT'
+      const description = meta?.description || ''
+      const svg = buildOgCardSvg({ title, description, kind: ogParsed.kind })
+      const png = await renderOgCardPng(svg)
+      if (png) {
+        const headers = {
+          'Content-Type': 'image/png',
+          'Cache-Control': 'public, max-age=300',
+          'Access-Control-Allow-Origin': '*',
+        }
+        if (req.method === 'HEAD') return new Response(null, { status: 200, headers })
+        return new Response(png, { headers })
+      }
+      // Fallback SVG — WhatsApp/Facebook often skip SVG og:image; prefer PNG path above.
+      const headers = {
+        'Content-Type': 'image/svg+xml; charset=utf-8',
+        'Cache-Control': 'public, max-age=300',
+        'Access-Control-Allow-Origin': '*',
+        'X-MOXT-OG-Fallback': 'svg',
+      }
+      if (req.method === 'HEAD') return new Response(null, { status: 200, headers })
+      return new Response(svg, { headers })
+    }
+
     const parsed = parseSharePath(url.pathname)
     if (!parsed) {
       return new Response('Not found', { status: 404 })
