@@ -1,4 +1,4 @@
-# MOXT — déploiement web (Vite + React Router SPA)
+﻿# MOXT â€” dÃ©ploiement web (Vite + React Router SPA)
 # https://docs.netlify.com/configure-builds/file-based-configuration/
 
 [build]
@@ -9,14 +9,20 @@
   NODE_VERSION = "22"
   NPM_FLAGS = "--include=dev"
   VITE_SUPABASE_URL = "https://rbvqfkccbkwjxkvpnwqn.supabase.co"
-  # Clé anon publique (visible côté client — sécurité via RLS Supabase)
+  # ClÃ© anon publique (visible cÃ´tÃ© client â€” sÃ©curitÃ© via RLS Supabase)
   VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJidnFma2NjYmt3anhrdnBud3FuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NjI2NDMsImV4cCI6MjA5ODIzODY0M30.ZpAr5eEnxoxy3TQ4hIA3SoX1NTuPg-0pt4UQ2mS5lDI"
   VITE_MEDIA_YANDEX_ENABLED = "true"
   VITE_MEDIA_CDN_BASE = "https://cdn.moxtapp.ru"
   VITE_MEDIA_PUBLIC_BUCKET = "moxt-public"
   VITE_MEDIA_PRIVATE_BUCKET = "moxt-private"
 
-# React Router : toutes les routes → index.html
+# React Router : toutes les routes â†’ index.html
+[[redirects]]
+  from = "/share/*"
+  to = "https://rbvqfkccbkwjxkvpnwqn.supabase.co/functions/v1/share-preview/:splat"
+  status = 200
+  force = true
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

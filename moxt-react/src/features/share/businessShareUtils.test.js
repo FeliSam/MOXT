@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+﻿import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   buildBusinessShareText,
   buildBusinessShareUrl,
@@ -7,11 +7,10 @@ import {
 
 describe('businessShareUtils', () => {
   beforeEach(() => {
-    vi.stubEnv('VITE_SUPABASE_URL', '')
     vi.stubEnv('VITE_SITE_URL', 'https://moxtapp.ru')
   })
 
-  it('builds stable business share urls with version query', () => {
+  it('builds stable business share urls via /share', () => {
     const first = buildBusinessShareUrl({
       id: 'BIZ-1',
       name: 'Alpha',
@@ -23,18 +22,16 @@ describe('businessShareUtils', () => {
       updatedAt: '2026-01-01T00:00:00.000Z',
     })
     expect(first).toBe(second)
-    expect(first).toContain('https://moxtapp.ru/businesses/BIZ-1')
-    expect(first).toContain('v=')
+    expect(first).toBe('https://www.moxtapp.ru/share/business/BIZ-1')
   })
 
-  it('prefers share-preview URL when supabase is configured', () => {
-    vi.stubEnv('VITE_SUPABASE_URL', 'https://abc.supabase.co')
+  it('prefers /share URL on www.moxtapp.ru', () => {
     const url = buildBusinessShareUrl({
       id: 'BIZ-1',
       name: 'Alpha',
       updatedAt: '2026-01-01T00:00:00.000Z',
     })
-    expect(url).toBe('https://abc.supabase.co/functions/v1/share-preview/business/BIZ-1')
+    expect(url).toBe('https://www.moxtapp.ru/share/business/BIZ-1')
   })
 
   it('builds share url from form values', () => {
@@ -42,7 +39,7 @@ describe('businessShareUtils', () => {
       id: 'BIZ-2',
       name: 'Beta',
     })
-    expect(url).toContain('/businesses/BIZ-2')
+    expect(url).toBe('https://www.moxtapp.ru/share/business/BIZ-2')
   })
 
   it('builds share text with contacts', () => {

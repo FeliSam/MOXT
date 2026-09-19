@@ -58,14 +58,43 @@ VITE_MEDIA_PRIVATE_BUCKET=moxt-private
 
 ## Migration batch Supabase → Yandex
 
-```bash
-# Dry-run (liste les objets)
-node scripts/migrate-supabase-to-yandex.mjs --dry-run
+Secrets locaux (ne jamais commit) : `scripts/phase2.yandex-media.env` (`MOXT_YC_S3_*`),
+plus `SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_ACCESS_TOKEN` via `phase2.supabase-secrets.env` ou `phase2.env`.
 
-# Avatars puis listings
-node scripts/migrate-supabase-to-yandex.mjs --bucket=avatars
+`media_objects.owner_id` est **NOT NULL** + FK `auth.users` (voir `20260827100000_media_objects.sql`).
+Si le UUID deviné depuis le chemin n’existe pas : l’objet S3 est quand même uploadé, la ligne
+`media_objects` est ignorée (log `S3 OK, skip media_objects`).
+
+```bash
+# Charger les secrets (bash / Git Bash)
+set -a; source scripts/phase2.yandex-media.env; set +a
+
+# Dry-run (liste N objets sans tout parcourir)
+node scripts/migrate-supabase-to-yandex.mjs --dry-run --bucket=videos --limit=20
+
+# 1) Vidéos d’abord (plus gros egress Cached Fil/feed)
+node scripts/migrate-supabase-to-yandex.mjs --bucket=videos --limit=200
+node scripts/migrate-supabase-to-yandex.mjs --bucket=videos --limit=200 --offset=200
+
+# 2) Listings / images marketplace
 node scripts/migrate-supabase-to-yandex.mjs --bucket=listings --limit=500
+
+# 3) Avatars / businesses (plus légers)
+node scripts/migrate-supabase-to-yandex.mjs --bucket=avatars --limit=500
+node scripts/migrate-supabase-to-yandex.mjs --bucket=businesses --limit=200
+
+# Rewrite URLs live (Supabase Storage → https://cdn.moxtapp.ru/...)
+# Ne réécrit que si l’objet existe déjà sur Yandex/CDN (HEAD), sauf --skip-cdn-check
+node scripts/rewrite-supabase-urls-to-cdn.mjs --dry-run --tables=videos --limit=50
+node scripts/rewrite-supabase-urls-to-cdn.mjs --tables=videos,listings --limit=500
+node scripts/rewrite-supabase-urls-to-cdn.mjs --tables=profiles,posts,statuses,businesses --limit=500
+
+# Ou migrate + rewrite dans le même run (après uploads réussis)
+node scripts/migrate-supabase-to-yandex.mjs --bucket=videos --limit=100 --rewrite-urls
 ```
+
+npm : `npm run migrate:media:yandex -- --bucket=videos --limit=50`
+npm : `npm run rewrite:media:cdn -- --tables=videos --dry-run`
 
 ## Flux upload (résumé)
 

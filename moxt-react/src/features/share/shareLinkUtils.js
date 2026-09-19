@@ -4,24 +4,25 @@ import {
 } from '@moxt/shared/share/shareLinkUtils.js'
 import { getSiteUrl } from '../../utils/siteUrl'
 
-function supabaseProjectUrl() {
-  return import.meta.env.VITE_SUPABASE_URL || ''
+/** Prefere www.moxtapp.ru pour les liens Partager / OG. */
+function shareSiteUrl() {
+  const site = getSiteUrl()
+  if (/^https?:\/\/(www\.)?moxtapp\.ru$/i.test(site)) return 'https://www.moxtapp.ru'
+  return site
 }
 
-/** URL de preview OG (Edge Function) — utilisée par les apps de messagerie. */
+/** URL de preview OG (proxy Netlify /share → Edge Function). */
 export function buildEntitySharePreviewUrl({ kind, entityId } = {}) {
   return buildSharedSharePreviewUrl({
     kind,
     entityId,
-    supabaseUrl: supabaseProjectUrl(),
+    siteUrl: shareSiteUrl(),
   })
 }
 
 /**
- * URL absolue partagée (WhatsApp / copier / share natif).
- * Préfère l'Edge Function share-preview pour que les crawlers reçoivent
- * le bon Open Graph ; les humains sont redirigés vers la cible in-app.
- * Sinon, retombe sur le deep link public moxtapp.ru.
+ * URL absolue partagee (WhatsApp / copier / share natif).
+ * Domaine www.moxtapp.ru/share/... ; Netlify proxy vers share-preview pour les crawlers.
  */
 export function buildEntityShareUrl(item = {}) {
   const preview = buildEntitySharePreviewUrl({
@@ -36,7 +37,7 @@ export function buildEntityShareUrl(item = {}) {
     href: item.href,
     feedHref: item.feedHref,
   })
-  return `${getSiteUrl()}${target.startsWith('/') ? target : `/${target}`}`
+  return `${shareSiteUrl()}${target.startsWith('/') ? target : `/${target}`}`
 }
 
 export { resolvePublicShareTarget }
