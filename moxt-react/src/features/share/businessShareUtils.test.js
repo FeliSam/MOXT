@@ -1,4 +1,4 @@
-﻿import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CANONICAL_SHARE_SITE } from '@moxt/shared/share/shareLinkUtils.js'
 import {
   buildBusinessShareText,
