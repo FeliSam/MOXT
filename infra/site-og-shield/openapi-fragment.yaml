@@ -1,0 +1,98 @@
+# Fragment — merge into API Gateway spec for moxt-site (or CDN HTTP origin).
+# Entity paths → moxt-site-og-shield (UA-aware). Everything else → website SPA.
+# Replace FUNCTION_ID and keep website host locked (see docs/site-path-og-crawlers.md).
+openapi: 3.0.0
+info:
+  title: moxt-site-og
+  version: 1.0.0
+paths:
+  /parcels/{id}:
+    get: &entity
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: FUNCTION_ID
+        tag: $latest
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+    head: *entity
+  /marketplace/{id}:
+    get: *entity
+    head: *entity
+  /jobs/{id}:
+    get: *entity
+    head: *entity
+  /events/{id}:
+    get: *entity
+    head: *entity
+  /businesses/{id}:
+    get: *entity
+    head: *entity
+  /users/{id}/{proxy+}:
+    get:
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: FUNCTION_ID
+        tag: $latest
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: proxy+
+          in: path
+          required: false
+          schema: { type: string }
+    head:
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: FUNCTION_ID
+        tag: $latest
+  /p2p/{id}:
+    get: *entity
+    head: *entity
+  /news/{id}:
+    get: *entity
+    head: *entity
+  /feed:
+    get:
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: FUNCTION_ID
+        tag: $latest
+    head:
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: FUNCTION_ID
+        tag: $latest
+  /assets/{proxy+}:
+    get: &assets
+      x-yc-apigateway-integration:
+        type: http
+        url: https://moxtapp-web.website.yandexcloud.net/assets/{proxy}
+        headers:
+          Host: moxtapp-web.website.yandexcloud.net
+    head: *assets
+  /:
+    get: &root
+      x-yc-apigateway-integration:
+        type: http
+        url: https://moxtapp-web.website.yandexcloud.net/
+        headers:
+          Host: moxtapp-web.website.yandexcloud.net
+    head: *root
+  /{proxy+}:
+    get: &spa
+      x-yc-apigateway-integration:
+        type: http
+        url: https://moxtapp-web.website.yandexcloud.net/{proxy}
+        headers:
+          Host: moxtapp-web.website.yandexcloud.net
+      parameters:
+        - name: proxy+
+          in: path
+          required: true
+          schema: { type: string }
+    head: *spa
