@@ -6,7 +6,8 @@ describe('isSlideMounted', () => {
     expect(isSlideMounted(5, 5)).toBe(true)
     expect(isSlideMounted(3, 5)).toBe(true)
     expect(isSlideMounted(7, 5)).toBe(true)
-    expect(isSlideMounted(2, 5)).toBe(false)
+    expect(isSlideMounted(2, 5)).toBe(true) // radius 3
+    expect(isSlideMounted(1, 5)).toBe(false)
     expect(isSlideMounted(0, 5)).toBe(false)
   })
 
@@ -18,7 +19,8 @@ describe('isSlideMounted', () => {
     expect(isSlideMounted(1, active, opts)).toBe(true)
     expect(isSlideMounted(2, active, opts)).toBe(true)
     expect(isSlideMounted(3, active, opts)).toBe(true)
-    expect(isSlideMounted(13, active, opts)).toBe(false)
+    expect(isSlideMounted(14, active, opts)).toBe(false)
+    expect(isSlideMounted(13, active, opts)).toBe(true) // radius 3 around copy at 10
     expect(isSlideMounted(10, active, opts)).toBe(true)
     expect(isSlideMounted(11, active, opts)).toBe(true)
   })
