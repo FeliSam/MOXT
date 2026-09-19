@@ -263,7 +263,7 @@ export function BusinessDetailPage() {
     count: activeListings.length || publicationCount,
     alwaysShow: true,
   }
-  // =1 vidéo : Vidéos, Produits, Avis, À propos — sinon Produits, Vidéos, Avis, À propos
+  // =1 vidÃ©o : VidÃ©os, Produits, Avis, Ã€ propos â€” sinon Produits, VidÃ©os, Avis, Ã€ propos
   const publicTabs = [
     ...(activeVideos.length > 0 ? [videosTab, produitsTab] : [produitsTab, videosTab]),
     {
@@ -386,7 +386,7 @@ export function BusinessDetailPage() {
           {cityLabel || business.country ? (
             <p className="flex items-center gap-2 text-sm text-[var(--app-text-muted)]">
               <FiMapPin className="shrink-0 text-brand-700" />
-              {[cityLabel, business.country].filter(Boolean).join(' Â· ')}
+              {[cityLabel, business.country].filter(Boolean).join(' Ã‚Â· ')}
             </p>
           ) : null}
           {activeVideos.length ? (

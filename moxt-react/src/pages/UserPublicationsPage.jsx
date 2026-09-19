@@ -327,7 +327,7 @@ export function UserPublicationsPage() {
     count: profile.totalCount,
     alwaysShow: true,
   }
-  // Entreprise (et profil) : =1 vid�o ? Vid�os puis Produits/Publications ; sinon l'inverse. Avis puis � propos.
+  // Entreprise (et profil) : =1 vidéo ? Vidéos puis Produits/Publications ; sinon l'inverse. Avis puis À propos.
   const publicTabs = [
     ...(activeVideos.length > 0 ? [videosTab, publicationsTab] : [publicationsTab, videosTab]),
     {
@@ -447,7 +447,7 @@ export function UserPublicationsPage() {
         <div className="grid gap-5">
           {profileCity || profileCountry ? (
             <p className="text-sm text-[var(--app-text-muted)]">
-              {[profileCity, profileCountry].filter(Boolean).join(' · ')}
+              {[profileCity, profileCountry].filter(Boolean).join(' Â· ')}
             </p>
           ) : null}
           {activeVideos.length ? (
