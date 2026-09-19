@@ -1,6 +1,6 @@
 import { supabase } from '../supabaseClient'
 import { mediaConfig, assertUploadBackendAvailable } from '../../config/mediaConfig.js'
-import { appendCacheBust } from './mediaUrlUtils.js'
+import { appendCacheBust, rewriteCdnToStorageUrl } from './mediaUrlUtils.js'
 import { uploadToYandex, resolvePrivateSignedUrl } from './yandexMediaClient.js'
 import { resolveCachedMediaUrl } from './cachedMediaResolver.js'
 import { reportProgress, runWithUploadProgress, UPLOAD_PHASES } from '../uploadProgress'
@@ -19,7 +19,7 @@ async function uploadSupabasePublic(bucket, path, file, { onProgress } = {}) {
   reportProgress(onProgress, { phase: UPLOAD_PHASES.finalizing, percent: 96 })
   const { data } = supabase.storage.from(bucket).getPublicUrl(path)
   reportProgress(onProgress, { phase: UPLOAD_PHASES.done, percent: 100 })
-  return appendCacheBust(data.publicUrl)
+  return appendCacheBust(rewriteCdnToStorageUrl(data.publicUrl))
 }
 
 async function uploadSupabasePrivate(bucket, path, file, { onProgress } = {}) {
@@ -113,7 +113,7 @@ export function createMediaStorageProvider({ supabaseFallback = true } = {}) {
           onProgress: options.onProgress,
         })
         reportProgress(options.onProgress, { phase: UPLOAD_PHASES.done, percent: 100 })
-        return appendCacheBust(result.publicUrl)
+        return appendCacheBust(rewriteCdnToStorageUrl(result.publicUrl))
       } catch (error) {
         if (blockSupabase || !supabaseFallback) throw error
         console.warn('[Media] Yandex upload failed, fallback Supabase:', error.message)

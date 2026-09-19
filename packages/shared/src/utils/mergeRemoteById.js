@@ -10,12 +10,18 @@ export function mergeRemoteById(localItems = [], remoteItems = []) {
   return [...merged.values()]
 }
 
+/** Keep optimistic rows until a later pull (publish → navigate → refresh race). */
+export const LOCAL_ONLY_GRACE_MS = 10 * 60 * 1000
+
 /**
  * Après un pull paginé (ex. 50 plus récents), retire les lignes locales
  * qui auraient dû être dans la fenêtre distante (archivées / supprimées
  * côté serveur, encore présentes dans le cache).
+ *
+ * Ne retire pas les publications locales très récentes absentes du pull :
+ * l’upsert réseau peut encore être en vol juste après publish.
  */
-export function pruneMissingInRemoteWindow(mergedItems = [], remoteItems = [], dateField = 'createdAt') {
+export function pruneMissingInRemoteWindow(mergedItems = [], remoteItems = [], dateField = 'createdAt', nowMs = Date.now()) {
   if (!remoteItems?.length) return mergedItems
   const remoteIds = new Set(remoteItems.map((item) => item?.id).filter(Boolean))
   let oldest = Infinity
@@ -28,10 +34,12 @@ export function pruneMissingInRemoteWindow(mergedItems = [], remoteItems = [], d
     if (!item?.id || remoteIds.has(item.id)) return true
     const time = new Date(item[dateField] || item.createdAt || 0).getTime()
     if (!Number.isFinite(time)) return true
+    const ageMs = nowMs - time
+    if (ageMs >= 0 && ageMs < LOCAL_ONLY_GRACE_MS) return true
     return time < oldest
   })
 }
 
-export function mergeRemoteByIdPruningWindow(localItems, remoteItems, dateField = 'createdAt') {
-  return pruneMissingInRemoteWindow(mergeRemoteById(localItems, remoteItems), remoteItems, dateField)
+export function mergeRemoteByIdPruningWindow(localItems, remoteItems, dateField = 'createdAt', nowMs = Date.now()) {
+  return pruneMissingInRemoteWindow(mergeRemoteById(localItems, remoteItems), remoteItems, dateField, nowMs)
 }

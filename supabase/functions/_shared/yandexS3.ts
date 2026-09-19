@@ -45,7 +45,12 @@ export function resolveS3Bucket(config: YandexS3Config, visibility: 'public' | '
 
 export function buildPublicCdnUrl(config: YandexS3Config, objectKey: string) {
   const key = objectKey.replace(/^\/+/, '')
-  if (config.cdnBase) return `${config.cdnBase}/${encodeURI(key)}`
+  // Prefer direct Object Storage. cdn.moxtapp.ru often 404s / lags on brand-new objects
+  // until the CDN origin pull catches up — users see blank media until a hard refresh.
+  const cdn = (config.cdnBase || '').replace(/\/+$/, '')
+  if (cdn && !cdn.includes('cdn.moxtapp.ru')) {
+    return `${cdn}/${encodeURI(key)}`
+  }
   return `${config.endpoint}/${resolveS3Bucket(config, 'public')}/${encodeURI(key)}`
 }
 
