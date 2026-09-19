@@ -13,6 +13,7 @@ import { buildListingFavoriteSnapshot } from '../account/favoriteUtils'
 import { archivedPublicationCardClass } from '../publications/publicationCatalogUtils'
 import { formatMoney } from '../transfers/transferUtils'
 import { listingOptionLabel, marketplaceText } from './marketplaceI18n'
+import { resolveMediaDisplayUrl } from '../../services/media/mediaUrlUtils'
 
 function MarketplaceListingCardComponent({
   listing,
@@ -52,7 +53,9 @@ function MarketplaceListingCardComponent({
     ? listingOptionLabel(t, categoryOption)
     : listing.category
   const detailPath = `/marketplace/${listing.id}`
-  const images = (listing.images || []).filter((src) => src && !failedSrc.has(src))
+  const images = (listing.images || [])
+    .map((src) => resolveMediaDisplayUrl(src) || src)
+    .filter((src) => src && !failedSrc.has(src))
   const multi = images.length > 1
 
   function handleToggleLike(event) {
@@ -116,7 +119,7 @@ function MarketplaceListingCardComponent({
     >
       <div
         className={`relative w-full overflow-hidden bg-gradient-to-br from-cyan-700 to-blue-600 ${
-          isRail ? 'h-full' : 'h-[290px] xl:h-[333px]'
+          isRail ? 'h-full' : 'h-[320px] xl:h-[360px]'
         } ${archived ? 'opacity-75 saturate-[0.85]' : ''}`}
       >
         {images.length ? (
@@ -197,7 +200,7 @@ function MarketplaceListingCardComponent({
               {categoryLabel}
             </span>
           </div>
-          <h2 className="line-clamp-2 break-words text-sm font-black leading-snug text-white drop-shadow sm:text-base">
+          <h2 className="line-clamp-3 break-words text-sm font-black leading-snug text-white drop-shadow sm:text-base">
             {listing.title}
           </h2>
           <div className="mt-1.5 flex items-end justify-between gap-2">

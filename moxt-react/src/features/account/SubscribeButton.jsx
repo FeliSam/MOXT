@@ -27,6 +27,9 @@ export function SubscribeButton({
   size = 'md',
   variant = 'secondary',
   className = '',
+  subscribeLabel,
+  subscribedLabel,
+  showIcon = true,
 }) {
   const dispatch = useDispatch()
   const { t } = useLanguage()
@@ -102,16 +105,19 @@ export function SubscribeButton({
   const NotifyIcon = NOTIFY_ICONS[notifyPref] || FiBell
   const notifyLabel = p3(`subscriptions.notify.${notifyPref}`)
 
+  const followLabel = subscribeLabel || p3('subscriptions.subscribe')
+  const followingLabel = subscribedLabel || p3('subscriptions.subscribed')
+
   if (!isSubscribed) {
     return (
       <Button
         className={className}
         size={size}
         variant={variant}
-        icon={FiUserPlus}
+        icon={showIcon ? FiUserPlus : undefined}
         onClick={() => subscribe('all')}
       >
-        {p3('subscriptions.subscribe')}
+        {followLabel}
       </Button>
     )
   }
@@ -121,11 +127,11 @@ export function SubscribeButton({
       <Button
         size={size}
         variant="secondary"
-        icon={FiUserCheck}
+        icon={showIcon ? FiUserCheck : undefined}
         className="min-w-fit flex-1 whitespace-nowrap border-brand-200 bg-brand-50 text-brand-800 dark:border-brand-800 dark:bg-brand-950/40 dark:text-brand-200"
         aria-pressed="true"
       >
-        {p3('subscriptions.subscribed')}
+        {followingLabel}
       </Button>
       <SubscriptionNotifyMenu
         activePref={notifyPref}

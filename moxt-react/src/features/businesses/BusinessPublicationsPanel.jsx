@@ -78,6 +78,7 @@ export function BusinessPublicationsPanel({
           parcels: [],
           jobs: [],
           events: [],
+          videos: [],
           posts: [],
           others: [],
         }
