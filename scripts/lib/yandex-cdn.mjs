@@ -1,7 +1,30 @@
-import { ycJson, ycRun, ycInherit } from './yandex.mjs'
+﻿import { ycJson, ycRun, ycInherit } from './yandex.mjs'
 
-/** Rewrite interne (break) : / et routes SPA sans extension → index.html ; les assets (.js, .css…) passent. */
-export const SPA_REWRITE_BODY = '^/([^.]*)$ /index.html'
+/**
+ * GARDE-FOU CDN moxtapp.ru — NE PAS CHANGER sans vérifier https://moxtapp.ru/
+ *
+ * Outage 2026-09-19: origin Storage API (*.storage.yandexcloud.net) → GET / = 403 AccessDenied.
+ * Rewrite nucléaire ^/(.*)$ → HTML servi à la place des .js/.css.
+ *
+ * Config verrouillée (live resource bc8rz327qbtedt3vbafl):
+ * - origin website: {bucket}.website.yandexcloud.net + meta.website.name
+ * - Host header = même host website
+ * - rewrite UNIQUEMENT ^/$ → /index.html (BREAK) — jamais ^/(.*)$ ni SPA large par défaut
+ * - routes SPA (/marketplace…) via documents index/error du website hosting
+ */
+export const MOXT_CDN_LOCK = Object.freeze({
+  resourceId: 'bc8rz327qbtedt3vbafl',
+  bucket: 'moxtapp-web',
+  websiteHost: (bucket) => `${bucket}.website.yandexcloud.net`,
+  storageHost: (bucket) => `${bucket}.storage.yandexcloud.net`,
+  rootRewriteBody: '^/$ /index.html',
+  forbiddenRewriteBodies: Object.freeze(['^/(.*)$ /index.html', '^/(.*)$ /index.html']),
+})
+
+/** @deprecated Prefer ROOT_REWRITE_BODY — kept name for older callers. */
+export const SPA_REWRITE_BODY = MOXT_CDN_LOCK.rootRewriteBody
+export const ROOT_REWRITE_BODY = MOXT_CDN_LOCK.rootRewriteBody
+export const FORBIDDEN_NUCLEAR_REWRITE = '^/(.*)$ /index.html'
 
 export function listCdnResources() {
   const list = ycJson('cdn', 'resource', 'list')
@@ -63,25 +86,26 @@ export function createCleanCdnResource({
 }
 
 /**
- * SPA sur Yandex CDN + Object Storage :
- * - origine bucket S3 (meta-bucket-name)
- * - Host header = endpoint storage (doc quickstart)
- * - rewrite break : chemins sans « . » → /index.html (/, /login, /messages…)
- * Évite PERMANENT (boucles) et last (500).
+ * Enforce locked website origin for Moxt SPA CDN.
+ * NEVER switches back to Storage API origin (that took the site down).
  */
 export function ensureSpaOrigin(resource, bucket) {
   const groupId = resource?.origin_group_id
   const resourceId = resource?.id
   if (!groupId || !resourceId) return resource
 
-  const storageHost = `${bucket}.storage.yandexcloud.net`
+  const websiteHost = `${bucket}.website.yandexcloud.net`
   const group = ycJson('cdn', 'origin-group', 'get', String(groupId))
   const origin = group?.origins?.[0]
   const source = origin?.source || ''
-  const bucketMeta = origin?.meta?.bucket?.name
   const websiteMeta = origin?.meta?.website?.name
+  const bucketMeta = origin?.meta?.bucket?.name
 
-  if (source !== storageHost || bucketMeta !== bucket || websiteMeta) {
+  // Reject / repair storage-API origin (403 on /)
+  const needsWebsiteOrigin =
+    source !== websiteHost || websiteMeta !== bucket || Boolean(bucketMeta)
+
+  if (needsWebsiteOrigin) {
     ycInherit(
       'cdn',
       'origin-group',
@@ -89,32 +113,38 @@ export function ensureSpaOrigin(resource, bucket) {
       '--id',
       String(groupId),
       '--name',
-      `s3-${bucket}`,
+      `s3-${bucket}-website`,
       '--origin',
-      `source=${storageHost},enabled=true,meta-bucket-name=${bucket}`,
+      `source=${websiteHost},enabled=true,meta-website-name=${bucket}`,
     )
   }
 
   let current = ycJson('cdn', 'resource', 'get', resourceId)
   const hostHeader = current.options?.host_options?.host?.value
 
-  if (hostHeader !== storageHost) {
-    ycInherit('cdn', 'resource', 'update', resourceId, '--host-header', storageHost)
+  if (hostHeader !== websiteHost) {
+    ycInherit('cdn', 'resource', 'update', resourceId, '--host-header', websiteHost)
     current = ycJson('cdn', 'resource', 'get', resourceId)
   }
 
   const rewrite = current.options?.rewrite
   const flag = (rewrite?.flag || '').toUpperCase()
-  const body = rewrite?.body || ''
+  const body = (rewrite?.body || '').trim()
 
   if (rewrite?.enabled && (flag === 'PERMANENT' || flag === 'LAST')) {
     ycInherit('cdn', 'resource', 'update', resourceId, '--clear-rewrite')
     current = ycJson('cdn', 'resource', 'get', resourceId)
   }
 
+  // Nuclear rewrite poisons .js/.css — strip immediately
+  if (rewrite?.enabled && (/^\/\(\.\*\)\$/.test(body) || body.includes('^/(.*)$'))) {
+    ycInherit('cdn', 'resource', 'update', resourceId, '--clear-rewrite')
+    current = ycJson('cdn', 'resource', 'get', resourceId)
+  }
+
   const rewriteOk =
     current.options?.rewrite?.enabled &&
-    current.options?.rewrite?.body === SPA_REWRITE_BODY &&
+    current.options?.rewrite?.body === ROOT_REWRITE_BODY &&
     (current.options?.rewrite?.flag || '').toUpperCase() === 'BREAK'
 
   if (!rewriteOk) {
@@ -124,17 +154,90 @@ export function ensureSpaOrigin(resource, bucket) {
       'update',
       resourceId,
       '--rewrite-body',
-      SPA_REWRITE_BODY,
+      ROOT_REWRITE_BODY,
       '--rewrite-flag',
       'break',
     )
   }
 
-  return ycJson('cdn', 'resource', 'get', resourceId)
+  const locked = ycJson('cdn', 'resource', 'get', resourceId)
+  assertCdnSpaGuard(resourceId, bucket)
+  return locked
+}
+
+/**
+ * Hard guard: abort deploy if CDN would take moxtapp.ru down.
+ * Call after any CDN mutate and before declaring cpd success.
+ */
+export function assertCdnSpaGuard(resourceId, bucket) {
+  const id = String(resourceId || MOXT_CDN_LOCK.resourceId)
+  const bkt = bucket || MOXT_CDN_LOCK.bucket
+  const websiteHost = `${bkt}.website.yandexcloud.net`
+  const storageHost = `${bkt}.storage.yandexcloud.net`
+
+  const resource = ycJson('cdn', 'resource', 'get', id)
+  const groupId = resource?.origin_group_id
+  if (!groupId) {
+    throw new Error(`[cdn-guard] missing origin_group_id on ${id}`)
+  }
+  const group = ycJson('cdn', 'origin-group', 'get', String(groupId))
+  const origin = group?.origins?.[0] || {}
+  const source = origin?.source || ''
+  const websiteMeta = origin?.meta?.website?.name
+  const bucketMeta = origin?.meta?.bucket?.name
+  const hostHeader = resource?.options?.host_options?.host?.value || ''
+  const rewrite = resource?.options?.rewrite || {}
+  const body = (rewrite?.body || '').trim()
+  const flag = (rewrite?.flag || '').toUpperCase()
+
+  const errors = []
+
+  if (source === storageHost || source.includes('.storage.yandexcloud.net')) {
+    errors.push(`origin is Storage API (${source}) — must be website ${websiteHost}`)
+  }
+  if (source && source !== websiteHost) {
+    errors.push(`origin source=${source} expected ${websiteHost}`)
+  }
+  if (websiteMeta !== bkt) {
+    errors.push(`meta.website.name=${websiteMeta || '(none)'} expected ${bkt}`)
+  }
+  if (bucketMeta) {
+    errors.push(`meta.bucket.name=${bucketMeta} must be absent (website mode)`)
+  }
+  if (hostHeader !== websiteHost) {
+    errors.push(`Host header=${hostHeader || '(none)'} expected ${websiteHost}`)
+  }
+  if (body.includes('^/(.*)$')) {
+    errors.push(`nuclear rewrite forbidden: ${body}`)
+  }
+  if (rewrite?.enabled && (flag === 'PERMANENT' || flag === 'LAST')) {
+    errors.push(`rewrite flag ${flag} forbidden`)
+  }
+  if (rewrite?.enabled && body && body !== ROOT_REWRITE_BODY) {
+    errors.push(`rewrite body=${body} expected ${ROOT_REWRITE_BODY} (or disabled)`)
+  }
+  if (!rewrite?.enabled) {
+    // allowed only if caller cleared; prefer root rewrite — warn as error for Moxt lock
+    errors.push(`rewrite disabled — expected ${ROOT_REWRITE_BODY} BREAK for apex /`)
+  }
+
+  if (errors.length) {
+    throw new Error(`[cdn-guard] CDN config unsafe for moxtapp.ru:\n- ${errors.join('\n- ')}`)
+  }
+
+  return {
+    ok: true,
+    resourceId: id,
+    origin: source,
+    host: hostHeader,
+    rewrite: body,
+  }
 }
 
 export function finalizeSpaCdn(resourceId, bucket) {
-  return ensureSpaOrigin(ycJson('cdn', 'resource', 'get', resourceId), bucket)
+  const applied = ensureSpaOrigin(ycJson('cdn', 'resource', 'get', resourceId), bucket)
+  assertCdnSpaGuard(resourceId, bucket)
+  return applied
 }
 
 export function attachCertificate(resourceId, certId) {
@@ -203,6 +306,7 @@ export function purgeCdnCache(resourceId) {
   const paths = [
     '/',
     '/index.html',
+    '/assets/*',
     '/version.json',
     '/deploy-manifest.json',
     '/sw.js',
