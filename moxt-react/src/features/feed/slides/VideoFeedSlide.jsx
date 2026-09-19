@@ -271,8 +271,10 @@ function FeedVideoPlayer({ video, active, onActivate }) {
   })
   const playbackUrl = src || video.videoUrl
 
+  const [videoEl, setVideoEl] = useState(null)
   const setVideoNode = useCallback((node) => {
     videoRef.current = node
+    setVideoEl(node)
     primeFeedVideoElement(node)
   }, [])
 
@@ -281,6 +283,7 @@ function FeedVideoPlayer({ video, active, onActivate }) {
     muted,
     playbackUrl,
     videoId: video.id,
+    videoEl,
   })
 
   useEffect(() => {
@@ -315,7 +318,6 @@ function FeedVideoPlayer({ video, active, onActivate }) {
         className="h-full w-full object-cover"
         playsInline
         webkit-playsinline=""
-        autoPlay={active}
         loop
         muted={muted}
         preload={active ? 'auto' : 'metadata'}

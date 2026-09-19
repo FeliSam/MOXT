@@ -1,8 +1,12 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { NATIVE_PAUSE_EVENT } from '../../platform/capacitor.js'
 import { setFeedPlaybackAllowed, resetFeedPlaybackAllowed } from './feedPlaybackSession.js'
-import { primeFeedVideoElement, useFeedVideoPlayback } from './useFeedVideoPlayback.js'
+import {
+  FEED_PLAY_WATCHDOG_MS,
+  primeFeedVideoElement,
+  useFeedVideoPlayback,
+} from './useFeedVideoPlayback.js'
 
 describe('primeFeedVideoElement', () => {
   it('pose playsinline pour l’autoplay iOS WKWebView', () => {
@@ -18,6 +22,7 @@ describe('useFeedVideoPlayback', () => {
   afterEach(() => {
     resetFeedPlaybackAllowed()
     document.documentElement.classList.remove('capacitor-paused')
+    vi.useRealTimers()
   })
 
   it('pause la vidéo au unmount et quand le Fil n’est plus autorisé', () => {
@@ -59,6 +64,9 @@ describe('useFeedVideoPlayback', () => {
       playCount += 1
       return Promise.resolve()
     }
+    Object.defineProperty(el, 'paused', { configurable: true, get: () => playCount === 0 })
+    Object.defineProperty(el, 'ended', { configurable: true, get: () => false })
+    Object.defineProperty(el, 'readyState', { configurable: true, get: () => 4 })
     const videoRef = { current: el }
 
     renderHook(() =>
@@ -81,5 +89,87 @@ describe('useFeedVideoPlayback', () => {
     })
     expect(playCount).toBe(playsAfterPause)
     expect(playsAfterMount).toBeGreaterThan(0)
+  })
+
+  it('watchdog relance play() si active + readyState≥2 mais toujours paused', async () => {
+    vi.useFakeTimers()
+    setFeedPlaybackAllowed(true)
+    const el = document.createElement('video')
+    let playCount = 0
+    let paused = true
+    el.pause = () => {
+      paused = true
+    }
+    el.play = () => {
+      playCount += 1
+      // First attempts abort (simulates load race); later succeed.
+      if (playCount < 3) return Promise.reject(new DOMException('interrupted', 'AbortError'))
+      paused = false
+      return Promise.resolve()
+    }
+    Object.defineProperty(el, 'paused', { configurable: true, get: () => paused })
+    Object.defineProperty(el, 'ended', { configurable: true, get: () => false })
+    Object.defineProperty(el, 'readyState', { configurable: true, get: () => 4 })
+    const videoRef = { current: el }
+
+    renderHook(() =>
+      useFeedVideoPlayback(videoRef, {
+        active: true,
+        muted: true,
+        playbackUrl: 'https://storage.yandexcloud.net/bucket/v.mp4',
+        videoId: 'v1',
+      }),
+    )
+
+    expect(playCount).toBeGreaterThan(0)
+    const afterMount = playCount
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(FEED_PLAY_WATCHDOG_MS * 3)
+    })
+
+    expect(playCount).toBeGreaterThan(afterMount)
+    expect(paused).toBe(false)
+  })
+
+  it('ne relance pas via watchdog après pause utilisateur', async () => {
+    vi.useFakeTimers()
+    setFeedPlaybackAllowed(true)
+    const el = document.createElement('video')
+    let playCount = 0
+    let paused = true
+    el.pause = () => {
+      paused = true
+    }
+    el.play = () => {
+      playCount += 1
+      paused = false
+      return Promise.resolve()
+    }
+    Object.defineProperty(el, 'paused', { configurable: true, get: () => paused })
+    Object.defineProperty(el, 'ended', { configurable: true, get: () => false })
+    Object.defineProperty(el, 'readyState', { configurable: true, get: () => 4 })
+    const videoRef = { current: el }
+
+    const { result } = renderHook(() =>
+      useFeedVideoPlayback(videoRef, {
+        active: true,
+        muted: true,
+        playbackUrl: 'https://example.com/v.mp4',
+        videoId: 'v1',
+      }),
+    )
+
+    await act(async () => {
+      result.current.pauseByUser()
+    })
+    const afterUserPause = playCount
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(FEED_PLAY_WATCHDOG_MS * 5)
+    })
+
+    expect(playCount).toBe(afterUserPause)
+    expect(paused).toBe(true)
   })
 })
