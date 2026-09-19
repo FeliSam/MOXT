@@ -129,6 +129,7 @@ export function clearClientCache({ scope = 'full', preserveAuth = false } = {}) 
   void import('../features/marketplace/marketplaceListingsIdb.js').then(({ clearListingsIdb }) =>
     clearListingsIdb(),
   )
+  void import('../features/feed/feedCatalogIdb.js').then(({ clearFeedIdb }) => clearFeedIdb())
   return removed
 }
 

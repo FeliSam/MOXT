@@ -35,6 +35,13 @@ async function bindDeepLinks(App) {
 
 /** Masque le splash natif dès que le WebView peut afficher l’UI web. */
 export async function hideNativeSplash() {
+  try {
+    if (typeof document !== 'undefined' && !document.querySelector('.moxt-loading-screen')) {
+      document.documentElement.classList.remove('moxt-splash-lock')
+    }
+  } catch {
+    /* early boot / no document */
+  }
   if (!isNative) return
   try {
     const { SplashScreen } = await import('@capacitor/splash-screen')
