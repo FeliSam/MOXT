@@ -150,17 +150,16 @@ function renderPreviewHtml(meta: { title: string; description: string; image: st
   <meta property="og:title" content="${title}" />
   <meta property="og:description" content="${description}" />
   <meta property="og:image" content="${image}" />
+  <meta property="og:image:secure_url" content="${image}" />
   <meta property="og:url" content="${targetUrl}" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${title}" />
   <meta name="twitter:description" content="${description}" />
   <meta name="twitter:image" content="${image}" />
-  <meta http-equiv="refresh" content="0;url=${targetUrl}" />
   <link rel="canonical" href="${targetUrl}" />
 </head>
 <body>
   <p><a href="${targetUrl}">Ouvrir sur MOXT</a></p>
-  <script>window.location.replace(${JSON.stringify(meta.targetUrl)})</script>
 </body>
 </html>`
 }
@@ -192,7 +191,7 @@ Deno.serve(async (req) => {
     })
   }
 
-  if (req.method !== 'GET') {
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
     return new Response('Method not allowed', { status: 405 })
   }
 
@@ -217,9 +216,15 @@ Deno.serve(async (req) => {
       return Response.redirect(payload.targetUrl, 302)
     }
 
-    return new Response(renderPreviewHtml(payload), {
-      headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=300' },
-    })
+    const html = renderPreviewHtml(payload)
+    const headers = {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'public, max-age=300',
+    }
+    if (req.method === 'HEAD') {
+      return new Response(null, { status: 200, headers })
+    }
+    return new Response(html, { headers })
   } catch (error) {
     console.error('[share-preview]', error)
     return new Response('Internal error', { status: 500 })
