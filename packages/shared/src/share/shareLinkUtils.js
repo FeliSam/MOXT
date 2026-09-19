@@ -155,5 +155,5 @@ export function pickShareImage(candidates = [], fallback = DEFAULT_SHARE_OG_IMAG
 export function truncateShareText(value, max = 180) {
   const text = String(value || '').replace(/\s+/g, ' ').trim()
   if (text.length <= max) return text
-  return `${text.slice(0, max - 1).trim()}â€¦`
+  return `${text.slice(0, max - 1).trim()}…`
 }
