@@ -94,9 +94,12 @@ export function scheduleCatalogSync(store, { force = false } = {}) {
     )
 
   if (force) {
-    // Pull-to-refresh: drop IndexedDB listings so network becomes source of truth.
+    // Pull-to-refresh: drop IndexedDB marketplace + Fil caches so network becomes source of truth.
     void import('../features/marketplace/marketplaceListingsIdb.js').then(
       ({ invalidateListingsIdb }) => invalidateListingsIdb(),
+    )
+    void import('../features/feed/feedCatalogIdb.js').then(({ invalidateFeedIdb }) =>
+      invalidateFeedIdb(),
     )
     return awaitCatalogSync(run(), CATALOG_SYNC_TIMEOUT_MS, 'loadAllData')
   }

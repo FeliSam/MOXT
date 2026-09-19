@@ -25,7 +25,12 @@ async function bootstrap() {
   ensureClientCacheVersion()
   scheduleDeferredMaintenance()
 
-  // Capacitor: hide splash as soon as JS runs — do not wait for plugins / locale / routes.
+  // Capacitor: hide splash as soon as JS runs — do not wait for plugins / locale / routes / catalog.
+  try {
+    document.documentElement.classList.remove('moxt-splash-lock')
+  } catch {
+    /* SSR / early boot */
+  }
   void import('./platform/capacitor').then(({ hideNativeSplash }) => {
     void hideNativeSplash()
   })
@@ -66,16 +71,50 @@ async function bootstrap() {
   const { hydrateAuthFromBootstrapCache } = await import('./services/authBootstrapCache')
   hydrateAuthFromBootstrapCache(store.dispatch)
 
-  // Marketplace IndexedDB: show cached listings immediately, network revalidates via catalogSync.
-  void import('./features/marketplace/marketplaceListingsIdb.js').then(
-    async ({ readListingsFromIdb }) => {
-      const cached = await readListingsFromIdb()
-      if (!cached.length) return
-      const current = store.getState().marketplace?.items || []
-      if (cached.length <= current.length) return
-      const { setAll } = await import('./features/marketplace/marketplaceSlice')
-      store.dispatch(setAll({ items: cached }))
-    },
+  // IndexedDB hydrate before first paint (short timeout so slow IDB never blocks).
+  const IDB_HYDRATE_MS = 150
+  const withTimeout = (promise, ms) =>
+    Promise.race([
+      promise,
+      new Promise((resolve) => {
+        setTimeout(() => resolve(undefined), ms)
+      }),
+    ])
+
+  await withTimeout(
+    (async () => {
+      const [{ readListingsFromIdb }, { readVideosFromIdb, readPostsFromIdb }] = await Promise.all([
+        import('./features/marketplace/marketplaceListingsIdb.js'),
+        import('./features/feed/feedCatalogIdb.js'),
+      ])
+      const [listings, videos, posts] = await Promise.all([
+        readListingsFromIdb(),
+        readVideosFromIdb(),
+        readPostsFromIdb(),
+      ])
+      if (listings.length) {
+        const current = store.getState().marketplace?.items || []
+        if (listings.length > current.length) {
+          const { setAll } = await import('./features/marketplace/marketplaceSlice')
+          store.dispatch(setAll({ items: listings }))
+        }
+      }
+      if (videos.length) {
+        const current = store.getState().videos?.items || []
+        if (videos.length > current.length) {
+          const { setAll } = await import('./features/videos/videosSlice')
+          store.dispatch(setAll({ items: videos }))
+        }
+      }
+      if (posts.length) {
+        const current = store.getState().posts?.items || []
+        if (posts.length > current.length) {
+          const { setAll } = await import('./features/posts/postsSlice')
+          store.dispatch(setAll({ items: posts }))
+        }
+      }
+    })(),
+    IDB_HYDRATE_MS,
   )
 
   const { primeStatusRail } = await import('./features/statuses/statusSync')

@@ -128,10 +128,20 @@ function scheduleWrite(key, getValue) {
     try {
       const value = getValue()
       localStorage.setItem(key, JSON.stringify(value))
-      // IndexedDB mirror for Marketplace listings (survives larger catalogs).
+      // IndexedDB mirror for Marketplace + Fil catalogs (survives larger catalogs).
       if (key === 'moxt-listings-v1' && Array.isArray(value)) {
         void import('../features/marketplace/marketplaceListingsIdb.js').then(
           ({ writeListingsToIdb }) => writeListingsToIdb(value),
+        )
+      }
+      if (key === 'moxt-videos-v1' && Array.isArray(value)) {
+        void import('../features/feed/feedCatalogIdb.js').then(({ writeVideosToIdb }) =>
+          writeVideosToIdb(value),
+        )
+      }
+      if (key === 'moxt-posts-v1' && Array.isArray(value)) {
+        void import('../features/feed/feedCatalogIdb.js').then(({ writePostsToIdb }) =>
+          writePostsToIdb(value),
         )
       }
     } catch (error) {
