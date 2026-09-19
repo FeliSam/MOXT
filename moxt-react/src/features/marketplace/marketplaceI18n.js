@@ -389,6 +389,8 @@ export const MARKETPLACE_FR_SOURCES = {
   "publish.listing.sentTitle": "Annonce envoyée",
   "publish.listing.publishedBody": "Votre annonce est en ligne.",
   "publish.listing.pendingBody": "Compte non vérifié : l’annonce sera visible après validation MOXT.",
+  "publish.listing.failedTitle": "Publication impossible",
+  "publish.listing.failedBody": "L’annonce n’a pas pu être publiée. Réessayez.",
   "marketplaceValidation.chooseListingType": "Choisissez un type d'annonce.",
   "marketplaceValidation.chooseCategory": "Choisissez une catégorie.",
   "marketplaceValidation.titleTooShort": "Titre trop court (4 caractères min).",

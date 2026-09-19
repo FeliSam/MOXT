@@ -74,13 +74,13 @@ export function PublishFormulaSheet({
                   <span className="block text-xs font-black">{t(`stars.formulas.${formulaKey}`)}</span>
                   <span className="mt-0.5 block text-[11px] font-bold tabular-nums text-brand-700">
                     {locked
-                      ? t('stars.comingSoon')
+                      ? t('stars.comingSoonTitle')
                       : t('stars.formulas.costStars', { n: cost })}
                   </span>
                 </span>
               </span>
               <p className="mt-2 text-[10px] leading-snug text-[var(--app-text-faint)]">
-                {locked ? t('stars.comingSoon') : t(`stars.formulas.${formulaKey}Desc`)}
+                {t(`stars.formulas.${formulaKey}Desc`)}
               </p>
             </button>
           )
