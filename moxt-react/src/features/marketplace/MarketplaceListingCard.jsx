@@ -119,7 +119,7 @@ function MarketplaceListingCardComponent({
     >
       <div
         className={`relative w-full overflow-hidden bg-gradient-to-br from-cyan-700 to-blue-600 ${
-          isRail ? 'h-full' : 'h-[290px] xl:h-[333px]'
+          isRail ? 'h-full' : 'h-[320px] xl:h-[360px]'
         } ${archived ? 'opacity-75 saturate-[0.85]' : ''}`}
       >
         {images.length ? (
@@ -200,7 +200,7 @@ function MarketplaceListingCardComponent({
               {categoryLabel}
             </span>
           </div>
-          <h2 className="line-clamp-2 break-words text-sm font-black leading-snug text-white drop-shadow sm:text-base">
+          <h2 className="line-clamp-3 break-words text-sm font-black leading-snug text-white drop-shadow sm:text-base">
             {listing.title}
           </h2>
           <div className="mt-1.5 flex items-end justify-between gap-2">

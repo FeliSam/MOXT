@@ -1,5 +1,5 @@
 /** Hauteur commune rails + grille Découvrir. */
-export const MARKETPLACE_DISCOVERY_CARD_HEIGHT = 'h-[290px]'
+export const MARKETPLACE_DISCOVERY_CARD_HEIGHT = 'h-[320px]'
 
 /** Item carrousel horizontal — largeur fixe responsive. */
 export const MARKETPLACE_DISCOVERY_ITEM_CLASS = `${MARKETPLACE_DISCOVERY_CARD_HEIGHT} w-[clamp(10.5rem,44vw,14.5rem)] shrink-0 snap-start overflow-hidden sm:w-[14.5rem]`
