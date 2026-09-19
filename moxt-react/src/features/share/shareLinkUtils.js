@@ -1,5 +1,7 @@
 import {
+  buildShareOgUrl,
   buildSharePreviewUrl as buildSharedSharePreviewUrl,
+  normalizeShareKind,
   resolvePublicShareTarget,
 } from '@moxt/shared/share/shareLinkUtils.js'
 import { getSiteUrl } from '../../utils/siteUrl'
@@ -8,10 +10,18 @@ function supabaseProjectUrl() {
   return import.meta.env.VITE_SUPABASE_URL || ''
 }
 
-/** URL de preview OG (Edge Function) — utilisée par les apps de messagerie. */
+/**
+ * URL de preview OG pour crawlers (WhatsApp / Facebook / Telegram).
+ * Prefers CANONICAL_SHARE_SITE `/share/{kind}/{id}` (API Gateway) so entity
+ * og:title / og:image are returned. Falls back to the Supabase Edge Function
+ * path when an override host is needed for local debugging.
+ */
 export function buildEntitySharePreviewUrl({ kind, entityId } = {}) {
+  const safeKind = normalizeShareKind(kind)
+  const og = buildShareOgUrl({ kind: safeKind, entityId })
+  if (og) return og
   return buildSharedSharePreviewUrl({
-    kind,
+    kind: safeKind,
     entityId,
     supabaseUrl: supabaseProjectUrl(),
   })
@@ -19,19 +29,20 @@ export function buildEntitySharePreviewUrl({ kind, entityId } = {}) {
 
 /**
  * URL absolue partagée (WhatsApp / copier / share natif).
- * Préfère l'Edge Function share-preview pour que les crawlers reçoivent
- * le bon Open Graph ; les humains sont redirigés vers la cible in-app.
- * Sinon, retombe sur le deep link public moxtapp.ru.
+ * Prefers the OG gateway so crawlers get entity Open Graph; humans follow the
+ * meta refresh / redirect to the in-app public target. Falls back to a
+ * moxtapp.ru deep link only when kind/id cannot build a share path.
  */
 export function buildEntityShareUrl(item = {}) {
+  const kind = normalizeShareKind(item.kind)
   const preview = buildEntitySharePreviewUrl({
-    kind: item.kind,
+    kind,
     entityId: item.entityId,
   })
   if (preview) return preview
 
   const target = resolvePublicShareTarget({
-    kind: item.kind,
+    kind,
     entityId: item.entityId,
     href: item.href,
     feedHref: item.feedHref,
@@ -39,4 +50,4 @@ export function buildEntityShareUrl(item = {}) {
   return `${getSiteUrl()}${target.startsWith('/') ? target : `/${target}`}`
 }
 
-export { resolvePublicShareTarget }
+export { normalizeShareKind, resolvePublicShareTarget }
