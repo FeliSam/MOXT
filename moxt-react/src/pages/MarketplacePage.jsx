@@ -42,13 +42,11 @@ import { countrySortRank, resolveUserCountryCode } from '@moxt/shared/utils/coun
 import { resolveListingCountry } from '../features/marketplace/listingCatalogUtils'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
-import { useProgressiveReveal } from '../hooks/useProgressiveReveal'
 import { useLanguage } from '../contexts/useLanguage'
 import { useGuestAction } from '../features/guest/useGuestAction'
 import { useGuestMarketplaceListings } from '../features/guest/useGuestPreview'
 
-const MARKETPLACE_PRELOAD = 20
-const MARKETPLACE_BATCH = 20
+const MARKETPLACE_COVER_PRELOAD = 40
 
 function prefetchListingCovers(listings = []) {
   if (typeof window === 'undefined' || typeof Image === 'undefined') return
@@ -199,31 +197,20 @@ export function MarketplacePage() {
   )
   const visible = feed.discover
 
-  const { visibleItems, sentinelRef, hasMore, shownCount } = useProgressiveReveal(visible, {
-    initial: MARKETPLACE_PRELOAD,
-    step: MARKETPLACE_BATCH,
-  })
+  const visibleItems = visible
 
   useEffect(() => {
     dispatch(loadFeedBoosts())
   }, [dispatch])
 
   useEffect(() => {
-    prefetchListingCovers(visibleItems.slice(0, MARKETPLACE_PRELOAD))
+    prefetchListingCovers(visibleItems.slice(0, MARKETPLACE_COVER_PRELOAD))
   }, [visibleItems])
 
   function scrollToDiscover() {
     discoverRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
-
-  useEffect(() => {
-    if (!hasMore) return undefined
-    const nextBatch = visible.slice(shownCount, shownCount + MARKETPLACE_BATCH)
-    prefetchListingCovers(nextBatch)
-    return undefined
-  }, [hasMore, shownCount, visible])
-
-  return (
+return (
     <div className="community-warm-bg grid gap-7 rounded-[var(--radius-card-lg)]">
       <PageHeader
         title={mt('marketplace.common.name')}
@@ -448,18 +435,7 @@ export function MarketplacePage() {
                 ))}
                 </CatalogGrid>
               </div>
-              {hasMore ? (
-                <div
-                  ref={sentinelRef}
-                  className="flex h-10 items-center justify-center"
-                  aria-hidden
-                >
-                  <span className="size-5 animate-pulse rounded-full bg-[var(--app-border)]" />
-                </div>
-              ) : (
-                <div ref={sentinelRef} className="h-px w-full" aria-hidden />
-              )}
-            </>
+</>
           ) : (
             <EmptyState
               icon={FiShoppingBag}
