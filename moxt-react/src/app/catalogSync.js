@@ -4,6 +4,9 @@ export const CATALOG_SYNC_TTL_MS = 20 * 60 * 1000
 /** Durée max d’un refresh forcé avant de libérer l’UI (le reste continue en fond). */
 export const CATALOG_SYNC_TIMEOUT_MS = 12_000
 
+/** Démarrage quasi immédiat du warm catalogue (UI reste cache-first via Promise.resolve). */
+export const CATALOG_SYNC_WARM_DELAY_MS = 50
+
 function awaitCatalogSync(promise, ms = CATALOG_SYNC_TIMEOUT_MS, label = 'catalogSync') {
   let timer
   return Promise.race([
@@ -75,22 +78,29 @@ export function markCatalogSynced(userId) {
   }
 }
 
+function afterCatalogSettled(store) {
+  void import('./prefetchCatalogMedia.js')
+    .then(({ prefetchCatalogMedia }) => prefetchCatalogMedia(store))
+    .catch(() => {})
+}
+
 /**
- * Charge loadAllData en arrière-plan.
- * Le TTL ne bloque plus le réseau : un cache frais sert seulement à afficher
- * l’UI tout de suite, le pull part quand même (un peu plus tard).
+ * Charge loadAllData en arrière-plan (toute route, dès qu’un userId est présent).
+ * L’UI reste cache-first : hors `force`, on renvoie Promise.resolve() tout de suite.
  * @param {{ dispatch: Function, getState: Function }} store
  */
 export function scheduleCatalogSync(store, { force = false } = {}) {
   const userId = store.getState()?.auth?.user?.id
   if (!userId) return Promise.resolve()
 
-  const usable = hasUsableFeedCatalog()
-  const cacheFresh = usable && isCatalogSyncFresh(userId)
-
   const run = () =>
     import('./loadAllData.js').then(({ loadAllData }) =>
-      store.dispatch(loadAllData()).finally(() => markCatalogSynced(userId)),
+      store
+        .dispatch(loadAllData())
+        .finally(() => {
+          markCatalogSynced(userId)
+          afterCatalogSettled(store)
+        }),
     )
 
   if (force) {
@@ -104,13 +114,7 @@ export function scheduleCatalogSync(store, { force = false } = {}) {
     return awaitCatalogSync(run(), CATALOG_SYNC_TIMEOUT_MS, 'loadAllData')
   }
 
-  const idleTimeout = cacheFresh ? 2500 : usable ? 8000 : 2000
-  const fallbackDelay = cacheFresh ? 400 : usable ? 1200 : 350
-
-  if (typeof requestIdleCallback === 'function') {
-    requestIdleCallback(() => void run(), { timeout: idleTimeout })
-  } else {
-    setTimeout(() => void run(), fallbackDelay)
-  }
+  // Warm immédiat (indépendant de la route) — UI déjà servie depuis le cache.
+  setTimeout(() => void run(), CATALOG_SYNC_WARM_DELAY_MS)
   return Promise.resolve()
 }

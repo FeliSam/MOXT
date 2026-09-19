@@ -251,26 +251,28 @@ export function BusinessDetailPage() {
   )
   const verified = ['verified', 'approved', 'active'].includes(business.status)
 
+  const videosTab = {
+    key: 'videos',
+    label: bt('businesses.detail.tabs.videos'),
+    count: activeVideos.length,
+    alwaysShow: true,
+  }
+  const produitsTab = {
+    key: 'produits',
+    label: bt('businesses.detail.tabs.products'),
+    count: activeListings.length || publicationCount,
+    alwaysShow: true,
+  }
+  // =1 vidéo : Vidéos, Produits, Avis, À propos — sinon Produits, Vidéos, Avis, À propos
   const publicTabs = [
-    { key: 'apercu', label: bt('businesses.detail.tabs.overview'), alwaysShow: true },
-    {
-      key: 'videos',
-      label: bt('businesses.detail.tabs.videos'),
-      count: activeVideos.length,
-      alwaysShow: true,
-    },
-    {
-      key: 'produits',
-      label: bt('businesses.detail.tabs.products'),
-      count: activeListings.length || publicationCount,
-      alwaysShow: true,
-    },
+    ...(activeVideos.length > 0 ? [videosTab, produitsTab] : [produitsTab, videosTab]),
     {
       key: 'avis',
       label: bt('businesses.detail.tabs.reviews'),
       count: rating.count,
       alwaysShow: true,
     },
+    { key: 'apercu', label: bt('businesses.detail.tabs.overview'), alwaysShow: true },
   ]
   if (isOwner && !guestMode) {
     publicTabs.push(

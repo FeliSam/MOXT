@@ -273,7 +273,7 @@ export const BUSINESSES_FR_SOURCES = {
   'businesses.detail.tabs.informations': 'Informations',
   'businesses.detail.tabs.subscriptions': 'Abonnements',
   'businesses.detail.tabs.reviews': 'Avis',
-  'businesses.detail.tabs.overview': 'Aperçu',
+  'businesses.detail.tabs.overview': 'À propos',
   'businesses.detail.tabs.videos': 'Vidéos',
   'businesses.detail.tabs.products': 'Produits',
   'businesses.detail.productsEmpty': 'Aucun produit',
