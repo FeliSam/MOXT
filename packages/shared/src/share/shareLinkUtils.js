@@ -12,25 +12,39 @@ export const CANONICAL_SHARE_SITE =
 
 const SHARE_KINDS = new Set(['listing', 'parcel', 'job', 'event', 'post', 'video', 'p2p', 'business', 'user'])
 
-/** Aliases callers may pass (ContactButton "profile", plurals, etc.). */
-const SHARE_KIND_ALIASES = {
+/** Aliases callers may pass (ContactButton "profile", plurals, FR app copy). */
+export const SHARE_KIND_ALIASES = {
   profile: 'user',
   profiles: 'user',
   users: 'user',
   listings: 'listing',
+  annonce: 'listing',
+  annonces: 'listing',
   videos: 'video',
   posts: 'post',
   parcels: 'parcel',
+  colis: 'parcel',
+  coliss: 'parcel',
   jobs: 'job',
+  emploi: 'job',
+  emplois: 'job',
   events: 'event',
+  evenement: 'event',
+  evenements: 'event',
   businesses: 'business',
+  entreprise: 'business',
+  entreprises: 'business',
 }
 
 /** Normalize UI relatedType / kind to a singular SHARE_KINDS value. */
 export function normalizeShareKind(kind) {
   const raw = String(kind || '').trim()
   if (!raw) return ''
-  return SHARE_KIND_ALIASES[raw] || raw
+  const lower = raw.toLowerCase()
+  if (SHARE_KIND_ALIASES[raw]) return SHARE_KIND_ALIASES[raw]
+  if (SHARE_KIND_ALIASES[lower]) return SHARE_KIND_ALIASES[lower]
+  if (SHARE_KINDS.has(lower)) return lower
+  return raw
 }
 
 /** DÃ©tail accessible sans connexion (PublicationShell). */

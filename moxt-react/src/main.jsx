@@ -66,6 +66,18 @@ async function bootstrap() {
   const { hydrateAuthFromBootstrapCache } = await import('./services/authBootstrapCache')
   hydrateAuthFromBootstrapCache(store.dispatch)
 
+  // Marketplace IndexedDB: show cached listings immediately, network revalidates via catalogSync.
+  void import('./features/marketplace/marketplaceListingsIdb.js').then(
+    async ({ readListingsFromIdb }) => {
+      const cached = await readListingsFromIdb()
+      if (!cached.length) return
+      const current = store.getState().marketplace?.items || []
+      if (cached.length <= current.length) return
+      const { setAll } = await import('./features/marketplace/marketplaceSlice')
+      store.dispatch(setAll({ items: cached }))
+    },
+  )
+
   const { primeStatusRail } = await import('./features/statuses/statusSync')
   void primeStatusRail(store)
 

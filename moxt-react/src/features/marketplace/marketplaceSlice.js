@@ -486,6 +486,9 @@ export const publishListing = createAsyncThunk(
         : values.images || []
       const saved = await saveListingRemote({ ...prepared, images })
       dispatch(receiveRemoteListing(saved))
+      void import('./marketplaceListingsIdb.js').then(({ upsertListingInIdb }) =>
+        upsertListingInIdb(saved),
+      )
       return saved
     } catch (error) {
       return rejectWithValue(error.message || "L'annonce n'a pas pu être publiée.")

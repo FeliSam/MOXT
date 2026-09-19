@@ -14,6 +14,36 @@ const SHARE_KINDS = new Set([
   'user',
 ])
 
+/** Path aliases (FR app copy, plurals) → canonical SHARE_KINDS. */
+const SHARE_KIND_ALIASES: Record<string, string> = {
+  profile: 'user',
+  profiles: 'user',
+  users: 'user',
+  listings: 'listing',
+  annonce: 'listing',
+  annonces: 'listing',
+  videos: 'video',
+  posts: 'post',
+  parcels: 'parcel',
+  colis: 'parcel',
+  coliss: 'parcel',
+  jobs: 'job',
+  emploi: 'job',
+  emplois: 'job',
+  events: 'event',
+  evenement: 'event',
+  evenements: 'event',
+  businesses: 'business',
+  entreprise: 'business',
+  entreprises: 'business',
+}
+
+function normalizeShareKind(kind: string) {
+  const raw = String(kind || '').trim().toLowerCase()
+  if (!raw) return ''
+  return SHARE_KIND_ALIASES[raw] || raw
+}
+
 function htmlEscape(value = '') {
   return String(value)
     .replaceAll('&', '&amp;')
@@ -28,23 +58,80 @@ function truncateShareText(value, max = 180) {
   return `${text.slice(0, max - 1).trim()}…`
 }
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+  return value as Record<string, unknown>
+}
+
+function parseMaybeJson(value: unknown): unknown {
+  if (typeof value !== 'string') return value
+  const trimmed = value.trim()
+  if (!trimmed || (trimmed[0] !== '{' && trimmed[0] !== '[')) return value
+  try {
+    return JSON.parse(trimmed)
+  } catch {
+    return value
+  }
+}
+
+function collectImageUrls(value: unknown, out: string[] = []): string[] {
+  if (value == null) return out
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (!trimmed) return out
+    const parsed = parseMaybeJson(trimmed)
+    if (parsed !== trimmed) return collectImageUrls(parsed, out)
+    if (trimmed.startsWith('https://') || trimmed.startsWith('http://')) out.push(trimmed)
+    return out
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) collectImageUrls(item, out)
+    return out
+  }
+  const obj = asRecord(value)
+  if (!obj) return out
+  for (const key of ['url', 'src', 'image', 'image_url', 'thumbnail_url', 'href']) {
+    if (obj[key] != null) collectImageUrls(obj[key], out)
+  }
+  if (obj.images != null) collectImageUrls(obj.images, out)
+  return out
+}
+
 function pickShareImage(candidates: unknown[]) {
   for (const value of candidates) {
-    const url = String(value || '').trim()
-    if (url.startsWith('https://') || url.startsWith('http://')) return url
+    const urls = collectImageUrls(value)
+    if (urls[0]) return urls[0]
   }
   return DEFAULT_OG_IMAGE
 }
 
 function firstImage(row: Record<string, unknown>, keys = ['images', 'image_url', 'thumbnail_url']) {
   for (const key of keys) {
-    const raw = row?.[key]
-    if (Array.isArray(raw)) {
-      const hit = raw.map((item) => String(item || '').trim()).find(Boolean)
-      if (hit) return hit
-    }
-    if (typeof raw === 'string' && raw.trim()) return raw.trim()
+    const urls = collectImageUrls(row?.[key])
+    if (urls[0]) return urls[0]
   }
+  return ''
+}
+
+function payloadImages(row: Record<string, unknown>) {
+  const payload = asRecord(parseMaybeJson(row?.payload))
+  if (!payload) return ''
+  return firstImage(payload, ['images', 'image_url', 'thumbnail_url', 'cover_url', 'photo_url'])
+}
+
+function programImages(row: Record<string, unknown>) {
+  const program = parseMaybeJson(row?.program)
+  const asObj = asRecord(program)
+  if (asObj) return firstImage(asObj, ['images', 'image_url', 'cover_url', 'thumbnail_url'])
+  return collectImageUrls(program)[0] || ''
+}
+
+function parcelRouteTitle(row: Record<string, unknown>) {
+  const origin = String(row.origin || row.from || row.from_city || '').trim()
+  const destination = String(row.destination || row.to || row.to_city || '').trim()
+  if (origin && destination) return `${origin} → ${destination}`
+  if (origin) return `Colis depuis ${origin}`
+  if (destination) return `Colis vers ${destination}`
   return ''
 }
 
@@ -92,6 +179,7 @@ async function resolveShareMeta(kind: string, entityId: string) {
 
   if (kind === 'listing' && data.status !== 'active') return null
   if (kind === 'parcel' && !['active', 'full'].includes(String(data.status || ''))) return null
+  // Keep status gate for jobs — archived seed rows stay on generic discover fallback.
   if (kind === 'job' && data.status !== 'active') return null
   if (kind === 'event' && data.status !== 'published') return null
   if (kind === 'post' && data.status !== 'published') return null
@@ -104,10 +192,14 @@ async function resolveShareMeta(kind: string, entityId: string) {
 
   let title =
     String(data.title || data.name || data.route || data.company_name || '').trim() || 'MOXT'
+  if (kind === 'parcel') {
+    title = parcelRouteTitle(data) || title
+  }
   if (kind === 'user') {
     const full = `${data.first_name || ''} ${data.last_name || ''}`.trim()
     title = full || title
   }
+
   const description = truncateShareText(
     data.description ||
       data.caption ||
@@ -117,10 +209,16 @@ async function resolveShareMeta(kind: string, entityId: string) {
       data.bio ||
       title,
   )
+
   const image = pickShareImage([
+    kind === 'parcel' ? data.travel_proof_url : '',
+    kind === 'event' ? programImages(data) : '',
+    kind === 'job' || kind === 'event' || kind === 'parcel' ? payloadImages(data) : '',
     firstImage(data),
-    firstImage(data, ['thumbnail_url', 'logo_url', 'avatar_url']),
+    firstImage(data, ['travel_proof_url', 'thumbnail_url', 'logo_url', 'avatar_url', 'cover_url']),
     firstImage(data, ['image_url']),
+    programImages(data),
+    payloadImages(data),
   ])
   const targetPath = resolveTargetPath(kind, entityId)
 
@@ -168,9 +266,12 @@ function parseSharePath(pathname: string) {
   const parts = pathname.split('/').filter(Boolean)
   const fnIndex = parts.indexOf('share-preview')
   const slice = fnIndex >= 0 ? parts.slice(fnIndex + 1) : parts
-  if (slice.length < 2) return null
-  const kind = decodeURIComponent(slice[0] || '')
-  const entityId = decodeURIComponent(slice.slice(1).join('/'))
+  // Accept /share/{kind}/{id} when gateway strips nothing, or bare kind/id.
+  const shareIndex = slice.indexOf('share')
+  const path = shareIndex >= 0 ? slice.slice(shareIndex + 1) : slice
+  if (path.length < 2) return null
+  const kind = normalizeShareKind(decodeURIComponent(path[0] || ''))
+  const entityId = decodeURIComponent(path.slice(1).join('/'))
   if (!SHARE_KINDS.has(kind) || !entityId) return null
   return { kind, entityId }
 }

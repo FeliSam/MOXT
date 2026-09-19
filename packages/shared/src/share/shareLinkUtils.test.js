@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  buildShareOgUrl,
   buildSharePreviewUrl,
+  normalizeShareKind,
   pickShareImage,
   resolveInAppShareTarget,
   resolvePublicShareTarget,
@@ -83,5 +85,20 @@ describe('shareLinkUtils', () => {
 
   it('truncates long descriptions', () => {
     expect(truncateShareText('a'.repeat(200), 20).endsWith('…')).toBe(true)
+  })
+
+  it('normalizes colis and French plurals to canonical kinds', () => {
+    expect(normalizeShareKind('colis')).toBe('parcel')
+    expect(normalizeShareKind('Colis')).toBe('parcel')
+    expect(normalizeShareKind('parcels')).toBe('parcel')
+    expect(normalizeShareKind('evenements')).toBe('event')
+    expect(normalizeShareKind('emplois')).toBe('job')
+    expect(normalizeShareKind('annonces')).toBe('listing')
+  })
+
+  it('builds OG url with normalized colis alias', () => {
+    expect(buildShareOgUrl({ kind: 'colis', entityId: 'COL-1' })).toBe(
+      'https://share.moxtapp.ru/share/parcel/COL-1',
+    )
   })
 })

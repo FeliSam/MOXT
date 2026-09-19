@@ -34,6 +34,12 @@ describe('shareLinkUtils (web)', () => {
     ).toBe(`${CANONICAL_SHARE_SITE}/share/user/USR-1`)
   })
 
+  it('maps colis alias to parcel OG path', () => {
+    expect(
+      buildEntityShareUrl({ kind: 'colis', entityId: 'COL-312CFCD4-910E-4D71-9A33-B4EA043F0178' }),
+    ).toBe(`${CANONICAL_SHARE_SITE}/share/parcel/COL-312CFCD4-910E-4D71-9A33-B4EA043F0178`)
+  })
+
   it('prefers gateway /share URLs when kind and entityId are known', () => {
     vi.stubEnv('VITE_SUPABASE_URL', 'https://abc.supabase.co')
     vi.stubEnv('VITE_SITE_URL', 'https://moxtapp.ru')
