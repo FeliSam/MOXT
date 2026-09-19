@@ -54,3 +54,24 @@ describe('catalogSync', () => {
     expect(store.dispatch).not.toHaveBeenCalled()
   })
 })
+
+  it('ne relance pas loadAllData si skipIfFresh et cache frais', async () => {
+    vi.useFakeTimers()
+    const dispatch = vi.fn(() => Promise.resolve())
+    const userId = 'user-fresh'
+    // mark fresh
+    const { markCatalogSynced, scheduleCatalogSync } = await import('./catalogSync.js')
+    // seed localStorage keys used by hasUsableFeedCatalog
+    localStorage.setItem('moxt-listings-v1', JSON.stringify([{ id: 1 }]))
+    localStorage.setItem('moxt-videos-v1', JSON.stringify([{ id: 1 }]))
+    localStorage.setItem('moxt-businesses-v1', JSON.stringify([{ id: 1 }]))
+    markCatalogSynced(userId)
+    const store = {
+      getState: () => ({ auth: { user: { id: userId } }, marketplace: { items: [] }, videos: { items: [] } }),
+      dispatch,
+    }
+    await scheduleCatalogSync(store, { skipIfFresh: true })
+    await vi.advanceTimersByTimeAsync(200)
+    expect(dispatch).not.toHaveBeenCalled()
+    vi.useRealTimers()
+  })

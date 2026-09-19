@@ -89,9 +89,17 @@ function afterCatalogSettled(store) {
  * L’UI reste cache-first : hors `force`, on renvoie Promise.resolve() tout de suite.
  * @param {{ dispatch: Function, getState: Function }} store
  */
-export function scheduleCatalogSync(store, { force = false } = {}) {
+export function scheduleCatalogSync(store, { force = false, skipIfFresh = false } = {}) {
   const userId = store.getState()?.auth?.user?.id
   if (!userId) return Promise.resolve()
+
+  if (!force && skipIfFresh && isCatalogSyncFresh(userId)) {
+    // Déjà chauffé : ne pas relancer loadAllData (évite remount Fil au retour).
+    void import('./prefetchCatalogMedia.js')
+      .then(({ prefetchCatalogMedia }) => prefetchCatalogMedia(store))
+      .catch(() => {})
+    return Promise.resolve()
+  }
 
   const run = () =>
     import('./loadAllData.js').then(({ loadAllData }) =>
