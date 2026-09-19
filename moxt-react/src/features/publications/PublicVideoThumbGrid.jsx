@@ -36,7 +36,7 @@ function VideoThumb({ video, guestMode, onGuestInteract, eager }) {
     <Link
       to={path}
       onClick={handleClick}
-      className="group relative aspect-[3/4] overflow-hidden rounded-2xl bg-[var(--app-surface-muted)] shadow-sm ring-1 ring-[var(--app-border)]"
+      className="group relative aspect-[4/3] overflow-hidden rounded-2xl bg-[var(--app-surface-muted)] shadow-sm ring-1 ring-[var(--app-border)]"
       aria-label={title}
     >
       {thumb ? (
@@ -59,7 +59,7 @@ function VideoThumb({ video, guestMode, onGuestInteract, eager }) {
 }
 
 /**
- * Grille 2 colonnes de vignettes portrait + play (cercle blanc / triangle teal).
+ * Grille 2 colonnes de vignettes (même ratio que les cartes image) + play (cercle blanc / triangle teal).
  */
 export function PublicVideoThumbGrid({
   videos = [],
