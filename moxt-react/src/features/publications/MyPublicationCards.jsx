@@ -38,6 +38,7 @@ import {
   isActiveVideo,
 } from './publicationCatalogUtils'
 import { videoFeedPath } from '../videos/videoUtils'
+import { resolveMediaDisplayUrl } from '../../services/media/mediaUrlUtils'
 import { PublicationBoostButton } from '../stars/PublicationBoostButton'
 
 function BoostAction({ active, onBoost, activeBoost }) {
@@ -82,10 +83,11 @@ function PublicationCardShell({
       >
         {coverUrl ? (
           <img
-            src={coverUrl}
+            src={resolveMediaDisplayUrl(coverUrl) || coverUrl}
             alt=""
             className="h-full w-full object-cover transition duration-500 ease-out group-hover:scale-[1.05]"
-            loading="lazy"
+            loading="eager"
+            decoding="async"
             onError={(event) => {
               event.currentTarget.style.display = 'none'
             }}

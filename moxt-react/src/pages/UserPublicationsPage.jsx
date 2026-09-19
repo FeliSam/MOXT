@@ -14,7 +14,6 @@ import {
 import { useSelector } from 'react-redux'
 import { Link, Navigate, useOutletContext, useParams, useSearchParams } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
-import { CatalogArchiveTabs } from '../components/ui/CatalogArchiveTabs'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -44,8 +43,10 @@ import {
   visiblePublicationTypeTabs,
 } from '../features/publications/publicationCatalogUtils'
 import { PublicationCatalogNav } from '../features/publications/PublicationCatalogNav'
-import { PublicationProfileCard } from '../features/publications/PublicationProfileCard'
 import { PublicationScopeButton } from '../features/publications/PublicationScopeButton'
+import { PublicProfileHero } from '../features/publications/PublicProfileHero'
+import { PublicProfileTabs } from '../features/publications/PublicProfileTabs'
+import { PublicVideoThumbGrid } from '../features/publications/PublicVideoThumbGrid'
 import { usePublicationProfile } from '../features/publications/usePublicationProfile'
 import { SubscribeButton } from '../features/account/SubscribeButton'
 import { ContactButton } from '../features/communications/ContactButton'
@@ -60,6 +61,7 @@ import {
 } from '@moxt/shared/utils/reviewUtils.js'
 import { useLanguage } from '../contexts/useLanguage'
 import { phase3Text } from '../i18n/phase3I18n'
+import { isActiveVideo } from '../features/videos/videoUtils'
 
 const EMPTY_ICONS = {
   listing: FiShoppingBag,
@@ -83,7 +85,11 @@ export function UserPublicationsPage() {
   const guestPreview = useGuestUserPreview(guestMode ? userId : null)
   const isOwner = !guestMode && currentUser?.id === userId
 
-  const mainTab = searchParams.get('view') === 'avis' ? 'avis' : 'publications'
+  const viewParam = searchParams.get('view')
+  const mainTab =
+    viewParam === 'avis' || viewParam === 'videos' || viewParam === 'publications'
+      ? viewParam
+      : 'apercu'
   const requestedArchiveTab = searchParams.get('status') === 'archived' ? 'archived' : 'active'
   const typeTab = PUBLICATION_TYPE_TABS.some((tab) => tab.id === searchParams.get('type'))
     ? searchParams.get('type')
@@ -182,8 +188,8 @@ export function UserPublicationsPage() {
 
   function setMainTab(next) {
     const params = new URLSearchParams(searchParams)
-    if (next === 'publications') params.delete('view')
-    else params.set('view', 'avis')
+    if (next === 'apercu') params.delete('view')
+    else params.set('view', next)
     setSearchParams(params, { replace: true })
   }
 
@@ -295,109 +301,202 @@ export function UserPublicationsPage() {
   }
 
   const handleGuestInteract = () => requireAccount(p3('publications.user.guestAction'))
+  const profileCity = (guestMode ? guestProfile?.city : memberProfile?.city) || profile.city
+  const profileCountry =
+    (guestMode ? guestProfile?.country : memberProfile?.country) || profile.country
+  const avatarUrl = guestMode ? guestProfile?.avatarUrl : memberProfile?.avatarUrl
+  const verified = Boolean(guestMode ? guestProfile?.verified : memberProfile?.verified)
+  const activeVideos = (publications.videos || []).filter(isActiveVideo)
+  const coverFromMedia =
+    activeVideos.find((v) => v.thumbnailUrl)?.thumbnailUrl ||
+    publications.listings?.find((l) => l.images?.[0])?.images?.[0] ||
+    ''
+
+  const publicTabs = [
+    { key: 'apercu', label: p3('publications.user.tabs.overview'), alwaysShow: true },
+    {
+      key: 'videos',
+      label: p3('publications.user.tabs.videos'),
+      count: activeVideos.length,
+      alwaysShow: true,
+    },
+    {
+      key: 'publications',
+      label: p3('publications.user.tabs.publications'),
+      count: profile.totalCount,
+      alwaysShow: true,
+    },
+    {
+      key: 'avis',
+      label: p3('publications.user.tabs.reviews'),
+      count: aggregateRating.count,
+      alwaysShow: true,
+    },
+  ]
 
   return (
-    <div className="grid min-w-0 max-w-full gap-5 overflow-x-clip sm:gap-7">
-      <PublicationProfileCard
-        displayName={displayName}
-        verified={Boolean(guestMode ? guestProfile?.verified : memberProfile?.verified)}
-        memberSince={guestMode ? guestProfile?.memberSince : memberProfile?.memberSince}
-        city={(guestMode ? guestProfile?.city : memberProfile?.city) || profile.city}
-        country={(guestMode ? guestProfile?.country : memberProfile?.country) || profile.country}
-        activeCount={profile.activeCount}
-        archivedCount={profile.archivedCount}
-        totalCount={profile.totalCount}
-        totalViews={profile.totalViews}
-        aggregateRating={aggregateRating}
-        isOwner={isOwner}
-        scope={scope}
-        ownBusiness={ownBusiness}
-        shareUserId={guestMode ? null : userId}
-        avatarUrl={guestMode ? guestProfile?.avatarUrl : memberProfile?.avatarUrl}
+    <div className="grid min-w-0 max-w-full gap-5 overflow-x-clip bg-[var(--app-surface)] sm:gap-6">
+      <PublicProfileHero
+        name={displayName}
+        verified={verified}
+        category={
+          scope === 'business' && ownBusiness
+            ? ownBusiness.sector || t('publications.profile.businessBadge')
+            : undefined
+        }
+        city={profileCity}
+        coverUrl={
+          scope === 'business' && ownBusiness?.bannerUrl
+            ? ownBusiness.bannerUrl
+            : coverFromMedia
+        }
+        avatarUrl={
+          scope === 'business' && ownBusiness?.logoUrl ? ownBusiness.logoUrl : avatarUrl
+        }
+        rating={aggregateRating}
+        reviewsLabel={p3('publications.public.reviewsShort')}
         actions={
-          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 border-t border-[var(--app-border)] pt-4">
-            {!isOwner ? (
+          !isOwner ? (
+            <>
+              {guestMode ? (
+                <Button
+                  variant="secondary"
+                  className="w-full"
+                  onClick={handleGuestInteract}
+                >
+                  {p3('publications.public.follow')}
+                </Button>
+              ) : (
+                <SubscribeButton
+                  publisherType="user"
+                  publisherId={userId}
+                  publisherName={displayName}
+                  publisherPath={`/users/${userId}/publications`}
+                  className="w-full"
+                  variant="secondary"
+                  showIcon={false}
+                  subscribeLabel={p3('publications.public.follow')}
+                  subscribedLabel={p3('publications.public.following')}
+                />
+              )}
               <ContactButton
                 ownerId={userId}
                 relatedEntity={{
                   name: displayName,
                   sellerName: displayName,
-                  avatarUrl: guestMode ? guestProfile?.avatarUrl : memberProfile?.avatarUrl,
+                  avatarUrl,
                 }}
                 relatedId={userId}
                 relatedPath={`/users/${userId}/publications`}
                 relatedTitle={displayName}
                 relatedType="profile"
-                iconOnly
-                className="!size-11 shrink-0"
+                showIcon={false}
+                className="w-full"
+                variant="primary"
               />
-            ) : ownBusiness && !guestMode ? (
-              <div className="col-span-2 flex flex-wrap items-center gap-2">
+            </>
+          ) : (
+            <>
+              {ownBusiness && !guestMode ? (
                 <PublicationScopeButton
                   business={ownBusiness}
                   isOwner={isOwner}
                   onScopeChange={setScope}
                   scope={scope}
+                  className="col-span-2 min-w-0"
                 />
-              </div>
-            ) : null}
-            {!isOwner && !guestMode ? (
-              <SubscribeButton
-                publisherType="user"
-                publisherId={userId}
-                publisherName={displayName}
-                publisherPath={`/users/${userId}/publications`}
-                className="min-w-0 w-full"
-              />
-            ) : null}
-            {!isOwner && ownBusiness && !guestMode ? (
-              <PublicationScopeButton
-                business={ownBusiness}
-                isOwner={false}
-                onScopeChange={setScope}
-                scope={scope}
-                className="col-span-2 min-w-0"
-              />
-            ) : isOwner ? (
+              ) : null}
               <Link
                 to={`/publications/mine${scope === 'business' ? '?scope=business' : ''}`}
-                className="col-span-2 min-w-0"
+                className={ownBusiness ? 'col-span-2 min-w-0' : 'col-span-2 min-w-0'}
               >
                 <Button variant="secondary" icon={FiArrowLeft} className="w-full">
                   {p3('publications.user.manage')}
                 </Button>
               </Link>
-            ) : guestMode ? (
-              <Link to="/discover" className="min-w-0">
-                <Button variant="secondary" icon={FiArrowLeft} className="w-full">
-                  {p3('publications.user.discover')}
-                </Button>
-              </Link>
-            ) : null}
-          </div>
+            </>
+          )
         }
       />
 
-      <CatalogArchiveTabs
-        active={mainTab}
-        onChange={setMainTab}
-        variant="section"
-        tabs={[
-          {
-            key: 'publications',
-            label: p3('publications.user.tabs.publications'),
-            count: profile.totalCount,
-          },
-          {
-            key: 'avis',
-            label: p3('publications.user.tabs.reviews'),
-            count: aggregateRating.count,
-            alwaysShow: true,
-          },
-        ]}
-      />
+      {!isOwner && ownBusiness && !guestMode ? (
+        <PublicationScopeButton
+          business={ownBusiness}
+          isOwner={false}
+          onScopeChange={setScope}
+          scope={scope}
+          className="min-w-0"
+        />
+      ) : null}
 
-      {mainTab === 'publications' ? (
+      <PublicProfileTabs active={mainTab} onChange={setMainTab} tabs={publicTabs} />
+
+      {mainTab === 'apercu' ? (
+        <div className="grid gap-5">
+          {profileCity || profileCountry ? (
+            <p className="text-sm text-[var(--app-text-muted)]">
+              {[profileCity, profileCountry].filter(Boolean).join(' · ')}
+            </p>
+          ) : null}
+          {activeVideos.length ? (
+            <PublicVideoThumbGrid
+              videos={activeVideos.slice(0, 4)}
+              title={p3('publications.public.videosTitle')}
+              guestMode={guestMode}
+              onGuestInteract={handleGuestInteract}
+            />
+          ) : null}
+          {hasAnyPublication ? (
+            <section className="grid gap-4">
+              <h2 className="text-base font-black">{p3('publications.user.tabs.publications')}</h2>
+              <PublicationCatalogNav
+                typeTab={typeTab}
+                onTypeTab={setTypeTab}
+                typeTabs={visibleTypeTabs}
+                typeCounts={typeCounts}
+                typeLabel={(tab) => p3(`publications.mine.types.${tab.id}`)}
+                archiveTab={archiveTab}
+                onArchiveTab={setArchiveTab}
+                archiveCounts={archiveCounts}
+                showArchives={showArchives}
+                activeLabel={p3('publications.mine.stats.active')}
+                archivedLabel={p3('publications.mine.stats.archived')}
+              />
+              {hasContent ? (
+                <div className="grid gap-6">
+                  {visible.listing.length ? (
+                    <CatalogGrid lazy={false}>
+                      {visible.listing.slice(0, 4).map((listing) => (
+                        <MarketplaceListingCard
+                          key={listing.id}
+                          listing={listing}
+                          guestMode={guestMode}
+                          onGuestInteract={handleGuestInteract}
+                        />
+                      ))}
+                    </CatalogGrid>
+                  ) : null}
+                </div>
+              ) : null}
+            </section>
+          ) : (
+            <EmptyState
+              icon={FiShoppingBag}
+              title={p3('publications.user.empty.title')}
+              description={p3('publications.user.empty.description')}
+            />
+          )}
+        </div>
+      ) : mainTab === 'videos' ? (
+        <PublicVideoThumbGrid
+          videos={activeVideos}
+          title={p3('publications.public.videosTitle')}
+          emptyTitle={p3('publications.public.videosEmpty')}
+          emptyDescription={p3('publications.public.videosEmptyDescription')}
+          guestMode={guestMode}
+          onGuestInteract={handleGuestInteract}
+        />
+      ) : mainTab === 'publications' ? (
         <div className="grid gap-4">
           <PublicationCatalogNav
             typeTab={typeTab}
@@ -531,6 +630,7 @@ export function UserPublicationsPage() {
     </div>
   )
 }
+
 
 /** Redirection legacy */
 export function UserListingsRedirect() {

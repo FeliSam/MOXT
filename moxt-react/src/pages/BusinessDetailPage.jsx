@@ -1,29 +1,23 @@
 import {
   FiArrowLeft,
-  FiCalendar,
-  FiEye,
   FiLock,
   FiMapPin,
   FiShield,
-  FiStar,
 } from 'react-icons/fi'
-import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 import { useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useOutletContext, useParams, useSearchParams } from 'react-router-dom'
-import { Badge, VerifiedDisplayName } from '../components/ui/Badge'
+import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { ExpandableLinkifiedText } from '../components/ui/ExpandableLinkifiedText'
-import { CatalogArchiveTabs } from '../components/ui/CatalogArchiveTabs'
 import {
   DetailFacts,
   DetailSection,
 } from '../components/ui/DetailBlocks'
 import { EmptyState } from '../components/ui/EmptyState'
-import { ReshareButton } from '../components/ui/ReshareButton'
+import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { activityByValue, businessExperienceForActivity } from '../config/businessActivities'
-import { statusMeta } from '../config/statuses'
 import { useLanguage } from '../contexts/useLanguage'
 import { SubscribeButton } from '../features/account/SubscribeButton'
 import { ProfileQrShareButton } from '../features/share/ProfileQrShareButton'
@@ -56,10 +50,16 @@ import {
   collectBusinessPublications,
   publicationTotalCount,
 } from '../features/publications/publicationCatalogUtils'
+import { PublicProfileHero } from '../features/publications/PublicProfileHero'
+import { PublicProfileTabs } from '../features/publications/PublicProfileTabs'
+import { PublicVideoThumbGrid } from '../features/publications/PublicVideoThumbGrid'
+import { MarketplaceListingCard } from '../features/marketplace/MarketplaceListingCard'
 import { formatMemberSince } from '../features/publications/usePublicationProfile'
 import { useScopedBusinessReviews } from '../features/reviews/useScopedTargetReviews'
 import { ReviewsSection, REVIEW_TARGET_TYPES } from '../features/reviews/ReviewsSection'
 import { calculateAggregateRating } from '@moxt/shared/utils/reviewUtils.js'
+import { isActiveVideo } from '../features/videos/videoUtils'
+import { phase3Text } from '../i18n/phase3I18n'
 
 export function BusinessDetailPage() {
   const dispatch = useDispatch()
@@ -84,14 +84,16 @@ export function BusinessDetailPage() {
   const offerItems = useSelector((state) => state.p2p.offers)
   const videoItems = useSelector((state) => state.videos.items)
 
+  const p3 = (key, vars) => phase3Text(t, key, vars)
+  const viewParam = searchParams.get('view')
   const mainTab =
-    searchParams.get('view') === 'informations'
-      ? 'informations'
-      : searchParams.get('view') === 'abonnements'
-        ? 'abonnements'
-        : searchParams.get('view') === 'avis'
-          ? 'avis'
-          : 'publications'
+    viewParam === 'informations' || viewParam === 'abonnements' || viewParam === 'avis'
+      ? viewParam
+      : viewParam === 'videos' || viewParam === 'produits' || viewParam === 'publications'
+        ? viewParam === 'publications'
+          ? 'produits'
+          : viewParam
+        : 'apercu'
 
   const publications = useMemo(() => {
     if (guestMode) {
@@ -101,6 +103,7 @@ export function BusinessDetailPage() {
           parcels: [],
           jobs: [],
           events: [],
+          videos: [],
           posts: [],
           others: [],
         }
@@ -161,7 +164,7 @@ export function BusinessDetailPage() {
 
   function setMainTab(next) {
     const params = new URLSearchParams(searchParams)
-    if (next === 'publications') {
+    if (next === 'apercu') {
       params.delete('view')
     } else {
       params.set('view', next)
@@ -241,207 +244,208 @@ export function BusinessDetailPage() {
   const activityLabel = businessesOptionLabel(t, activity) || business.sector
   const spotlightKeys = experience.spotlightKeys || []
   const onboardingKeys = experience.onboardingKeys || []
+  const cityLabel = businessCityLabel(business) || business.city
+  const activeVideos = (publications.videos || []).filter(isActiveVideo)
+  const activeListings = (publications.listings || []).filter(
+    (item) => !item?.status || item.status === 'active',
+  )
+  const verified = ['verified', 'approved', 'active'].includes(business.status)
+
+  const publicTabs = [
+    { key: 'apercu', label: bt('businesses.detail.tabs.overview'), alwaysShow: true },
+    {
+      key: 'videos',
+      label: bt('businesses.detail.tabs.videos'),
+      count: activeVideos.length,
+      alwaysShow: true,
+    },
+    {
+      key: 'produits',
+      label: bt('businesses.detail.tabs.products'),
+      count: activeListings.length || publicationCount,
+      alwaysShow: true,
+    },
+    {
+      key: 'avis',
+      label: bt('businesses.detail.tabs.reviews'),
+      count: rating.count,
+      alwaysShow: true,
+    },
+  ]
+  if (isOwner && !guestMode) {
+    publicTabs.push(
+      { key: 'informations', label: bt('businesses.detail.tabs.informations'), alwaysShow: true },
+      { key: 'abonnements', label: bt('businesses.detail.tabs.subscriptions'), alwaysShow: true },
+    )
+  }
 
   return (
-    <div className="grid min-w-0 max-w-full gap-5 overflow-x-clip sm:gap-7">
+    <div className="grid min-w-0 max-w-full gap-5 overflow-x-clip bg-[var(--app-surface)] sm:gap-6">
       {isOwner && !guestMode ? (
         <BusinessVerificationProgress business={business} documents={documents} />
       ) : null}
-      <Card className="grid gap-6">
-        <div className="relative">
-          {business.bannerUrl ? (
-            <img
-              src={business.bannerUrl}
-              alt={bt('businesses.detail.bannerAlt', { name: business.name })}
-              className="h-44 w-full rounded-[1.8rem] object-cover"
-              loading="lazy"
-              decoding="async"
-            />
-          ) : (
-            <div className="h-44 w-full rounded-[1.8rem] bg-gradient-to-br from-brand-600 to-cyan-600" />
-          )}
-          <div className="absolute -bottom-8 left-5 z-10">
-            {business.logoUrl ? (
-              <img
-                src={business.logoUrl}
-                alt={bt('businesses.detail.logoAlt', { name: business.name })}
-                className="size-16 rounded-3xl border-4 border-[var(--app-surface)] object-cover shadow-md"
-                loading="lazy"
-                decoding="async"
-              />
-            ) : (
-              <span className="grid size-16 place-items-center rounded-3xl border-4 border-[var(--app-surface)] bg-[var(--app-accent-soft)] text-xl font-black text-[var(--app-accent)] shadow-md">
-                {business.name.slice(0, 2).toUpperCase()}
-              </span>
-            )}
-          </div>
-          <div className="absolute right-4 top-4">
-            <ProfileQrShareButton
-              type="business"
-              activityVisibility={business.activityVisibility}
-              refreshKey={businessShareVersion(business)}
-              shareUrl={buildBusinessShareUrl(business)}
-              shareText={buildBusinessShareText(business)}
-              title={business.name}
-              subtitle={activityLabel}
-              verified={['verified', 'approved', 'active'].includes(business.status)}
-              city={businessCityLabel(business)}
-              sector={activityLabel}
-              logoUrl={business.logoUrl}
-            />
-          </div>
-        </div>
 
-        <div className="grid gap-4 pt-8">
-          <VerifiedDisplayName
-            as="h1"
-            name={business.name}
-            verified={['verified', 'approved', 'active'].includes(business.status)}
-            iconSize="md"
-            className="text-xl font-black sm:text-2xl"
+      <PublicProfileHero
+        name={business.name}
+        verified={verified}
+        category={activityLabel}
+        city={cityLabel}
+        coverUrl={business.bannerUrl}
+        avatarUrl={business.logoUrl}
+        coverAlt={bt('businesses.detail.bannerAlt', { name: business.name })}
+        avatarAlt={bt('businesses.detail.logoAlt', { name: business.name })}
+        rating={rating}
+        reviewsLabel={p3('publications.public.reviewsShort')}
+        shareSlot={
+          <ProfileQrShareButton
+            type="business"
+            activityVisibility={business.activityVisibility}
+            refreshKey={businessShareVersion(business)}
+            shareUrl={buildBusinessShareUrl(business)}
+            shareText={buildBusinessShareText(business)}
+            title={business.name}
+            subtitle={activityLabel}
+            verified={verified}
+            city={cityLabel}
+            sector={activityLabel}
+            logoUrl={business.logoUrl}
           />
-          <div className="flex min-w-0 flex-wrap gap-1.5 sm:gap-2">
-            <Badge tone="success" className="max-w-full truncate">
-              <HiOutlineBuildingOffice2 className="mr-1 inline shrink-0" />
-              {t('publications.profile.businessBadge')}
-            </Badge>
-            {activityLabel ? (
-              <Badge tone="neutral" className="max-w-full truncate">
-                {activityLabel}
-              </Badge>
-            ) : null}
-            <Badge tone={statusMeta(business.status, t).tone}>
-              {statusMeta(business.status, t).label}
-            </Badge>
-          </div>
-
-          {memberSinceLabel ? (
-            <p className="flex min-w-0 items-center gap-1.5 text-sm text-[var(--app-text-muted)]">
-              <FiCalendar className="shrink-0 text-brand-600" />
-              <span className="min-w-0 truncate">
-                {t('publications.profile.memberSince', { date: memberSinceLabel })}
-              </span>
-            </p>
-          ) : null}
-
-          <div className="scrollbar-hidden -mx-1 flex min-w-0 touch-pan-x gap-1.5 overflow-x-auto px-1 pb-0.5 sm:flex-wrap sm:overflow-visible">
-            <Badge tone="success" className="shrink-0 whitespace-nowrap">
-              {t('publications.profile.activeCount', { count: profile.activeCount })}
-            </Badge>
-            <Badge tone="info" className="shrink-0 whitespace-nowrap">
-              {t('publications.profile.archivedCount', { count: profile.archivedCount })}
-            </Badge>
-            <Badge tone="warning" className="shrink-0 whitespace-nowrap">
-              {t('publications.profile.totalCount', { count: profile.totalCount })}
-            </Badge>
-            {rating.count ? (
-              <Badge tone="warning" className="shrink-0 whitespace-nowrap">
-                <FiStar className="mr-1 inline" />
-                {t('publications.profile.reviewCount', {
-                  average: rating.average,
-                  count: rating.count,
-                })}
-              </Badge>
-            ) : null}
-            {profile.totalViews > 0 || isOwner ? (
-              <Badge tone="warning" className="shrink-0 whitespace-nowrap">
-                <FiEye className="mr-1 inline" />
-                {t('publications.profile.listingViews', { count: profile.totalViews })}
-              </Badge>
-            ) : null}
-          </div>
-
-          <ExpandableLinkifiedText
-            as="p"
-            text={business.description}
-            preserveWhitespace="pre-line"
-            maxLines={4}
-            className="max-w-3xl leading-7 text-[var(--app-text-muted)]"
-          />
-          <p className="flex items-center gap-2 text-sm">
-            <FiMapPin className="text-brand-600" /> {business.city} · {business.country}
-          </p>
-
-          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 border-t border-[var(--app-border)] pt-4 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
-            <div className="flex shrink-0 items-center gap-2">
-              {!guestMode ? (
-                <ReshareButton
-                  sourceType="business"
-                  sourceId={business.id}
-                  sourceData={business}
-                  className="shrink-0"
-                />
-              ) : null}
-              {!isOwner ? (
-                <ContactButton
-                  ownerId={business.ownerId}
-                  relatedEntity={business}
-                  relatedId={business.id}
-                  relatedPath={`/businesses/${business.id}`}
-                  relatedTitle={business.name}
-                  relatedType="business"
-                  iconOnly
-                  className="!size-11 shrink-0"
-                />
-              ) : null}
-            </div>
-            {!isOwner && !guestMode ? (
-              <SubscribeButton
-                publisherType="business"
-                publisherId={business.id}
-                publisherName={business.name}
-                publisherPath={`/businesses/${business.id}`}
-                className="min-w-0"
-              />
-            ) : (
-              <span className="hidden min-w-0 sm:block" aria-hidden />
-            )}
-            {guestMode ? (
-              <Link to="/discover" className="col-span-2 min-w-0 sm:col-auto">
-                <Button variant="secondary" icon={FiArrowLeft} className="w-full">
-                  {bt('businesses.publications.discoverMoxt')}
+        }
+        actions={
+          !isOwner ? (
+            <>
+              {guestMode ? (
+                <Button
+                  variant="secondary"
+                  className="w-full"
+                  onClick={() => requireAccount(bt('businesses.publications.guestInteract'))}
+                >
+                  {p3('publications.public.follow')}
                 </Button>
-              </Link>
-            ) : (
-              <Link to="/businesses" className="col-span-2 min-w-0 sm:col-auto">
-                <Button variant="secondary" icon={HiOutlineBuildingOffice2} className="w-full sm:w-auto">
+              ) : (
+                <SubscribeButton
+                  publisherType="business"
+                  publisherId={business.id}
+                  publisherName={business.name}
+                  publisherPath={`/businesses/${business.id}`}
+                  className="w-full"
+                  variant="secondary"
+                  showIcon={false}
+                  subscribeLabel={p3('publications.public.follow')}
+                  subscribedLabel={p3('publications.public.following')}
+                />
+              )}
+              <ContactButton
+                ownerId={business.ownerId}
+                relatedEntity={business}
+                relatedId={business.id}
+                relatedPath={`/businesses/${business.id}`}
+                relatedTitle={business.name}
+                relatedType="business"
+                showIcon={false}
+                className="w-full"
+                variant="primary"
+              />
+            </>
+          ) : (
+            <>
+              <Link to="/businesses" className="col-span-2 min-w-0 sm:col-span-1">
+                <Button variant="secondary" className="w-full">
                   {bt('businesses.common.directory')}
                 </Button>
               </Link>
-            )}
-          </div>
-        </div>
-      </Card>
-
-      <CatalogArchiveTabs
-        active={mainTab}
-        onChange={setMainTab}
-        variant="section"
-        tabs={[
-          {
-            key: 'publications',
-            label: bt('businesses.detail.tabs.publications'),
-            count: publicationCount,
-          },
-          {
-            key: 'avis',
-            label: bt('businesses.detail.tabs.reviews'),
-            count: rating.count,
-            alwaysShow: true,
-          },
-          { key: 'informations', label: bt('businesses.detail.tabs.informations') },
-          { key: 'abonnements', label: bt('businesses.detail.tabs.subscriptions') },
-        ]}
+              <Link
+                to={`/publications/mine?scope=business`}
+                className="col-span-2 min-w-0 sm:col-span-1"
+              >
+                <Button className="w-full">{p3('publications.user.manage')}</Button>
+              </Link>
+            </>
+          )
+        }
       />
 
-      {mainTab === 'publications' ? (
-        <BusinessPublicationsPanel
-          businessId={businessId}
+      <PublicProfileTabs active={mainTab} onChange={setMainTab} tabs={publicTabs} />
+
+      {mainTab === 'apercu' ? (
+        <div className="grid gap-5">
+          {business.description ? (
+            <section className="grid gap-2">
+              <h2 className="text-base font-black">{p3('publications.public.overviewAbout')}</h2>
+              <ExpandableLinkifiedText
+                as="p"
+                text={business.description}
+                preserveWhitespace="pre-line"
+                maxLines={6}
+                className="leading-7 text-[var(--app-text-muted)]"
+              />
+            </section>
+          ) : null}
+          {cityLabel || business.country ? (
+            <p className="flex items-center gap-2 text-sm text-[var(--app-text-muted)]">
+              <FiMapPin className="shrink-0 text-brand-700" />
+              {[cityLabel, business.country].filter(Boolean).join(' · ')}
+            </p>
+          ) : null}
+          {activeVideos.length ? (
+            <PublicVideoThumbGrid
+              videos={activeVideos.slice(0, 4)}
+              title={p3('publications.public.videosTitle')}
+              guestMode={guestMode}
+              onGuestInteract={handleGuestInteract}
+            />
+          ) : null}
+          {activeListings.length ? (
+            <section className="grid gap-4">
+              <h2 className="text-base font-black">{bt('businesses.detail.tabs.products')}</h2>
+              <CatalogGrid lazy={false}>
+                {activeListings.slice(0, 4).map((listing) => (
+                  <MarketplaceListingCard
+                    key={listing.id}
+                    listing={listing}
+                    guestMode={guestMode}
+                    onGuestInteract={handleGuestInteract}
+                  />
+                ))}
+              </CatalogGrid>
+            </section>
+          ) : null}
+          {memberSinceLabel ? (
+            <p className="text-xs text-[var(--app-text-faint)]">
+              {t('publications.profile.memberSince', { date: memberSinceLabel })}
+            </p>
+          ) : null}
+        </div>
+      ) : mainTab === 'videos' ? (
+        <PublicVideoThumbGrid
+          videos={activeVideos}
+          title={p3('publications.public.videosTitle')}
+          emptyTitle={p3('publications.public.videosEmpty')}
+          emptyDescription={p3('publications.public.videosEmptyDescription')}
           guestMode={guestMode}
-          guestPublications={guestPreview.publications}
-          isOwner={isOwner}
           onGuestInteract={handleGuestInteract}
         />
+      ) : mainTab === 'produits' ? (
+        activeListings.length ? (
+          <CatalogGrid lazy={false}>
+            {activeListings.map((listing) => (
+              <MarketplaceListingCard
+                key={listing.id}
+                listing={listing}
+                guestMode={guestMode}
+                onGuestInteract={handleGuestInteract}
+              />
+            ))}
+          </CatalogGrid>
+        ) : (
+          <BusinessPublicationsPanel
+            businessId={businessId}
+            guestMode={guestMode}
+            guestPublications={guestPreview.publications}
+            isOwner={isOwner}
+            onGuestInteract={handleGuestInteract}
+          />
+        )
       ) : mainTab === 'informations' ? (
         <>
           {isOwner && !guestMode ? <BusinessActivityVisibilitySection business={business} /> : null}
@@ -549,6 +553,7 @@ export function BusinessDetailPage() {
     </div>
   )
 }
+
 
 function resolveBusinessSpotlightValue(business, itemKey, bt) {
   switch (itemKey) {

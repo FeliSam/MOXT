@@ -13,6 +13,7 @@ import { buildListingFavoriteSnapshot } from '../account/favoriteUtils'
 import { archivedPublicationCardClass } from '../publications/publicationCatalogUtils'
 import { formatMoney } from '../transfers/transferUtils'
 import { listingOptionLabel, marketplaceText } from './marketplaceI18n'
+import { resolveMediaDisplayUrl } from '../../services/media/mediaUrlUtils'
 
 function MarketplaceListingCardComponent({
   listing,
@@ -52,7 +53,9 @@ function MarketplaceListingCardComponent({
     ? listingOptionLabel(t, categoryOption)
     : listing.category
   const detailPath = `/marketplace/${listing.id}`
-  const images = (listing.images || []).filter((src) => src && !failedSrc.has(src))
+  const images = (listing.images || [])
+    .map((src) => resolveMediaDisplayUrl(src) || src)
+    .filter((src) => src && !failedSrc.has(src))
   const multi = images.length > 1
 
   function handleToggleLike(event) {
