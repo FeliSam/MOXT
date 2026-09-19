@@ -13,6 +13,13 @@ function cachePayloadFromAction(action, state) {
   return null
 }
 
+function hasUserPayload(action, state) {
+  if (action.payload?.user?.id) return true
+  if (action.payload?.id) return true
+  if (state?.auth?.user?.id) return true
+  return false
+}
+
 /** Persiste la session pour un démarrage instantané au prochain chargement. */
 export const authBootstrapMiddleware = (store) => (next) => (action) => {
   const result = next(action)
@@ -26,6 +33,20 @@ export const authBootstrapMiddleware = (store) => (next) => (action) => {
     const payload = cachePayloadFromAction(action, store.getState())
     if (payload) writeAuthBootstrapCache(payload)
     void primeStatusRail(store)
+  }
+
+  // Mid-session login / restore : chauffe le catalogue sans attendre Marketplace/Fil.
+  // Dynamic import évite les cycles ; scheduleCatalogSync no-op sans userId.
+  if (
+    action.type === applySession.type ||
+    action.type === 'auth/login/fulfilled' ||
+    action.type === 'auth/restoreSession/fulfilled'
+  ) {
+    if (hasUserPayload(action, store.getState())) {
+      void import('./catalogSync.js').then(({ scheduleCatalogSync }) => {
+        void scheduleCatalogSync(store)
+      })
+    }
   }
 
   if (action.type === clearSession.type || action.type === 'auth/logout/fulfilled') {

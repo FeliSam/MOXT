@@ -1120,6 +1120,7 @@ export const PHASE3_FR_SOURCES = {
   'publications.user.discover': 'Découvrir MOXT',
   'publications.user.back': 'Retour',
   'publications.user.tabs.publications': 'Publications',
+  'publications.user.tabs.products': 'Produits',
   'publications.user.tabs.reviews': 'Avis',
   'publications.user.tabs.overview': 'Aperçu',
   'publications.user.tabs.videos': 'Vidéos',

@@ -312,26 +312,38 @@ export function UserPublicationsPage() {
     publications.listings?.find((l) => l.images?.[0])?.images?.[0] ||
     ''
 
+  const videosTab = {
+    key: 'videos',
+    label: p3('publications.user.tabs.videos'),
+    count: activeVideos.length,
+    alwaysShow: true,
+  }
+  const publicationsTab = {
+    key: 'publications',
+    label:
+      scope === 'business'
+        ? p3('publications.user.tabs.products')
+        : p3('publications.user.tabs.publications'),
+    count: profile.totalCount,
+    alwaysShow: true,
+  }
+  // Entreprise (et profil) : =1 vidéo ? Vidéos puis Produits/Publications ; sinon l'inverse. Avis puis À propos.
   const publicTabs = [
-    {
-      key: 'videos',
-      label: p3('publications.user.tabs.videos'),
-      count: activeVideos.length,
-      alwaysShow: true,
-    },
-    {
-      key: 'publications',
-      label: p3('publications.user.tabs.publications'),
-      count: profile.totalCount,
-      alwaysShow: true,
-    },
+    ...(activeVideos.length > 0 ? [videosTab, publicationsTab] : [publicationsTab, videosTab]),
     {
       key: 'avis',
       label: p3('publications.user.tabs.reviews'),
       count: aggregateRating.count,
       alwaysShow: true,
     },
-    { key: 'apercu', label: p3('publications.user.tabs.overview'), alwaysShow: true },
+    {
+      key: 'apercu',
+      label:
+        scope === 'business'
+          ? p3('publications.public.overviewAbout')
+          : p3('publications.user.tabs.overview'),
+      alwaysShow: true,
+    },
   ]
 
   return (
