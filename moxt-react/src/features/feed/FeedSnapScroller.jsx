@@ -7,7 +7,7 @@ export const FEED_LOOP_MAX_ITEMS = 64
 export const FEED_PULL_REFRESH_PX = 64
 const FEED_PULL_REFRESH_MAX_MS = 4000
 /** Slides montées autour de l’index actif (±N) — le reste est placeholder hauteur fixe. */
-export const FEED_MOUNT_RADIUS = 2
+export const FEED_MOUNT_RADIUS = 3
 
 export function isFeedAtFirstLogical(activeIndex, looping, loopSize) {
   if (loopSize < 1) return true

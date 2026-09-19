@@ -35,6 +35,12 @@ import { ParcelFeedSlide } from '../features/feed/slides/ParcelFeedSlide'
 import { P2pFeedSlide } from '../features/feed/slides/P2pFeedSlide'
 import { VideoFeedSlide } from '../features/feed/slides/VideoFeedSlide'
 import { phase3Text } from '../i18n/phase3I18n'
+import {
+  getFeedSuggestionSalt,
+  rememberFeedPosition,
+  readFeedPosition,
+  rotateFeedSuggestionSalt,
+} from '../features/feed/feedSessionCache'
 
 function renderFeedSlide(item, { index, active }) {
   if (item.kind === 'discovery') {
@@ -85,7 +91,7 @@ export function FeedPage() {
   const posts = useSelector((s) => s.posts)
   const businesses = useSelector((s) => s.businesses)
   const p2p = useSelector((s) => s.p2p)
-  const [suggestionSalt, setSuggestionSalt] = useState(() => String(Date.now()))
+  const [suggestionSalt, setSuggestionSalt] = useState(() => getFeedSuggestionSalt())
   const [refreshNonce, setRefreshNonce] = useState(0)
   const [guestReady, setGuestReady] = useState(!guestMode)
 
@@ -107,7 +113,7 @@ export function FeedPage() {
   useEffect(() => {
     if (!user?.id || guestMode) return
     import('../app/catalogSync.js').then(({ scheduleCatalogSync }) => {
-      void scheduleCatalogSync(store)
+      void scheduleCatalogSync(store, { skipIfFresh: true })
     })
   }, [store, user?.id, guestMode])
 
@@ -206,18 +212,27 @@ export function FeedPage() {
     )
   }, [organicItems, typeFilter, feedState, rankCtx, user])
 
-  const initialIndex = pickInitialFeedIndex(items, itemParam, feedState)
+  const savedPosition = readFeedPosition()
+  const restoreParam = itemParam || savedPosition.itemId || undefined
+  const initialIndex = pickInitialFeedIndex(items, restoreParam, feedState)
   const focusedItem = useMemo(() => {
-    if (!itemParam || !items.length) return items[initialIndex] || null
+    if (!items.length) return null
+    if (!itemParam) return items[initialIndex] || null
     const resolvedId =
       items.find((row) => row.id === itemParam)?.id ||
       items.find((row) => row.id.endsWith(`:${itemParam.split(':').pop()}`))?.id
     return items.find((row) => row.id === (resolvedId || itemParam)) || items[initialIndex] || null
   }, [itemParam, items, initialIndex])
 
+  useEffect(() => {
+    if (!focusedItem?.id) return
+    const logicalIndex = Math.max(0, items.findIndex((row) => row.id === focusedItem.id))
+    rememberFeedPosition({ itemId: focusedItem.id, logicalIndex })
+  }, [focusedItem?.id, items])
+
   const refreshFeed = useCallback(async () => {
     dispatch(loadFeedBoosts())
-    setSuggestionSalt(String(Date.now()))
+    setSuggestionSalt(rotateFeedSuggestionSalt())
     setRefreshNonce((value) => value + 1)
     if (guestMode) {
       setGuestReady(false)
