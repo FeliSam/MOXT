@@ -1,16 +1,16 @@
-﻿import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { CANONICAL_SHARE_SITE } from '@moxt/shared/share/shareLinkUtils.js'
 import { buildEntitySharePreviewUrl, buildEntityShareUrl } from './shareLinkUtils.js'
 
 describe('shareLinkUtils (web)', () => {
-  it('builds preview url on www.moxtapp.ru/share for crawlers', () => {
-    vi.stubEnv('VITE_SITE_URL', 'https://moxtapp.ru')
+  it('builds preview url on the OG gateway for crawlers', () => {
     expect(
       buildEntitySharePreviewUrl({ kind: 'listing', entityId: 'ANN-1' }),
-    ).toBe('https://www.moxtapp.ru/share/listing/ANN-1')
-    vi.unstubAllEnvs()
+    ).toBe(`${CANONICAL_SHARE_SITE}/share/listing/ANN-1`)
   })
 
-  it('prefers /share URLs when kind and entityId are known', () => {
+  it('prefers gateway /share URLs when kind and entityId are known', () => {
+    vi.stubEnv('VITE_SUPABASE_URL', 'https://abc.supabase.co')
     vi.stubEnv('VITE_SITE_URL', 'https://moxtapp.ru')
     expect(
       buildEntityShareUrl({
@@ -19,7 +19,7 @@ describe('shareLinkUtils (web)', () => {
         href: '/marketplace/ANN-1',
         feedHref: '/feed?item=listing:ANN-1',
       }),
-    ).toBe('https://www.moxtapp.ru/share/listing/ANN-1')
+    ).toBe(`${CANONICAL_SHARE_SITE}/share/listing/ANN-1`)
     expect(
       buildEntityShareUrl({
         kind: 'parcel',
@@ -27,7 +27,7 @@ describe('shareLinkUtils (web)', () => {
         href: '/parcels/PAR-1',
         feedHref: '/feed?item=parcel%3APAR-1',
       }),
-    ).toBe('https://www.moxtapp.ru/share/parcel/PAR-1')
+    ).toBe(`${CANONICAL_SHARE_SITE}/share/parcel/PAR-1`)
     expect(
       buildEntityShareUrl({
         kind: 'video',
@@ -35,17 +35,17 @@ describe('shareLinkUtils (web)', () => {
         href: '/feed?type=video&item=video%3AVID-1',
         feedHref: '/feed?item=video%3AVID-1',
       }),
-    ).toBe('https://www.moxtapp.ru/share/video/VID-1')
+    ).toBe(`${CANONICAL_SHARE_SITE}/share/video/VID-1`)
     vi.unstubAllEnvs()
   })
 
-  it('falls back to site deep links when kind/entityId missing', () => {
+  it('falls back to site deep links when kind/id cannot build OG path', () => {
     vi.stubEnv('VITE_SITE_URL', 'https://moxtapp.ru')
     expect(
       buildEntityShareUrl({
         href: '/feed?type=video&item=video%3AVID-1',
       }),
-    ).toBe('https://www.moxtapp.ru/feed?type=video&item=video%3AVID-1')
+    ).toBe('https://moxtapp.ru/feed?type=video&item=video%3AVID-1')
     vi.unstubAllEnvs()
   })
 })

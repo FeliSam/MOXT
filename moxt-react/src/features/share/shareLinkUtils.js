@@ -1,28 +1,35 @@
 import {
+  buildShareOgUrl,
   buildSharePreviewUrl as buildSharedSharePreviewUrl,
   resolvePublicShareTarget,
 } from '@moxt/shared/share/shareLinkUtils.js'
 import { getSiteUrl } from '../../utils/siteUrl'
 
-/** Prefere www.moxtapp.ru pour les liens Partager / OG. */
-function shareSiteUrl() {
-  const site = getSiteUrl()
-  if (/^https?:\/\/(www\.)?moxtapp\.ru$/i.test(site)) return 'https://www.moxtapp.ru'
-  return site
+function supabaseProjectUrl() {
+  return import.meta.env.VITE_SUPABASE_URL || ''
 }
 
-/** URL de preview OG (proxy Netlify /share → Edge Function). */
+/**
+ * URL de preview OG pour crawlers (WhatsApp / Facebook / Telegram).
+ * Prefers CANONICAL_SHARE_SITE `/share/{kind}/{id}` (API Gateway) so entity
+ * og:title / og:image are returned. Falls back to the Supabase Edge Function
+ * path when an override host is needed for local debugging.
+ */
 export function buildEntitySharePreviewUrl({ kind, entityId } = {}) {
+  const og = buildShareOgUrl({ kind, entityId })
+  if (og) return og
   return buildSharedSharePreviewUrl({
     kind,
     entityId,
-    siteUrl: shareSiteUrl(),
+    supabaseUrl: supabaseProjectUrl(),
   })
 }
 
 /**
- * URL absolue partagee (WhatsApp / copier / share natif).
- * Domaine www.moxtapp.ru/share/... ; Netlify proxy vers share-preview pour les crawlers.
+ * URL absolue partagée (WhatsApp / copier / share natif).
+ * Prefers the OG gateway so crawlers get entity Open Graph; humans follow the
+ * meta refresh / redirect to the in-app public target. Falls back to a
+ * moxtapp.ru deep link only when kind/id cannot build a share path.
  */
 export function buildEntityShareUrl(item = {}) {
   const preview = buildEntitySharePreviewUrl({
@@ -37,7 +44,7 @@ export function buildEntityShareUrl(item = {}) {
     href: item.href,
     feedHref: item.feedHref,
   })
-  return `${shareSiteUrl()}${target.startsWith('/') ? target : `/${target}`}`
+  return `${getSiteUrl()}${target.startsWith('/') ? target : `/${target}`}`
 }
 
 export { resolvePublicShareTarget }

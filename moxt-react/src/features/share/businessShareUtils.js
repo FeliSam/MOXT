@@ -28,7 +28,7 @@ export function buildBusinessShareUrl(business, { absolute = true } = {}) {
   if (!business?.id) {
     return absolute ? buildAbsoluteUrl('/businesses') : '/businesses'
   }
-  // WhatsApp/crawlers: OG via Edge Function (humains redirigés vers /businesses/:id)
+  // WhatsApp/crawlers: OG via CANONICAL_SHARE_SITE /share/business/:id (humains redirigés)
   if (absolute) {
     const preview = buildEntitySharePreviewUrl({ kind: 'business', entityId: business.id })
     if (preview) return preview

@@ -1,9 +1,23 @@
 export const DEFAULT_SHARE_OG_IMAGE = 'https://moxtapp.ru/assets/logos/X.png'
-export const CANONICAL_SHARE_SITE = 'https://www.moxtapp.ru'
+
+/** Public app origin (deep links humans open after the OG redirect). */
+export const CANONICAL_APP_SITE = 'https://moxtapp.ru'
+
+/**
+ * Host that returns real Open Graph HTML for `/share/{kind}/{id}`.
+ *
+ * TEMPORARY: Yandex API Gateway fronting the Supabase `share-preview` function.
+ * - `https://www.moxtapp.ru/share/*` serves the SPA shell (generic site OG only).
+ * - `https://share.moxtapp.ru` SSL is not ready yet (cert SAN mismatch on the
+ *   custom domain). Flip this constant to `https://share.moxtapp.ru` once the
+ *   certificate matches; keep the `/share/{kind}/{id}` path shape.
+ */
+export const CANONICAL_SHARE_SITE =
+  'https://d5doerdoffl4db9ij8j5.nnekmrav.apigw.yandexcloud.net'
 
 const SHARE_KINDS = new Set(['listing', 'parcel', 'job', 'event', 'post', 'video', 'p2p', 'business', 'user'])
 
-/** Detail accessible sans connexion (PublicationShell). */
+/** Détail accessible sans connexion (PublicationShell). */
 const PUBLIC_SHARE_PATH_PREFIXES = [
   '/marketplace/',
   '/businesses/',
@@ -40,14 +54,8 @@ export function isSharePreviewKind(kind) {
   return SHARE_KINDS.has(String(kind || '').trim())
 }
 
-/** Base publique des previews OG (proxy Netlify /share → Edge Function). */
-export function resolveSharePreviewBaseUrl(siteUrl) {
-  const base = String(siteUrl || CANONICAL_SHARE_SITE).replace(/\/$/, '')
-  if (!base) return ''
-  return `${base}/share`
-}
-
-export function buildSharePreviewPath(kind, entityId) {
+/** Path served by the OG gateway / share.moxtapp.ru custom domain. */
+export function buildShareOgPath(kind, entityId) {
   const safeKind = String(kind || '').trim()
   const safeId = String(entityId || '').trim()
   if (!isSharePreviewKind(safeKind) || !safeId) return ''
@@ -55,19 +63,39 @@ export function buildSharePreviewPath(kind, entityId) {
 }
 
 /**
- * URL OG partagee sur le domaine du site (www.moxtapp.ru/share/...).
- * Netlify proxy /share/* vers l Edge Function share-preview.
- * supabaseUrl est ignore (compat ancienne signature).
+ * Absolute URL crawlers (WhatsApp, Facebook, Telegram) should fetch.
+ * Always uses CANONICAL_SHARE_SITE so entity og:title / og:image are present.
  */
-export function buildSharePreviewUrl({ kind, entityId, siteUrl, supabaseUrl: _legacySupabaseUrl } = {}) {
-  const base = resolveSharePreviewBaseUrl(siteUrl)
+export function buildShareOgUrl({ kind, entityId, siteUrl } = {}) {
+  const path = buildShareOgPath(kind, entityId)
+  if (!path) return ''
+  const site = String(siteUrl || CANONICAL_SHARE_SITE).replace(/\/$/, '')
+  return `${site}${path}`
+}
+
+/** @deprecated Prefer buildShareOgUrl — kept for direct Edge Function debugging. */
+export function resolveSharePreviewBaseUrl(supabaseUrl) {
+  const base = String(supabaseUrl || '').replace(/\/$/, '')
+  if (!base) return ''
+  return `${base}/functions/v1/share-preview`
+}
+
+export function buildSharePreviewPath(kind, entityId) {
+  const safeKind = String(kind || '').trim()
+  const safeId = String(entityId || '').trim()
+  if (!isSharePreviewKind(safeKind) || !safeId) return ''
+  return `/functions/v1/share-preview/${encodeURIComponent(safeKind)}/${encodeURIComponent(safeId)}`
+}
+
+export function buildSharePreviewUrl({ kind, entityId, supabaseUrl }) {
+  const base = resolveSharePreviewBaseUrl(supabaseUrl)
   const safeKind = String(kind || '').trim()
   const safeId = String(entityId || '').trim()
   if (!base || !isSharePreviewKind(safeKind) || !safeId) return ''
   return `${base}/${encodeURIComponent(safeKind)}/${encodeURIComponent(safeId)}`
 }
 
-/** Chemin in-app ouvert apres le clic (marketplace, fil, etc.). */
+/** Chemin in-app ouvert après le clic (marketplace, fil, etc.). */
 export function resolveInAppShareTarget({ kind, entityId, href, feedHref } = {}) {
   const direct = String(href || '').trim()
   if (direct) return direct
@@ -78,7 +106,7 @@ export function resolveInAppShareTarget({ kind, entityId, href, feedHref } = {})
 }
 
 /**
- * Cible de partage copiee / envoyee — toujours ouvrable sans compte :
+ * Cible de partage copiée / envoyée — toujours ouvrable sans compte :
  * fiche publique (marketplace, entreprise) ou deep link fil.
  */
 export function resolvePublicShareTarget({ kind, entityId, href, feedHref } = {}) {
@@ -95,7 +123,7 @@ export function resolvePublicShareTarget({ kind, entityId, href, feedHref } = {}
 }
 
 export function buildAbsoluteShareTarget(siteUrl, targetPath) {
-  const site = String(siteUrl || CANONICAL_SHARE_SITE).replace(/\/$/, '')
+  const site = String(siteUrl || CANONICAL_APP_SITE).replace(/\/$/, '')
   const path = String(targetPath || '/').startsWith('/') ? targetPath : `/${targetPath}`
   return `${site}${path}`
 }
