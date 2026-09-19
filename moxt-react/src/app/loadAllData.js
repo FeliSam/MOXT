@@ -58,6 +58,7 @@ import {
 
 // Nombre max de lignes pour les tables publiques paginées au login
 const PUBLIC_LIMIT = 50
+const LISTINGS_PUBLIC_LIMIT = 500
 const USER_LIMIT = 200
 
 function safeRows(result, label) {
@@ -289,7 +290,7 @@ export const loadAllData = createAsyncThunk(
       conversationsRpcRes,
       supportConversationsRes,
     ] = await Promise.all([
-      supabase.from('listings').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
+      supabase.from('listings').select('*').order('created_at', { ascending: false }).limit(LISTINGS_PUBLIC_LIMIT),
       supabase.from('parcels').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
       supabase.from('parcel_requests').select('*').eq('user_id', uid).limit(USER_LIMIT),
       supabase.from('jobs').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
