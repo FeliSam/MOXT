@@ -303,7 +303,7 @@ export function FeedPage() {
           renderSlide={renderFeedSlide}
           onRefresh={refreshFeed}
           refreshNonce={refreshNonce}
-          playEntryHint={!itemParam}
+          playEntryHint={false}
         />
       </div>
     </div>
