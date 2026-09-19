@@ -126,6 +126,9 @@ export function clearClientCache({ scope = 'full', preserveAuth = false } = {}) 
 
   clearAppBadge()
   void notifyServiceWorkerSkipWaiting()
+  void import('../features/marketplace/marketplaceListingsIdb.js').then(({ clearListingsIdb }) =>
+    clearListingsIdb(),
+  )
   return removed
 }
 

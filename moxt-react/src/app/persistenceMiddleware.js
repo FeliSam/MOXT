@@ -126,7 +126,14 @@ function scheduleWrite(key, getValue) {
   clearTimeout(timers[key])
   timers[key] = setTimeout(() => {
     try {
-      localStorage.setItem(key, JSON.stringify(getValue()))
+      const value = getValue()
+      localStorage.setItem(key, JSON.stringify(value))
+      // IndexedDB mirror for Marketplace listings (survives larger catalogs).
+      if (key === 'moxt-listings-v1' && Array.isArray(value)) {
+        void import('../features/marketplace/marketplaceListingsIdb.js').then(
+          ({ writeListingsToIdb }) => writeListingsToIdb(value),
+        )
+      }
     } catch (error) {
       globalThis.dispatchEvent?.(
         new CustomEvent('moxt:persistence-error', {
