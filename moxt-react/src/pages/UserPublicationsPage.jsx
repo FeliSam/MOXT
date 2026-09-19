@@ -313,7 +313,6 @@ export function UserPublicationsPage() {
     ''
 
   const publicTabs = [
-    { key: 'apercu', label: p3('publications.user.tabs.overview'), alwaysShow: true },
     {
       key: 'videos',
       label: p3('publications.user.tabs.videos'),
@@ -332,6 +331,7 @@ export function UserPublicationsPage() {
       count: aggregateRating.count,
       alwaysShow: true,
     },
+    { key: 'apercu', label: p3('publications.user.tabs.overview'), alwaysShow: true },
   ]
 
   return (
