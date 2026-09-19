@@ -1,7 +1,42 @@
 export const DEFAULT_SHARE_OG_IMAGE = 'https://moxtapp.ru/assets/logos/X.png'
-export const CANONICAL_SHARE_SITE = 'https://moxtapp.ru'
+
+/** Public app origin (deep links humans open after the OG redirect). */
+export const CANONICAL_APP_SITE = 'https://moxtapp.ru'
+
+/**
+ * Host that returns real Open Graph HTML for `/share/{kind}/{id}`.
+ *
+ * TEMPORARY: Yandex API Gateway fronting the Supabase `share-preview` function.
+ * - `https://www.moxtapp.ru/share/*` serves the SPA shell (generic site OG only).
+ * - `https://share.moxtapp.ru` SSL is not ready yet (cert SAN mismatch on the
+ *   custom domain). Flip this constant to `https://share.moxtapp.ru` once the
+ *   certificate matches; keep the `/share/{kind}/{id}` path shape.
+ */
+export const CANONICAL_SHARE_SITE =
+  'https://d5doerdoffl4db9ij8j5.nnekmrav.apigw.yandexcloud.net'
 
 const SHARE_KINDS = new Set(['listing', 'parcel', 'job', 'event', 'post', 'video', 'p2p', 'business', 'user'])
+
+/** Aliases callers may pass (ContactButton "profile", plurals, etc.). */
+const SHARE_KIND_ALIASES = {
+  profile: 'user',
+  profiles: 'user',
+  users: 'user',
+  listings: 'listing',
+  videos: 'video',
+  posts: 'post',
+  parcels: 'parcel',
+  jobs: 'job',
+  events: 'event',
+  businesses: 'business',
+}
+
+/** Normalize UI relatedType / kind to a singular SHARE_KINDS value. */
+export function normalizeShareKind(kind) {
+  const raw = String(kind || '').trim()
+  if (!raw) return ''
+  return SHARE_KIND_ALIASES[raw] || raw
+}
 
 /** Détail accessible sans connexion (PublicationShell). */
 const PUBLIC_SHARE_PATH_PREFIXES = [
@@ -20,7 +55,7 @@ export function isPublicSharePath(path) {
 }
 
 export function buildFeedSharePath(kind, entityId, { typeFilter = '' } = {}) {
-  const safeKind = String(kind || '').trim()
+  const safeKind = normalizeShareKind(kind)
   const safeId = String(entityId || '').trim()
   if (!safeKind || !safeId) return '/feed'
   if (safeKind === 'listing') return `/marketplace/${safeId}`
@@ -37,9 +72,29 @@ export function buildFeedSharePath(kind, entityId, { typeFilter = '' } = {}) {
 }
 
 export function isSharePreviewKind(kind) {
-  return SHARE_KINDS.has(String(kind || '').trim())
+  return SHARE_KINDS.has(normalizeShareKind(kind))
 }
 
+/** Path served by the OG gateway / share.moxtapp.ru custom domain. */
+export function buildShareOgPath(kind, entityId) {
+  const safeKind = normalizeShareKind(kind)
+  const safeId = String(entityId || '').trim()
+  if (!isSharePreviewKind(safeKind) || !safeId) return ''
+  return `/share/${encodeURIComponent(safeKind)}/${encodeURIComponent(safeId)}`
+}
+
+/**
+ * Absolute URL crawlers (WhatsApp, Facebook, Telegram) should fetch.
+ * Always uses CANONICAL_SHARE_SITE so entity og:title / og:image are present.
+ */
+export function buildShareOgUrl({ kind, entityId, siteUrl } = {}) {
+  const path = buildShareOgPath(kind, entityId)
+  if (!path) return ''
+  const site = String(siteUrl || CANONICAL_SHARE_SITE).replace(/\/$/, '')
+  return `${site}${path}`
+}
+
+/** @deprecated Prefer buildShareOgUrl — kept for direct Edge Function debugging. */
 export function resolveSharePreviewBaseUrl(supabaseUrl) {
   const base = String(supabaseUrl || '').replace(/\/$/, '')
   if (!base) return ''
@@ -47,7 +102,7 @@ export function resolveSharePreviewBaseUrl(supabaseUrl) {
 }
 
 export function buildSharePreviewPath(kind, entityId) {
-  const safeKind = String(kind || '').trim()
+  const safeKind = normalizeShareKind(kind)
   const safeId = String(entityId || '').trim()
   if (!isSharePreviewKind(safeKind) || !safeId) return ''
   return `/functions/v1/share-preview/${encodeURIComponent(safeKind)}/${encodeURIComponent(safeId)}`
@@ -55,7 +110,7 @@ export function buildSharePreviewPath(kind, entityId) {
 
 export function buildSharePreviewUrl({ kind, entityId, supabaseUrl }) {
   const base = resolveSharePreviewBaseUrl(supabaseUrl)
-  const safeKind = String(kind || '').trim()
+  const safeKind = normalizeShareKind(kind)
   const safeId = String(entityId || '').trim()
   if (!base || !isSharePreviewKind(safeKind) || !safeId) return ''
   return `${base}/${encodeURIComponent(safeKind)}/${encodeURIComponent(safeId)}`
@@ -89,7 +144,7 @@ export function resolvePublicShareTarget({ kind, entityId, href, feedHref } = {}
 }
 
 export function buildAbsoluteShareTarget(siteUrl, targetPath) {
-  const site = String(siteUrl || CANONICAL_SHARE_SITE).replace(/\/$/, '')
+  const site = String(siteUrl || CANONICAL_APP_SITE).replace(/\/$/, '')
   const path = String(targetPath || '/').startsWith('/') ? targetPath : `/${targetPath}`
   return `${site}${path}`
 }

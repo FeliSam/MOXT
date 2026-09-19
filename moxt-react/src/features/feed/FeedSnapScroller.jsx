@@ -48,7 +48,7 @@ export function FeedSnapScroller({
   refreshNonce = 0,
   className = '',
   testId = 'feed-snap-scroll',
-  playEntryHint = true,
+  playEntryHint = false,
 }) {
   const scrollerRef = useRef(null)
   const looping = items.length >= 2

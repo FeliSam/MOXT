@@ -5,6 +5,7 @@ import reducer, {
   createTransfer,
   declarePayment,
   declineTransferRequest,
+  discardTransfer,
   expireOverdueTransfers,
   moderateTransfer,
   reassignTransferExchanger,
@@ -335,7 +336,15 @@ describe('transferSlice', () => {
     expect(updated.items[0].status).toBe(TRANSFER_STATUS.DECLARED)
   })
 
+  it('retire un transfert optimiste via discardTransfer', () => {
+    const created = reducer({ items: [] }, createTransfer(payload))
+    const id = created.items[0].id
+    const cleared = reducer(created, discardTransfer(id))
+    expect(cleared.items).toHaveLength(0)
+  })
+
   it('refuse la declaration de paiement sans acceptation entreprise', () => {
+
     const created = reducer(
       { items: [] },
       createTransfer({

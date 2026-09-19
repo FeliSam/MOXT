@@ -12,6 +12,7 @@ import {
   businessShareVersion,
 } from '../share/businessShareUtils'
 import { ProfileQrShareButton } from '../share/ProfileQrShareButton'
+import { buildEntityShareUrl } from '../share/shareLinkUtils'
 import { formatMemberSince } from './usePublicationProfile'
 
 export function PublicationProfileCard({
@@ -90,7 +91,17 @@ export function PublicationProfileCard({
                   activityVisibility={isBusinessScope ? ownBusiness?.activityVisibility : undefined}
                   targetPath={!isBusinessScope ? qrTargetPath : undefined}
                   refreshKey={isBusinessScope ? businessShareVersion(ownBusiness) : undefined}
-                  shareUrl={isBusinessScope ? buildBusinessShareUrl(ownBusiness) : undefined}
+                  shareUrl={
+                    isBusinessScope
+                      ? buildBusinessShareUrl(ownBusiness)
+                      : shareUserId
+                        ? buildEntityShareUrl({
+                            kind: 'user',
+                            entityId: shareUserId,
+                            href: qrTargetPath,
+                          })
+                        : undefined
+                  }
                   shareText={isBusinessScope ? buildBusinessShareText(ownBusiness) : undefined}
                   title={headlineName}
                   subtitle={isBusinessScope ? sectorLabel || ownBusiness.sector : displayName}

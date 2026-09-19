@@ -23,6 +23,7 @@ import { dispatchAdminOnlyErrorToast } from '../utils/errorToastUtils.js'
 import { authService } from '../features/auth/authService'
 import { selectAccountPreferences } from '../features/account/accountSlice'
 import { buildTransferRemotePayload } from '../features/transfers/transferRemote'
+import { discardTransfer } from '../features/transfers/transferSlice'
 import { setAdminUsers } from '../features/administration/administrationSlice'
 import { replaceOrder } from '../features/p2p/p2pSlice'
 import { addToast } from '../features/ui/uiSlice'
@@ -2346,6 +2347,26 @@ export const supabaseMiddleware = (store) => (next) => (action) => {
             tone: 'error',
           }),
         )
+      }
+      if (String(action.type || '').startsWith('transfers/')) {
+        if (
+          action.type === 'transfers/createTransfer' &&
+          action.payload?.id &&
+          !action.payload?.blocked
+        ) {
+          store.dispatch(discardTransfer(action.payload.id))
+        }
+        store.dispatch(
+          addToast({
+            title: 'Transfert non synchronisé',
+            message: sanitizeUserFacingMessage(
+              err?.message ||
+                "L'enregistrement distant du transfert a échoué. Vérifiez votre connexion et réessayez.",
+            ),
+            tone: 'error',
+          }),
+        )
+        return
       }
       // Documents : ne jamais supprimer le fichier storage ni la fiche locale —
       // réessai sync / réparation auto (cron + Admin → Réparer).

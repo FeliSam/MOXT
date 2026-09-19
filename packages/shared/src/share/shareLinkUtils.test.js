@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  CANONICAL_SHARE_SITE,
+  buildShareOgUrl,
   buildSharePreviewUrl,
+  normalizeShareKind,
   pickShareImage,
   resolveInAppShareTarget,
   resolvePublicShareTarget,
@@ -8,7 +11,28 @@ import {
 } from './shareLinkUtils.js'
 
 describe('shareLinkUtils', () => {
-  it('builds share preview url from supabase base', () => {
+
+  it('normalizes relatedType aliases to singular share kinds', () => {
+    expect(normalizeShareKind('profile')).toBe('user')
+    expect(normalizeShareKind('listings')).toBe('listing')
+    expect(normalizeShareKind('videos')).toBe('video')
+    expect(normalizeShareKind('posts')).toBe('post')
+    expect(normalizeShareKind('listing')).toBe('listing')
+    expect(
+      buildShareOgUrl({ kind: 'profile', entityId: 'USR-1' }),
+    ).toBe(`${CANONICAL_SHARE_SITE}/share/user/USR-1`)
+  })
+
+  it('builds share OG url on the canonical gateway host', () => {
+    expect(
+      buildShareOgUrl({
+        kind: 'listing',
+        entityId: 'ANN-1',
+      }),
+    ).toBe(`${CANONICAL_SHARE_SITE}/share/listing/ANN-1`)
+  })
+
+  it('still builds direct supabase share-preview urls for debugging', () => {
     expect(
       buildSharePreviewUrl({
         kind: 'listing',

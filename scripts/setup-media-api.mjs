@@ -79,7 +79,7 @@ async function main() {
     ['YANDEX_S3_REGION', 'ru-central1'],
     ['YANDEX_S3_PUBLIC_BUCKET', vars.MOXT_MEDIA_PUBLIC_BUCKET || 'moxt-public'],
     ['YANDEX_S3_PRIVATE_BUCKET', vars.MOXT_MEDIA_PRIVATE_BUCKET || 'moxt-private'],
-    ['MOXT_MEDIA_CDN_BASE', vars.MOXT_MEDIA_CDN_BASE || 'https://cdn.moxtapp.ru'],
+    ['MOXT_MEDIA_CDN_BASE', vars.MOXT_MEDIA_CDN_BASE || 'https://storage.yandexcloud.net/moxt-public'],
   ]
 
   for (const [name, value] of secrets) {

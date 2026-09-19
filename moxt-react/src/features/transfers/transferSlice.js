@@ -518,7 +518,13 @@ const transferSlice = createSlice({
         }
       })
     },
+    discardTransfer(state, action) {
+      const id = typeof action.payload === 'string' ? action.payload : action.payload?.id
+      if (!id) return
+      state.items = state.items.filter((item) => item.id !== id)
+    },
     receiveRemoteTransfer(state, action) {
+
       const transfer = sanitizeTransferPaymentVisibility(action.payload)
       if (!transfer?.id || transfer.blocked) return
       const index = state.items.findIndex((item) => item.id === transfer.id)
@@ -558,6 +564,7 @@ export const {
   createTransfer,
   declarePayment,
   declineTransferRequest,
+  discardTransfer,
   expireOverdueTransfers,
   moderateTransfer,
   reassignTransferExchanger,

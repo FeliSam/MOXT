@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { CANONICAL_SHARE_SITE } from '@moxt/shared/share/shareLinkUtils.js'
 import {
   buildBusinessShareText,
   buildBusinessShareUrl,
@@ -11,38 +12,35 @@ describe('businessShareUtils', () => {
     vi.stubEnv('VITE_SITE_URL', 'https://moxtapp.ru')
   })
 
-  it('builds stable business share urls with version query', () => {
-    const first = buildBusinessShareUrl({
-      id: 'BIZ-1',
-      name: 'Alpha',
-      updatedAt: '2026-01-01T00:00:00.000Z',
-    })
-    const second = buildBusinessShareUrl({
-      id: 'BIZ-1',
-      name: 'Alpha',
-      updatedAt: '2026-01-01T00:00:00.000Z',
-    })
-    expect(first).toBe(second)
-    expect(first).toContain('https://moxtapp.ru/businesses/BIZ-1')
-    expect(first).toContain('v=')
-  })
-
-  it('prefers share-preview URL when supabase is configured', () => {
-    vi.stubEnv('VITE_SUPABASE_URL', 'https://abc.supabase.co')
+  it('prefers OG gateway share URL for absolute business shares', () => {
     const url = buildBusinessShareUrl({
       id: 'BIZ-1',
       name: 'Alpha',
       updatedAt: '2026-01-01T00:00:00.000Z',
     })
-    expect(url).toBe('https://abc.supabase.co/functions/v1/share-preview/business/BIZ-1')
+    expect(url).toBe(`${CANONICAL_SHARE_SITE}/share/business/BIZ-1`)
   })
 
-  it('builds share url from form values', () => {
+  it('keeps relative business paths without the OG host', () => {
+    const relative = buildBusinessShareUrl(
+      {
+        id: 'BIZ-1',
+        name: 'Alpha',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+      { absolute: false },
+    )
+    expect(relative).toContain('/businesses/BIZ-1')
+    expect(relative).toContain('v=')
+    expect(relative.startsWith('http')).toBe(false)
+  })
+
+  it('builds share url from form values via OG gateway', () => {
     const url = buildBusinessShareUrlFromValues({
       id: 'BIZ-2',
       name: 'Beta',
     })
-    expect(url).toContain('/businesses/BIZ-2')
+    expect(url).toBe(`${CANONICAL_SHARE_SITE}/share/business/BIZ-2`)
   })
 
   it('builds share text with contacts', () => {
