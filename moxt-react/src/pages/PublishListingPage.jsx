@@ -48,6 +48,10 @@ import {
   resolveBusinessPublishContext,
 } from '../features/businesses/businessPublishUtils'
 import { publishListing } from '../features/marketplace/marketplaceSlice'
+import {
+  publishListingErrorMessage,
+  usableErrorMessage,
+} from '../features/marketplace/publishListingErrors'
 import { MAX_LISTING_PHOTOS } from '../features/marketplace/listingImageUtils'
 import { useActionBurst } from '../components/ui/ActionBurst'
 import { addToast } from '../features/ui/uiSlice'
@@ -298,7 +302,12 @@ export function PublishListingPage() {
             ),
           )
           if (publishListing.rejected.match(action)) {
-            throw new Error(action.error?.message || action.payload || 'publish failed')
+            throw new Error(
+              publishListingErrorMessage(
+                action,
+                mt('publish.listing.failedBody'),
+              ),
+            )
           }
           return action
         },
@@ -311,11 +320,11 @@ export function PublishListingPage() {
           title:
             error instanceof StarsInsufficientError
               ? t('stars.insufficientTitle')
-              : mt('publish.listing.sentTitle'),
+              : mt('publish.listing.failedTitle'),
           message:
             error instanceof StarsInsufficientError
               ? t('stars.insufficientBody')
-              : error.message || mt('publish.listing.pendingBody'),
+              : usableErrorMessage(error, mt('publish.listing.failedBody')),
           tone: 'error',
         }),
       )
