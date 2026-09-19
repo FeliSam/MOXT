@@ -67,6 +67,8 @@
     "ship": "node scripts/moxt.mjs ship --purge-cdn",
     "go": "node scripts/moxt.mjs ship --purge-cdn",
     "cpd": "node scripts/moxt.mjs ship --purge-cdn --skip-supabase",
+    "cdn:guard": "node scripts/guard-cdn.mjs",
+    "cdn:lock": "node scripts/guard-cdn.mjs",
     "cpd:web": "node scripts/moxt.mjs ship --purge-cdn --skip-supabase",
     "cpd:full": "node scripts/moxt.mjs ship --purge-cdn",
     "tout": "node scripts/moxt.mjs ship --purge-cdn",

@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+﻿#!/usr/bin/env node
 /**
  * Build MOXT + publication sur Yandex Object Storage.
  *
@@ -25,7 +25,7 @@ import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { tmpdir } from 'node:os'
 import { parseEnvFile } from './lib/env.mjs'
-import { purgeCdnCache, findCdnResource, ensureCdnSecurityHeaders } from './lib/yandex-cdn.mjs'
+import { purgeCdnCache, findCdnResource, ensureCdnSecurityHeaders, finalizeSpaCdn, assertCdnSpaGuard } from './lib/yandex-cdn.mjs'
 import { writeDeployManifest } from './lib/deploy-manifest.mjs'
 import { syncDist } from './lib/yandex-upload.mjs'
 import { runSafeDistUpload } from './lib/safe-deploy.mjs'
@@ -267,9 +267,13 @@ async function main() {
   if (purgeCdn && !dryRun) {
     const resourceId = resolveCdnResourceId()
     if (!resourceId) {
-      console.log('\n  (purge CDN ignoré — ressource CDN introuvable)')
+      console.log('\n  (purge CDN ignore - ressource CDN introuvable)')
     } else {
-      log('En-têtes sécurité CDN', resourceId)
+      // Garde-fou: never leave Storage-API origin / nuclear rewrite (site 403 / HTML-as-JS)
+      log('CDN lock (website origin)', resourceId)
+      finalizeSpaCdn(resourceId, bucket)
+      assertCdnSpaGuard(resourceId, bucket)
+      log('En-tetes securite CDN', resourceId)
       ensureCdnSecurityHeaders(resourceId)
       log('Purge cache CDN', resourceId)
       const result = purgeCdnCache(resourceId)
