@@ -1,10 +1,15 @@
 import { FiEye, FiPlay } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
+import { CatalogGrid } from '../../components/ui/CatalogGrid'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { useLanguage } from '../../contexts/useLanguage'
 import { marketplaceText } from '../marketplace/marketplaceI18n'
+import { MARKETPLACE_DISCOVER_GRID_COLUMNS } from '../marketplace/marketplaceDiscoveryLayout'
 import { resolveMediaDisplayUrl } from '../../services/media/mediaUrlUtils'
 import { videoFeedPath } from '../videos/videoUtils'
+
+/** Même hauteur que MarketplaceListingCard (grille profil / Découvrir). */
+const VIDEO_CARD_MEDIA_HEIGHT = 'h-[320px] xl:h-[360px]'
 
 function formatDuration(ms) {
   const total = Math.max(0, Math.round(Number(ms || 0) / 1000))
@@ -55,10 +60,10 @@ function VideoThumb({ video, guestMode, onGuestInteract, eager }) {
     <Link
       to={path}
       onClick={handleClick}
-      className="group relative flex flex-col overflow-hidden rounded-2xl bg-[var(--app-surface-muted)] shadow-sm ring-1 ring-[var(--app-border)] transition hover:shadow-md"
+      className="group relative flex h-full flex-col overflow-hidden rounded-[1.4rem] bg-[var(--app-surface-muted)] shadow-[var(--shadow-card)] transition hover:shadow-[var(--shadow-card-hover)] md:hover:-translate-y-1"
       aria-label={title}
     >
-      <span className="relative block aspect-[4/3] overflow-hidden bg-[var(--app-surface)]">
+      <span className={`relative block w-full overflow-hidden bg-[var(--app-surface)] ${VIDEO_CARD_MEDIA_HEIGHT}`}>
         {thumb ? (
           <img
             src={thumb}
@@ -107,12 +112,12 @@ function VideoThumb({ video, guestMode, onGuestInteract, eager }) {
 }
 
 /**
- * Grille 2 colonnes : vignette 4/3 + eétiquettes, titre et vues (comme les cartes image).
+ * Grille publique vidéos : mêmes colonnes / hauteur que les cartes Produits (CatalogGrid).
  */
 export function PublicVideoThumbGrid({
   videos = [],
-  title = 'Vidu00e9os',
-  emptyTitle = 'Aucune vidu00e9o',
+  title = 'Vidéos',
+  emptyTitle = 'Aucune vidéo',
   emptyDescription,
   guestMode = false,
   onGuestInteract,
@@ -126,7 +131,7 @@ export function PublicVideoThumbGrid({
       {list.length === 0 ? (
         <EmptyState title={emptyTitle} description={emptyDescription} />
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        <CatalogGrid lazy={false} columns={MARKETPLACE_DISCOVER_GRID_COLUMNS}>
           {list.map((video, index) => (
             <VideoThumb
               key={video.id || index}
@@ -136,7 +141,7 @@ export function PublicVideoThumbGrid({
               eager={index < 4}
             />
           ))}
-        </div>
+        </CatalogGrid>
       )}
     </section>
   )
