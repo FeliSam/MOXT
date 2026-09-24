@@ -1,19 +1,28 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, beforeEach } from 'vitest'
 import {
   KEYBOARD_OPEN_PX,
   applyKeyboardInsetState,
   chromeViewportBottomGap,
+  clearComposerKeyboardSuppress,
+  dockComposerAfterKeyboardClosed,
   forceKeyboardClosed,
   isMessagesScrollLock,
   isMessagesThreadImmersive,
   measureKeyboardInset,
   resetKeyboardAfterBackground,
+  resolveComposerKeyboardBottom,
   resyncViewportBottomGap,
   setIosNativeKeyboardOpen,
+  suppressComposerKeyboardBottom,
   syncKeyboardState,
 } from './useKeyboardInset.js'
 
 describe('useKeyboardInset helpers', () => {
+  beforeEach(() => {
+    setIosNativeKeyboardOpen(false)
+    clearComposerKeyboardSuppress()
+  })
+
   it('mesure l inset clavier depuis visualViewport', () => {
     expect(
       measureKeyboardInset({
@@ -62,6 +71,48 @@ describe('useKeyboardInset helpers', () => {
     expect(chromeViewportBottomGap(KEYBOARD_OPEN_PX + 80)).toBe(0)
     expect(chromeViewportBottomGap(320, { keyboardOpen: true })).toBe(0)
     expect(chromeViewportBottomGap(48, { immersive: true })).toBe(0)
+  })
+
+  it('resolveComposerKeyboardBottom ignore iOS Native, suppress et fermeture focus', () => {
+    expect(
+      resolveComposerKeyboardBottom(320, {
+        editing: true,
+        hasComposerChrome: true,
+      }),
+    ).toBe(320)
+    expect(
+      resolveComposerKeyboardBottom(320, {
+        editing: true,
+        hasComposerChrome: true,
+        iosNative: true,
+      }),
+    ).toBe(0)
+    expect(
+      resolveComposerKeyboardBottom(320, {
+        editing: true,
+        hasComposerChrome: true,
+        suppressed: true,
+      }),
+    ).toBe(0)
+    expect(
+      resolveComposerKeyboardBottom(320, {
+        editing: true,
+        hasComposerChrome: true,
+        closingWhileFocused: true,
+      }),
+    ).toBe(0)
+    expect(
+      resolveComposerKeyboardBottom(80, {
+        editing: true,
+        hasComposerChrome: true,
+      }),
+    ).toBe(0)
+    expect(
+      resolveComposerKeyboardBottom(320, {
+        editing: false,
+        hasComposerChrome: true,
+      }),
+    ).toBe(0)
   })
 
   it('ignore le gap viewport en fil immersif', () => {
@@ -125,6 +176,67 @@ describe('useKeyboardInset helpers', () => {
     input.remove()
   })
 
+  it('iOS natif : jamais d offset composer overlay (resize Native)', () => {
+    const root = document.createElement('html')
+    root.classList.add('capacitor-ios', 'messages-thread-detail')
+    const input = document.createElement('textarea')
+    document.body.appendChild(input)
+    input.focus()
+    const inset = KEYBOARD_OPEN_PX + 80
+    syncKeyboardState(root, {
+      height: window.innerHeight - inset,
+      offsetTop: 0,
+    })
+    expect(root.style.getPropertyValue('--composer-keyboard-bottom')).toBe('0px')
+    input.remove()
+  })
+
+  it('hide/dock : suppress empêche un VV périmé de soulever le composer avec focus', () => {
+    const root = document.createElement('html')
+    root.classList.add('messages-thread-detail')
+    const input = document.createElement('textarea')
+    document.body.appendChild(input)
+    input.focus()
+    const inset = KEYBOARD_OPEN_PX + 100
+    syncKeyboardState(root, {
+      height: window.innerHeight - inset,
+      offsetTop: 0,
+    })
+    expect(root.style.getPropertyValue('--composer-keyboard-bottom')).toBe(`${inset}px`)
+
+    dockComposerAfterKeyboardClosed(root)
+    expect(root.style.getPropertyValue('--composer-keyboard-bottom')).toBe('0px')
+
+    // Focus encore là + VV encore réduit : ne pas re-soulever.
+    syncKeyboardState(root, {
+      height: window.innerHeight - inset,
+      offsetTop: 0,
+    })
+    expect(root.style.getPropertyValue('--composer-keyboard-bottom')).toBe('0px')
+    input.remove()
+  })
+
+  it('chute d inset pendant focus : recoller le composer (fermeture sans blur)', () => {
+    const root = document.createElement('html')
+    root.classList.add('messages-thread-detail')
+    const input = document.createElement('textarea')
+    document.body.appendChild(input)
+    input.focus()
+    const inset = KEYBOARD_OPEN_PX + 60
+    syncKeyboardState(root, {
+      height: window.innerHeight - inset,
+      offsetTop: 0,
+    })
+    expect(root.style.getPropertyValue('--composer-keyboard-bottom')).toBe(`${inset}px`)
+
+    syncKeyboardState(root, {
+      height: window.innerHeight - 40,
+      offsetTop: 0,
+    })
+    expect(root.style.getPropertyValue('--composer-keyboard-bottom')).toBe('0px')
+    input.remove()
+  })
+
   it('iOS natif : clavier Native sans double offset overlay', () => {
     const root = document.createElement('html')
     root.classList.add('capacitor-ios')
@@ -161,5 +273,24 @@ describe('useKeyboardInset helpers', () => {
     })
     expect(root.classList.contains('keyboard-open')).toBe(false)
     input.remove()
+  })
+
+  it('suppressComposerKeyboardBottom est actif puis relâché', () => {
+    suppressComposerKeyboardBottom(50)
+    expect(
+      resolveComposerKeyboardBottom(320, {
+        editing: true,
+        hasComposerChrome: true,
+        suppressed: true,
+      }),
+    ).toBe(0)
+    clearComposerKeyboardSuppress()
+    expect(
+      resolveComposerKeyboardBottom(320, {
+        editing: true,
+        hasComposerChrome: true,
+        suppressed: false,
+      }),
+    ).toBe(320)
   })
 })

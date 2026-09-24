@@ -662,10 +662,16 @@ html.keyboard-open .bottom-nav-shell {
     width: 100%;
   }
 
-  /* Capacitor / Safari overlay : coller au clavier via bottom (pas transform — gap iOS). */
+  /* Capacitor / Safari overlay : coller au clavier via bottom (pas transform — gap iOS).
+     --composer-keyboard-bottom est forcé à 0 hors clavier réel (useKeyboardInset) —
+     un VV périmé ne doit plus laisser la barre flotter au-dessus d’une bande blanche. */
   html.keyboard-open.messages-thread-detail .message-composer-shell {
     bottom: var(--composer-keyboard-bottom, 0px);
     transition: bottom 160ms ease-out;
+  }
+
+  html.messages-thread-detail:not(.keyboard-open) .message-composer-shell {
+    bottom: 0;
   }
 
   /* Clavier ouvert : pas de safe-area sous le form (sinon bande blanche iOS). */

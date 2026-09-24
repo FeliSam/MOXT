@@ -8,7 +8,7 @@ import { closeSidebar } from '../../features/ui/uiSlice'
 
 import { useContentLifecycle } from '../../features/content/useContentLifecycle'
 
-import { resyncViewportBottomGap, forceKeyboardClosed, useKeyboardInset } from '../../hooks/useKeyboardInset'
+import { resyncViewportBottomGap, forceKeyboardClosed, dockComposerAfterKeyboardClosed, useKeyboardInset } from '../../hooks/useKeyboardInset'
 
 import { useMediaQuery } from '../../hooks/useMediaQuery'
 import { FEED_VIEWPORT_MEDIA_QUERY } from '../../features/feed/feedViewport'
@@ -182,11 +182,25 @@ export function AppLayout({ children }) {
 
   }, [hideAppChrome])
 
-  /** Entrée détail mobile : état clavier propre (principe 2). */
+  /** Entrée détail mobile : recoller le composer (VV / latch clavier parfois périmés). */
   useLayoutEffect(() => {
     if (!isMessagesMobileDetail) return undefined
-    forceKeyboardClosed(document.documentElement)
-    return undefined
+
+    function burst() {
+      dockComposerAfterKeyboardClosed(document.documentElement)
+    }
+
+    burst()
+    const raf1 = requestAnimationFrame(() => {
+      burst()
+      requestAnimationFrame(burst)
+    })
+    const timers = [80, 200, 450, 900].map((ms) => window.setTimeout(burst, ms))
+
+    return () => {
+      cancelAnimationFrame(raf1)
+      timers.forEach((id) => window.clearTimeout(id))
+    }
   }, [isMessagesMobileDetail])
 
 
