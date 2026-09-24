@@ -200,13 +200,52 @@ export function MarketplacePage() {
 
   const visibleItems = visible
 
-
+  // Mount + incompleteness: scheduleCatalogSync auto-forces when Redux looks thinner
+  // than the last successful sync (cooldown inside catalogSync).
   useEffect(() => {
     if (!user?.id || guestMode) return
     import('../app/catalogSync.js').then(({ scheduleCatalogSync }) => {
-      // skipIfFresh only after a successful listings pull (trustworthy freshness).
       void scheduleCatalogSync(store, { skipIfFresh: true })
     })
+  }, [store, user?.id, guestMode])
+
+  // When the displayed catalog shrinks (or stays thin after hydrate), re-check.
+  useEffect(() => {
+    if (!user?.id || guestMode) return undefined
+    let cancelled = false
+    void import('../app/catalogSync.js').then(
+      ({ scheduleCatalogSync, isMarketplaceCatalogIncomplete }) => {
+        if (cancelled) return
+        if (isMarketplaceCatalogIncomplete(store.getState())) {
+          // skipIfFresh + incomplete → awaited network pull without wiping IDB
+          void scheduleCatalogSync(store, { skipIfFresh: true })
+        }
+      },
+    )
+    return () => {
+      cancelled = true
+    }
+  }, [store, user?.id, guestMode, reduxListings.length, feed.total])
+
+  // Focus / tab re-entry: force full sync when incomplete; otherwise skipIfFresh.
+  useEffect(() => {
+    if (!user?.id || guestMode) return undefined
+    const resyncIfNeeded = () => {
+      void import('../app/catalogSync.js').then(({ scheduleCatalogSync }) => {
+        // Incomplete auto-forces an awaited pull inside scheduleCatalogSync;
+        // pull-to-refresh (softRefreshSession) remains the path that invalidates IDB.
+        void scheduleCatalogSync(store, { skipIfFresh: true })
+      })
+    }
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') resyncIfNeeded()
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    window.addEventListener('focus', resyncIfNeeded)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('focus', resyncIfNeeded)
+    }
   }, [store, user?.id, guestMode])
 
   useEffect(() => {

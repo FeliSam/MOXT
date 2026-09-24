@@ -18,6 +18,7 @@ import { businessFromRemoteRow } from '../businesses/businessRemote'
 import { receiveRemoteOffer } from '../p2p/p2pSlice'
 import { p2pOfferFromRemoteRow } from '../sync/entityRemote'
 import { jobsFromRemoteRows } from '../jobs/jobRemote'
+import { LISTINGS_PUBLIC_LIMIT } from '../../app/catalogConstants.js'
 
 const PUBLIC_LIMIT = 50
 
@@ -49,7 +50,7 @@ export const refreshPublicationsData = createAsyncThunk(
         .from('listings')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(PUBLIC_LIMIT),
+        .limit(LISTINGS_PUBLIC_LIMIT),
       supabase
         .from('parcels')
         .select('*')

@@ -4,6 +4,7 @@ import { sanitizeListingByType } from '../../config/listingConfig'
 import { createLocalStorage } from '../../services/createLocalStorage'
 import { storageService } from '../../services/storageService'
 import { mergeRemoteById, mergeRemoteByIdPruningWindow } from '@moxt/shared/utils/mergeRemoteById.js'
+import { LISTINGS_PUBLIC_LIMIT } from '../../app/catalogConstants.js'
 import { createId } from '../../services/createId'
 import { saveListingRemote } from './marketplaceRemote'
 import { normalizeListingImages } from './listingImageUtils'
@@ -121,9 +122,22 @@ const marketplaceSlice = createSlice({
   },
   reducers: {
     setAll(state, action) {
-      const { items, reports } = action.payload
+      const { items, reports, mode } = action.payload
       if (items) {
-        state.items = mergeRemoteByIdPruningWindow(state.items, items).map(normalizeListing)
+        // A short page (< LISTINGS_PUBLIC_LIMIT) that shrinks the local catalog is
+        // treated as a partial/stale pull: merge ids only, do NOT prune the window
+        // (pruning would wipe Découvrir down to ~10 leftovers until manual refresh).
+        const incoming = Array.isArray(items) ? items : []
+        const useMergeOnly =
+          mode === 'merge' ||
+          (incoming.length > 0 &&
+            incoming.length < state.items.length &&
+            incoming.length < LISTINGS_PUBLIC_LIMIT)
+        state.items = (
+          useMergeOnly
+            ? mergeRemoteById(state.items, incoming)
+            : mergeRemoteByIdPruningWindow(state.items, incoming)
+        ).map(normalizeListing)
       }
       if (reports) state.reports = mergeRemoteById(state.reports, reports)
     },

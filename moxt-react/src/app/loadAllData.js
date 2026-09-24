@@ -28,6 +28,7 @@ import { setUser } from '../features/auth/authSlice'
 import { setIdentityProfiles } from '../features/identity/identitySlice'
 import { listingFromRemoteRow, mergeListingQuestions } from '../features/marketplace/marketplaceRemote'
 import { earlyApplyMarketplaceListings } from '../features/marketplace/marketplaceCatalogApply'
+import { LISTINGS_PUBLIC_LIMIT } from './catalogConstants.js'
 import { fromRow, fromRows } from '../services/remoteRowMapper'
 import { fetchUserConversations } from '@moxt/shared/utils/fetchUserConversations.js'
 import { normalizeStoredLanguage } from '../config/uiTranslations'
@@ -59,7 +60,6 @@ import {
 
 // Nombre max de lignes pour les tables publiques paginées au login
 const PUBLIC_LIMIT = 50
-const LISTINGS_PUBLIC_LIMIT = 500
 const USER_LIMIT = 200
 
 function safeRows(result, label) {
@@ -383,6 +383,8 @@ export const loadAllData = createAsyncThunk(
     // Early-apply marketplace as soon as listings response is ready so Découvrir
     // paints the full catalog without waiting for the rest of the thunk.
     const listingsPullOk = !listingsRes?.error
+    const listingsBeforeCount = (getState().marketplace?.items || []).length
+    const remoteListingsCount = (listingsRes.data || []).length
     if (listingsPullOk) {
       earlyApplyMarketplaceListings(dispatch, listingsRes.data || [])
     } else if (listingsRes?.error) {
@@ -1081,14 +1083,31 @@ export const loadAllData = createAsyncThunk(
     }
 
     dispatch(runExpireOverdueTransfers())
-    // Mark fresh only when listings pull succeeded — never after a failed catalog sync.
-    if (listingsPullOk) {
-      const { markCatalogSynced } = await import('./catalogSync.js')
-      markCatalogSynced(uid)
+    // Mark fresh only when listings pull succeeded — never after a failed/partial catalog sync.
+    // A dramatic shrink vs the pre-pull catalog (short of the page limit) is treated as
+    // partial: keep meta stale so skipIfFresh cannot block retries.
+    const dramaticListingsShrink =
+      listingsBeforeCount >= 5 &&
+      remoteListingsCount < Math.floor(listingsBeforeCount * 0.7) &&
+      remoteListingsCount < LISTINGS_PUBLIC_LIMIT
+    if (listingsPullOk && !dramaticListingsShrink) {
+      const { markCatalogSynced, countActiveListings } = await import('./catalogSync.js')
+      markCatalogSynced(uid, {
+        listingCount: listingsWithQuestions.length,
+        activeListingCount: countActiveListings(listingsWithQuestions),
+      })
       // Ensure IDB has the final catalog (with questions merged), even if localStorage quota failed.
       void import('../features/marketplace/marketplaceListingsIdb.js')
         .then(({ writeListingsToIdb }) => writeListingsToIdb(listingsWithQuestions))
         .catch(() => {})
+    } else if (listingsPullOk && dramaticListingsShrink) {
+      console.warn(
+        '[MOXT] Pull annonces suspect (rétréci):',
+        remoteListingsCount,
+        'vs local',
+        listingsBeforeCount,
+        '— sync non marquée fraîche',
+      )
     }
     void import('../services/realtimeService.js').then(({ startRealtimeSubscription }) => {
       void startRealtimeSubscription(uid, dispatch, getState, { force: true })

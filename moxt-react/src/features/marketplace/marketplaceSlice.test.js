@@ -11,6 +11,7 @@ import reducer, {
   incrementListingShare,
   normalizeListing,
   receiveRemoteListing,
+  setAll,
   toggleListingFavorite,
   toggleListingLike,
   addListingComment,
@@ -254,5 +255,101 @@ describe('marketplaceSlice', () => {
     expect(updated.items).toHaveLength(1)
     expect(updated.items[0].title).toBe('Annonce mise à jour')
     expect(updated.items[0].ownerId).toBe('owner')
+  })
+
+  it('ne prune pas le catalogue local sur un pull partiel plus court que la page', () => {
+    const local = Array.from({ length: 26 }, (_, i) => ({
+      id: `ANN-${i}`,
+      status: 'active',
+      title: `Item ${i}`,
+      createdAt: `2026-09-${String((i % 28) + 1).padStart(2, '0')}T10:00:00.000Z`,
+      ownerId: 'owner',
+      sellerName: 'Vendeur',
+      type: 'product',
+      category: 'Telephone',
+      description: 'Une annonce de test pour le catalogue marketplace.',
+      price: 1000,
+      currency: 'RUB',
+      city: 'Moscou',
+      contact: '+79000000000',
+    }))
+    const partial = local.slice(0, 10).map((item) => ({ ...item, title: `${item.title} maj` }))
+    const state = reducer({ items: local, reports: [], filters: {}, draft: null }, setAll({ items: partial }))
+    expect(state.items.length).toBeGreaterThanOrEqual(26)
+    expect(state.items.find((item) => item.id === 'ANN-0')?.title).toContain('maj')
+    expect(state.items.some((item) => item.id === 'ANN-25')).toBe(true)
+  })
+
+  it('prune la fenêtre quand le pull distant n\'est pas un rétrécissement partiel', () => {
+    const local = [
+      {
+        id: 'keep-old',
+        status: 'active',
+        title: 'Old',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        ownerId: 'owner',
+        sellerName: 'Vendeur',
+        type: 'product',
+        category: 'Telephone',
+        description: 'Ancienne annonce hors fenêtre.',
+        price: 1000,
+        currency: 'RUB',
+        city: 'Moscou',
+        contact: '+79000000000',
+      },
+      {
+        id: 'gone',
+        status: 'active',
+        title: 'Gone',
+        createdAt: '2026-09-09T11:00:00.000Z',
+        ownerId: 'owner',
+        sellerName: 'Vendeur',
+        type: 'product',
+        category: 'Telephone',
+        description: 'Doit disparaître car absente du pull fenêtre.',
+        price: 1000,
+        currency: 'RUB',
+        city: 'Moscou',
+        contact: '+79000000000',
+      },
+    ]
+    const remote = [
+      {
+        id: 'a',
+        status: 'archived',
+        title: 'A',
+        createdAt: '2026-09-09T10:00:00.000Z',
+        ownerId: 'owner',
+        sellerName: 'Vendeur',
+        type: 'product',
+        category: 'Telephone',
+        description: 'Annonce distante dans la fenêtre.',
+        price: 1000,
+        currency: 'RUB',
+        city: 'Moscou',
+        contact: '+79000000000',
+      },
+      {
+        id: 'b',
+        status: 'active',
+        title: 'B',
+        createdAt: '2026-09-09T09:00:00.000Z',
+        ownerId: 'owner',
+        sellerName: 'Vendeur',
+        type: 'product',
+        category: 'Telephone',
+        description: 'Autre annonce distante dans la fenêtre.',
+        price: 1000,
+        currency: 'RUB',
+        city: 'Moscou',
+        contact: '+79000000000',
+      },
+    ]
+    // remote.length (2) is NOT < local.length in a way that triggers merge-only
+    // wait: 2 < 2 is false, so pruning applies. local has 2, remote has 2 — equal length, prune.
+    const state = reducer({ items: local, reports: [], filters: {}, draft: null }, setAll({ items: remote }))
+    expect(state.items.some((item) => item.id === 'gone')).toBe(false)
+    expect(state.items.some((item) => item.id === 'keep-old')).toBe(true)
+    expect(state.items.find((item) => item.id === 'a')?.status).toBe('archived')
   })
 })
