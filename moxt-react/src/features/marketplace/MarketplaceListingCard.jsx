@@ -111,7 +111,7 @@ function MarketplaceListingCardComponent({
   return (
     <div
       role="article"
-      className={`group relative h-full overflow-hidden rounded-[1.4rem] shadow-[var(--shadow-card)] ${
+      className={`group relative h-full overflow-hidden rounded-[1.4rem] border-0 bg-transparent shadow-[var(--shadow-card)] outline-none ring-0 ${
         isRail
           ? ''
           : 'md:transition-all md:duration-300 md:hover:-translate-y-1 md:hover:shadow-[var(--shadow-card-hover)]'
@@ -259,7 +259,7 @@ function MarketplaceListingCardComponent({
         ) : null}
       </div>
       {actions ? (
-        <div className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,7.75rem),1fr))] gap-1.5 bg-[var(--app-surface)] p-2.5 [&>a]:min-w-0 [&>button]:min-w-0 [&_button]:min-w-0 [&_button]:w-full [&_button]:max-w-full [&_button]:flex-wrap [&_button]:whitespace-normal">
+        <div className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,7.75rem),1fr))] gap-1.5 bg-transparent p-2.5 [&>a]:min-w-0 [&>button]:min-w-0 [&_button]:min-w-0 [&_button]:w-full [&_button]:max-w-full [&_button]:flex-wrap [&_button]:whitespace-normal">
           {linked ? (
             <Link to={detailPath} onClick={handleGuestClick}>
               <Button variant="secondary" icon={FiExternalLink} size="sm" className="w-full">
