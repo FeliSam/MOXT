@@ -102,4 +102,55 @@ describe('postFeedUtils', () => {
     expect(resolveNewsFeedLink('/news/POST-1')).toBe('/news/POST-1')
     expect(resolveNewsFeedLink('/news/POST-1/edit')).toBe('/news/POST-1/edit')
   })
+
+it('includes active videos as Actualites cards under Tous', () => {
+    const feed = buildNewsFeed([englishPost], {
+      language: 'en',
+      catalogs: {
+        businesses: [{ id: 'B1', name: 'Cafe MOXT', logoUrl: 'https://cdn.example/logo.png', status: 'verified' }],
+        videos: [{ id: 'VID-1', status: 'active', businessId: 'B1' }],
+      },
+      videos: [
+        {
+          id: 'VID-1',
+          status: 'active',
+          businessId: 'B1',
+          businessName: 'Cafe MOXT',
+          ownerId: 'u1',
+          title: 'Clip du jour',
+          caption: 'Nouvelle video',
+          thumbnailUrl: 'https://cdn.example/thumb.jpg',
+          videoUrl: 'https://cdn.example/v.mp4',
+          createdAt: '2026-07-04T00:00:00.000Z',
+          likes: [],
+          comments: [],
+        },
+      ],
+    })
+    const videoCard = feed.find((post) => post.id === 'VID-1')
+    expect(videoCard).toBeTruthy()
+    expect(videoCard.sourceType).toBe('video')
+    expect(videoCard.authorName).toBe('Cafe MOXT')
+    expect(videoCard.videoUrl).toContain('v.mp4')
+    expect(feed.some((post) => post.id === 'en-post')).toBe(true)
+  })
+
+  it('filters the Videos tab to video cards only', () => {
+    const feed = buildNewsFeed([englishPost], {
+      language: 'en',
+      sourceTypeFilter: 'video',
+      catalogs: { businesses: [{ id: 'B1', name: 'Cafe MOXT', status: 'verified' }], videos: [] },
+      videos: [
+        {
+          id: 'VID-2',
+          status: 'active',
+          businessId: 'B1',
+          ownerId: 'u1',
+          title: 'Only video',
+          createdAt: '2026-07-05T00:00:00.000Z',
+        },
+      ],
+    })
+    expect(feed.map((post) => post.id)).toEqual(['VID-2'])
+  })
 })

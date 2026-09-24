@@ -25,6 +25,14 @@ import {
   toggleLike,
   updatePost,
 } from '../../features/posts/postsSlice'
+import {
+  addVideoComment,
+  deleteVideo,
+  deleteVideoComment,
+  incrementVideoShare,
+  moderateVideo,
+  toggleVideoLike,
+} from '../../features/videos/videosSlice'
 import { getPostImages, MAX_POST_MESSAGE_LENGTH } from '../../features/posts/postMediaUtils'
 import { newsPostPath } from '../../features/posts/postFeedUtils'
 import { feedItemKey, feedPath } from '../../features/feed/feedItemUtils'
@@ -34,6 +42,7 @@ import { formatDate } from '../../features/transfers/transferUtils'
 import { addToast } from '../../features/ui/uiSlice'
 import { phase3Text } from '../../i18n/phase3I18n'
 import { FeedPostImages } from './FeedPostImages'
+import { FeedPostVideoMedia } from './FeedPostVideoMedia'
 import { EntityVerifiedName } from './EntityVerifiedName'
 
 const TYPE_COLORS = {
@@ -42,6 +51,7 @@ const TYPE_COLORS = {
   business: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
   event:    'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
   job:      'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+  video:    'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
   free:     'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]',
 }
 
@@ -100,6 +110,7 @@ const CTA_LABELS = {
   business: 'Voir l\'entreprise',
   event:    'Voir l\'événement',
   job:      'Voir l\'offre',
+  video:    'Voir la vidéo',
   free:     null,
 }
 
@@ -114,6 +125,8 @@ export function FeedPostCard({ post }) {
   const isSuperAdmin = user?.role === 'superadmin'
   const canManage = isAuthor || isModerator
   const pinned = post?.pinned === true
+  const isVideoPost = post.sourceType === 'video'
+  const videoId = isVideoPost ? (post.sourceId || post.id) : null
 
   const [showComments, setShowComments] = useState(false)
   const [commentText, setCommentText] = useState('')
@@ -125,16 +138,32 @@ export function FeedPostCard({ post }) {
   const liked = post.likes?.includes(user?.id)
   const typeLabel = SOURCE_TYPE_LABELS[post.sourceType] || 'Post'
   const typeColor = TYPE_COLORS[post.sourceType] || TYPE_COLORS.free
-  const ctaLabel = CTA_LABELS[post.sourceType]
+  const ctaLabel =
+    post.sourceType === 'video' ? p3('news.cta.video') : CTA_LABELS[post.sourceType]
 
   function handleLike() {
     if (!user) return
+    if (isVideoPost && videoId) {
+      dispatch(toggleVideoLike({ videoId, userId: user.id }))
+      return
+    }
     dispatch(toggleLike({ postId: post.id, userId: user.id }))
   }
 
   function handleComment(e) {
     e.preventDefault()
     if (!commentText.trim() || !user) return
+    if (isVideoPost && videoId) {
+      dispatch(addVideoComment({
+        videoId,
+        authorId: user.id,
+        authorName: `${user.firstName} ${user.lastName}`,
+        authorAvatarUrl: user.avatarUrl || null,
+        text: commentText.trim(),
+      }))
+      setCommentText('')
+      return
+    }
     dispatch(addComment({
       postId: post.id,
       authorId: user.id,
@@ -153,7 +182,11 @@ export function FeedPostCard({ post }) {
 
   function handleDelete() {
     if (window.confirm(p3('news.menu.deleteConfirm'))) {
-      dispatch(deletePost(post.id))
+      if (isVideoPost && videoId && user?.id) {
+        dispatch(deleteVideo({ id: videoId, ownerId: user.id }))
+      } else {
+        dispatch(deletePost(post.id))
+      }
     }
     setMenuOpen(false)
   }
@@ -163,7 +196,11 @@ export function FeedPostCard({ post }) {
       ? adminText(t, 'admin.actions.archivePostConfirm')
       : p3('news.archiveConfirm')
     if (window.confirm(message)) {
-      dispatch(moderatePost({ id: post.id, status: 'archived' }))
+      if (isVideoPost && videoId) {
+        dispatch(moderateVideo({ id: videoId, status: 'archived' }))
+      } else {
+        dispatch(moderatePost({ id: post.id, status: 'archived' }))
+      }
     }
     setMenuOpen(false)
   }
@@ -182,13 +219,27 @@ export function FeedPostCard({ post }) {
     setMenuOpen(false)
   }
 
+  function bumpShareCount() {
+    setShareCount((v) => v + 1)
+    if (isVideoPost && videoId) {
+      dispatch(incrementVideoShare({ id: videoId }))
+    }
+  }
+
   async function handleShare() {
-    const url = buildEntityShareUrl({
-      kind: 'post',
-      entityId: post.id,
-      href: newsPostPath(post.id),
-      feedHref: feedPath({ item: feedItemKey('post', post.id) }),
-    })
+    const url = isVideoPost && videoId
+      ? buildEntityShareUrl({
+          kind: 'video',
+          entityId: videoId,
+          href: post.directLink || `/feed?type=video&item=${encodeURIComponent(`video:${videoId}`)}`,
+          feedHref: feedPath({ item: feedItemKey('video', videoId) }),
+        })
+      : buildEntityShareUrl({
+          kind: 'post',
+          entityId: post.id,
+          href: newsPostPath(post.id),
+          feedHref: feedPath({ item: feedItemKey('post', post.id) }),
+        })
     const shareData = {
       title: post.title || post.authorName || 'MOXT',
       text: (post.message || '').trim().slice(0, 200),
@@ -197,7 +248,7 @@ export function FeedPostCard({ post }) {
     try {
       if (navigator.share) {
         await navigator.share(shareData)
-        setShareCount((v) => v + 1)
+        bumpShareCount()
         dispatch(
           addToast({
             title: p3('news.share.successTitle'),
@@ -212,7 +263,7 @@ export function FeedPostCard({ post }) {
     }
     try {
       await navigator.clipboard?.writeText(url)
-      setShareCount((v) => v + 1)
+      bumpShareCount()
       dispatch(
         addToast({
           title: p3('news.share.copiedTitle'),
@@ -288,14 +339,14 @@ export function FeedPostCard({ post }) {
                 <div className="absolute right-0 top-9 z-10 min-w-40 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] py-1 shadow-xl">
                   {isAuthor ? (
                     <Link
-                      to={`/news/${post.id}/edit`}
+                      to={isVideoPost && videoId ? `/videos/${videoId}/edit` : `/news/${post.id}/edit`}
                       onClick={() => setMenuOpen(false)}
                       className="flex w-full items-center gap-2 px-4 py-2 text-sm hover:bg-[var(--app-surface-muted)]"
                     >
                       <FiEdit2 className="text-xs" /> {p3('news.menu.edit')}
                     </Link>
                   ) : null}
-                  {isSuperAdmin ? (
+                  {isSuperAdmin && !isVideoPost ? (
                     <button
                       type="button"
                       onClick={handleTogglePin}
@@ -361,10 +412,19 @@ export function FeedPostCard({ post }) {
       </div>
 
       {!editing ? (
-        <FeedPostImages
-          images={getPostImages(post)}
-          alt={(post.message || '').trim().slice(0, 120)}
-        />
+        isVideoPost ? (
+          <FeedPostVideoMedia
+            videoUrl={post.videoUrl}
+            posterUrl={getPostImages(post)[0] || post.imageUrl || ''}
+            href={post.directLink}
+            alt={(post.message || '').trim().slice(0, 120)}
+          />
+        ) : (
+          <FeedPostImages
+            images={getPostImages(post)}
+            alt={(post.message || '').trim().slice(0, 120)}
+          />
+        )
       ) : null}
 
       {/* CTA */}
@@ -457,7 +517,13 @@ export function FeedPostCard({ post }) {
                   {(user?.id === comment.authorId || isAuthor || isModerator) && comment.id ? (
                     <button
                       type="button"
-                      onClick={() => dispatch(deleteComment({ postId: post.id, commentId: comment.id }))}
+                      onClick={() =>
+                        dispatch(
+                          isVideoPost && videoId
+                            ? deleteVideoComment({ videoId, commentId: comment.id })
+                            : deleteComment({ postId: post.id, commentId: comment.id }),
+                        )
+                      }
                       aria-label="Supprimer le commentaire"
                       className="mt-1 text-[var(--app-text-faint)] hover:text-red-500"
                     >

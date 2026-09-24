@@ -12,6 +12,7 @@ export const LIVE_SOURCE_STATUSES = {
   job: new Set(['active']),
   event: new Set(['published']),
   business: new Set(['verified', 'approved', 'active']),
+  video: new Set(['active']),
 }
 
 /**
