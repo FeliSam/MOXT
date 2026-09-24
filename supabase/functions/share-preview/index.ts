@@ -48,14 +48,127 @@ function wrapSvgText(text: string, maxChars = 34, maxLines = 3): string[] {
   return lines.slice(0, maxLines)
 }
 
-/** Carte OG 1200×630 (SVG) — titre + type + branding quand aucune photo. */
-function buildOgCardSvg(meta: { title: string; description?: string; kind?: string }) {
+const FR_MONTHS_SHORT = [
+  'janv.',
+  'févr.',
+  'mars',
+  'avr.',
+  'mai',
+  'juin',
+  'juil.',
+  'août',
+  'sept.',
+  'oct.',
+  'nov.',
+  'déc.',
+]
+
+/** Parse date-only YYYY-MM-DD as local noon to avoid UTC off-by-one. */
+function parseOgDate(value: unknown): Date | null {
+  const raw = String(value || '').trim()
+  if (!raw) return null
+  const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (m) {
+    const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0)
+    return Number.isNaN(d.getTime()) ? null : d
+  }
+  const d = new Date(raw)
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+/** Readable FR short date, e.g. "30 sept. 2026". */
+function formatOgShortDate(value: unknown): string {
+  const d = parseOgDate(value)
+  if (!d) return ''
+  try {
+    return new Intl.DateTimeFormat('fr-FR', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    }).format(d)
+  } catch {
+    return `${d.getDate()} ${FR_MONTHS_SHORT[d.getMonth()]} ${d.getFullYear()}`
+  }
+}
+
+function formatOgAmount(amount: unknown): string {
+  const n = Number(amount)
+  if (!Number.isFinite(n) || n <= 0) return ''
+  try {
+    return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: n % 1 === 0 ? 0 : 2 }).format(n)
+  } catch {
+    return String(n)
+  }
+}
+
+function formatOgMoney(amount: unknown, currency: unknown, suffix = ''): string {
+  const formatted = formatOgAmount(amount)
+  if (!formatted) return ''
+  const cur = String(currency || '').trim().toUpperCase()
+  const base = cur ? `${formatted} ${cur}` : formatted
+  return suffix ? `${base}${suffix}` : base
+}
+
+function collectCardFacts(kind: string, row: Record<string, unknown>): string[] {
+  const facts: string[] = []
+  if (kind === 'parcel') {
+    const departure = formatOgShortDate(row.departure_date ?? row.departureDate)
+    if (departure) facts.push(`Départ ${departure}`)
+    const price = formatOgMoney(row.price_per_kg ?? row.pricePerKg, row.currency, '/kg')
+    if (price) facts.push(price)
+  } else if (kind === 'job') {
+    const start = formatOgShortDate(row.start_date ?? row.startDate)
+    if (start) facts.push(`Début ${start}`)
+    const salary = String(row.salary || '').trim()
+    if (salary) {
+      const period = String(row.salary_period || row.salaryPeriod || '').trim()
+      facts.push(period ? `Salaire ${salary} · ${period}` : `Salaire ${salary}`)
+    }
+  } else if (kind === 'event') {
+    const when = formatOgShortDate(row.start_at ?? row.startAt ?? row.start_date)
+    if (when) facts.push(when)
+    if (row.free_entry === true || row.freeEntry === true) {
+      facts.push('Entrée gratuite')
+    } else {
+      const price = formatOgMoney(row.price, row.currency)
+      if (price) facts.push(price)
+    }
+  }
+  return facts.slice(0, 3)
+}
+
+/** Carte OG 1200×630 (SVG) — titre + faits (date/prix) + branding quand aucune photo. */
+function buildOgCardSvg(meta: {
+  title: string
+  description?: string
+  kind?: string
+  facts?: string[]
+}) {
   const kindLabel = KIND_LABELS[String(meta.kind || '')] || 'MOXT'
-  const titleLines = wrapSvgText(String(meta.title || 'MOXT').replace(/\s*·\s*MOXT$/i, '').trim() || 'MOXT', 32, 3)
-  const desc = String(meta.description || '').replace(/\s+/g, ' ').trim().slice(0, 90)
+  const titleLines = wrapSvgText(
+    String(meta.title || 'MOXT').replace(/\s*·\s*MOXT$/i, '').trim() || 'MOXT',
+    34,
+    2,
+  )
+  const facts = (meta.facts || []).map((f) => String(f || '').replace(/\s+/g, ' ').trim()).filter(Boolean).slice(0, 3)
+  const desc = facts.length
+    ? ''
+    : String(meta.description || '').replace(/\s+/g, ' ').trim().slice(0, 90)
+  const titleStartY = 210
+  const titleDy = 56
   const titleTspans = titleLines
-    .map((line, i) => `<tspan x="72" dy="${i === 0 ? 0 : 58}">${xmlEscape(line)}</tspan>`)
+    .map((line, i) => `<tspan x="72" dy="${i === 0 ? 0 : titleDy}">${xmlEscape(line)}</tspan>`)
     .join('')
+  const factsStartY = titleStartY + titleLines.length * titleDy + 36
+  const factDy = 48
+  const factsTspans = facts
+    .map((line, i) => `<tspan x="72" dy="${i === 0 ? 0 : factDy}">${xmlEscape(line)}</tspan>`)
+    .join('')
+  const factsBlock = facts.length
+    ? `<text x="72" y="${factsStartY}" font-family="Inter, system-ui, sans-serif" font-size="34" font-weight="700" fill="#a7f3d0">${factsTspans}</text>`
+    : desc
+      ? `<text x="72" y="470" font-family="Inter, system-ui, sans-serif" font-size="26" font-weight="600" fill="#d1fae5">${xmlEscape(desc)}</text>`
+      : ''
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <defs>
@@ -69,11 +182,11 @@ function buildOgCardSvg(meta: { title: string; description?: string; kind?: stri
   <circle cx="1080" cy="90" r="160" fill="#ffffff" fill-opacity="0.06"/>
   <circle cx="160" cy="560" r="200" fill="#ffffff" fill-opacity="0.05"/>
   <rect x="48" y="48" width="1104" height="534" rx="28" fill="#ffffff" fill-opacity="0.08" stroke="#ffffff" stroke-opacity="0.18" stroke-width="2"/>
-  <text x="72" y="110" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" font-size="28" font-weight="800" fill="#a7f3d0" letter-spacing="0.08em">${xmlEscape(kindLabel.toUpperCase())}</text>
-  <text x="72" y="250" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" font-size="52" font-weight="900" fill="#ffffff">${titleTspans}</text>
-  <text x="72" y="470" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" font-size="26" font-weight="600" fill="#d1fae5">${xmlEscape(desc)}</text>
-  <text x="72" y="540" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" font-size="34" font-weight="900" fill="#ffffff">MOXT</text>
-  <text x="180" y="540" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" font-size="22" font-weight="600" fill="#a7f3d0">CONNECTER · ÉCHANGER · AVANCER</text>
+  <text x="72" y="110" font-family="Inter, system-ui, sans-serif" font-size="28" font-weight="800" fill="#a7f3d0" letter-spacing="0.08em">${xmlEscape(kindLabel.toUpperCase())}</text>
+  <text x="72" y="${titleStartY}" font-family="Inter, system-ui, sans-serif" font-size="52" font-weight="900" fill="#ffffff">${titleTspans}</text>
+  ${factsBlock}
+  <text x="72" y="540" font-family="Inter, system-ui, sans-serif" font-size="34" font-weight="900" fill="#ffffff">MOXT</text>
+  <text x="180" y="540" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="600" fill="#a7f3d0">CONNECTER · ÉCHANGER · AVANCER</text>
 </svg>`
 }
 
@@ -95,11 +208,19 @@ function buildOgCardUrl(kind: string, entityId: string) {
 
 /**
  * Render OG card as PNG for WhatsApp/Facebook (they ignore SVG og:image).
- * Uses @resvg/resvg-wasm from esm.sh; falls back to SVG if wasm init/render fails.
+ * Uses @resvg/resvg-wasm from esm.sh + Inter Variable fontBuffers (Edge has no
+ * system fonts; loadSystemFonts:false alone produced blank gradient cards).
+ * Falls back to SVG if wasm/font/render fails.
  * NOTE: If the HTML proxy on share.moxtapp.ru still forces text/html, redeploy
  * infra/share-html-proxy so /share/og-card/* passes through image/* + base64.
  */
 let resvgReady: Promise<any> | null = null
+let ogCardFontReady: Promise<Uint8Array | null> | null = null
+
+/** Inter Variable — needed because Edge has no system fonts; without this PNG is gradient-only. */
+const OG_CARD_FONT_URL =
+  Deno.env.get('MOXT_OG_CARD_FONT_URL') ||
+  'https://cdn.jsdelivr.net/gh/rsms/inter@v4.1/docs/font-files/InterVariable.ttf'
 
 async function getResvg() {
   if (!resvgReady) {
@@ -113,12 +234,38 @@ async function getResvg() {
   return resvgReady
 }
 
+async function getOgCardFontBuffer(): Promise<Uint8Array | null> {
+  if (!ogCardFontReady) {
+    ogCardFontReady = (async () => {
+      try {
+        const res = await fetch(OG_CARD_FONT_URL)
+        if (!res.ok) {
+          console.error('[share-preview] font fetch failed', res.status, OG_CARD_FONT_URL)
+          return null
+        }
+        return new Uint8Array(await res.arrayBuffer())
+      } catch (err) {
+        console.error('[share-preview] font fetch error', err)
+        return null
+      }
+    })()
+  }
+  return ogCardFontReady
+}
+
 async function renderOgCardPng(svg: string): Promise<Uint8Array | null> {
   try {
-    const mod = await getResvg()
+    const [mod, fontBuffer] = await Promise.all([getResvg(), getOgCardFontBuffer()])
+    if (!fontBuffer?.length) {
+      console.error('[share-preview] png render skipped: no font buffer')
+      return null
+    }
     const resvg = new mod.Resvg(svg, {
       fitTo: { mode: 'width', value: 1200 },
-      font: { loadSystemFonts: false },
+      font: {
+        fontBuffers: [fontBuffer],
+        defaultFontFamily: 'Inter',
+      },
     })
     const rendered = resvg.render()
     const png = rendered.asPng()
@@ -329,7 +476,8 @@ async function resolveShareMeta(kind: string, entityId: string) {
     title = full || title
   }
 
-  const description = truncateShareText(
+  const facts = collectCardFacts(kind, data)
+  const baseDescription = truncateShareText(
     data.description ||
       data.caption ||
       data.notes ||
@@ -338,6 +486,10 @@ async function resolveShareMeta(kind: string, entityId: string) {
       data.bio ||
       title,
   )
+  // Prefer structured facts in crawler description when available (date/price).
+  const description = facts.length
+    ? truncateShareText([title, ...facts].filter(Boolean).join(' · '))
+    : baseDescription
 
   const image = pickShareImage([
     kind === 'parcel' ? data.travel_proof_url : '',
@@ -354,6 +506,7 @@ async function resolveShareMeta(kind: string, entityId: string) {
   return {
     title: `${title} · MOXT`,
     description,
+    facts,
     image: image === DEFAULT_OG_IMAGE ? buildOgCardUrl(kind, entityId) : image,
     targetUrl: `${SITE_URL}${targetPath}`,
     kind,
@@ -447,7 +600,8 @@ Deno.serve(async (req) => {
       const meta = await resolveShareMeta(ogParsed.kind, ogParsed.entityId)
       const title = meta?.title || 'MOXT'
       const description = meta?.description || ''
-      const svg = buildOgCardSvg({ title, description, kind: ogParsed.kind })
+      const facts = meta?.facts || []
+      const svg = buildOgCardSvg({ title, description, kind: ogParsed.kind, facts })
       const png = await renderOgCardPng(svg)
       if (png) {
         const headers = {
