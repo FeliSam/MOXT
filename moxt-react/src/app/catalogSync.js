@@ -101,14 +101,14 @@ export function scheduleCatalogSync(store, { force = false, skipIfFresh = false 
     return Promise.resolve()
   }
 
+  // Freshness is owned by loadAllData (listings pull succeeded only).
+  // Do NOT markSynced in finally — a failed/partial sync must stay stale so
+  // skipIfFresh cannot block retries for CATALOG_SYNC_TTL_MS.
   const run = () =>
     import('./loadAllData.js').then(({ loadAllData }) =>
-      store
-        .dispatch(loadAllData())
-        .finally(() => {
-          markCatalogSynced(userId)
-          afterCatalogSettled(store)
-        }),
+      store.dispatch(loadAllData()).finally(() => {
+        afterCatalogSettled(store)
+      }),
     )
 
   if (force) {

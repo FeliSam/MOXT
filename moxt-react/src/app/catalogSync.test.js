@@ -2,16 +2,21 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import {
   CATALOG_SYNC_TIMEOUT_MS,
   CATALOG_SYNC_WARM_DELAY_MS,
+  isCatalogSyncFresh,
+  markCatalogSynced,
   scheduleCatalogSync,
 } from './catalogSync.js'
 
 describe('catalogSync', () => {
   beforeEach(() => {
     vi.useFakeTimers()
+    localStorage.clear()
   })
 
   afterEach(() => {
     vi.useRealTimers()
+    vi.restoreAllMocks()
+    localStorage.clear()
   })
 
   it('libère le refresh forcé après le timeout', async () => {
@@ -53,25 +58,63 @@ describe('catalogSync', () => {
     await expect(scheduleCatalogSync(store)).resolves.toBeUndefined()
     expect(store.dispatch).not.toHaveBeenCalled()
   })
-})
 
   it('ne relance pas loadAllData si skipIfFresh et cache frais', async () => {
-    vi.useFakeTimers()
     const dispatch = vi.fn(() => Promise.resolve())
     const userId = 'user-fresh'
-    // mark fresh
-    const { markCatalogSynced, scheduleCatalogSync } = await import('./catalogSync.js')
-    // seed localStorage keys used by hasUsableFeedCatalog
     localStorage.setItem('moxt-listings-v1', JSON.stringify([{ id: 1 }]))
     localStorage.setItem('moxt-videos-v1', JSON.stringify([{ id: 1 }]))
     localStorage.setItem('moxt-businesses-v1', JSON.stringify([{ id: 1 }]))
     markCatalogSynced(userId)
+    expect(isCatalogSyncFresh(userId)).toBe(true)
     const store = {
-      getState: () => ({ auth: { user: { id: userId } }, marketplace: { items: [] }, videos: { items: [] } }),
+      getState: () => ({
+        auth: { user: { id: userId } },
+        marketplace: { items: [] },
+        videos: { items: [] },
+      }),
       dispatch,
     }
     await scheduleCatalogSync(store, { skipIfFresh: true })
     await vi.advanceTimersByTimeAsync(200)
     expect(dispatch).not.toHaveBeenCalled()
-    vi.useRealTimers()
   })
+
+  it('ne marque pas le catalogue frais quand loadAllData échoue (finally ne doit plus marquer)', async () => {
+    const userId = 'user-fail'
+    const dispatch = vi.fn(() =>
+      Promise.resolve({
+        type: 'app/loadAllData/rejected',
+        meta: { requestStatus: 'rejected' },
+        error: { message: 'network' },
+      }),
+    )
+    const store = {
+      getState: () => ({ auth: { user: { id: userId } } }),
+      dispatch,
+    }
+
+    // force path awaits the run
+    const pending = scheduleCatalogSync(store, { force: true })
+    await vi.advanceTimersByTimeAsync(50)
+    await pending
+
+    expect(isCatalogSyncFresh(userId)).toBe(false)
+    // skipIfFresh must still allow a retry after a failed sync
+    const dispatch2 = vi.fn(() => Promise.resolve({ meta: { requestStatus: 'fulfilled' } }))
+    const store2 = {
+      getState: () => ({ auth: { user: { id: userId } } }),
+      dispatch: dispatch2,
+    }
+    await scheduleCatalogSync(store2, { skipIfFresh: true })
+    await vi.advanceTimersByTimeAsync(CATALOG_SYNC_WARM_DELAY_MS + 50)
+    expect(dispatch2).toHaveBeenCalled()
+  })
+
+  it('markCatalogSynced rend isCatalogSyncFresh vrai uniquement pour le même user', () => {
+    markCatalogSynced('alice')
+    expect(isCatalogSyncFresh('alice')).toBe(true)
+    expect(isCatalogSyncFresh('bob')).toBe(false)
+    expect(isCatalogSyncFresh(null)).toBe(false)
+  })
+})

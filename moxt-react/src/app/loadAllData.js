@@ -27,6 +27,7 @@ import {
 import { setUser } from '../features/auth/authSlice'
 import { setIdentityProfiles } from '../features/identity/identitySlice'
 import { listingFromRemoteRow, mergeListingQuestions } from '../features/marketplace/marketplaceRemote'
+import { earlyApplyMarketplaceListings } from '../features/marketplace/marketplaceCatalogApply'
 import { fromRow, fromRows } from '../services/remoteRowMapper'
 import { fetchUserConversations } from '@moxt/shared/utils/fetchUserConversations.js'
 import { normalizeStoredLanguage } from '../config/uiTranslations'
@@ -168,6 +169,7 @@ async function fetchScopedReviewRows(uid, { ownedBusinessIds, ownedListingIds, o
   const results = await Promise.all(queries)
   return mergeRemoteRowsById(...results.map((result) => (result.error ? [] : result.data || [])))
 }
+
 
 export const loadAllData = createAsyncThunk(
   'app/loadAllData',
@@ -377,6 +379,15 @@ export const loadAllData = createAsyncThunk(
         ? supabase.rpc('list_support_conversations', { p_limit: 80 })
         : Promise.resolve({ data: [], error: null }),
     ])
+
+    // Early-apply marketplace as soon as listings response is ready so Découvrir
+    // paints the full catalog without waiting for the rest of the thunk.
+    const listingsPullOk = !listingsRes?.error
+    if (listingsPullOk) {
+      earlyApplyMarketplaceListings(dispatch, listingsRes.data || [])
+    } else if (listingsRes?.error) {
+      console.warn('[MOXT] Chargement des annonces:', listingsRes.error.message)
+    }
 
     let auditLogRes = { data: [], error: null }
     if (isAdmin) {
@@ -1070,8 +1081,15 @@ export const loadAllData = createAsyncThunk(
     }
 
     dispatch(runExpireOverdueTransfers())
-    const { markCatalogSynced } = await import('./catalogSync.js')
-    markCatalogSynced(uid)
+    // Mark fresh only when listings pull succeeded — never after a failed catalog sync.
+    if (listingsPullOk) {
+      const { markCatalogSynced } = await import('./catalogSync.js')
+      markCatalogSynced(uid)
+      // Ensure IDB has the final catalog (with questions merged), even if localStorage quota failed.
+      void import('../features/marketplace/marketplaceListingsIdb.js')
+        .then(({ writeListingsToIdb }) => writeListingsToIdb(listingsWithQuestions))
+        .catch(() => {})
+    }
     void import('../services/realtimeService.js').then(({ startRealtimeSubscription }) => {
       void startRealtimeSubscription(uid, dispatch, getState, { force: true })
     })

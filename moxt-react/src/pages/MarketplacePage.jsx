@@ -1,6 +1,6 @@
 import { FiGrid, FiList, FiPlus, FiShoppingBag } from 'react-icons/fi'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
+import { useDispatch, useSelector, useStore } from 'react-redux'
 import { useNavigate, useOutletContext } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { CatalogSearch } from '../components/ui/CatalogSearch'
@@ -65,6 +65,7 @@ export function MarketplacePage() {
   const mt = (key, vars) => marketplaceText(t, key, vars)
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const dispatch = useDispatch()
+  const store = useStore()
   const navigate = useNavigate()
   const { guestMode = false } = useOutletContext() || {}
   const { requireAccount } = useGuestAction()
@@ -198,6 +199,15 @@ export function MarketplacePage() {
   const visible = feed.discover
 
   const visibleItems = visible
+
+
+  useEffect(() => {
+    if (!user?.id || guestMode) return
+    import('../app/catalogSync.js').then(({ scheduleCatalogSync }) => {
+      // skipIfFresh only after a successful listings pull (trustworthy freshness).
+      void scheduleCatalogSync(store, { skipIfFresh: true })
+    })
+  }, [store, user?.id, guestMode])
 
   useEffect(() => {
     dispatch(loadFeedBoosts())
