@@ -1002,6 +1002,8 @@ export const PHASE3_FR_SOURCES = {
   'videos.feed.playErrorBody':
     'Ce fichier n’est pas lisible ici (souvent un MOV HEVC iPhone). Republiez-le : MOXT le convertit automatiquement, ou filmez en « Compatibilité » sur iPhone.',
   'videos.feed.unmute': 'Activer le son',
+  'videos.feed.mute': 'Couper le son',
+  'videos.feed.play': 'Lecture',
   'videos.feed.businessFallback': 'Entreprise',
   'videos.feed.showMore': 'Voir plus',
   'videos.feed.showLess': 'Réduire',

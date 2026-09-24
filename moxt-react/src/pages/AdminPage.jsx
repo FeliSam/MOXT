@@ -19,6 +19,7 @@ import { AdminContentPanel } from '../features/admin/components/AdminContentPane
 import { AdminDetailPanel } from '../features/admin/components/AdminDetailPanel'
 import { AdminModulesPanel } from '../features/admin/components/AdminModulesPanel'
 import { AdminStoreLocalesPanel } from '../features/admin/components/AdminStoreLocalesPanel'
+import { AdminFeedPlaybackPanel } from '../features/admin/components/AdminFeedPlaybackPanel'
 import { AdminOverviewPanel } from '../features/admin/components/AdminOverviewPanel'
 import { AdminStarsPanel } from '../features/admin/components/AdminStarsPanel'
 import { AdminQueuesPanel } from '../features/admin/components/AdminQueuesPanel'
@@ -167,6 +168,7 @@ export function AdminPage() {
           )}
           {view === 'modules' && <AdminModulesPanel />}
           {view === 'stores' && <AdminStoreLocalesPanel />}
+          {view === 'feed' && <AdminFeedPlaybackPanel />}
           {view === 'transfers' && (
             <AdminTransfersPanel
               businessIdFilter={businessIdFilter}
