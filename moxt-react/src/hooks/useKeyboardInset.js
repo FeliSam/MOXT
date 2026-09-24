@@ -5,6 +5,9 @@ export const KEYBOARD_OPEN_PX = 180
 
 const BLUR_SYNC_DELAYS_MS = [0, 50, 120, 280, 450, 700, 1000]
 
+/** Après hide/blur : ignorer un visualViewport encore « taille clavier » (périmé). */
+const COMPOSER_SUPPRESS_MS = 900
+
 function isEditableField(el) {
   if (!el || !(el instanceof HTMLElement)) return false
   if (el.isContentEditable) return true
@@ -23,13 +26,32 @@ export function measureKeyboardInset(vv) {
 }
 
 let iosNativeKeyboardOpen = false
+let suppressComposerUntil = 0
+let lastComposerRaw = 0
 
 export function setIosNativeKeyboardOpen(open) {
   iosNativeKeyboardOpen = Boolean(open)
 }
 
+/** Empêche --composer-keyboard-bottom de se recoller sur un VV périmé après fermeture. */
+export function suppressComposerKeyboardBottom(ms = COMPOSER_SUPPRESS_MS) {
+  suppressComposerUntil = Date.now() + Math.max(0, Number(ms) || 0)
+}
+
+export function clearComposerKeyboardSuppress() {
+  suppressComposerUntil = 0
+}
+
+export function isComposerKeyboardSuppressed() {
+  return Date.now() < suppressComposerUntil
+}
+
 function isIosNativeShell(root) {
   return root.classList.contains('capacitor-ios')
+}
+
+function isNativeShell(root) {
+  return root.classList.contains('capacitor-native')
 }
 
 /** @param {HTMLElement} root */
@@ -74,6 +96,33 @@ export function chromeViewportBottomGap(raw, { keyboardOpen = false, immersive =
   if (immersive || keyboardOpen) return 0
   const gap = Math.max(0, Math.round(Number(raw) || 0))
   return gap >= KEYBOARD_OPEN_PX ? 0 : gap
+}
+
+/**
+ * Offset bas du composer (overlay) — 0 si clavier fermé / iOS Native / VV périmé.
+ * Parallèle à chromeViewportBottomGap : ne jamais coller un faux gap « clavier ».
+ * @param {number} raw
+ * @param {{
+ *   editing?: boolean,
+ *   hasComposerChrome?: boolean,
+ *   iosNative?: boolean,
+ *   suppressed?: boolean,
+ *   closingWhileFocused?: boolean,
+ * }} [opts]
+ */
+export function resolveComposerKeyboardBottom(
+  raw,
+  {
+    editing = false,
+    hasComposerChrome = false,
+    iosNative = false,
+    suppressed = false,
+    closingWhileFocused = false,
+  } = {},
+) {
+  if (!hasComposerChrome || !editing || iosNative || suppressed || closingWhileFocused) return 0
+  const gap = Math.max(0, Math.round(Number(raw) || 0))
+  return gap >= KEYBOARD_OPEN_PX ? gap : 0
 }
 
 /** @param {HTMLElement} root */
@@ -128,6 +177,7 @@ export function forceKeyboardClosed(root) {
   root.classList.remove('keyboard-open')
   syncViewportBottomGap(root, measureKeyboardInset(window.visualViewport))
   clearComposerKeyboardBottom(root)
+  lastComposerRaw = 0
 }
 
 /**
@@ -137,6 +187,7 @@ export function forceKeyboardClosed(root) {
  */
 export function resetKeyboardAfterBackground(root = document.documentElement) {
   setIosNativeKeyboardOpen(false)
+  suppressComposerKeyboardBottom()
   if (typeof document !== 'undefined') {
     const active = document.activeElement
     if (isEditableField(active)) active.blur()
@@ -159,6 +210,7 @@ export function syncKeyboardState(root, vv) {
     root.classList.add('keyboard-open')
     syncViewportBottomGap(root, 0, { keyboardOpen: true })
     clearComposerKeyboardBottom(root)
+    lastComposerRaw = 0
     return
   }
 
@@ -167,9 +219,31 @@ export function syncKeyboardState(root, vv) {
     return
   }
 
+  const closingWhileFocused =
+    lastComposerRaw >= KEYBOARD_OPEN_PX && raw < KEYBOARD_OPEN_PX
+  const suppressed = isComposerKeyboardSuppressed()
+
+  // VV encore « clavier » après hide/blur, ou chute d’inset pendant focus :
+  // coller le composer en bas et prolonger la suppression tant que raw reste grand.
+  if (suppressed || closingWhileFocused) {
+    if (raw >= KEYBOARD_OPEN_PX) suppressComposerKeyboardBottom()
+    else clearComposerKeyboardSuppress()
+    applyKeyboardInsetState(root, raw, { editing: true })
+    clearComposerKeyboardBottom(root)
+    lastComposerRaw = 0
+    return
+  }
+
   applyKeyboardInsetState(root, raw, { editing: true })
-  const composerPx = hasMessagesComposerChrome(root) && raw >= KEYBOARD_OPEN_PX ? raw : 0
+  const composerPx = resolveComposerKeyboardBottom(raw, {
+    editing: true,
+    hasComposerChrome: hasMessagesComposerChrome(root),
+    iosNative: isIosNativeShell(root),
+    suppressed: false,
+    closingWhileFocused: false,
+  })
   setComposerKeyboardBottom(root, composerPx)
+  lastComposerRaw = raw
 }
 
 const blurSyncTimers = new Set()
@@ -188,11 +262,22 @@ export function syncKeyboardInsetAfterBlur() {
 
   blurSyncTimers.forEach((id) => clearTimeout(id))
   blurSyncTimers.clear()
+  suppressComposerKeyboardBottom()
   clearComposerKeyboardBottom(root)
   BLUR_SYNC_DELAYS_MS.forEach((ms) => {
     const id = setTimeout(run, ms)
     blurSyncTimers.add(id)
   })
+}
+
+/**
+ * Burst après hide natif / entrée fil : recoller le composer malgré un VV périmé.
+ * @param {HTMLElement} [root]
+ */
+export function dockComposerAfterKeyboardClosed(root = document.documentElement) {
+  setIosNativeKeyboardOpen(false)
+  suppressComposerKeyboardBottom()
+  forceKeyboardClosed(root)
 }
 
 /**
@@ -202,13 +287,18 @@ export function useKeyboardInset() {
   useEffect(() => {
     const root = document.documentElement
     const vv = window.visualViewport
+    const settleTimers = new Set()
 
     function update() {
       syncKeyboardState(root, vv)
     }
 
     function onFocusIn(event) {
-      if (isEditableField(event.target)) update()
+      if (!isEditableField(event.target)) return
+      // Nouveau focus : autoriser un offset overlay si le clavier s’ouvre vraiment.
+      clearComposerKeyboardSuppress()
+      lastComposerRaw = 0
+      update()
     }
 
     function onFocusOut(event) {
@@ -217,7 +307,6 @@ export function useKeyboardInset() {
       syncKeyboardInsetAfterBlur()
     }
 
-    const settleTimers = new Set()
     function settle() {
       update()
       // WebView / Safari : innerHeight vs visualViewport souvent faux au 1er paint.
@@ -241,26 +330,32 @@ export function useKeyboardInset() {
     let removeShow
     let removeHide
     let cancelled = false
-    if (root.classList.contains('capacitor-ios')) {
+    // iOS Native + Android overlay : events plugin plus fiables que le VV seul.
+    if (isNativeShell(root)) {
       import('@capacitor/keyboard')
         .then(({ Keyboard }) => {
           if (cancelled) return
           return Promise.all([
             Keyboard.addListener('keyboardWillShow', () => {
-              setIosNativeKeyboardOpen(true)
+              clearComposerKeyboardSuppress()
+              if (isIosNativeShell(root)) setIosNativeKeyboardOpen(true)
               update()
             }),
             Keyboard.addListener('keyboardDidShow', () => {
-              setIosNativeKeyboardOpen(true)
+              clearComposerKeyboardSuppress()
+              if (isIosNativeShell(root)) setIosNativeKeyboardOpen(true)
               update()
             }),
             Keyboard.addListener('keyboardWillHide', () => {
-              setIosNativeKeyboardOpen(false)
-              update()
+              // Ne pas rappeler update() tout de suite : un VV encore réduit + focus
+              // réappliquait --composer-keyboard-bottom et soulevait la barre.
+              dockComposerAfterKeyboardClosed(root)
             }),
             Keyboard.addListener('keyboardDidHide', () => {
-              setIosNativeKeyboardOpen(false)
-              update()
+              dockComposerAfterKeyboardClosed(root)
+              ;[50, 150, 400].forEach((ms) => {
+                settleTimers.add(window.setTimeout(update, ms))
+              })
             }),
           ]).then(([willShow, didShow, willHide, didHide]) => {
             removeShow = () => {
@@ -293,6 +388,8 @@ export function useKeyboardInset() {
       blurSyncTimers.forEach((id) => clearTimeout(id))
       blurSyncTimers.clear()
       setIosNativeKeyboardOpen(false)
+      clearComposerKeyboardSuppress()
+      lastComposerRaw = 0
       root.style.removeProperty('--keyboard-inset')
       root.style.removeProperty('--viewport-bottom-gap')
       root.style.removeProperty('--visual-viewport-offset-top')
