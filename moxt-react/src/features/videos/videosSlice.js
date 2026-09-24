@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { createId } from '../../services/createId'
 import { createLocalStorage } from '../../services/createLocalStorage'
-import { mergeRemoteByIdPruningWindow } from '@moxt/shared/utils/mergeRemoteById.js'
+import { mergeRemoteById, mergeRemoteByIdPruningWindow } from '@moxt/shared/utils/mergeRemoteById.js'
 
 const videosStorage = createLocalStorage('moxt-videos-v1')
 
@@ -43,10 +43,16 @@ const videosSlice = createSlice({
   },
   reducers: {
     setAll(state, action) {
-      const { items } = action.payload || {}
+      const { items, mode } = action.payload || {}
       if (!items) return
+      const incoming = items.map(normalizeVideo)
       const previous = new Map(state.items.map((row) => [row.id, row]))
-      const merged = mergeRemoteByIdPruningWindow(state.items, items.map(normalizeVideo))
+      // Scoped public-page syncs pass mode:'merge' so a business's 3 videos
+      // do not prune the rest of the Fil catalog window.
+      const merged =
+        mode === 'merge'
+          ? mergeRemoteById(state.items, incoming)
+          : mergeRemoteByIdPruningWindow(state.items, incoming)
       state.items = merged.map((row) => {
         const local = previous.get(row.id)
         if (!local) return row

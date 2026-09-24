@@ -92,24 +92,30 @@ export const refreshPublicationsData = createAsyncThunk(
             (listingsRes.data || []).map(listingFromRemoteRow),
             [],
           ),
+          // Merge-only: this pull is not a full catalog authority (public fiche / Fil refresh).
+          mode: 'merge',
         }),
       )
     }
     if (!parcelsRes.error) {
-      dispatch(setParcels({ items: fromRows(parcelsRes.data || []) }))
+      const remoteParcels = fromRows(parcelsRes.data || [])
+      const localParcels = getState().parcels?.items || []
+      const { mergeRemoteById } = await import('@moxt/shared/utils/mergeRemoteById.js')
+      dispatch(setParcels({ items: mergeRemoteById(localParcels, remoteParcels) }))
     }
     if (!jobsRes.error) {
-      dispatch(setJobs({ items: jobsFromRemoteRows(jobsRes.data || []) }))
+      dispatch(setJobs({ items: jobsFromRemoteRows(jobsRes.data || []), mode: 'merge' }))
     }
     if (!eventsRes.error) {
       dispatch(
         setEvents({
           items: fromRows(eventsRes.data || []).map(enrichEventFromRemoteRow),
+          mode: 'merge',
         }),
       )
     }
     if (!videosRes.error) {
-      dispatch(setVideos({ items: fromRows(videosRes.data || []) }))
+      dispatch(setVideos({ items: fromRows(videosRes.data || []), mode: 'merge' }))
     }
     if (!offersRes.error) {
       for (const row of offersRes.data || []) {
@@ -118,14 +124,16 @@ export const refreshPublicationsData = createAsyncThunk(
       }
     }
     if (!postsRes.error) {
-      dispatch(setPosts({ items: fromRows(postsRes.data || []) }))
+      const remotePosts = fromRows(postsRes.data || [])
+      const localPosts = getState().posts?.items || []
+      const { mergeRemoteById } = await import('@moxt/shared/utils/mergeRemoteById.js')
+      dispatch(setPosts({ items: mergeRemoteById(localPosts, remotePosts) }))
     }
     if (!businessesRes.error) {
-      dispatch(
-        setBusinesses({
-          items: (businessesRes.data || []).map(businessFromRemoteRow).filter(Boolean),
-        }),
-      )
+      const remoteBiz = (businessesRes.data || []).map(businessFromRemoteRow).filter(Boolean)
+      const localBiz = getState().businesses?.items || []
+      const { mergeRemoteById } = await import('@moxt/shared/utils/mergeRemoteById.js')
+      dispatch(setBusinesses({ items: mergeRemoteById(localBiz, remoteBiz) }))
     }
     return true
   },

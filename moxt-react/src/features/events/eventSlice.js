@@ -15,8 +15,13 @@ const eventSlice = createSlice({
   },
   reducers: {
     setAll(state, action) {
-      const { items, registrations, reports } = action.payload
-      if (items) state.items = mergeRemoteByIdPruningWindow(state.items, items)
+      const { items, registrations, reports, mode } = action.payload
+      if (items) {
+        state.items =
+          mode === 'merge'
+            ? mergeRemoteById(state.items, items)
+            : mergeRemoteByIdPruningWindow(state.items, items)
+      }
       if (registrations) state.registrations = mergeRemoteById(state.registrations, registrations)
       if (reports) state.reports = mergeRemoteById(state.reports, reports)
     },

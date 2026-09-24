@@ -44,6 +44,7 @@ import { canViewBusinessActivity } from '../features/account/activityVisibility'
 import { useBusinessActivityVisibility } from '../features/businesses/useBusinessActivityVisibility'
 import { useGuestAction } from '../features/guest/useGuestAction'
 import { useGuestBusinessPreview } from '../features/guest/useGuestPreview'
+import { usePublicBusinessCatalogSync } from '../features/publications/usePublicPageCatalogSync'
 import {
   buildBusinessPublicationProfile,
   collectBusinessPublications,
@@ -72,6 +73,7 @@ export function BusinessDetailPage() {
   const conversations = useSelector((state) => state.communications.conversations)
   const reduxBusiness = useSelector((state) => selectBusinessById(state, businessId))
   const guestPreview = useGuestBusinessPreview(guestMode ? businessId : null)
+  usePublicBusinessCatalogSync(businessId, { enabled: Boolean(businessId) && !guestMode })
   const business = guestMode ? guestPreview.business : reduxBusiness
   const documents = useSelector((state) =>
     state.businesses.documents.filter((item) => item.businessId === businessId),

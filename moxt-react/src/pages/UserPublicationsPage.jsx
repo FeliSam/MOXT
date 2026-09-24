@@ -52,6 +52,7 @@ import { SubscribeButton } from '../features/account/SubscribeButton'
 import { ContactButton } from '../features/communications/ContactButton'
 import { useGuestAction } from '../features/guest/useGuestAction'
 import { useGuestUserPreview } from '../features/guest/useGuestPreview'
+import { usePublicUserCatalogSync } from '../features/publications/usePublicPageCatalogSync'
 import { REVIEW_TARGET_TYPES, ReviewsSection } from '../features/reviews/ReviewsSection'
 import { useScopedProfileReviews } from '../features/reviews/useScopedTargetReviews'
 import {
@@ -83,6 +84,7 @@ export function UserPublicationsPage() {
   const currentUser = useSelector((state) => state.auth.user)
   const appState = useSelector((state) => state)
   const guestPreview = useGuestUserPreview(guestMode ? userId : null)
+  usePublicUserCatalogSync(userId, { enabled: Boolean(userId) && !guestMode })
   const isOwner = !guestMode && currentUser?.id === userId
 
   const viewParam = searchParams.get('view')
