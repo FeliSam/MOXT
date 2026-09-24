@@ -23,9 +23,11 @@ import { dispatchAdminOnlyErrorToast } from '../utils/errorToastUtils.js'
 import { authService } from '../features/auth/authService'
 import { selectAccountPreferences } from '../features/account/accountSlice'
 import { buildTransferRemotePayload } from '../features/transfers/transferRemote'
+import { discardLocalTransfer } from '../features/transfers/transferSlice'
 import { setAdminUsers } from '../features/administration/administrationSlice'
 import { replaceOrder } from '../features/p2p/p2pSlice'
 import { addToast } from '../features/ui/uiSlice'
+import { appText } from '../i18n/appText'
 
 async function triggerEmail(transferId, event) {
   await supabase.functions.invoke('send-email', {
@@ -2277,12 +2279,37 @@ export const supabaseMiddleware = (store) => (next) => (action) => {
             })
           }
         }
+        if (action.type === 'transfers/createTransfer' && !action.payload?.blocked) {
+          store.dispatch(
+            addToast({
+              title: appText('toasts.transferCreated') || 'Transfert créé',
+              message:
+                appText('toasts.transferCreatedBody') ||
+                'Le transfert a bien été enregistré. Le changeur peut le voir.',
+              tone: 'success',
+            }),
+          )
+        }
       })
       .catch((err) => {
       console.warn('[Supabase]', action.type, err?.message || err)
       const aborted =
         err?.name === 'AbortError' || /^aborted$/i.test(String(err?.message || '').trim())
       if (aborted) return
+      if (action.type === 'transfers/createTransfer' && action.payload?.id) {
+        store.dispatch(discardLocalTransfer(action.payload.id))
+        store.dispatch(
+          addToast({
+            title: 'Transfert non enregistré',
+            message: sanitizeUserFacingMessage(
+              err?.message ||
+                "Le serveur a refusé la création. Réessayez — le transfert n'est pas visible côté entreprise tant qu'il n'est pas synchronisé.",
+            ),
+            tone: 'error',
+          }),
+        )
+        return
+      }
       if (action.type === 'communications/sendMessage') {
         const messageId = action.payload?.message?.id
         if (messageId) {

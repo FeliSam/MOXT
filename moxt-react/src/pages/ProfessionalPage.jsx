@@ -178,7 +178,7 @@ export function ProfessionalPage() {
     if (!user?.id) return []
     const visible = selectTransfersVisibleToUser(state, user.id)
     if (!business?.id) return visible
-    return visible.filter((item) => item.businessId === business.id)
+    return visible.filter((item) => String(item.businessId) === String(business.id))
   })
 
   useEffect(() => {

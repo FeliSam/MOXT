@@ -11,7 +11,7 @@ import { formatDate, formatMoney } from '../features/transfers/transferUtils'
 import { TransferProofsSection } from '../features/transfers/detail/TransferProofsSection'
 import {
   downloadReceiptImage,
-  printReceipt,
+  downloadReceiptPdf,
   shareReceipt,
 } from '../features/transfers/receiptExport'
 import { phase3Text } from '../i18n/phase3I18n'
@@ -140,7 +140,7 @@ export function ReceiptDetailPage() {
                   className="w-full"
                   variant="secondary"
                   icon={FiDownload}
-                  onClick={() => printReceipt(transfer, t)}
+                  onClick={() => void downloadReceiptPdf(transfer, t)}
                 >
                   {p3('receipts.pdf')}
                 </Button>
@@ -148,7 +148,7 @@ export function ReceiptDetailPage() {
                   className="w-full"
                   variant="secondary"
                   icon={FiDownload}
-                  onClick={() => downloadReceiptImage(transfer, t)}
+                  onClick={() => void downloadReceiptImage(transfer, t)}
                 >
                   {p3('receipts.image')}
                 </Button>
@@ -156,7 +156,7 @@ export function ReceiptDetailPage() {
                   className="w-full"
                   variant="secondary"
                   icon={FiShare2}
-                  onClick={() => shareReceipt(transfer, t)}
+                  onClick={() => void shareReceipt(transfer, t)}
                 >
                   {p3('receipts.share')}
                 </Button>

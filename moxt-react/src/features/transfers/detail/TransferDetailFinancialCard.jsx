@@ -87,11 +87,11 @@ export function TransferDetailFinancialCard({
         <Button
           variant="secondary"
           icon={FiDownload}
-          onClick={() => downloadReceiptImage(transfer, t)}
+          onClick={() => void downloadReceiptImage(transfer, t)}
         >
           {t('transfers.detail.financial.image')}
         </Button>
-        <Button variant="secondary" icon={FiShare2} onClick={() => shareReceipt(transfer, t)}>
+        <Button variant="secondary" icon={FiShare2} onClick={() => void shareReceipt(transfer, t)}>
           {t('transfers.detail.financial.share')}
         </Button>
       </div>

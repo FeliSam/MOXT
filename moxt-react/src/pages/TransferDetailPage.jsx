@@ -49,7 +49,7 @@ import { useTransferDetail } from '../features/transfers/detail/useTransferDetai
 import { selectOwnedBusinessIds } from '../features/transfers/transferSelectors'
 import { canApplyModerateTransfer } from '../features/transfers/transferActionUtils'
 import { dispatchTransferAcceptanceAction } from '../features/transfers/transferAcceptanceDispatch'
-import { printReceipt } from '../features/transfers/receiptExport'
+import { downloadReceiptPdf } from '../features/transfers/receiptExport'
 import {
   cancelTransfer,
   declarePayment,
@@ -145,7 +145,7 @@ export function TransferDetailPage() {
         details: { exchanger: transfer.exchanger?.name },
       }),
     )
-    printReceipt(transfer, t)
+    void downloadReceiptPdf(transfer, t)
   }
 
   function copyValue(value, label) {
