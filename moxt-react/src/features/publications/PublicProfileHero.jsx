@@ -89,12 +89,12 @@ export function PublicProfileHero({
     : ''
   const initials = (avatarFallback || name || '?').slice(0, 2).toUpperCase()
   const metaLine = [category, city].filter(Boolean).join(' · ')
-  const coverShellClass = 'h-44 w-full sm:h-52 lg:rounded-[1.5rem]'
+  const coverShellClass = 'h-44 w-full overflow-hidden rounded-2xl sm:h-52 sm:rounded-[1.25rem] lg:rounded-[1.5rem]'
   const canEditCover = Boolean(showCoverEdit && onEditCover)
 
   return (
     <section className={`min-w-0 ${className}`}>
-      <div className="relative -mx-4 sm:-mx-6 lg:mx-0">
+      <div className="relative overflow-visible">
         {resolvedCover ? (
           <img
             src={resolvedCover}
