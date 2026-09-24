@@ -17,6 +17,7 @@ import administrationReducer from '../features/administration/administrationSlic
 import platformRatesReducer from '../features/admin/platformRatesSlice'
 import platformModulesReducer from '../features/platform/platformModulesSlice'
 import storeLocalesReducer from '../features/platform/storeLocalesSlice'
+import feedPlaybackReducer from '../features/platform/feedPlaybackSlice'
 import profileDirectoryReducer from '../features/profile/profileDirectorySlice'
 import reviewsReducer from '../features/reviews/reviewSlice'
 import postsReducer from '../features/posts/postsSlice'
@@ -42,6 +43,7 @@ export const store = configureStore({
     platformRates: platformRatesReducer,
     platformModules: platformModulesReducer,
     storeLocales: storeLocalesReducer,
+    feedPlayback: feedPlaybackReducer,
     profileDirectory: profileDirectoryReducer,
     auth: authReducer,
     ui: uiReducer,
