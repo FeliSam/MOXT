@@ -549,8 +549,9 @@ html.capacitor-native .bottom-nav-shell {
   padding-bottom: var(--bottom-nav-pad);
   /* `position: fixed` se cale sur le LAYOUT viewport, pas sur la zone visible.
      Quand la barre d'URL mobile se rétracte/réapparaît, l'écart entre les deux
-     fait « décoller » la barre. `--viewport-bottom-gap` (mesuré via l'API
-     VisualViewport dans useKeyboardInset) le compense en temps réel. */
+     fait « décoller » la barre. `--viewport-bottom-gap` (chrome only, plafonné
+     sous KEYBOARD_OPEN_PX via useKeyboardInset) le compense en temps réel —
+     jamais un faux gap « clavier » qui flotterait la nav au milieu. */
   bottom: calc(var(--bottom-nav-offset) + var(--viewport-bottom-gap, 0px));
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
