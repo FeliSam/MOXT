@@ -62,9 +62,26 @@ export function syncVisualViewportMetrics(root, vv) {
   root.style.setProperty('--visual-viewport-offset-top', `${offsetTop}px`)
 }
 
+/**
+ * Compense uniquement le chrome navigateur (barre d’URL ≈ 40–100px).
+ * Un écart « taille clavier » sans `.keyboard-open` est quasi toujours un
+ * visualViewport périmé (1er paint WebView, blur iOS, retour de route) :
+ * l’appliquer soulève la bottom nav au milieu du contenu.
+ * @param {number} raw
+ * @param {{ keyboardOpen?: boolean, immersive?: boolean }} [opts]
+ */
+export function chromeViewportBottomGap(raw, { keyboardOpen = false, immersive = false } = {}) {
+  if (immersive || keyboardOpen) return 0
+  const gap = Math.max(0, Math.round(Number(raw) || 0))
+  return gap >= KEYBOARD_OPEN_PX ? 0 : gap
+}
+
 /** @param {HTMLElement} root */
 function syncViewportBottomGap(root, raw, { keyboardOpen = false } = {}) {
-  const gap = isMessagesThreadImmersive(root) || keyboardOpen ? 0 : raw
+  const gap = chromeViewportBottomGap(raw, {
+    keyboardOpen,
+    immersive: isMessagesThreadImmersive(root),
+  })
   root.style.setProperty('--viewport-bottom-gap', `${gap}px`)
 }
 
@@ -200,9 +217,22 @@ export function useKeyboardInset() {
       syncKeyboardInsetAfterBlur()
     }
 
-    update()
+    const settleTimers = new Set()
+    function settle() {
+      update()
+      // WebView / Safari : innerHeight vs visualViewport souvent faux au 1er paint.
+      settleTimers.forEach((id) => clearTimeout(id))
+      settleTimers.clear()
+      ;[0, 50, 150, 400].forEach((ms) => {
+        settleTimers.add(window.setTimeout(update, ms))
+      })
+    }
+
+    settle()
     window.addEventListener('resize', update)
     window.addEventListener('scroll', update, { passive: true })
+    window.addEventListener('orientationchange', settle)
+    window.addEventListener('pageshow', settle)
     document.addEventListener('focusin', onFocusIn, true)
     document.addEventListener('focusout', onFocusOut, true)
     vv?.addEventListener('resize', update)
@@ -252,10 +282,14 @@ export function useKeyboardInset() {
       removeHide?.()
       window.removeEventListener('resize', update)
       window.removeEventListener('scroll', update)
+      window.removeEventListener('orientationchange', settle)
+      window.removeEventListener('pageshow', settle)
       document.removeEventListener('focusin', onFocusIn, true)
       document.removeEventListener('focusout', onFocusOut, true)
       vv?.removeEventListener('resize', update)
       vv?.removeEventListener('scroll', update)
+      settleTimers.forEach((id) => clearTimeout(id))
+      settleTimers.clear()
       blurSyncTimers.forEach((id) => clearTimeout(id))
       blurSyncTimers.clear()
       setIosNativeKeyboardOpen(false)

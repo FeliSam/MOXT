@@ -213,6 +213,27 @@ export function AppLayout({ children }) {
     }
   }, [hideAppChrome, isMessagesRoute])
 
+  /** Toute navigation avec bottom nav : recoller au viewport visible (1er paint / WebView). */
+  useLayoutEffect(() => {
+    if (hideBottomNav) return undefined
+
+    function burst() {
+      resyncViewportBottomGap()
+    }
+
+    burst()
+    const raf1 = requestAnimationFrame(() => {
+      burst()
+      requestAnimationFrame(burst)
+    })
+    const timers = [60, 180, 400].map((ms) => window.setTimeout(burst, ms))
+
+    return () => {
+      cancelAnimationFrame(raf1)
+      timers.forEach((id) => window.clearTimeout(id))
+    }
+  }, [hideBottomNav, location.pathname])
+
 
 
   return (

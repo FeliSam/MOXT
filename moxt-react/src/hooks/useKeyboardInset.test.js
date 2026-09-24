@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   KEYBOARD_OPEN_PX,
   applyKeyboardInsetState,
+  chromeViewportBottomGap,
   forceKeyboardClosed,
   isMessagesScrollLock,
   isMessagesThreadImmersive,
@@ -44,13 +45,23 @@ describe('useKeyboardInset helpers', () => {
     expect(root.style.getPropertyValue('--composer-keyboard-bottom')).toBe('0px')
   })
 
-  it('compense le gap viewport sur la liste messages', () => {
+  it('compense uniquement un gap chrome (pas un faux clavier) hors keyboard-open', () => {
     const root = document.createElement('html')
     root.classList.add('messages-route-lock')
+    applyKeyboardInsetState(root, 72, { editing: false })
+    expect(root.style.getPropertyValue('--viewport-bottom-gap')).toBe('72px')
     applyKeyboardInsetState(root, KEYBOARD_OPEN_PX + 40, { editing: false })
-    expect(root.style.getPropertyValue('--viewport-bottom-gap')).toBe(`${KEYBOARD_OPEN_PX + 40}px`)
+    expect(root.style.getPropertyValue('--viewport-bottom-gap')).toBe('0px')
     expect(isMessagesScrollLock(root)).toBe(true)
     expect(isMessagesThreadImmersive(root)).toBe(false)
+  })
+
+  it('chromeViewportBottomGap ignore les écarts taille clavier hors open/immersive', () => {
+    expect(chromeViewportBottomGap(64)).toBe(64)
+    expect(chromeViewportBottomGap(KEYBOARD_OPEN_PX)).toBe(0)
+    expect(chromeViewportBottomGap(KEYBOARD_OPEN_PX + 80)).toBe(0)
+    expect(chromeViewportBottomGap(320, { keyboardOpen: true })).toBe(0)
+    expect(chromeViewportBottomGap(48, { immersive: true })).toBe(0)
   })
 
   it('ignore le gap viewport en fil immersif', () => {
