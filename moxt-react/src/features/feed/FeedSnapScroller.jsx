@@ -48,7 +48,7 @@ export function FeedSnapScroller({
   refreshNonce = 0,
   className = '',
   testId = 'feed-snap-scroll',
-  playEntryHint = false,
+  playEntryHint = true,
 }) {
   const scrollerRef = useRef(null)
   const looping = items.length >= 2
@@ -95,10 +95,50 @@ export function FeedSnapScroller({
 
   function scrollToIndex(index, behavior = 'auto') {
     const scroller = scrollerRef.current
-    if (!scroller) return
+    if (!scroller) return false
     const slide = scroller.querySelector(`[data-feed-slide][data-index="${index}"]`)
-    if (!slide) return
+    if (!slide) return false
     slide.scrollIntoView({ block: 'start', behavior })
+    return true
+  }
+
+  /**
+   * Attendre une hauteur réelle avant de caler le snap.
+   * Sinon scrollIntoView no-op (hauteur 0) : la carte visible reste inactive →
+   * pas d’autoplay et le swipe snap paraît cassé.
+   */
+  function settleToIndex(index, { maxAttempts = 24, intervalMs = 50 } = {}) {
+    const scroller = scrollerRef.current
+    if (!scroller) return () => {}
+    let attempts = 0
+    let timer = 0
+    let cancelled = false
+
+    function attempt() {
+      if (cancelled || hintActiveRef.current) return
+      const height = Number(scroller.clientHeight) || 0
+      if (height < 48 && attempts < maxAttempts) {
+        attempts += 1
+        timer = window.setTimeout(attempt, intervalMs)
+        return
+      }
+      jumpLockRef.current = true
+      scrollToIndex(index, 'auto')
+      // Second tick: visualViewport / flex peuvent peaufiner la hauteur juste après.
+      timer = window.setTimeout(() => {
+        if (cancelled || hintActiveRef.current) return
+        scrollToIndex(index, 'auto')
+        window.setTimeout(() => {
+          if (!hintActiveRef.current) jumpLockRef.current = false
+        }, 100)
+      }, 32)
+    }
+
+    attempt()
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
   }
 
   useEffect(() => {
@@ -106,13 +146,33 @@ export function FeedSnapScroller({
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reposition scroll when feed items change
     setActiveIndex(next)
     if (hintActiveRef.current) return undefined
-    jumpLockRef.current = true
-    scrollToIndex(next, 'auto')
-    const t = window.setTimeout(() => {
-      if (!hintActiveRef.current) jumpLockRef.current = false
-    }, 120)
-    return () => window.clearTimeout(t)
+    return settleToIndex(next)
+    // settleToIndex closes over refs/scroller; intentional deps are the feed identity only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- avoid re-settling every render
   }, [baseOffset, clampedInitial, itemSetKey, refreshNonce])
+
+  // Si la hauteur arrive après le 1er paint (visualViewport / invité sans AppLayout),
+  // re-caler l’index actif pour que la carte visible soit bien `active` (autoplay).
+  useEffect(() => {
+    const scroller = scrollerRef.current
+    if (!scroller) return undefined
+
+    function onLayout() {
+      if (hintActiveRef.current || jumpLockRef.current) return
+      const height = Number(scroller.clientHeight) || 0
+      if (height < 48) return
+      scrollToIndex(activeIndexRef.current, 'auto')
+    }
+
+    window.visualViewport?.addEventListener('resize', onLayout)
+    window.addEventListener('resize', onLayout)
+    const boot = window.setTimeout(onLayout, 0)
+    return () => {
+      window.clearTimeout(boot)
+      window.visualViewport?.removeEventListener('resize', onLayout)
+      window.removeEventListener('resize', onLayout)
+    }
+  }, [])
 
   useEffect(() => {
     const scroller = scrollerRef.current
@@ -372,7 +432,7 @@ export function FeedSnapScroller({
   const showPull = pullPx > 6 || refreshing
 
   return (
-    <div className="relative min-h-0 flex-1 md:hidden">
+    <div className="relative h-full min-h-0 flex-1 md:hidden">
       {showPull ? (
         <div
           className="pointer-events-none absolute inset-x-0 top-0 z-40 flex justify-center pt-[max(0.85rem,env(safe-area-inset-top))]"

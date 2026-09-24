@@ -320,6 +320,7 @@ function FeedVideoPlayer({ video, active, onActivate }) {
         webkit-playsinline=""
         loop
         muted={muted}
+        autoPlay={active && muted}
         preload={active ? 'auto' : 'metadata'}
         onClick={onTapVideo}
         onError={() => setError(true)}
