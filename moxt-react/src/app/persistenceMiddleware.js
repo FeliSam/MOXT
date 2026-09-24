@@ -125,30 +125,36 @@ const DEBOUNCE_MS = 500
 function scheduleWrite(key, getValue) {
   clearTimeout(timers[key])
   timers[key] = setTimeout(() => {
+    let value
     try {
-      const value = getValue()
+      value = getValue()
+    } catch {
+      return
+    }
+    try {
       localStorage.setItem(key, JSON.stringify(value))
-      // IndexedDB mirror for Marketplace + Fil catalogs (survives larger catalogs).
-      if (key === 'moxt-listings-v1' && Array.isArray(value)) {
-        void import('../features/marketplace/marketplaceListingsIdb.js').then(
-          ({ writeListingsToIdb }) => writeListingsToIdb(value),
-        )
-      }
-      if (key === 'moxt-videos-v1' && Array.isArray(value)) {
-        void import('../features/feed/feedCatalogIdb.js').then(({ writeVideosToIdb }) =>
-          writeVideosToIdb(value),
-        )
-      }
-      if (key === 'moxt-posts-v1' && Array.isArray(value)) {
-        void import('../features/feed/feedCatalogIdb.js').then(({ writePostsToIdb }) =>
-          writePostsToIdb(value),
-        )
-      }
     } catch (error) {
+      // Quota / mode privé : laisser IndexedDB prendre le relais pour le catalogue.
       globalThis.dispatchEvent?.(
         new CustomEvent('moxt:persistence-error', {
           detail: { key, message: error instanceof Error ? error.message : String(error) },
         }),
+      )
+    }
+    // IndexedDB mirror for Marketplace + Fil catalogs — even when localStorage.setItem fails.
+    if (key === 'moxt-listings-v1' && Array.isArray(value)) {
+      void import('../features/marketplace/marketplaceListingsIdb.js').then(
+        ({ writeListingsToIdb }) => writeListingsToIdb(value),
+      )
+    }
+    if (key === 'moxt-videos-v1' && Array.isArray(value)) {
+      void import('../features/feed/feedCatalogIdb.js').then(({ writeVideosToIdb }) =>
+        writeVideosToIdb(value),
+      )
+    }
+    if (key === 'moxt-posts-v1' && Array.isArray(value)) {
+      void import('../features/feed/feedCatalogIdb.js').then(({ writePostsToIdb }) =>
+        writePostsToIdb(value),
       )
     }
   }, DEBOUNCE_MS)
