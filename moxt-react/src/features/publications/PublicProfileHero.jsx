@@ -11,11 +11,11 @@ function formatRatingAverage(average) {
   return n.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 }
 
-function StarRatingRow({ average = 0, count = 0, reviewsLabel }) {
+function StarRatingRow({ average = 0, count = 0, reviewsLabel, onOpenReviews }) {
   if (!count) return null
   const filled = Math.max(0, Math.min(5, Math.round(Number(average) || 0)))
-  return (
-    <div className="mt-2 flex flex-wrap items-center gap-1.5 text-sm font-semibold text-amber-600">
+  const content = (
+    <>
       <span className="inline-flex items-center gap-0.5" aria-hidden="true">
         {Array.from({ length: 5 }, (_, index) => (
           <FiStar
@@ -27,8 +27,23 @@ function StarRatingRow({ average = 0, count = 0, reviewsLabel }) {
       <span>
         {formatRatingAverage(average)} · {count} {reviewsLabel}
       </span>
-    </div>
+    </>
   )
+  const rowClass =
+    'mt-2 flex flex-wrap items-center gap-1.5 text-sm font-semibold text-amber-600'
+  if (typeof onOpenReviews === 'function') {
+    return (
+      <button
+        type="button"
+        onClick={onOpenReviews}
+        className={`${rowClass} cursor-pointer rounded-md text-left transition hover:text-amber-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500`}
+        aria-label={`Voir les avis (${count})`}
+      >
+        {content}
+      </button>
+    )
+  }
+  return <div className={rowClass}>{content}</div>
 }
 
 function EmptyCoverFallback({ coverStyle, variant, category, gender, className }) {
@@ -80,6 +95,7 @@ export function PublicProfileHero({
   showCoverEdit = false,
   onEditCover = null,
   editCoverLabel = 'Modifier la bannière',
+  onOpenReviews = null,
   className = '',
 }) {
   const resolvedCover = resolveMediaDisplayUrl(coverUrl) || coverUrl || ''
@@ -175,6 +191,7 @@ export function PublicProfileHero({
             average={rating?.average}
             count={rating?.count}
             reviewsLabel={reviewsLabel}
+            onOpenReviews={onOpenReviews}
           />
         </div>
 

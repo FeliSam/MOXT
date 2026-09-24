@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { PublicProfileHero } from './PublicProfileHero'
 import { COVER_STYLE_IDS } from './coverBanners/coverBannerCatalog'
 
@@ -60,7 +60,6 @@ describe('PublicProfileHero empty cover', () => {
     )
     expect(fallback?.className).toMatch(/\bhidden\b/)
   })
-})
 
   it('shows owner edit cover control when showCoverEdit is set', () => {
     const { container } = render(
@@ -81,4 +80,47 @@ describe('PublicProfileHero empty cover', () => {
     )
     expect(screen.queryByText('Modifier la bannière')).toBeNull()
   })
+})
 
+describe('PublicProfileHero star rating', () => {
+  it('calls onOpenReviews when the star rating row is clicked', () => {
+    const onOpenReviews = vi.fn()
+    render(
+      <PublicProfileHero
+        name="Rated Biz"
+        coverCategory="business"
+        rating={{ average: 4.5, count: 12 }}
+        reviewsLabel="avis"
+        onOpenReviews={onOpenReviews}
+      />,
+    )
+    const button = screen.getByRole('button', { name: /Voir les avis/i })
+    fireEvent.click(button)
+    expect(onOpenReviews).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not render a clickable rating control when count is 0', () => {
+    render(
+      <PublicProfileHero
+        name="No Reviews"
+        coverCategory="business"
+        rating={{ average: 0, count: 0 }}
+        onOpenReviews={() => {}}
+      />,
+    )
+    expect(screen.queryByRole('button', { name: /Voir les avis/i })).toBeNull()
+  })
+
+  it('keeps rating non-clickable when onOpenReviews is omitted', () => {
+    render(
+      <PublicProfileHero
+        name="Static Rating"
+        coverCategory="business"
+        rating={{ average: 4, count: 3 }}
+        reviewsLabel="avis"
+      />,
+    )
+    expect(screen.queryByRole('button', { name: /Voir les avis/i })).toBeNull()
+    expect(screen.getByText(/4,0/)).toBeTruthy()
+  })
+})

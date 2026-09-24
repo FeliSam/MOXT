@@ -317,6 +317,7 @@ export function BusinessDetailPage() {
         editCoverLabel={bt('businesses.detail.editBanner')}
         rating={rating}
         reviewsLabel={p3('publications.public.reviewsShort')}
+        onOpenReviews={() => setMainTab('avis')}
         shareSlot={
           <ProfileQrShareButton
             type="business"

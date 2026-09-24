@@ -411,6 +411,7 @@ export function UserPublicationsPage() {
         editCoverLabel={t('profile.personal.editBanner')}
         rating={aggregateRating}
         reviewsLabel={p3('publications.public.reviewsShort')}
+        onOpenReviews={() => setMainTab('avis')}
         actions={
           !isOwner ? (
             <>

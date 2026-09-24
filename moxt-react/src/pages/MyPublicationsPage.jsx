@@ -12,7 +12,7 @@ import {
   FiShoppingBag,
 } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
@@ -121,6 +121,7 @@ export function MyPublicationsPage() {
   const p3 = (key, vars) => phase3Text(t, key, vars)
   const dispatch = useDispatch()
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
   const [deletingItem, setDeletingItem] = useState(null)
   const boostFlow = useStarsBoostFlow()
   const starsEnabled = useStarsModuleEnabled()
@@ -449,6 +450,12 @@ export function MyPublicationsPage() {
         emptyCoverVariant={isBusinessScope ? 'editorial-dark' : 'gradient'}
         rating={aggregateRating}
         reviewsLabel={p3('publications.public.reviewsShort')}
+        onOpenReviews={() => {
+          const qs = new URLSearchParams()
+          if (isBusinessScope) qs.set('scope', 'business')
+          qs.set('view', 'avis')
+          navigate(`/users/${user.id}/publications?${qs.toString()}`)
+        }}
         showCoverEdit={showCoverEdit}
         onEditCover={coverEdit.openEditor}
         editCoverLabel={t('profile.personal.editBanner')}
