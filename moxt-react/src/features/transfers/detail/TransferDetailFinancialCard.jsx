@@ -1,4 +1,5 @@
 import { FiCopy, FiDownload, FiFileText, FiShare2 } from 'react-icons/fi'
+import { BackButton } from '../../../components/ui/BackButton'
 import { Button } from '../../../components/ui/Button'
 import { Card } from '../../../components/ui/Card'
 import { useLanguage } from '../../../contexts/useLanguage'
@@ -81,17 +82,18 @@ export function TransferDetailFinancialCard({
         {t('transfers.detail.financial.copyReference')}
       </Button>
       <div className="mt-5 flex flex-wrap gap-2">
-        <Button variant="secondary" icon={FiDownload} onClick={onDownloadReceipt}>
-          {t('transfers.detail.financial.pdf')}
+        <Button variant="primary" icon={FiDownload} onClick={onDownloadReceipt}>
+          {t('common.save')}
         </Button>
+        <BackButton fallback="/transfers" />
         <Button
           variant="secondary"
           icon={FiDownload}
-          onClick={() => downloadReceiptImage(transfer, t)}
+          onClick={() => void downloadReceiptImage(transfer, t)}
         >
           {t('transfers.detail.financial.image')}
         </Button>
-        <Button variant="secondary" icon={FiShare2} onClick={() => shareReceipt(transfer, t)}>
+        <Button variant="secondary" icon={FiShare2} onClick={() => void shareReceipt(transfer, t)}>
           {t('transfers.detail.financial.share')}
         </Button>
       </div>

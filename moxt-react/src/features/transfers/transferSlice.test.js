@@ -3,6 +3,7 @@ import reducer, {
   acceptTransferRequest,
   cancelTransfer,
   createTransfer,
+  discardLocalTransfer,
   declarePayment,
   declineTransferRequest,
   expireOverdueTransfers,
@@ -438,5 +439,15 @@ describe('transferSlice', () => {
       expireOverdueTransfers('2026-01-05T01:00:00.000Z'),
     )
     expect(missingProof.items[0].status).toBe(TRANSFER_STATUS.PAID_OUT)
+  })
+})
+
+
+describe('discardLocalTransfer', () => {
+  it('retire un transfert local non synchronise', () => {
+    const created = reducer({ items: [] }, createTransfer(payload))
+    const id = created.items[0].id
+    const next = reducer(created, discardLocalTransfer(id))
+    expect(next.items).toHaveLength(0)
   })
 })

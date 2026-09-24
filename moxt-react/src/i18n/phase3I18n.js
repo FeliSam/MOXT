@@ -98,7 +98,7 @@ export const PHASE3_FR_SOURCES = {
   'receipts.fields.amount': 'Montant',
   'receipts.fields.date': 'Date',
   'receipts.fields.status': 'Statut',
-  'receipts.pdf': 'Reçu PDF',
+  'receipts.pdf': 'Enregistrer',
   'receipts.image': 'Reçu image',
   'receipts.share': 'Partager',
   'receipts.download': 'Télécharger',

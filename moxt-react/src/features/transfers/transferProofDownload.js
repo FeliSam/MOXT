@@ -1,5 +1,6 @@
 import { storageService } from '../../services/storageService'
 import { cacheMediaBlob } from '../../services/media/cachedMediaResolver.js'
+import { downloadBlob } from './receiptExport'
 import { inferProofStoragePath } from './transferProofUtils'
 
 const FALLBACK_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png', 'webp']
@@ -51,16 +52,8 @@ async function resolveDownloadBlob(pathCandidates) {
   return null
 }
 
-function triggerBrowserDownload(blob, fileName) {
-  const objectUrl = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = objectUrl
-  link.download = fileName
-  link.rel = 'noopener'
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  URL.revokeObjectURL(objectUrl)
+async function triggerBrowserDownload(blob, fileName) {
+  await downloadBlob(blob, fileName)
 }
 
 async function openSignedUrl(url, fileName) {
@@ -90,7 +83,7 @@ export async function downloadTransferProofFile({ proof, path, transfer, transfe
       entityType: 'transfer',
       entityId: transferId || transfer?.id,
     })
-    triggerBrowserDownload(downloaded.blob, fileName)
+    await triggerBrowserDownload(downloaded.blob, fileName)
     return
   }
 

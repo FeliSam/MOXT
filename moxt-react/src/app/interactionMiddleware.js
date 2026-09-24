@@ -1393,13 +1393,24 @@ export const interactionMiddleware = (store) => {
       title: appText('toasts.subscriberRemoved'),
       message: appText('toasts.subscriberRemovedBody'),
     },
-    'transfers/createTransfer': {
-      title: appText('toasts.transferCreated'),
-      message: appText('toasts.transferCreatedBody'),
-    },
   }
   if (successActions[action.type]) {
     store.dispatch(addToast({ ...successActions[action.type], tone: 'success' }))
+  }
+
+  // Mode simulé (pas de Supabase) : toast local — sinon le toast est émis après upsert distant.
+  if (
+    action.type === 'transfers/createTransfer' &&
+    !action.payload?.blocked &&
+    !supabase
+  ) {
+    store.dispatch(
+      addToast({
+        title: appText('toasts.transferCreated'),
+        message: appText('toasts.transferCreatedBody'),
+        tone: 'success',
+      }),
+    )
   }
 
   // Nouvelle entreprise → alerter les admins pour validation (pas de flood utilisateurs).

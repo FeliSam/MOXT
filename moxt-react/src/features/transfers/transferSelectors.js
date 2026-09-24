@@ -48,7 +48,7 @@ export const selectBusinessTransfers = createSelector(
   [selectTransfersItems, selectBusinessIdArg],
   (items, businessId) => {
     if (!businessId) return EMPTY
-    const next = items.filter((transfer) => transfer.businessId === businessId)
+    const next = items.filter((transfer) => String(transfer.businessId) === String(businessId))
     if (!next.length) return EMPTY
     return sortTransfersByNewest(next)
   },

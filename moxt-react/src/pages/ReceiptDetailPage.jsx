@@ -9,9 +9,11 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { useLanguage } from '../contexts/useLanguage'
 import { formatDate, formatMoney } from '../features/transfers/transferUtils'
 import { TransferProofsSection } from '../features/transfers/detail/TransferProofsSection'
+import { resolveTransferTimelineLabel } from '../features/transfers/detail/transferTimelineUtils'
 import {
   downloadReceiptImage,
-  printReceipt,
+  downloadReceiptPdf,
+  receiptStatusLabel,
   shareReceipt,
 } from '../features/transfers/receiptExport'
 import { phase3Text } from '../i18n/phase3I18n'
@@ -48,15 +50,19 @@ export function ReceiptDetailPage() {
     )
   }
 
+  const statusDisplay = transfer
+    ? receiptStatusLabel(transfer.status, t)
+    : receiptStatusLabel(receipt.status, t) ||
+      receipt.status ||
+      p3('receipts.txt.statusFallback')
+
   function downloadTxt() {
     const content = [
       p3('receipts.txt.header'),
       p3('receipts.txt.reference', { id: receipt.id }),
       p3('receipts.txt.subject', { title: receipt.title }),
       p3('receipts.txt.amount', { amount: formatMoney(receipt.amount, receipt.currency) }),
-      p3('receipts.txt.status', {
-        status: receipt.status || p3('receipts.txt.statusFallback'),
-      }),
+      p3('receipts.txt.status', { status: statusDisplay }),
       p3('receipts.txt.createdAt', { date: formatDate(receipt.createdAt) }),
       p3('receipts.txt.footer'),
     ].join('\n')
@@ -66,6 +72,14 @@ export function ReceiptDetailPage() {
     link.download = `${receipt.id}.txt`
     link.click()
     URL.revokeObjectURL(url)
+  }
+
+  function handleSave() {
+    if (transfer) {
+      void downloadReceiptPdf(transfer, t)
+      return
+    }
+    downloadTxt()
   }
 
   return (
@@ -100,9 +114,7 @@ export function ReceiptDetailPage() {
             </div>
             <div className="min-w-0 rounded-2xl bg-[var(--app-surface-muted)] p-3">
               <dt className="text-xs text-[var(--app-text-muted)]">{p3('receipts.fields.status')}</dt>
-              <dd className="mt-1 font-bold">
-                {receipt.status || p3('receipts.txt.statusFallback')}
-              </dd>
+              <dd className="mt-1 font-bold">{statusDisplay}</dd>
             </div>
           </dl>
 
@@ -110,17 +122,24 @@ export function ReceiptDetailPage() {
             <div className="mt-5 min-w-0 rounded-2xl bg-[var(--app-surface-muted)] p-4">
               <h3 className="text-sm font-black">{p3('receipts.processing')}</h3>
               <div className="mt-3 grid gap-2">
-                {(transfer.timeline || []).map((event) => (
-                  <div
-                    key={`${event.status}-${event.at}`}
-                    className="flex min-w-0 flex-col gap-0.5 text-xs sm:flex-row sm:items-center sm:justify-between sm:gap-3"
-                  >
-                    <strong className="min-w-0 break-words">{event.status}</strong>
-                    <span className="shrink-0 text-[var(--app-text-muted)]">
-                      {formatDate(event.at)}
-                    </span>
-                  </div>
-                ))}
+                {(transfer.timeline || []).map((event) => {
+                  const label = resolveTransferTimelineLabel(event, t)
+                  const display =
+                    label && !String(label).startsWith('transfers.')
+                      ? label
+                      : receiptStatusLabel(event.status, t)
+                  return (
+                    <div
+                      key={`${event.status}-${event.at}`}
+                      className="flex min-w-0 flex-col gap-0.5 text-xs sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+                    >
+                      <strong className="min-w-0 break-words">{display}</strong>
+                      <span className="shrink-0 text-[var(--app-text-muted)]">
+                        {formatDate(event.at)}
+                      </span>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           ) : null}
@@ -134,21 +153,20 @@ export function ReceiptDetailPage() {
           <h2 className="font-black">{p3('receipts.actions')}</h2>
           <p className="mt-2 text-sm text-[var(--app-text-muted)]">{p3('receipts.actionsHint')}</p>
           <div className="mt-5 grid gap-2">
+            <Button className="w-full" variant="primary" icon={FiDownload} onClick={handleSave}>
+              {t('common.save')}
+            </Button>
+            <BackButton
+              fallback={receipt.relatedId ? `/transfers/${receipt.relatedId}` : '/receipts'}
+              className="w-full"
+            />
             {transfer ? (
               <>
                 <Button
                   className="w-full"
                   variant="secondary"
                   icon={FiDownload}
-                  onClick={() => printReceipt(transfer, t)}
-                >
-                  {p3('receipts.pdf')}
-                </Button>
-                <Button
-                  className="w-full"
-                  variant="secondary"
-                  icon={FiDownload}
-                  onClick={() => downloadReceiptImage(transfer, t)}
+                  onClick={() => void downloadReceiptImage(transfer, t)}
                 >
                   {p3('receipts.image')}
                 </Button>
@@ -156,19 +174,15 @@ export function ReceiptDetailPage() {
                   className="w-full"
                   variant="secondary"
                   icon={FiShare2}
-                  onClick={() => shareReceipt(transfer, t)}
+                  onClick={() => void shareReceipt(transfer, t)}
                 >
                   {p3('receipts.share')}
                 </Button>
               </>
-            ) : (
-              <Button className="w-full" variant="secondary" icon={FiDownload} onClick={downloadTxt}>
-                {p3('receipts.download')}
-              </Button>
-            )}
+            ) : null}
             {receipt.relatedId ? (
               <Link to={`/transfers/${receipt.relatedId}`} className="block">
-                <Button className="w-full" variant="primary">
+                <Button className="w-full" variant="secondary">
                   {p3('receipts.viewTransfer')}
                 </Button>
               </Link>
