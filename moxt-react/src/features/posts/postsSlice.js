@@ -89,7 +89,8 @@ const postsSlice = createSlice({
     toggleLike(state, action) {
       const { postId, userId } = action.payload
       const post = state.items.find((p) => p.id === postId)
-      if (!post) return
+      if (!post || !userId) return
+      if (!Array.isArray(post.likes)) post.likes = []
       const idx = post.likes.indexOf(userId)
       if (idx === -1) post.likes.push(userId)
       else post.likes.splice(idx, 1)
@@ -100,6 +101,7 @@ const postsSlice = createSlice({
       reducer(state, action) {
         const post = state.items.find((p) => p.id === action.payload.postId)
         if (!post) return
+        if (!Array.isArray(post.comments)) post.comments = []
         post.comments.push(action.payload.comment)
         post.updatedAt = new Date().toISOString()
       },
