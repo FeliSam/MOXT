@@ -47,7 +47,7 @@ import { PublicationScopeButton } from '../features/publications/PublicationScop
 import { PublicProfileHero } from '../features/publications/PublicProfileHero'
 import { PublicProfileTabs } from '../features/publications/PublicProfileTabs'
 import { PublicVideoThumbGrid } from '../features/publications/PublicVideoThumbGrid'
-import { usePublicationProfile } from '../features/publications/usePublicationProfile'
+import { formatMemberSince, usePublicationProfile } from '../features/publications/usePublicationProfile'
 import { SubscribeButton } from '../features/account/SubscribeButton'
 import { ContactButton } from '../features/communications/ContactButton'
 import { useGuestAction } from '../features/guest/useGuestAction'
@@ -86,10 +86,6 @@ export function UserPublicationsPage() {
   const isOwner = !guestMode && currentUser?.id === userId
 
   const viewParam = searchParams.get('view')
-  const mainTab =
-    viewParam === 'avis' || viewParam === 'videos' || viewParam === 'publications'
-      ? viewParam
-      : 'apercu'
   const requestedArchiveTab = searchParams.get('status') === 'archived' ? 'archived' : 'active'
   const typeTab = PUBLICATION_TYPE_TABS.some((tab) => tab.id === searchParams.get('type'))
     ? searchParams.get('type')
@@ -186,12 +182,6 @@ export function UserPublicationsPage() {
     return scopedReviews.rating
   }, [aggregateReviews, guestMode, scopedReviews.rating])
 
-  function setMainTab(next) {
-    const params = new URLSearchParams(searchParams)
-    if (next === 'apercu') params.delete('view')
-    else params.set('view', next)
-    setSearchParams(params, { replace: true })
-  }
 
   function setArchiveTab(next) {
     const params = new URLSearchParams(searchParams)
@@ -307,10 +297,28 @@ export function UserPublicationsPage() {
   const avatarUrl = guestMode ? guestProfile?.avatarUrl : memberProfile?.avatarUrl
   const verified = Boolean(guestMode ? guestProfile?.verified : memberProfile?.verified)
   const activeVideos = (publications.videos || []).filter(isActiveVideo)
+  const memberSinceLabel = formatMemberSince(
+    memberProfile?.memberSince || guestProfile?.memberSince || memberProfile?.createdAt || guestProfile?.createdAt,
+  )
   const coverFromMedia =
     activeVideos.find((v) => v.thumbnailUrl)?.thumbnailUrl ||
     publications.listings?.find((l) => l.images?.[0])?.images?.[0] ||
     ''
+
+  const defaultTab = activeVideos.length > 0 ? 'videos' : 'publications'
+  const mainTab =
+    viewParam === 'avis' || viewParam === 'apercu'
+      ? viewParam
+      : viewParam === 'videos' || viewParam === 'publications'
+        ? viewParam
+        : defaultTab
+
+  function setMainTab(next) {
+    const params = new URLSearchParams(searchParams)
+    if (next === defaultTab) params.delete('view')
+    else params.set('view', next)
+    setSearchParams(params, { replace: true })
+  }
 
   const videosTab = {
     key: 'videos',
@@ -347,7 +355,7 @@ export function UserPublicationsPage() {
   ]
 
   return (
-    <div className="grid min-w-0 max-w-full gap-5 overflow-x-clip bg-[var(--app-surface)] sm:gap-6">
+    <div className="grid min-w-0 max-w-full gap-5 overflow-x-clip sm:gap-6">
       <PublicProfileHero
         name={displayName}
         verified={verified}
@@ -447,57 +455,20 @@ export function UserPublicationsPage() {
         <div className="grid gap-5">
           {profileCity || profileCountry ? (
             <p className="text-sm text-[var(--app-text-muted)]">
-              {[profileCity, profileCountry].filter(Boolean).join(' Â· ')}
+              {[profileCity, profileCountry].filter(Boolean).join(' · ')}
             </p>
           ) : null}
-          {activeVideos.length ? (
-            <PublicVideoThumbGrid
-              videos={activeVideos.slice(0, 4)}
-              title={p3('publications.public.videosTitle')}
-              guestMode={guestMode}
-              onGuestInteract={handleGuestInteract}
-            />
+          {memberSinceLabel ? (
+            <p className="text-xs text-[var(--app-text-faint)]">
+              {t('publications.profile.memberSince', { date: memberSinceLabel })}
+            </p>
           ) : null}
-          {hasAnyPublication ? (
-            <section className="grid gap-4">
-              <h2 className="text-base font-black">{p3('publications.user.tabs.publications')}</h2>
-              <PublicationCatalogNav
-                typeTab={typeTab}
-                onTypeTab={setTypeTab}
-                typeTabs={visibleTypeTabs}
-                typeCounts={typeCounts}
-                typeLabel={(tab) => p3(`publications.mine.types.${tab.id}`)}
-                archiveTab={archiveTab}
-                onArchiveTab={setArchiveTab}
-                archiveCounts={archiveCounts}
-                showArchives={showArchives}
-                activeLabel={p3('publications.mine.stats.active')}
-                archivedLabel={p3('publications.mine.stats.archived')}
-              />
-              {hasContent ? (
-                <div className="grid gap-6">
-                  {visible.listing.length ? (
-                    <CatalogGrid lazy={false}>
-                      {visible.listing.slice(0, 4).map((listing) => (
-                        <MarketplaceListingCard
-                          key={listing.id}
-                          listing={listing}
-                          guestMode={guestMode}
-                          onGuestInteract={handleGuestInteract}
-                        />
-                      ))}
-                    </CatalogGrid>
-                  ) : null}
-                </div>
-              ) : null}
-            </section>
-          ) : (
+          {!profileCity && !profileCountry && !memberSinceLabel ? (
             <EmptyState
-              icon={FiShoppingBag}
-              title={p3('publications.user.empty.title')}
+              title={p3('publications.user.tabs.overview')}
               description={p3('publications.user.empty.description')}
             />
-          )}
+          ) : null}
         </div>
       ) : mainTab === 'videos' ? (
         <PublicVideoThumbGrid

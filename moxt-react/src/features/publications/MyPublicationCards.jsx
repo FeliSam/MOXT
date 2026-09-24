@@ -77,9 +77,9 @@ function PublicationCardShell({
       <Link
         to={path}
         onClick={handleGuestClick}
-        className={`relative block h-[145px] w-full overflow-hidden bg-gradient-to-br xl:h-[167px] ${tone} ${
-          archived ? 'opacity-75 saturate-[0.85]' : ''
-        }`}
+        className={`relative block w-full overflow-hidden bg-gradient-to-br ${
+          actions ? 'h-[145px] xl:h-[167px]' : 'h-[320px] xl:h-[360px]'
+        } ${tone} ${archived ? 'opacity-75 saturate-[0.85]' : ''}`}
       >
         {coverUrl ? (
           <img

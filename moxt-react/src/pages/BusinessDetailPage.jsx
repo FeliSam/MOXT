@@ -1,7 +1,6 @@
 import {
   FiArrowLeft,
   FiLock,
-  FiMapPin,
   FiShield,
 } from 'react-icons/fi'
 import { useMemo } from 'react'
@@ -86,14 +85,6 @@ export function BusinessDetailPage() {
 
   const p3 = (key, vars) => phase3Text(t, key, vars)
   const viewParam = searchParams.get('view')
-  const mainTab =
-    viewParam === 'informations' || viewParam === 'abonnements' || viewParam === 'avis'
-      ? viewParam
-      : viewParam === 'videos' || viewParam === 'produits' || viewParam === 'publications'
-        ? viewParam === 'publications'
-          ? 'produits'
-          : viewParam
-        : 'apercu'
 
   const publications = useMemo(() => {
     if (guestMode) {
@@ -162,15 +153,6 @@ export function BusinessDetailPage() {
     : scopedRating
   const handleGuestInteract = () => requireAccount(bt('businesses.publications.guestInteract'))
 
-  function setMainTab(next) {
-    const params = new URLSearchParams(searchParams)
-    if (next === 'apercu') {
-      params.delete('view')
-    } else {
-      params.set('view', next)
-    }
-    setSearchParams(params, { replace: true })
-  }
 
   if (guestMode && guestPreview.loading) {
     return (
@@ -251,6 +233,26 @@ export function BusinessDetailPage() {
   )
   const verified = ['verified', 'approved', 'active'].includes(business.status)
 
+  const defaultTab = activeVideos.length > 0 ? 'videos' : 'produits'
+  const mainTab =
+    viewParam === 'informations' ||
+    viewParam === 'abonnements' ||
+    viewParam === 'avis' ||
+    viewParam === 'apercu'
+      ? viewParam
+      : viewParam === 'videos' || viewParam === 'produits' || viewParam === 'publications'
+        ? viewParam === 'publications'
+          ? 'produits'
+          : viewParam
+        : defaultTab
+
+  function setMainTab(next) {
+    const params = new URLSearchParams(searchParams)
+    if (next === defaultTab) params.delete('view')
+    else params.set('view', next)
+    setSearchParams(params, { replace: true })
+  }
+
   const videosTab = {
     key: 'videos',
     label: bt('businesses.detail.tabs.videos'),
@@ -282,7 +284,7 @@ export function BusinessDetailPage() {
   }
 
   return (
-    <div className="grid min-w-0 max-w-full gap-5 overflow-x-clip bg-[var(--app-surface)] sm:gap-6">
+    <div className="grid min-w-0 max-w-full gap-5 overflow-x-clip sm:gap-6">
       {isOwner && !guestMode ? (
         <BusinessVerificationProgress business={business} documents={documents} />
       ) : null}
@@ -383,34 +385,22 @@ export function BusinessDetailPage() {
               />
             </section>
           ) : null}
-          {cityLabel || business.country ? (
-            <p className="flex items-center gap-2 text-sm text-[var(--app-text-muted)]">
-              <FiMapPin className="shrink-0 text-brand-700" />
-              {[cityLabel, business.country].filter(Boolean).join(' Â· ')}
-            </p>
-          ) : null}
-          {activeVideos.length ? (
-            <PublicVideoThumbGrid
-              videos={activeVideos.slice(0, 4)}
-              title={p3('publications.public.videosTitle')}
-              guestMode={guestMode}
-              onGuestInteract={handleGuestInteract}
-            />
-          ) : null}
-          {activeListings.length ? (
-            <section className="grid gap-4">
-              <h2 className="text-base font-black">{bt('businesses.detail.tabs.products')}</h2>
-              <CatalogGrid lazy={false}>
-                {activeListings.slice(0, 4).map((listing) => (
-                  <MarketplaceListingCard
-                    key={listing.id}
-                    listing={listing}
-                    guestMode={guestMode}
-                    onGuestInteract={handleGuestInteract}
-                  />
-                ))}
-              </CatalogGrid>
-            </section>
+          <DetailFacts
+            items={[
+              { label: bt('businesses.common.sector'), value: activityLabel },
+              { label: bt('businesses.common.city'), value: cityLabel || business.city },
+              { label: bt('businesses.common.country'), value: business.country },
+              ...(business.phone
+                ? [{ label: bt('businesses.common.phone'), value: business.phone }]
+                : []),
+            ].filter((item) => item.value)}
+          />
+          {(business.services || []).length ? (
+            <div className="flex flex-wrap gap-2">
+              {(business.services || []).map((service) => (
+                <Badge key={service}>{businessesServiceLabel(t, service)}</Badge>
+              ))}
+            </div>
           ) : null}
           {memberSinceLabel ? (
             <p className="text-xs text-[var(--app-text-faint)]">
