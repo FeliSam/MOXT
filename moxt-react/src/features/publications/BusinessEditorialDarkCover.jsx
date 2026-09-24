@@ -24,6 +24,7 @@ export function BusinessEditorialDarkCover({
       className={`relative isolate overflow-hidden bg-[#0b0d0e] ${className}`}
       aria-hidden="true"
       data-cover-style="editorial-dark"
+      data-cover-style-id="business-b-editorial"
     >
       <svg
         className="absolute inset-0 h-full w-full"

@@ -1,15 +1,46 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { PublicProfileHero } from './PublicProfileHero'
+import { COVER_STYLE_IDS } from './coverBanners/coverBannerCatalog'
 
 describe('PublicProfileHero empty cover', () => {
-  it('renders editorial-dark fallback when business has no cover', () => {
+  it('renders business editorial-dark fallback when no cover', () => {
     const { container } = render(
-      <PublicProfileHero name="RO2-SERVICES" emptyCoverVariant="editorial-dark" />,
+      <PublicProfileHero
+        name="RO2-SERVICES"
+        emptyCoverVariant="editorial-dark"
+        coverCategory="business"
+      />,
     )
-    expect(container.querySelector('[data-cover-style="editorial-dark"]')).toBeTruthy()
+    expect(
+      container.querySelector('[data-cover-style="editorial-dark"], [data-cover-style="business-b-editorial"]'),
+    ).toBeTruthy()
     expect(screen.getByText('Moxt')).toBeTruthy()
-    expect(screen.getByText('Business')).toBeTruthy()
+  })
+
+  it('renders selected business glass style', () => {
+    const { container } = render(
+      <PublicProfileHero
+        name="Glass Co"
+        coverCategory="business"
+        coverStyle={COVER_STYLE_IDS.BUSINESS_C_GLASS}
+      />,
+    )
+    expect(container.querySelector('[data-cover-style="business-c-glass"]')).toBeTruthy()
+  })
+
+  it('renders woman silk default for personal female', () => {
+    const { container } = render(
+      <PublicProfileHero name="Awa" coverCategory="personal" gender="female" />,
+    )
+    expect(container.querySelector('[data-cover-style="woman-a-silk"]')).toBeTruthy()
+  })
+
+  it('renders man steel default when gender unknown', () => {
+    const { container } = render(
+      <PublicProfileHero name="Sam" coverCategory="personal" />,
+    )
+    expect(container.querySelector('[data-cover-style="man-a-steel"]')).toBeTruthy()
   })
 
   it('keeps real banner image when coverUrl is set', () => {
@@ -18,18 +49,15 @@ describe('PublicProfileHero empty cover', () => {
         name="With Banner"
         coverUrl="https://cdn.example/banner.jpg"
         emptyCoverVariant="editorial-dark"
+        coverCategory="business"
       />,
     )
     const img = container.querySelector('img[alt="With Banner"]')
     expect(img).toBeTruthy()
     expect(img.getAttribute('src')).toContain('banner.jpg')
-    const fallback = container.querySelector('[data-cover-style="editorial-dark"]')
+    const fallback = container.querySelector(
+      '[data-cover-style="editorial-dark"], [data-cover-style="business-b-editorial"]',
+    )
     expect(fallback?.className).toMatch(/\bhidden\b/)
-  })
-
-  it('defaults to legacy gradient for non-business profiles', () => {
-    const { container } = render(<PublicProfileHero name="User" />)
-    expect(container.querySelector('[data-cover-style="editorial-dark"]')).toBeNull()
-    expect(container.querySelector('.from-brand-700')).toBeTruthy()
   })
 })

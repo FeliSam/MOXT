@@ -2,7 +2,8 @@ import { FiStar } from 'react-icons/fi'
 import { VerifiedDisplayName } from '../../components/ui/Badge'
 import { avatarDisplayUrl } from '../account/avatarDisplayUrl'
 import { resolveMediaDisplayUrl } from '../../services/media/mediaUrlUtils'
-import { BusinessEditorialDarkCover } from './BusinessEditorialDarkCover'
+import { MoxtCoverBanner } from './coverBanners/MoxtCoverBanner'
+import { resolveCoverStyleId } from './coverBanners/coverBannerCatalog'
 
 function formatRatingAverage(average) {
   const n = Number(average || 0)
@@ -30,14 +31,20 @@ function StarRatingRow({ average = 0, count = 0, reviewsLabel }) {
   )
 }
 
-function EmptyCoverFallback({ variant, className }) {
-  if (variant === 'editorial-dark') {
-    return <BusinessEditorialDarkCover className={className} />
-  }
+function EmptyCoverFallback({ coverStyle, variant, category, gender, className }) {
+  const styleId = resolveCoverStyleId({
+    coverStyle,
+    emptyCoverVariant: variant,
+    category,
+    gender,
+  })
   return (
-    <div
-      className={`bg-gradient-to-br from-brand-700 via-brand-600 to-cyan-700 ${className}`}
-      aria-hidden="true"
+    <MoxtCoverBanner
+      styleId={styleId}
+      emptyCoverVariant={variant}
+      category={category}
+      gender={gender}
+      className={className}
     />
   )
 }
@@ -46,9 +53,10 @@ function EmptyCoverFallback({ variant, className }) {
  * Hero public (business / user) — cover plein largeur, avatar chevauchant,
  * nom + vérif, catégorie · ville, notes, Suivre + Contacter.
  *
- * emptyCoverVariant:
- *  - 'editorial-dark' — Moxt Business premium fallback (businesses without banner)
- *  - 'gradient' — legacy flat brand gradient (user profiles / other)
+ * coverStyle — stable Moxt style id (business-*, woman-*, man-*).
+ * emptyCoverVariant — legacy: 'editorial-dark' | 'gradient' (mapped via catalog).
+ * coverCategory — 'business' | 'personal' | 'woman' | 'man' (default resolution).
+ * gender — optional profile gender for personal defaults (no DB field yet).
  */
 export function PublicProfileHero({
   name,
@@ -64,7 +72,10 @@ export function PublicProfileHero({
   avatarAlt = '',
   actions = null,
   shareSlot = null,
+  coverStyle,
   emptyCoverVariant = 'gradient',
+  coverCategory = 'personal',
+  gender,
   className = '',
 }) {
   const resolvedCover = resolveMediaDisplayUrl(coverUrl) || coverUrl || ''
@@ -95,7 +106,10 @@ export function PublicProfileHero({
           />
         ) : null}
         <EmptyCoverFallback
+          coverStyle={coverStyle}
           variant={emptyCoverVariant}
+          category={coverCategory}
+          gender={gender}
           className={`${coverShellClass} ${resolvedCover ? 'hidden' : ''}`}
         />
 

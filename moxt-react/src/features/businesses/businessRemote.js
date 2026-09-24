@@ -92,6 +92,7 @@ export function businessToRemoteRow(business) {
     payload: {
       hours: business.hours?.trim() || business.scheduleSummary || '',
       transferAcceptanceRequired: business.transferAcceptanceRequired === true,
+      ...(business.coverStyle ? { coverStyle: business.coverStyle } : {}),
       ...(business.deletedByUserAt ? { deletedByUserAt: business.deletedByUserAt } : {}),
     },
     rating: Number(business.rating) || 0,

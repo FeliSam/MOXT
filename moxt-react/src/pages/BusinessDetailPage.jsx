@@ -300,6 +300,8 @@ export function BusinessDetailPage() {
         avatarUrl={business.logoUrl}
         coverAlt={bt('businesses.detail.bannerAlt', { name: business.name })}
         avatarAlt={bt('businesses.detail.logoAlt', { name: business.name })}
+        coverCategory="business"
+        coverStyle={business.coverStyle}
         emptyCoverVariant="editorial-dark"
         rating={rating}
         reviewsLabel={p3('publications.public.reviewsShort')}
