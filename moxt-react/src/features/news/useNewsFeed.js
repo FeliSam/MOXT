@@ -5,7 +5,7 @@ import { useLanguage } from '../../contexts/useLanguage'
 import { buildNewsFeed, newsPostPath } from '../posts/postFeedUtils'
 
 /**
- * Assemble le fil News (catalogues + posts), filtres et ciblage `?post=` / `/news/:postId`.
+ * Assemble le fil News (catalogues + posts + vidéos), filtres et ciblage `?post=` / `/news/:postId`.
  */
 export function useNewsFeed(activeFilter = 'all') {
   const navigate = useNavigate()
@@ -20,28 +20,39 @@ export function useNewsFeed(activeFilter = 'all') {
   const jobs = useSelector((s) => s.jobs?.items ?? [])
   const events = useSelector((s) => s.events?.items ?? [])
   const businesses = useSelector((s) => s.businesses?.items ?? [])
+  const videos = useSelector((s) => s.videos?.items ?? [])
 
   const catalogs = useMemo(
-    () => ({ listings, parcels, jobs, events, businesses }),
-    [businesses, events, jobs, listings, parcels],
+    () => ({ listings, parcels, jobs, events, businesses, videos }),
+    [businesses, events, jobs, listings, parcels, videos],
   )
 
   const publishedPosts = useMemo(
-    () => buildNewsFeed(posts, { language, catalogs }),
-    [catalogs, language, posts],
+    () => buildNewsFeed(posts, { language, catalogs, videos }),
+    [catalogs, language, posts, videos],
   )
 
   const filtered = useMemo(
     () =>
       activeFilter === 'all'
         ? publishedPosts
-        : buildNewsFeed(posts, { language, sourceTypeFilter: activeFilter, catalogs }),
-    [activeFilter, catalogs, language, posts, publishedPosts],
+        : buildNewsFeed(posts, {
+            language,
+            sourceTypeFilter: activeFilter,
+            catalogs,
+            videos,
+          }),
+    [activeFilter, catalogs, language, posts, publishedPosts, videos],
   )
 
-  const targetedPost = highlightPostId
-    ? posts.find((item) => item.id === highlightPostId)
-    : null
+  const targetedPost = useMemo(() => {
+    if (!highlightPostId) return null
+    return (
+      filtered.find((item) => item.id === highlightPostId) ||
+      posts.find((item) => item.id === highlightPostId) ||
+      null
+    )
+  }, [filtered, highlightPostId, posts])
 
   const visiblePosts = useMemo(() => {
     if (!targetedPost) return filtered
