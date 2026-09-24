@@ -16,10 +16,14 @@ const jobSlice = createSlice({
   },
   reducers: {
     setAll(state, action) {
-      const { items, applications, reports } = action.payload
+      const { items, applications, reports, mode } = action.payload
       if (items) {
         const localById = new Map(state.items.map((item) => [item.id, item]))
-        state.items = mergeRemoteByIdPruningWindow(state.items, items).map((job) => {
+        const merged =
+          mode === 'merge'
+            ? mergeRemoteById(state.items, items)
+            : mergeRemoteByIdPruningWindow(state.items, items)
+        state.items = merged.map((job) => {
           const local = localById.get(job.id)
           if (local?.images?.length && !job.images?.length) {
             return { ...job, images: local.images }

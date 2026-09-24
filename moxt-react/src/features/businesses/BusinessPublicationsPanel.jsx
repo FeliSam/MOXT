@@ -29,7 +29,6 @@ import {
   preferredPublicationArchiveTab,
 } from '../publications/publicationCatalogUtils'
 import { PublicationCatalogNav } from '../publications/PublicationCatalogNav'
-import { useRefreshPublicationsData } from '../publications/useRefreshPublicationsData'
 import { deleteVideo, duplicateVideo, moderateVideo } from '../videos/videosSlice'
 import { businessesText } from './businessesI18n'
 
@@ -62,8 +61,6 @@ export function BusinessPublicationsPanel({
   const eventItems = useSelector((state) => state.events.items)
   const offerItems = useSelector((state) => state.p2p.offers)
   const videoItems = useSelector((state) => state.videos.items)
-
-  useRefreshPublicationsData(guestMode ? null : businessId)
 
   const requestedArchiveTab = searchParams.get('status') === 'archived' ? 'archived' : 'active'
   const typeTab = BUSINESS_PUBLICATION_TYPE_TABS.some((tab) => tab.id === searchParams.get('type'))
