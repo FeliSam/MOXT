@@ -375,6 +375,7 @@ export function UserPublicationsPage() {
         avatarUrl={
           scope === 'business' && ownBusiness?.logoUrl ? ownBusiness.logoUrl : avatarUrl
         }
+        emptyCoverVariant={scope === 'business' ? 'editorial-dark' : 'gradient'}
         rating={aggregateRating}
         reviewsLabel={p3('publications.public.reviewsShort')}
         actions={

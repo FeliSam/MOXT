@@ -2,6 +2,7 @@ import { FiStar } from 'react-icons/fi'
 import { VerifiedDisplayName } from '../../components/ui/Badge'
 import { avatarDisplayUrl } from '../account/avatarDisplayUrl'
 import { resolveMediaDisplayUrl } from '../../services/media/mediaUrlUtils'
+import { BusinessEditorialDarkCover } from './BusinessEditorialDarkCover'
 
 function formatRatingAverage(average) {
   const n = Number(average || 0)
@@ -29,9 +30,25 @@ function StarRatingRow({ average = 0, count = 0, reviewsLabel }) {
   )
 }
 
+function EmptyCoverFallback({ variant, className }) {
+  if (variant === 'editorial-dark') {
+    return <BusinessEditorialDarkCover className={className} />
+  }
+  return (
+    <div
+      className={`bg-gradient-to-br from-brand-700 via-brand-600 to-cyan-700 ${className}`}
+      aria-hidden="true"
+    />
+  )
+}
+
 /**
  * Hero public (business / user) — cover plein largeur, avatar chevauchant,
  * nom + vérif, catégorie · ville, notes, Suivre + Contacter.
+ *
+ * emptyCoverVariant:
+ *  - 'editorial-dark' — Moxt Business premium fallback (businesses without banner)
+ *  - 'gradient' — legacy flat brand gradient (user profiles / other)
  */
 export function PublicProfileHero({
   name,
@@ -47,6 +64,7 @@ export function PublicProfileHero({
   avatarAlt = '',
   actions = null,
   shareSlot = null,
+  emptyCoverVariant = 'gradient',
   className = '',
 }) {
   const resolvedCover = resolveMediaDisplayUrl(coverUrl) || coverUrl || ''
@@ -56,6 +74,7 @@ export function PublicProfileHero({
     : ''
   const initials = (avatarFallback || name || '?').slice(0, 2).toUpperCase()
   const metaLine = [category, city].filter(Boolean).join(' · ')
+  const coverShellClass = 'h-44 w-full sm:h-52 lg:rounded-[1.5rem]'
 
   return (
     <section className={`min-w-0 ${className}`}>
@@ -64,7 +83,7 @@ export function PublicProfileHero({
           <img
             src={resolvedCover}
             alt={coverAlt || name || ''}
-            className="h-44 w-full object-cover sm:h-52 lg:rounded-[1.5rem]"
+            className={`${coverShellClass} object-cover`}
             loading="eager"
             decoding="async"
             fetchPriority="high"
@@ -75,11 +94,9 @@ export function PublicProfileHero({
             }}
           />
         ) : null}
-        <div
-          className={`h-44 w-full bg-gradient-to-br from-brand-700 via-brand-600 to-cyan-700 sm:h-52 lg:rounded-[1.5rem] ${
-            resolvedCover ? 'hidden' : ''
-          }`}
-          aria-hidden={resolvedCover ? 'true' : undefined}
+        <EmptyCoverFallback
+          variant={emptyCoverVariant}
+          className={`${coverShellClass} ${resolvedCover ? 'hidden' : ''}`}
         />
 
         <div className="absolute -bottom-10 left-4 z-10 sm:left-6 lg:left-5">
