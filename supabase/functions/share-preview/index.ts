@@ -69,11 +69,11 @@ function buildOgCardSvg(meta: { title: string; description?: string; kind?: stri
   <circle cx="1080" cy="90" r="160" fill="#ffffff" fill-opacity="0.06"/>
   <circle cx="160" cy="560" r="200" fill="#ffffff" fill-opacity="0.05"/>
   <rect x="48" y="48" width="1104" height="534" rx="28" fill="#ffffff" fill-opacity="0.08" stroke="#ffffff" stroke-opacity="0.18" stroke-width="2"/>
-  <text x="72" y="110" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" font-size="28" font-weight="800" fill="#a7f3d0" letter-spacing="0.08em">${xmlEscape(kindLabel.toUpperCase())}</text>
-  <text x="72" y="250" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" font-size="52" font-weight="900" fill="#ffffff">${titleTspans}</text>
-  <text x="72" y="470" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" font-size="26" font-weight="600" fill="#d1fae5">${xmlEscape(desc)}</text>
-  <text x="72" y="540" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" font-size="34" font-weight="900" fill="#ffffff">MOXT</text>
-  <text x="180" y="540" font-family="system-ui,Segoe UI,Helvetica,Arial,sans-serif" font-size="22" font-weight="600" fill="#a7f3d0">CONNECTER · ÉCHANGER · AVANCER</text>
+  <text x="72" y="110" font-family="Inter, system-ui, sans-serif" font-size="28" font-weight="800" fill="#a7f3d0" letter-spacing="0.08em">${xmlEscape(kindLabel.toUpperCase())}</text>
+  <text x="72" y="250" font-family="Inter, system-ui, sans-serif" font-size="52" font-weight="900" fill="#ffffff">${titleTspans}</text>
+  <text x="72" y="470" font-family="Inter, system-ui, sans-serif" font-size="26" font-weight="600" fill="#d1fae5">${xmlEscape(desc)}</text>
+  <text x="72" y="540" font-family="Inter, system-ui, sans-serif" font-size="34" font-weight="900" fill="#ffffff">MOXT</text>
+  <text x="180" y="540" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="600" fill="#a7f3d0">CONNECTER · ÉCHANGER · AVANCER</text>
 </svg>`
 }
 
@@ -95,11 +95,19 @@ function buildOgCardUrl(kind: string, entityId: string) {
 
 /**
  * Render OG card as PNG for WhatsApp/Facebook (they ignore SVG og:image).
- * Uses @resvg/resvg-wasm from esm.sh; falls back to SVG if wasm init/render fails.
+ * Uses @resvg/resvg-wasm from esm.sh + Inter Variable fontBuffers (Edge has no
+ * system fonts; loadSystemFonts:false alone produced blank gradient cards).
+ * Falls back to SVG if wasm/font/render fails.
  * NOTE: If the HTML proxy on share.moxtapp.ru still forces text/html, redeploy
  * infra/share-html-proxy so /share/og-card/* passes through image/* + base64.
  */
 let resvgReady: Promise<any> | null = null
+let ogCardFontReady: Promise<Uint8Array | null> | null = null
+
+/** Inter Variable — needed because Edge has no system fonts; without this PNG is gradient-only. */
+const OG_CARD_FONT_URL =
+  Deno.env.get('MOXT_OG_CARD_FONT_URL') ||
+  'https://cdn.jsdelivr.net/gh/rsms/inter@v4.1/docs/font-files/InterVariable.ttf'
 
 async function getResvg() {
   if (!resvgReady) {
@@ -113,12 +121,38 @@ async function getResvg() {
   return resvgReady
 }
 
+async function getOgCardFontBuffer(): Promise<Uint8Array | null> {
+  if (!ogCardFontReady) {
+    ogCardFontReady = (async () => {
+      try {
+        const res = await fetch(OG_CARD_FONT_URL)
+        if (!res.ok) {
+          console.error('[share-preview] font fetch failed', res.status, OG_CARD_FONT_URL)
+          return null
+        }
+        return new Uint8Array(await res.arrayBuffer())
+      } catch (err) {
+        console.error('[share-preview] font fetch error', err)
+        return null
+      }
+    })()
+  }
+  return ogCardFontReady
+}
+
 async function renderOgCardPng(svg: string): Promise<Uint8Array | null> {
   try {
-    const mod = await getResvg()
+    const [mod, fontBuffer] = await Promise.all([getResvg(), getOgCardFontBuffer()])
+    if (!fontBuffer?.length) {
+      console.error('[share-preview] png render skipped: no font buffer')
+      return null
+    }
     const resvg = new mod.Resvg(svg, {
       fitTo: { mode: 'width', value: 1200 },
-      font: { loadSystemFonts: false },
+      font: {
+        fontBuffers: [fontBuffer],
+        defaultFontFamily: 'Inter',
+      },
     })
     const rendered = resvg.render()
     const png = rendered.asPng()
