@@ -29,9 +29,10 @@ No dedicated `gender` column on `profiles` today. Resolver accepts optional `use
 
 ## How to change style (UI)
 
-1. **Business** — Setup entreprise → identité visuelle → section « Style de bannière Moxt » (only when no custom banner photo).
-2. **Personal** — Profil → Informations personnelles → carte « Bannière Moxt ».
-3. Custom cover/banner photo always wins; Moxt styles apply only to the empty state.
+1. **From the cover (owner)** — floating « Modifier la bannière » on the public fiche / Mes publications / business detail when viewing as owner (hidden when a custom business `bannerUrl` is set). Opens the Moxt style bottom sheet (business A–D or personal Homme|Femme + Appliquer).
+2. **Business setup** — Setup entreprise → identité visuelle → section « Style de bannière Moxt » (only when no custom banner photo).
+3. **Personal settings** — Profil → Informations personnelles → carte « Bannière Moxt ».
+4. Custom cover/banner photo always wins; Moxt styles apply only to the empty state.
 
 ## Code
 

@@ -14,7 +14,6 @@ import {
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
-import { CatalogArchiveTabs } from '../components/ui/CatalogArchiveTabs'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -33,6 +32,7 @@ import {
 import { selectPublisherSubscribers, selectUserSubscriptions } from '../features/account/subscriptionSelectors'
 import {
   removePublisherSubscription,
+  selectAccountPreferences,
   updatePublisherSubscriptionPref,
 } from '../features/account/accountSlice'
 import { SubscriptionsFollowingPanel } from '../features/account/SubscriptionsFollowingPanel'
@@ -60,11 +60,27 @@ import {
   visiblePublicationTypeTabs,
 } from '../features/publications/publicationCatalogUtils'
 import { PublicationCatalogNav } from '../features/publications/PublicationCatalogNav'
-import { PublicationProfileCard } from '../features/publications/PublicationProfileCard'
+import { PublicProfileHero } from '../features/publications/PublicProfileHero'
+import { PublicProfileTabs } from '../features/publications/PublicProfileTabs'
+import { PublicVideoThumbGrid } from '../features/publications/PublicVideoThumbGrid'
+import { CoverStylePicker } from '../features/publications/coverBanners/CoverStylePicker'
+import { useOwnerCoverStyleEdit } from '../features/publications/coverBanners/useOwnerCoverStyleEdit'
+import {
+  defaultCoverStyleForPersonal,
+} from '../features/publications/coverBanners/coverBannerCatalog'
+import { isActiveVideo } from '../features/videos/videoUtils'
+import { activityByValue } from '../config/businessActivities'
+import { ProfileQrShareButton } from '../features/share/ProfileQrShareButton'
+import {
+  buildBusinessShareText,
+  buildBusinessShareUrl,
+  businessCityLabel,
+  businessShareVersion,
+} from '../features/share/businessShareUtils'
 import { PublicationScopeButton } from '../features/publications/PublicationScopeButton'
 import { usePublicationProfile } from '../features/publications/usePublicationProfile'
 import { SubscribersPanel } from '../features/account/SubscribersPanel'
-import { canRepublishBusinessItem } from '../features/businesses/businessPublishUtils'
+import { canRepublishBusinessItem, isBusinessPublishReady } from '../features/businesses/businessPublishUtils'
 import { addToast } from '../features/ui/uiSlice'
 import { useScopedProfileReviews } from '../features/reviews/useScopedTargetReviews'
 import { useLanguage } from '../contexts/useLanguage'
@@ -120,6 +136,7 @@ export function MyPublicationsPage() {
     [appState.businesses.items],
   )
   const { profile: memberProfile } = usePublicationProfile(user.id, user)
+  const preferences = useSelector((state) => selectAccountPreferences(state, user?.id))
 
   function guardBusinessRepublish(item) {
     if (canRepublishBusinessItem(item, businessById)) return true
@@ -195,6 +212,38 @@ export function MyPublicationsPage() {
   ).length
   const subscriptions = useSelector((state) => selectUserSubscriptions(state, user.id))
   const subscriptionsCount = subscriptions.length + subscriberCount
+
+  const activeVideos = (publications.videos || []).filter(isActiveVideo)
+  const coverEditCategory = scope === 'business' ? 'business' : 'personal'
+  const coverEdit = useOwnerCoverStyleEdit({
+    category: coverEditCategory,
+    business: coverEditCategory === 'business' ? ownBusiness : null,
+    userId: coverEditCategory === 'personal' ? user.id : null,
+    gender: memberProfile?.gender || user?.gender,
+    coverStyle:
+      coverEditCategory === 'business'
+        ? ownBusiness?.coverStyle
+        : preferences?.coverStyle || defaultCoverStyleForPersonal(memberProfile?.gender || user?.gender),
+  })
+  const showCoverEdit =
+    coverEditCategory === 'personal' || (coverEditCategory === 'business' && !ownBusiness?.bannerUrl)
+  const isBusinessScope = scope === 'business' && Boolean(ownBusiness)
+  const heroName = isBusinessScope ? ownBusiness.name : displayName
+  const heroVerified = isBusinessScope
+    ? isBusinessPublishReady(ownBusiness)
+    : Boolean(memberProfile?.verified)
+  const heroCategory = isBusinessScope
+    ? activityByValue(ownBusiness.primaryActivity)?.label || ownBusiness.sector
+    : undefined
+  const heroCity = isBusinessScope
+    ? businessCityLabel(ownBusiness) || ownBusiness.city
+    : memberProfile?.city || profile.city
+  const heroCoverUrl = isBusinessScope ? ownBusiness.bannerUrl || '' : ''
+  const heroAvatarUrl = isBusinessScope
+    ? ownBusiness.logoUrl
+    : memberProfile?.avatarUrl
+  const defaultMainTab = activeVideos.length > 0 ? 'videos' : 'publications'
+
 
   useEffect(() => {
     if (rawPanel !== 'subscribers') return
@@ -335,65 +384,120 @@ export function MyPublicationsPage() {
   const publishLink = PUBLISH_LINKS[typeTab] || PUBLISH_LINKS.listing
   const EmptyIcon = EMPTY_ICONS[typeTab] || FiShoppingBag
 
+  const viewParam = searchParams.get('view')
+  const mainView =
+    panel === 'subscriptions'
+      ? 'subscriptions'
+      : viewParam === 'videos' || viewParam === 'publications'
+        ? viewParam
+        : defaultMainTab
+
+  function setMainView(next) {
+    if (next === 'subscriptions') {
+      setPanel('subscriptions')
+      return
+    }
+    const params = new URLSearchParams(searchParams)
+    params.delete('panel')
+    params.delete('sub')
+    if (next === defaultMainTab) params.delete('view')
+    else params.set('view', next)
+    setSearchParams(params, { replace: true })
+  }
+
+  const videosTab = {
+    key: 'videos',
+    label: p3('publications.user.tabs.videos'),
+    count: activeVideos.length,
+    alwaysShow: true,
+  }
+  const publicationsTab = {
+    key: 'publications',
+    label:
+      scope === 'business'
+        ? p3('publications.user.tabs.products')
+        : p3('publications.mine.tabs.publications'),
+    count: profile.totalCount,
+    alwaysShow: true,
+  }
+  const mineTabs = [
+    ...(activeVideos.length > 0 ? [videosTab, publicationsTab] : [publicationsTab, videosTab]),
+    {
+      key: 'subscriptions',
+      label: p3('publications.mine.tabs.subscriptions'),
+      count: subscriptionsCount,
+      alwaysShow: true,
+    },
+  ]
+
   return (
-    <div className="grid min-w-0 max-w-full gap-5 overflow-x-clip sm:gap-7">
-      <PublicationProfileCard
-        displayName={displayName}
-        verified={Boolean(memberProfile?.verified)}
-        memberSince={memberProfile?.memberSince}
-        city={memberProfile?.city || profile.city}
-        country={memberProfile?.country || profile.country}
-        activeCount={profile.activeCount}
-        archivedCount={profile.archivedCount}
-        totalCount={profile.totalCount}
-        totalViews={profile.totalViews}
-        aggregateRating={aggregateRating}
-        isOwner
-        scope={scope}
-        ownBusiness={ownBusiness}
-        shareUserId={user.id}
-        avatarUrl={memberProfile?.avatarUrl}
+    <div className="grid min-w-0 max-w-full gap-5 overflow-x-clip sm:gap-6">
+      <PublicProfileHero
+        name={heroName}
+        verified={heroVerified}
+        category={heroCategory}
+        city={heroCity}
+        coverUrl={heroCoverUrl}
+        avatarUrl={heroAvatarUrl}
+        coverCategory={isBusinessScope ? 'business' : 'personal'}
+        coverStyle={
+          isBusinessScope
+            ? ownBusiness?.coverStyle
+            : preferences?.coverStyle || defaultCoverStyleForPersonal(memberProfile?.gender || user?.gender)
+        }
+        gender={memberProfile?.gender || user?.gender}
+        emptyCoverVariant={isBusinessScope ? 'editorial-dark' : 'gradient'}
+        rating={aggregateRating}
+        reviewsLabel={p3('publications.public.reviewsShort')}
+        showCoverEdit={showCoverEdit}
+        onEditCover={coverEdit.openEditor}
+        editCoverLabel={t('profile.personal.editBanner')}
+        shareSlot={
+          <ProfileQrShareButton
+            type={isBusinessScope ? 'business' : 'user'}
+            activityVisibility={isBusinessScope ? ownBusiness?.activityVisibility : undefined}
+            targetPath={
+              isBusinessScope ? undefined : `/users/${user.id}/publications`
+            }
+            refreshKey={isBusinessScope ? businessShareVersion(ownBusiness) : undefined}
+            shareUrl={isBusinessScope ? buildBusinessShareUrl(ownBusiness) : undefined}
+            shareText={isBusinessScope ? buildBusinessShareText(ownBusiness) : undefined}
+            title={heroName}
+            subtitle={isBusinessScope ? heroCategory : displayName}
+            verified={heroVerified}
+            city={heroCity}
+            sector={isBusinessScope ? heroCategory : undefined}
+            logoUrl={heroAvatarUrl}
+          />
+        }
         actions={
-          <div className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,12.5rem),1fr))] gap-2 border-t border-[var(--app-border)] pt-4 [&>a]:min-w-0 [&>button]:min-w-0 [&_button]:min-w-0 [&_button]:w-full [&_button]:max-w-full [&_button]:flex-wrap [&_button]:whitespace-normal">
-            <PublicationScopeButton business={ownBusiness} onScopeChange={setScope} scope={scope} />
+          <>
+            <PublicationScopeButton
+              business={ownBusiness}
+              onScopeChange={setScope}
+              scope={scope}
+              className="col-span-2 min-w-0 sm:col-span-1"
+            />
             <Link
               to={`/users/${user.id}/publications${scope === 'business' ? '?scope=business' : ''}`}
               className="min-w-0"
             >
-              <Button variant="secondary" icon={FiEye} className="w-full min-w-0 max-w-full flex-wrap whitespace-normal">
+              <Button variant="secondary" icon={FiEye} className="w-full">
                 {p3('publications.mine.publicView')}
               </Button>
             </Link>
-            <Link to={publishLink.to} className="min-w-0">
-              <Button icon={FiPlus} className="w-full min-w-0 max-w-full flex-wrap whitespace-normal">
+            <Link to={publishLink.to} className="col-span-2 min-w-0 sm:col-span-1">
+              <Button icon={FiPlus} className="w-full">
                 {p3(publishLink.labelKey)}
               </Button>
             </Link>
-          </div>
+          </>
         }
       />
 
-      <CatalogArchiveTabs
-        active={panel}
-        onChange={setPanel}
-        variant="section"
-        tabs={[
-          {
-            key: 'publications',
-            label: p3('publications.mine.tabs.publications'),
-            count: profile.totalCount,
-            alwaysShow: true,
-          },
-          {
-            key: 'subscriptions',
-            label: p3('publications.mine.tabs.subscriptions'),
-            count: subscriptionsCount,
-            alwaysShow: true,
-          },
-        ]}
-      />
+      <PublicProfileTabs active={mainView} onChange={setMainView} tabs={mineTabs} />
 
-      {panel === 'subscriptions' ? (
+      {mainView === 'subscriptions' ? (
         <div className="grid gap-4">
           <Tabs
             items={[
@@ -437,6 +541,13 @@ export function MyPublicationsPage() {
             />
           )}
         </div>
+      ) : mainView === 'videos' ? (
+        <PublicVideoThumbGrid
+          videos={activeVideos}
+          title={p3('publications.public.videosTitle')}
+          emptyTitle={p3('publications.public.videosEmpty')}
+          emptyDescription={p3('publications.public.videosEmptyDescription')}
+        />
       ) : (
         <div className="grid gap-4">
           <PublicationCatalogNav
@@ -629,6 +740,23 @@ export function MyPublicationsPage() {
           )}
         </div>
       )}
+
+
+      <CoverStylePicker
+        open={coverEdit.open}
+        onClose={coverEdit.closeEditor}
+        category={coverEdit.category}
+        value={coverEdit.value}
+        gender={coverEdit.gender}
+        onChange={coverEdit.onChange}
+        labels={coverEdit.labels}
+        title={t('profile.personal.coverStyleTitle')}
+        hint={t('profile.personal.coverStyleHint')}
+        applyLabel={t('profile.personal.coverStyleApply')}
+        manLabel={t('profile.personal.coverStyleMan')}
+        womanLabel={t('profile.personal.coverStyleWoman')}
+        activeLabel={t('profile.personal.coverStyleActive')}
+      />
 
       <ConfirmDialog
         open={Boolean(deletingItem)}

@@ -1,4 +1,4 @@
-import { FiStar } from 'react-icons/fi'
+import { FiImage, FiStar } from 'react-icons/fi'
 import { VerifiedDisplayName } from '../../components/ui/Badge'
 import { avatarDisplayUrl } from '../account/avatarDisplayUrl'
 import { resolveMediaDisplayUrl } from '../../services/media/mediaUrlUtils'
@@ -57,6 +57,7 @@ function EmptyCoverFallback({ coverStyle, variant, category, gender, className }
  * emptyCoverVariant — legacy: 'editorial-dark' | 'gradient' (mapped via catalog).
  * coverCategory — 'business' | 'personal' | 'woman' | 'man' (default resolution).
  * gender — optional profile gender for personal defaults (no DB field yet).
+ * showCoverEdit / onEditCover — owner floating « Modifier la bannière » on empty Moxt cover.
  */
 export function PublicProfileHero({
   name,
@@ -76,6 +77,9 @@ export function PublicProfileHero({
   emptyCoverVariant = 'gradient',
   coverCategory = 'personal',
   gender,
+  showCoverEdit = false,
+  onEditCover = null,
+  editCoverLabel = 'Modifier la bannière',
   className = '',
 }) {
   const resolvedCover = resolveMediaDisplayUrl(coverUrl) || coverUrl || ''
@@ -86,6 +90,7 @@ export function PublicProfileHero({
   const initials = (avatarFallback || name || '?').slice(0, 2).toUpperCase()
   const metaLine = [category, city].filter(Boolean).join(' · ')
   const coverShellClass = 'h-44 w-full sm:h-52 lg:rounded-[1.5rem]'
+  const canEditCover = Boolean(showCoverEdit && onEditCover)
 
   return (
     <section className={`min-w-0 ${className}`}>
@@ -139,6 +144,17 @@ export function PublicProfileHero({
         </div>
 
         {shareSlot ? <div className="absolute right-3 top-3 z-10 sm:right-4 sm:top-4">{shareSlot}</div> : null}
+
+        {canEditCover ? (
+          <button
+            type="button"
+            onClick={onEditCover}
+            className="absolute bottom-3 left-1/2 z-10 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-white/25 bg-black/55 px-3.5 py-1.5 text-xs font-bold text-white shadow-lg backdrop-blur-md transition hover:bg-black/70"
+          >
+            <FiImage className="size-3.5 shrink-0" aria-hidden />
+            {editCoverLabel}
+          </button>
+        ) : null}
       </div>
 
       <div className="grid gap-3 pt-12 sm:pt-14">

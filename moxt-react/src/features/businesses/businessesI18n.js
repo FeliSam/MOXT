@@ -382,6 +382,12 @@ export const BUSINESSES_FR_SOURCES = {
   'businesses.setup.identity.coverStyleHint': 'Affiché quand aucune bannière photo n’est définie. Défaut : Editorial dark.',
   'businesses.setup.identity.coverStylePick': 'Choisir un style',
   'businesses.setup.identity.coverStyleHidden': 'Le style Moxt s’applique uniquement sans bannière photo.',
+  'businesses.setup.identity.coverStyleApply': 'Appliquer',
+  'businesses.setup.identity.coverStyleMan': 'Homme',
+  'businesses.setup.identity.coverStyleWoman': 'Femme',
+  'businesses.setup.identity.coverStyleActive': 'Actif',
+  'businesses.detail.editBanner': 'Modifier la bannière',
+
   'businesses.setup.contact.locationSection': 'Localisation',
   'businesses.setup.contact.locationHint': 'Ville et adresse de votre activite en Russie.',
   'businesses.setup.contact.cityInRussia': 'Ville en Russie',

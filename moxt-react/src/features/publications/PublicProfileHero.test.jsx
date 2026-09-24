@@ -61,3 +61,24 @@ describe('PublicProfileHero empty cover', () => {
     expect(fallback?.className).toMatch(/\bhidden\b/)
   })
 })
+
+  it('shows owner edit cover control when showCoverEdit is set', () => {
+    const { container } = render(
+      <PublicProfileHero
+        name="Owner Biz"
+        coverCategory="business"
+        showCoverEdit
+        onEditCover={() => {}}
+        editCoverLabel="Modifier la bannière"
+      />,
+    )
+    expect(container.querySelector('button')?.textContent).toMatch(/Modifier la banni/)
+  })
+
+  it('hides edit cover control for non-owners', () => {
+    render(
+      <PublicProfileHero name="Public" coverCategory="business" />,
+    )
+    expect(screen.queryByText('Modifier la bannière')).toBeNull()
+  })
+
