@@ -8,6 +8,7 @@ export const SOURCE_TYPE_LABEL_KEYS = {
   business: 'news.types.business',
   event: 'news.types.event',
   job: 'news.types.job',
+  video: 'news.types.video',
   free: 'news.types.post',
 }
 
@@ -18,6 +19,7 @@ export const SOURCE_TYPE_LABELS = {
   business: 'Entreprise',
   event: 'Événement',
   job: 'Job',
+  video: 'Vidéo',
   free: 'Post',
 }
 
@@ -32,6 +34,7 @@ export const SOURCE_TYPE_LINKS = {
   business: (id) => `/businesses/${id}`,
   event: (id) => `/events/${id}`,
   job: (id) => `/jobs/${id}`,
+  video: (id) => (id ? `/feed?type=video&item=${encodeURIComponent(`video:${id}`)}` : '/feed?type=video'),
   free: () => '/news',
 }
 
@@ -174,6 +177,8 @@ export function getSourceImage(sourceType, data) {
       return data.bannerUrl || data.logoUrl || null
     case 'event':
       return data.imageUrl || null
+    case 'video':
+      return data.thumbnailUrl || data.imageUrl || null
     case 'job':
     case 'parcel':
     case 'free':

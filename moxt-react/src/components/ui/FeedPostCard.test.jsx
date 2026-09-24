@@ -13,6 +13,7 @@ vi.mock('../../contexts/useLanguage', () => ({
 }))
 
 describe('FeedPostCard', () => {
+
   it('renders a pinned welcome post', () => {
     const store = configureStore({
       reducer: {
@@ -44,5 +45,41 @@ describe('FeedPostCard', () => {
     )
     expect(screen.getByText(/Bienvenue sur MOXT/)).toBeTruthy()
     expect(screen.getByLabelText(/épinglée|Pinned|news\.pinned/i)).toBeTruthy()
+  })
+
+  it('renders a video Actualites card with play control', () => {
+    const store = configureStore({
+      reducer: {
+        auth: () => ({
+          user: { id: 'u1', role: 'user', firstName: 'A', lastName: 'B' },
+        }),
+        videos: () => ({ items: [] }),
+      },
+    })
+    render(
+      <Provider store={store}>
+        <MemoryRouter>
+          <FeedPostCard
+            post={{
+              id: 'VID-9',
+              status: 'published',
+              sourceType: 'video',
+              sourceId: 'VID-9',
+              message: 'Clip test',
+              authorId: 'u2',
+              authorName: 'Cafe MOXT',
+              imageUrl: 'https://cdn.example/thumb.jpg',
+              videoUrl: 'https://cdn.example/v.mp4',
+              directLink: '/feed?type=video&item=video%3AVID-9',
+              likes: [],
+              comments: [],
+              createdAt: '2026-07-04T00:00:00.000Z',
+            }}
+          />
+        </MemoryRouter>
+      </Provider>,
+    )
+    expect(screen.getByText('Clip test')).toBeTruthy()
+    expect(screen.getByLabelText(/Lire la vid[eé]o|news\.feed\.playVideo/i)).toBeTruthy()
   })
 })

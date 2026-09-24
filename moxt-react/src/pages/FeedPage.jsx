@@ -25,7 +25,7 @@ import { buildEntityShareUrl } from '../features/share/shareLinkUtils'
 import { loadFeedBoosts } from '../features/stars/starsSlice'
 import { injectFeedDiscoverySlides } from '../features/feed/feedDiscoveryUtils'
 import { readSearchHistory } from '../services/searchHistory.js'
-import { useIsFeedViewport } from '../features/feed/feedViewport'
+import { useFeedMobileChrome, useIsFeedViewport } from '../features/feed/feedViewport'
 import { CoverFeedSlide } from '../features/feed/slides/CoverFeedSlide'
 import { DiscoveryFeedSlide } from '../features/feed/slides/DiscoveryFeedSlide'
 import { EventFeedSlide } from '../features/feed/slides/EventFeedSlide'
@@ -75,6 +75,7 @@ export function FeedPage() {
   const { guestMode = false } = useOutletContext() || {}
   const [searchParams] = useSearchParams()
   const isFeedViewport = useIsFeedViewport()
+  useFeedMobileChrome(isFeedViewport)
   const rawType = readSearchParam(searchParams, 'type', 'all')
   const requestedType = rawType === 'all' || FEED_KINDS.includes(rawType) ? rawType : 'all'
   const itemParam = readSearchParam(searchParams, 'item')
@@ -318,7 +319,7 @@ export function FeedPage() {
           renderSlide={renderFeedSlide}
           onRefresh={refreshFeed}
           refreshNonce={refreshNonce}
-          playEntryHint={false}
+          playEntryHint={!itemParam}
         />
       </div>
     </div>

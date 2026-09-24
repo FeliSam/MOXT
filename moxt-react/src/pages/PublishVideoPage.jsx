@@ -12,6 +12,7 @@ import {
   resolveBusinessPublishContext,
 } from '../features/businesses/businessPublishUtils'
 import { createVideo } from '../features/videos/videosSlice'
+import { prefetchMediaUrl, saveVideoRemote } from '../features/videos/videosRemote.js'
 import {
   VIDEO_MAX_DURATION_MS,
   captureVideoThumbnail,
@@ -142,6 +143,7 @@ export function PublishVideoPage() {
       return
     }
 
+    if (publishing) return
     setPublishing(true)
     try {
       const videoId = `VID-${Date.now().toString(36).toUpperCase()}`
@@ -165,25 +167,28 @@ export function PublishVideoPage() {
         entityId: videoId,
         confirmPaid,
         publish: async () => {
-          dispatch(
-            createVideo({
-              id: videoId,
-              businessId: business.id,
-              ownerId: user.id,
-              title: title.trim(),
-              caption: caption.trim(),
-              videoUrl: uploaded.videoUrl,
-              thumbnailUrl: uploaded.thumbnailUrl || '',
-              objectKey: uploaded.objectKey,
-              mimeType: file.type || '',
-              durationMs,
-              status: 'active',
-              businessName: business.name || '',
-            }),
-          )
+          const action = createVideo({
+            id: videoId,
+            businessId: business.id,
+            ownerId: user.id,
+            title: title.trim(),
+            caption: caption.trim(),
+            videoUrl: uploaded.videoUrl,
+            thumbnailUrl: uploaded.thumbnailUrl || '',
+            objectKey: uploaded.objectKey,
+            mimeType: file.type || '',
+            durationMs,
+            status: 'active',
+            businessName: business.name || '',
+          })
+          // Persist before Redux+navigate so feed/business refresh cannot prune the row.
+          await saveVideoRemote(action.payload)
+          dispatch(action)
         },
       })
       if (outcome?.cancelled) return
+
+      await prefetchMediaUrl(uploaded.thumbnailUrl)
 
       dispatch(
         addToast({

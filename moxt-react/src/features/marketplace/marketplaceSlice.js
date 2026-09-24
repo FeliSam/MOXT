@@ -125,7 +125,8 @@ const marketplaceSlice = createSlice({
       const { items, reports, mode } = action.payload
       if (items) {
         // A short page (< LISTINGS_PUBLIC_LIMIT) that shrinks the local catalog is
-        // treated as a partial/stale pull: merge ids only, do NOT prune the window.
+        // treated as a partial/stale pull: merge ids only, do NOT prune the window
+        // (pruning would wipe Découvrir down to ~10 leftovers until manual refresh).
         // Public fiche scoped syncs also pass mode:'merge'.
         const incoming = Array.isArray(items) ? items : []
         const useMergeOnly =

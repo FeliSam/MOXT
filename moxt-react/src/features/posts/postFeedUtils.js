@@ -1,5 +1,6 @@
 import { isFeedPostSourceAvailable } from './archiveLinkedPosts'
 import { sortPostsByPublishedAt } from './postSortUtils'
+import { isActiveVideo, videoFeedPath } from '../videos/videoUtils'
 
 export const WELCOME_POST_IMAGE_MARKER = 'welcome-moxt-launch'
 
@@ -55,13 +56,55 @@ export function postMatchesDisplayLanguage(post, language) {
   return post.language === language
 }
 
+
+/**
+ * Carte Actualités pour une vidéo entreprise — même chrome que les posts (avatar, date, média).
+ * Les likes / commentaires restent ceux de la vidéo.
+ */
+export function videoToNewsPost(video, { business } = {}) {
+  if (!video?.id || !isActiveVideo(video)) return null
+  const title = String(video.title || '').trim()
+  const caption = String(video.caption || '').trim()
+  const message = [title, caption].filter(Boolean).join('\n\n')
+  const thumb = String(video.thumbnailUrl || '').trim()
+  const authorName =
+    String(business?.name || video.businessName || '').trim() || 'Entreprise'
+  return {
+    id: video.id,
+    authorId: video.ownerId || business?.ownerId || '',
+    authorName,
+    authorAvatarUrl: business?.logoUrl || null,
+    sourceType: 'video',
+    sourceId: video.id,
+    message,
+    imageUrl: thumb || null,
+    images: thumb ? [thumb] : [],
+    videoUrl: String(video.videoUrl || '').trim(),
+    directLink: videoFeedPath(video.id),
+    status: 'published',
+    likes: Array.isArray(video.likes) ? video.likes : [],
+    comments: Array.isArray(video.comments) ? video.comments : [],
+    shareCount: Number(video.shareCount) || 0,
+    createdAt: video.createdAt || video.updatedAt || new Date().toISOString(),
+    updatedAt: video.updatedAt || video.createdAt || new Date().toISOString(),
+    language: null,
+    pinned: false,
+  }
+}
+
+function businessById(businesses = [], businessId) {
+  if (!businessId || !Array.isArray(businesses)) return null
+  return businesses.find((item) => item.id === businessId) || null
+}
+
 /**
  * Construit le fil actualités : posts `pinned` en tête, puis tri chronologique.
  * Avec `catalogs`, masque les posts liés à une source absente / archivée / indisponible.
+ * Les vidéos actives du catalogue apparaissent comme cartes (même style) sous Tous / Vidéos.
  */
 export function buildNewsFeed(
   posts = [],
-  { language = 'fr', sourceTypeFilter = 'all', catalogs } = {},
+  { language = 'fr', sourceTypeFilter = 'all', catalogs, videos } = {},
 ) {
   const published = posts.filter((post) => post.status === 'published')
   let pool = published.filter((post) => postMatchesDisplayLanguage(post, language))
@@ -72,6 +115,29 @@ export function buildNewsFeed(
 
   if (sourceTypeFilter !== 'all') {
     pool = pool.filter((post) => post.sourceType === sourceTypeFilter)
+  }
+
+  const includeVideos =
+    Array.isArray(videos) &&
+    (sourceTypeFilter === 'all' || sourceTypeFilter === 'video')
+  if (includeVideos) {
+    const linkedVideoIds = new Set(
+      published
+        .filter((post) => post.sourceType === 'video' && post.sourceId)
+        .map((post) => post.sourceId),
+    )
+    const businesses = catalogs?.businesses || []
+    for (const video of videos) {
+      if (!video?.id || linkedVideoIds.has(video.id)) continue
+      if (pool.some((post) => post.id === video.id)) continue
+      const card = videoToNewsPost(video, {
+        business: businessById(businesses, video.businessId),
+      })
+      if (!card) continue
+      if (!postMatchesDisplayLanguage(card, language)) continue
+      if (catalogs && !isFeedPostSourceAvailable(card, { ...catalogs, videos })) continue
+      pool.push(card)
+    }
   }
 
   const pinned = sortPostsByPublishedAt(pool.filter(isPinnedPost))

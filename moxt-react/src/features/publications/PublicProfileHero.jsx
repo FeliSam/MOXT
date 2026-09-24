@@ -58,7 +58,7 @@ export function PublicProfileHero({
   const metaLine = [category, city].filter(Boolean).join(' · ')
 
   return (
-    <section className={`min-w-0 bg-[var(--app-surface)] ${className}`}>
+    <section className={`min-w-0 ${className}`}>
       <div className="relative -mx-4 sm:-mx-6 lg:mx-0">
         {resolvedCover ? (
           <img

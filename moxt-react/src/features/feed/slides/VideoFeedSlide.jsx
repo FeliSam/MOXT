@@ -255,12 +255,14 @@ function FeedVideoPlayer({ video, active, onActivate }) {
   const videoRef = useRef(null)
   const onActivateRef = useRef(onActivate)
   const wasActiveRef = useRef(false)
+  const tapPausesVideo = useSelector((state) => state.feedPlayback?.config?.tapPausesVideo !== false)
 
   useEffect(() => {
     onActivateRef.current = onActivate
   }, [onActivate])
 
   const [error, setError] = useState(false)
+  const [paused, setPaused] = useState(false)
   const [muted, setMuted] = useVideoFeedMuted()
   const src = useCachedMediaUrl(video.videoUrl, {
     kind: 'video',
@@ -289,6 +291,7 @@ function FeedVideoPlayer({ video, active, onActivate }) {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reset player when video source changes
     setError(false)
+    setPaused(false)
   }, [video.id])
 
   useEffect(() => {
@@ -298,15 +301,36 @@ function FeedVideoPlayer({ video, active, onActivate }) {
     wasActiveRef.current = active
   }, [active, video.id])
 
+  useEffect(() => {
+    const el = videoEl
+    if (!el) return undefined
+    const sync = () => setPaused(Boolean(el.paused))
+    sync()
+    el.addEventListener('play', sync)
+    el.addEventListener('pause', sync)
+    el.addEventListener('playing', sync)
+    return () => {
+      el.removeEventListener('play', sync)
+      el.removeEventListener('pause', sync)
+      el.removeEventListener('playing', sync)
+    }
+  }, [videoEl])
+
   function onTapVideo() {
     const el = videoRef.current
     if (!el) return
     if (el.paused) {
       playback.resumeByUser()
-    } else {
-      playback.toggleMute(setMuted)
+      return
     }
+    if (tapPausesVideo) {
+      playback.pauseByUser()
+      return
+    }
+    playback.toggleMute(setMuted)
   }
+
+  const showPlayOverlay = active && paused && !error
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-black">
@@ -320,10 +344,26 @@ function FeedVideoPlayer({ video, active, onActivate }) {
         webkit-playsinline=""
         loop
         muted={muted}
+        autoPlay={active && muted}
         preload={active ? 'auto' : 'metadata'}
         onClick={onTapVideo}
         onError={() => setError(true)}
       />
+      {showPlayOverlay ? (
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation()
+            playback.resumeByUser()
+          }}
+          className="pointer-events-auto absolute inset-0 z-10 grid place-items-center bg-black/25"
+          aria-label={p3('videos.feed.play')}
+        >
+          <span className="grid size-16 place-items-center rounded-full bg-black/55 text-white shadow-lg backdrop-blur-sm">
+            <FiPlay className="ml-1 text-3xl" aria-hidden />
+          </span>
+        </button>
+      ) : null}
       {muted && !error ? (
         <button
           type="button"
@@ -335,9 +375,14 @@ function FeedVideoPlayer({ video, active, onActivate }) {
         </button>
       ) : null}
       {!muted && !error ? (
-        <span className="pointer-events-none absolute left-3 z-10 grid size-10 place-items-center rounded-full bg-black/35 text-white/80 top-[var(--feed-chrome-top)]">
+        <button
+          type="button"
+          onClick={() => setMuted(true)}
+          className="pointer-events-auto absolute left-3 z-10 grid size-10 place-items-center rounded-full bg-black/35 text-white/80 top-[var(--feed-chrome-top)]"
+          aria-label={p3('videos.feed.mute')}
+        >
           <FiVolume2 />
-        </span>
+        </button>
       ) : null}
       {error ? (
         <div className="absolute inset-0 grid place-items-center bg-black/80 p-6 text-center text-white">

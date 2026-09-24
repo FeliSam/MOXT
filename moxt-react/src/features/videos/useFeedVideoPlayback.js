@@ -14,6 +14,8 @@ export function primeFeedVideoElement(el) {
   el.setAttribute('playsinline', 'true')
   el.setAttribute('webkit-playsinline', 'true')
   el.setAttribute('preload', el.getAttribute('preload') || 'auto')
+  // iOS WKWebView: defaultMuted helps the first attribute-based autoplay gesture gate.
+  if (typeof el.defaultMuted === 'boolean') el.defaultMuted = true
 }
 
 function pauseElement(el) {

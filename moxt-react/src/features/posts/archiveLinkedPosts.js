@@ -24,6 +24,7 @@ export function isFeedPostSourceAvailable(post, catalogs = {}) {
     job: catalogs.jobs,
     event: catalogs.events,
     business: catalogs.businesses,
+    video: catalogs.videos,
   }
   const items = collections[sourceType]
   if (!Array.isArray(items)) return true
@@ -73,6 +74,16 @@ export function collectCascadeArchiveTargets(action, before, after) {
     }
     case 'businesses/deleteBusinessByUser': {
       push('business', action.payload.id)
+      break
+    }
+    case 'videos/deleteVideo': {
+      push('video', action.payload?.id ?? action.payload)
+      break
+    }
+    case 'videos/moderateVideo': {
+      if (shouldArchiveLinkedPosts('video', action.payload.status)) {
+        push('video', action.payload.id)
+      }
       break
     }
     case 'businesses/moderateBusiness': {

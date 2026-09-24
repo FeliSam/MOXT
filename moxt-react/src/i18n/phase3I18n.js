@@ -574,6 +574,7 @@ export const PHASE3_FR_SOURCES = {
   'news.filters.job': 'Jobs',
   'news.filters.parcel': 'Colis',
   'news.filters.event': 'Événements',
+  'news.filters.video': 'Vidéos',
   'news.filters.business': 'Entreprises',
   'news.filters.free': 'Posts libres',
   'news.empty.title': "Aucun post pour l'instant",
@@ -602,6 +603,9 @@ export const PHASE3_FR_SOURCES = {
   'news.types.business': 'Entreprise',
   'news.types.event': 'Événement',
   'news.types.job': 'Job',
+  'news.types.video': 'Vidéo',
+  'news.cta.video': 'Voir la vidéo',
+  'news.feed.playVideo': 'Lire la vidéo',
   'news.templates.businessHello': 'Bonjour la communauté MOXT ! 👋',
   'news.templates.businessIntroNamed':
     '{name} ici — je vous présente {business}{sector}.',
@@ -1002,6 +1006,8 @@ export const PHASE3_FR_SOURCES = {
   'videos.feed.playErrorBody':
     'Ce fichier n’est pas lisible ici (souvent un MOV HEVC iPhone). Republiez-le : MOXT le convertit automatiquement, ou filmez en « Compatibilité » sur iPhone.',
   'videos.feed.unmute': 'Activer le son',
+  'videos.feed.mute': 'Couper le son',
+  'videos.feed.play': 'Lecture',
   'videos.feed.businessFallback': 'Entreprise',
   'videos.feed.showMore': 'Voir plus',
   'videos.feed.showLess': 'Réduire',
