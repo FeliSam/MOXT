@@ -4,7 +4,9 @@ import { useDispatch, useSelector } from 'react-redux'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { Button } from '../../components/ui/Button'
 import { RevealListItem } from '../../components/ui/RevealListItem'
+import { useConfirm } from '../../contexts/ConfirmDialogProvider'
 import { useLanguage } from '../../contexts/useLanguage'
+import { buildSubscriptionConfirm } from '../publications/publicationConfirm'
 import { phase3Text } from '../../i18n/phase3I18n'
 import { selectPublisherBans, selectPublisherSubscribers } from './subscriptionSelectors'
 import { SubscriberRow } from './SubscriberRow'
@@ -13,8 +15,9 @@ import { usePublicationProfile } from '../publications/usePublicationProfile'
 import { AvatarStack, EntityAvatar } from './EntityAvatar'
 import { useProfileAvatarMap } from './useProfileAvatarMap'
 
-function BannedSubscriberRow({ ban, onUnban }) {
+function BannedSubscriberRow({ ban, onUnban, confirmAccent = 'personal' }) {
   const { t } = useLanguage()
+  const { confirm } = useConfirm()
   const p3 = (key, vars) => phase3Text(t, key, vars)
   const user = useSelector((state) => state.auth.user)
   const { profile } = usePublicationProfile(ban.subscriberId, user)
@@ -35,7 +38,12 @@ function BannedSubscriberRow({ ban, onUnban }) {
           </p>
         </div>
       </div>
-      <Button size="sm" variant="secondary" onClick={() => onUnban(ban)}>
+      <Button size="sm" variant="secondary" onClick={() =>
+          confirm({
+            ...buildSubscriptionConfirm(t, 'unban', { name: displayName, accent: confirmAccent }),
+            onConfirm: () => onUnban(ban),
+          })
+        }>
         {p3('subscriptions.subscribers.unban')}
       </Button>
     </div>
@@ -144,6 +152,7 @@ export function SubscribersPanel({
             <RevealListItem key={ban.id} index={index}>
               <BannedSubscriberRow
                 ban={ban}
+                confirmAccent={publisherType === 'business' ? 'business' : 'personal'}
                 onUnban={(item) => dispatch(unbanPublisherSubscriber({ id: item.id }))}
               />
             </RevealListItem>

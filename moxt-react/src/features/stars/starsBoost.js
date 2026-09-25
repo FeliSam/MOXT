@@ -16,6 +16,7 @@ export async function withStarsBoost({
   ownerType = 'user',
   ownerId = null,
   confirmPaid,
+  confirmFree,
 }) {
   const quote = await quoteStarsBoost({
     entityType,
@@ -30,6 +31,10 @@ export async function withStarsBoost({
 
   if (!quote?.skipped && Number(quote?.paid) > 0) {
     const accepted = confirmPaid ? await confirmPaid(quote) : true
+    if (!accepted) return { cancelled: true, quote }
+  } else if (!quote?.skipped && typeof confirmFree === 'function') {
+    // Boost inclus (aucune étoile débitée) : confirmation optionnelle côté appelant.
+    const accepted = await confirmFree(quote)
     if (!accepted) return { cancelled: true, quote }
   }
 

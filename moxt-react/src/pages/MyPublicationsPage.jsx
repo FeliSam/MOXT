@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import {
   FiArchive,
   FiBriefcase,
@@ -15,7 +15,6 @@ import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
-import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Tabs } from '../components/ui/Tabs'
 import { deletePost, moderatePost } from '../features/posts/postsSlice'
@@ -45,6 +44,10 @@ import {
   MyPostPublicationCard,
   MyVideoPublicationCard,
 } from '../features/publications/MyPublicationCards'
+import {
+  buildPublicationConfirm,
+  settleDispatchResult,
+} from '../features/publications/publicationConfirm'
 import {
   BUSINESS_PUBLICATION_TYPE_TABS,
   buildUserPublicationProfile,
@@ -85,6 +88,7 @@ import { canRepublishBusinessItem, isBusinessPublishReady } from '../features/bu
 import { addToast } from '../features/ui/uiSlice'
 import { useScopedProfileReviews } from '../features/reviews/useScopedTargetReviews'
 import { useLanguage } from '../contexts/useLanguage'
+import { useConfirm } from '../contexts/ConfirmDialogProvider'
 import { phase3Text } from '../i18n/phase3I18n'
 import { BoostPublicationSheet } from '../features/stars/BoostPublicationSheet'
 import { useStarsBoostFlow } from '../features/stars/useStarsBoostFlow'
@@ -123,7 +127,7 @@ export function MyPublicationsPage() {
   const dispatch = useDispatch()
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
-  const [deletingItem, setDeletingItem] = useState(null)
+  const { confirm } = useConfirm()
   const boostFlow = useStarsBoostFlow()
   const starsEnabled = useStarsModuleEnabled()
   const feedBoosts = useSelector((state) => state.stars.feedBoosts)
@@ -259,6 +263,34 @@ export function MyPublicationsPage() {
     dispatch(loadFeedBoosts())
   }, [dispatch])
 
+  /** Toute action qui modifie une publication passe par une modale de confirmation. */
+  function confirmPublicationAction(action, type, item, run, extra = {}) {
+    return confirm({
+      ...buildPublicationConfirm(t, action, { type, item, scope, ...extra }),
+      onConfirm: () => settleDispatchResult(run()),
+    })
+  }
+
+  function deletePublication(type, item) {
+    if (type === 'parcel') return dispatch(deleteParcel({ id: item.id, ownerId: user.id }))
+    if (type === 'listing') return dispatch(deleteListing({ id: item.id, ownerId: user.id }))
+    if (type === 'job') return dispatch(deleteJob({ id: item.id, ownerId: user.id }))
+    if (type === 'event') return dispatch(deleteEvent({ id: item.id, ownerId: user.id }))
+    if (type === 'video') return dispatch(deleteVideo({ id: item.id, ownerId: user.id }))
+    if (type === 'post') return dispatch(deletePost(item.id))
+    if (type === 'other') return dispatch(deleteOffer({ id: item.id, ownerId: user.id }))
+    return undefined
+  }
+
+  function requestDelete(type, item) {
+    return confirmPublicationAction('delete', type, item, () => deletePublication(type, item))
+  }
+
+  function requestRepublish(type, item, run) {
+    if (type !== 'post' && !guardBusinessRepublish(item)) return undefined
+    return confirmPublicationAction('republish', type, item, run)
+  }
+
   function boostOwner() {
     if (scope === 'business' && ownBusiness) {
       return { ownerType: 'business', ownerId: ownBusiness.id }
@@ -281,6 +313,8 @@ export function MyPublicationsPage() {
               entityType,
               entityId: item.id,
               label,
+              publicationType: type,
+              item,
               ...owner,
             })
         : undefined,
@@ -300,6 +334,17 @@ export function MyPublicationsPage() {
         ownerType: target.ownerType,
         ownerId: target.ownerId,
         confirmPaid: boostFlow.confirmPaid,
+        // Boost inclus dans le quota : pas de débit d'étoiles, donc confirmation explicite ici
+        // (le boost payant passe déjà par StarsSpendConfirm).
+        confirmFree: () =>
+          confirm(
+            buildPublicationConfirm(t, 'boost', {
+              type: target.publicationType,
+              item: target.item || { title: target.label },
+              scope,
+              duration: t(`stars.duration${durationKey}`),
+            }),
+          ),
       })
       if (outcome?.cancelled) return
       dispatch(loadFeedBoosts())
@@ -531,6 +576,7 @@ export function MyPublicationsPage() {
           {subscriptionSub === 'following' ? (
             <SubscriptionsFollowingPanel
               subscriptions={subscriptions}
+              confirmAccent={scope === 'business' ? 'business' : 'personal'}
               onPrefChange={(item, notifyPref) =>
                 dispatch(
                   updatePublisherSubscriptionPref({
@@ -604,37 +650,32 @@ export function MyPublicationsPage() {
                       listing={listing}
                       {...publicationBoostProps('listing', listing)}
                       onArchive={() =>
-                        dispatch(
-                          updateListingStatus({
-                            id: listing.id,
-                            status: 'archived',
-                            actorId: user.id,
-                          }),
+                        confirmPublicationAction('archive', 'listing', listing, () =>
+                          dispatch(
+                            updateListingStatus({ id: listing.id, status: 'archived', actorId: user.id }),
+                          ),
                         )
                       }
-                      onReactivate={() => {
-                        if (!guardBusinessRepublish(listing)) return
-                        dispatch(
-                          updateListingStatus({
-                            id: listing.id,
-                            status: 'active',
-                            actorId: user.id,
-                          }),
+                      onReactivate={() =>
+                        requestRepublish('listing', listing, () =>
+                          dispatch(
+                            updateListingStatus({ id: listing.id, status: 'active', actorId: user.id }),
+                          ),
                         )
-                      }}
+                      }
                       onDuplicate={() =>
-                        dispatch(duplicateListing({ listing, ownerId: user.id }))
+                        confirmPublicationAction('duplicate', 'listing', listing, () =>
+                          dispatch(duplicateListing({ listing, ownerId: user.id })),
+                        )
                       }
                       onMarkSold={() =>
-                        dispatch(
-                          updateListingStatus({
-                            id: listing.id,
-                            status: 'sold',
-                            actorId: user.id,
-                          }),
+                        confirmPublicationAction('markSold', 'listing', listing, () =>
+                          dispatch(
+                            updateListingStatus({ id: listing.id, status: 'sold', actorId: user.id }),
+                          ),
                         )
                       }
-                      onDelete={() => setDeletingItem({ type: 'listing', item: listing })}
+                      onDelete={() => requestDelete('listing', listing)}
                     />
                   ))}
                 </CatalogGrid>
@@ -645,11 +686,17 @@ export function MyPublicationsPage() {
                     <MyPostPublicationCard
                       key={post.id}
                       post={post}
-                      onArchive={() => dispatch(moderatePost({ id: post.id, status: 'archived' }))}
-                      onReactivate={() =>
-                        dispatch(moderatePost({ id: post.id, status: 'published' }))
+                      onArchive={() =>
+                        confirmPublicationAction('archive', 'post', post, () =>
+                          dispatch(moderatePost({ id: post.id, status: 'archived' })),
+                        )
                       }
-                      onDelete={() => setDeletingItem({ type: 'post', item: post })}
+                      onReactivate={() =>
+                        requestRepublish('post', post, () =>
+                          dispatch(moderatePost({ id: post.id, status: 'published' })),
+                        )
+                      }
+                      onDelete={() => requestDelete('post', post)}
                     />
                   ))}
                 </CatalogGrid>
@@ -666,14 +713,21 @@ export function MyPublicationsPage() {
                       parcel={parcel}
                       {...publicationBoostProps('parcel', parcel)}
                       onArchive={() =>
-                        dispatch(updateParcelStatus({ id: parcel.id, status: 'archived' }))
+                        confirmPublicationAction('archive', 'parcel', parcel, () =>
+                          dispatch(updateParcelStatus({ id: parcel.id, status: 'archived' })),
+                        )
                       }
-                      onReactivate={() => {
-                        if (!guardBusinessRepublish(parcel)) return
-                        dispatch(updateParcelStatus({ id: parcel.id, status: 'active' }))
-                      }}
-                      onDuplicate={() => dispatch(duplicateParcel({ parcel, ownerId: user.id }))}
-                      onDelete={() => setDeletingItem({ type: 'parcel', item: parcel })}
+                      onReactivate={() =>
+                        requestRepublish('parcel', parcel, () =>
+                          dispatch(updateParcelStatus({ id: parcel.id, status: 'active' })),
+                        )
+                      }
+                      onDuplicate={() =>
+                        confirmPublicationAction('duplicate', 'parcel', parcel, () =>
+                          dispatch(duplicateParcel({ parcel, ownerId: user.id })),
+                        )
+                      }
+                      onDelete={() => requestDelete('parcel', parcel)}
                     />
                   ))}
                   {visible.job.map((job) => (
@@ -681,13 +735,22 @@ export function MyPublicationsPage() {
                       key={job.id}
                       job={job}
                       {...publicationBoostProps('job', job)}
-                      onArchive={() => dispatch(moderateJob({ id: job.id, status: 'archived' }))}
-                      onReactivate={() => {
-                        if (!guardBusinessRepublish(job)) return
-                        dispatch(moderateJob({ id: job.id, status: 'active' }))
-                      }}
-                      onDuplicate={() => dispatch(duplicateJob({ job, ownerId: user.id }))}
-                      onDelete={() => setDeletingItem({ type: 'job', item: job })}
+                      onArchive={() =>
+                        confirmPublicationAction('archive', 'job', job, () =>
+                          dispatch(moderateJob({ id: job.id, status: 'archived' })),
+                        )
+                      }
+                      onReactivate={() =>
+                        requestRepublish('job', job, () =>
+                          dispatch(moderateJob({ id: job.id, status: 'active' })),
+                        )
+                      }
+                      onDuplicate={() =>
+                        confirmPublicationAction('duplicate', 'job', job, () =>
+                          dispatch(duplicateJob({ job, ownerId: user.id })),
+                        )
+                      }
+                      onDelete={() => requestDelete('job', job)}
                     />
                   ))}
                   {visible.event.map((event) => (
@@ -695,13 +758,22 @@ export function MyPublicationsPage() {
                       key={event.id}
                       event={event}
                       {...publicationBoostProps('event', event)}
-                      onArchive={() => dispatch(moderateEvent({ id: event.id, status: 'archived' }))}
-                      onReactivate={() => {
-                        if (!guardBusinessRepublish(event)) return
-                        dispatch(moderateEvent({ id: event.id, status: 'published' }))
-                      }}
-                      onDuplicate={() => dispatch(duplicateEvent({ event, ownerId: user.id }))}
-                      onDelete={() => setDeletingItem({ type: 'event', item: event })}
+                      onArchive={() =>
+                        confirmPublicationAction('archive', 'event', event, () =>
+                          dispatch(moderateEvent({ id: event.id, status: 'archived' })),
+                        )
+                      }
+                      onReactivate={() =>
+                        requestRepublish('event', event, () =>
+                          dispatch(moderateEvent({ id: event.id, status: 'published' })),
+                        )
+                      }
+                      onDuplicate={() =>
+                        confirmPublicationAction('duplicate', 'event', event, () =>
+                          dispatch(duplicateEvent({ event, ownerId: user.id })),
+                        )
+                      }
+                      onDelete={() => requestDelete('event', event)}
                     />
                   ))}
                   {(visible.video || []).map((video) => (
@@ -709,13 +781,22 @@ export function MyPublicationsPage() {
                       key={video.id}
                       video={video}
                       {...publicationBoostProps('video', video)}
-                      onArchive={() => dispatch(moderateVideo({ id: video.id, status: 'archived' }))}
-                      onReactivate={() => {
-                        if (!guardBusinessRepublish(video)) return
-                        dispatch(moderateVideo({ id: video.id, status: 'active' }))
-                      }}
-                      onDuplicate={() => dispatch(duplicateVideo({ video, ownerId: user.id }))}
-                      onDelete={() => setDeletingItem({ type: 'video', item: video })}
+                      onArchive={() =>
+                        confirmPublicationAction('archive', 'video', video, () =>
+                          dispatch(moderateVideo({ id: video.id, status: 'archived' })),
+                        )
+                      }
+                      onReactivate={() =>
+                        requestRepublish('video', video, () =>
+                          dispatch(moderateVideo({ id: video.id, status: 'active' })),
+                        )
+                      }
+                      onDuplicate={() =>
+                        confirmPublicationAction('duplicate', 'video', video, () =>
+                          dispatch(duplicateVideo({ video, ownerId: user.id })),
+                        )
+                      }
+                      onDelete={() => requestDelete('video', video)}
                     />
                   ))}
                   {visible.other.map((offer) => (
@@ -723,13 +804,16 @@ export function MyPublicationsPage() {
                       key={offer.id}
                       offer={offer}
                       onArchive={() =>
-                        dispatch(updateOfferStatus({ id: offer.id, status: 'archived' }))
+                        confirmPublicationAction('archive', 'other', offer, () =>
+                          dispatch(updateOfferStatus({ id: offer.id, status: 'archived' })),
+                        )
                       }
-                      onReactivate={() => {
-                        if (!guardBusinessRepublish(offer)) return
-                        dispatch(updateOfferStatus({ id: offer.id, status: 'active' }))
-                      }}
-                      onDelete={() => setDeletingItem({ type: 'other', item: offer })}
+                      onReactivate={() =>
+                        requestRepublish('other', offer, () =>
+                          dispatch(updateOfferStatus({ id: offer.id, status: 'active' })),
+                        )
+                      }
+                      onDelete={() => requestDelete('other', offer)}
                     />
                   ))}
                 </CatalogGrid>
@@ -772,24 +856,6 @@ export function MyPublicationsPage() {
         previewName={heroName}
         previewAvatarUrl={heroAvatarUrl}
         onUploadPhoto={coverEdit.uploadPhoto}
-      />
-
-      <ConfirmDialog
-        open={Boolean(deletingItem)}
-        title={p3('publications.cards.deleteConfirmTitle')}
-        description={p3('publications.cards.deleteConfirmDescription')}
-        onCancel={() => setDeletingItem(null)}
-        onConfirm={() => {
-          const { type, item } = deletingItem
-          if (type === 'parcel') dispatch(deleteParcel({ id: item.id, ownerId: user.id }))
-          else if (type === 'listing') dispatch(deleteListing({ id: item.id, ownerId: user.id }))
-          else if (type === 'job') dispatch(deleteJob({ id: item.id, ownerId: user.id }))
-          else if (type === 'event') dispatch(deleteEvent({ id: item.id, ownerId: user.id }))
-          else if (type === 'video') dispatch(deleteVideo({ id: item.id, ownerId: user.id }))
-          else if (type === 'post') dispatch(deletePost(item.id))
-          else if (type === 'other') dispatch(deleteOffer({ id: item.id, ownerId: user.id }))
-          setDeletingItem(null)
-        }}
       />
 
       <BoostPublicationSheet

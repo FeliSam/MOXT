@@ -7,7 +7,9 @@ import { Button } from '../../components/ui/Button'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { PillBadge, VerifiedDisplayName } from '../../components/ui/Badge'
 import { RevealListItem } from '../../components/ui/RevealListItem'
+import { useConfirm } from '../../contexts/ConfirmDialogProvider'
 import { useLanguage } from '../../contexts/useLanguage'
+import { buildSubscriptionConfirm } from '../publications/publicationConfirm'
 import { phase3Text } from '../../i18n/phase3I18n'
 import { AvatarStack, EntityAvatar } from './EntityAvatar'
 import { SubscriptionNotifyMenu } from './SubscriptionNotifyMenu'
@@ -26,7 +28,16 @@ function notifyPrefLabel(p3, pref) {
   return key ? p3(key) : pref
 }
 
-export function SubscriptionsFollowingPanel({ subscriptions, onPrefChange, onUnsubscribe }) {
+/**
+ * @param {'personal'|'business'} [confirmAccent] Si fourni, chaque changement (notifications,
+ *   désabonnement) passe par une modale de confirmation à cet accent (page Mes publications).
+ */
+export function SubscriptionsFollowingPanel({
+  subscriptions,
+  onPrefChange,
+  onUnsubscribe,
+  confirmAccent,
+}) {
   const { t } = useLanguage()
   const p3 = (key, vars) => phase3Text(t, key, vars)
   const businesses = useSelector((state) => state.businesses.items || [])
@@ -100,6 +111,7 @@ export function SubscriptionsFollowingPanel({ subscriptions, onPrefChange, onUns
         kind="user"
         onPrefChange={onPrefChange}
         onUnsubscribe={onUnsubscribe}
+        confirmAccent={confirmAccent}
       />
 
       <SubscriptionGroup
@@ -109,12 +121,21 @@ export function SubscriptionsFollowingPanel({ subscriptions, onPrefChange, onUns
         kind="business"
         onPrefChange={onPrefChange}
         onUnsubscribe={onUnsubscribe}
+        confirmAccent={confirmAccent}
       />
     </div>
   )
 }
 
-function SubscriptionGroup({ title, icon: Icon, items, kind, onPrefChange, onUnsubscribe }) {
+function SubscriptionGroup({
+  title,
+  icon: Icon,
+  items,
+  kind,
+  onPrefChange,
+  onUnsubscribe,
+  confirmAccent,
+}) {
   if (!items.length) return null
 
   return (
@@ -138,6 +159,7 @@ function SubscriptionGroup({ title, icon: Icon, items, kind, onPrefChange, onUns
                 kind={kind}
                 onPrefChange={onPrefChange}
                 onUnsubscribe={onUnsubscribe}
+                confirmAccent={confirmAccent}
               />
             </RevealListItem>
           </li>
@@ -147,8 +169,9 @@ function SubscriptionGroup({ title, icon: Icon, items, kind, onPrefChange, onUns
   )
 }
 
-function FollowingRow({ item, kind, onPrefChange, onUnsubscribe }) {
+function FollowingRow({ item, kind, onPrefChange, onUnsubscribe, confirmAccent }) {
   const { t } = useLanguage()
+  const { confirm } = useConfirm()
   const p3 = (key, vars) => phase3Text(t, key, vars)
   const user = useSelector((state) => state.auth.user)
   const business = useSelector((state) =>
@@ -168,6 +191,27 @@ function FollowingRow({ item, kind, onPrefChange, onUnsubscribe }) {
     item.publisherPath ||
     (kind === 'user' ? `/users/${item.publisherId}/publications` : `/businesses/${item.publisherId}`)
   const prefLabel = notifyPrefLabel(p3, item.notifyPref)
+
+  function handlePrefSelect(pref) {
+    if (!confirmAccent) return onPrefChange(item, pref)
+    if (pref === item.notifyPref) return undefined
+    return confirm({
+      ...buildSubscriptionConfirm(t, 'notifyPref', {
+        name: displayName,
+        pref: notifyPrefLabel(p3, pref),
+        accent: confirmAccent,
+      }),
+      onConfirm: () => onPrefChange(item, pref),
+    })
+  }
+
+  function handleUnsubscribe() {
+    if (!confirmAccent) return onUnsubscribe(item)
+    return confirm({
+      ...buildSubscriptionConfirm(t, 'unsubscribe', { name: displayName, accent: confirmAccent }),
+      onConfirm: () => onUnsubscribe(item),
+    })
+  }
 
   return (
     <div className="flex flex-col gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--app-surface-muted)]/55 sm:flex-row sm:items-center sm:justify-between sm:px-5">
@@ -216,8 +260,8 @@ function FollowingRow({ item, kind, onPrefChange, onUnsubscribe }) {
         <SubscriptionNotifyMenu
           activePref={item.notifyPref}
           isSubscribed
-          onSelect={(pref) => onPrefChange(item, pref)}
-          onUnsubscribe={() => onUnsubscribe(item)}
+          onSelect={handlePrefSelect}
+          onUnsubscribe={handleUnsubscribe}
           trigger={
             <Button
               size="sm"
