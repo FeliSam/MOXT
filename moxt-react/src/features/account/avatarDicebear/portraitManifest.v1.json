@@ -1,0 +1,564 @@
+{
+  "version": "v1",
+  "baseUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/",
+  "tones": [
+    {
+      "id": "t1",
+      "label_fr": "Très claire (porcelaine)",
+      "swatch_hex": "#F6E1D3"
+    },
+    {
+      "id": "t2",
+      "label_fr": "Claire",
+      "swatch_hex": "#EBC8AE"
+    },
+    {
+      "id": "t3",
+      "label_fr": "Olive claire",
+      "swatch_hex": "#D2A57D"
+    },
+    {
+      "id": "t4",
+      "label_fr": "Mate / hâlée",
+      "swatch_hex": "#B98159"
+    },
+    {
+      "id": "t5",
+      "label_fr": "Brune chaude",
+      "swatch_hex": "#8C5A3A"
+    },
+    {
+      "id": "t6",
+      "label_fr": "Brun foncé profond",
+      "swatch_hex": "#5A3825"
+    }
+  ],
+  "hairstyles": {
+    "f": [
+      {
+        "id": "f-long-waves",
+        "label_fr": "Longs ondulés"
+      },
+      {
+        "id": "f-bun",
+        "label_fr": "Chignon bas"
+      },
+      {
+        "id": "f-curls",
+        "label_fr": "Bouclés / frisés"
+      },
+      {
+        "id": "f-bob",
+        "label_fr": "Carré"
+      },
+      {
+        "id": "f-braids",
+        "label_fr": "Tresses"
+      }
+    ],
+    "m": [
+      {
+        "id": "m-short",
+        "label_fr": "Courts texturés"
+      },
+      {
+        "id": "m-waves",
+        "label_fr": "Ondulés en arrière"
+      },
+      {
+        "id": "m-fade",
+        "label_fr": "Dégradé court"
+      },
+      {
+        "id": "m-buzz",
+        "label_fr": "Coupe rase"
+      },
+      {
+        "id": "m-curls",
+        "label_fr": "Boucles mi-longues"
+      }
+    ]
+  },
+  "items": [
+    {
+      "id": "f-t1-f-long-waves",
+      "gender": "f",
+      "tone": "t1",
+      "hair": "f-long-waves",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t1-f-long-waves.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t1-f-long-waves.jpg"
+    },
+    {
+      "id": "f-t1-f-bun",
+      "gender": "f",
+      "tone": "t1",
+      "hair": "f-bun",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t1-f-bun.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t1-f-bun.jpg"
+    },
+    {
+      "id": "f-t1-f-curls",
+      "gender": "f",
+      "tone": "t1",
+      "hair": "f-curls",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t1-f-curls.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t1-f-curls.jpg"
+    },
+    {
+      "id": "f-t1-f-bob",
+      "gender": "f",
+      "tone": "t1",
+      "hair": "f-bob",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t1-f-bob.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t1-f-bob.jpg"
+    },
+    {
+      "id": "f-t1-f-braids",
+      "gender": "f",
+      "tone": "t1",
+      "hair": "f-braids",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t1-f-braids.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t1-f-braids.jpg"
+    },
+    {
+      "id": "f-t2-f-long-waves",
+      "gender": "f",
+      "tone": "t2",
+      "hair": "f-long-waves",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t2-f-long-waves.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t2-f-long-waves.jpg"
+    },
+    {
+      "id": "f-t2-f-bun",
+      "gender": "f",
+      "tone": "t2",
+      "hair": "f-bun",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t2-f-bun.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t2-f-bun.jpg"
+    },
+    {
+      "id": "f-t2-f-curls",
+      "gender": "f",
+      "tone": "t2",
+      "hair": "f-curls",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t2-f-curls.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t2-f-curls.jpg"
+    },
+    {
+      "id": "f-t2-f-bob",
+      "gender": "f",
+      "tone": "t2",
+      "hair": "f-bob",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t2-f-bob.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t2-f-bob.jpg"
+    },
+    {
+      "id": "f-t2-f-braids",
+      "gender": "f",
+      "tone": "t2",
+      "hair": "f-braids",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t2-f-braids.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t2-f-braids.jpg"
+    },
+    {
+      "id": "f-t3-f-long-waves",
+      "gender": "f",
+      "tone": "t3",
+      "hair": "f-long-waves",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t3-f-long-waves.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t3-f-long-waves.jpg"
+    },
+    {
+      "id": "f-t3-f-bun",
+      "gender": "f",
+      "tone": "t3",
+      "hair": "f-bun",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t3-f-bun.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t3-f-bun.jpg"
+    },
+    {
+      "id": "f-t3-f-curls",
+      "gender": "f",
+      "tone": "t3",
+      "hair": "f-curls",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t3-f-curls.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t3-f-curls.jpg"
+    },
+    {
+      "id": "f-t3-f-bob",
+      "gender": "f",
+      "tone": "t3",
+      "hair": "f-bob",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t3-f-bob.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t3-f-bob.jpg"
+    },
+    {
+      "id": "f-t3-f-braids",
+      "gender": "f",
+      "tone": "t3",
+      "hair": "f-braids",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t3-f-braids.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t3-f-braids.jpg"
+    },
+    {
+      "id": "f-t4-f-long-waves",
+      "gender": "f",
+      "tone": "t4",
+      "hair": "f-long-waves",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t4-f-long-waves.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t4-f-long-waves.jpg"
+    },
+    {
+      "id": "f-t4-f-bun",
+      "gender": "f",
+      "tone": "t4",
+      "hair": "f-bun",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t4-f-bun.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t4-f-bun.jpg"
+    },
+    {
+      "id": "f-t4-f-curls",
+      "gender": "f",
+      "tone": "t4",
+      "hair": "f-curls",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t4-f-curls.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t4-f-curls.jpg"
+    },
+    {
+      "id": "f-t4-f-bob",
+      "gender": "f",
+      "tone": "t4",
+      "hair": "f-bob",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t4-f-bob.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t4-f-bob.jpg"
+    },
+    {
+      "id": "f-t4-f-braids",
+      "gender": "f",
+      "tone": "t4",
+      "hair": "f-braids",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t4-f-braids.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t4-f-braids.jpg"
+    },
+    {
+      "id": "f-t5-f-long-waves",
+      "gender": "f",
+      "tone": "t5",
+      "hair": "f-long-waves",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t5-f-long-waves.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t5-f-long-waves.jpg"
+    },
+    {
+      "id": "f-t5-f-bun",
+      "gender": "f",
+      "tone": "t5",
+      "hair": "f-bun",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t5-f-bun.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t5-f-bun.jpg"
+    },
+    {
+      "id": "f-t5-f-curls",
+      "gender": "f",
+      "tone": "t5",
+      "hair": "f-curls",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t5-f-curls.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t5-f-curls.jpg"
+    },
+    {
+      "id": "f-t5-f-bob",
+      "gender": "f",
+      "tone": "t5",
+      "hair": "f-bob",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t5-f-bob.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t5-f-bob.jpg"
+    },
+    {
+      "id": "f-t5-f-braids",
+      "gender": "f",
+      "tone": "t5",
+      "hair": "f-braids",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t5-f-braids.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t5-f-braids.jpg"
+    },
+    {
+      "id": "f-t6-f-long-waves",
+      "gender": "f",
+      "tone": "t6",
+      "hair": "f-long-waves",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t6-f-long-waves.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t6-f-long-waves.jpg"
+    },
+    {
+      "id": "f-t6-f-bun",
+      "gender": "f",
+      "tone": "t6",
+      "hair": "f-bun",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t6-f-bun.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t6-f-bun.jpg"
+    },
+    {
+      "id": "f-t6-f-curls",
+      "gender": "f",
+      "tone": "t6",
+      "hair": "f-curls",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t6-f-curls.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t6-f-curls.jpg"
+    },
+    {
+      "id": "f-t6-f-bob",
+      "gender": "f",
+      "tone": "t6",
+      "hair": "f-bob",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t6-f-bob.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t6-f-bob.jpg"
+    },
+    {
+      "id": "f-t6-f-braids",
+      "gender": "f",
+      "tone": "t6",
+      "hair": "f-braids",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/f-t6-f-braids.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/f-t6-f-braids.jpg"
+    },
+    {
+      "id": "m-t1-m-short",
+      "gender": "m",
+      "tone": "t1",
+      "hair": "m-short",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t1-m-short.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t1-m-short.jpg"
+    },
+    {
+      "id": "m-t1-m-waves",
+      "gender": "m",
+      "tone": "t1",
+      "hair": "m-waves",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t1-m-waves.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t1-m-waves.jpg"
+    },
+    {
+      "id": "m-t1-m-fade",
+      "gender": "m",
+      "tone": "t1",
+      "hair": "m-fade",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t1-m-fade.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t1-m-fade.jpg"
+    },
+    {
+      "id": "m-t1-m-buzz",
+      "gender": "m",
+      "tone": "t1",
+      "hair": "m-buzz",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t1-m-buzz.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t1-m-buzz.jpg"
+    },
+    {
+      "id": "m-t1-m-curls",
+      "gender": "m",
+      "tone": "t1",
+      "hair": "m-curls",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t1-m-curls.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t1-m-curls.jpg"
+    },
+    {
+      "id": "m-t2-m-short",
+      "gender": "m",
+      "tone": "t2",
+      "hair": "m-short",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t2-m-short.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t2-m-short.jpg"
+    },
+    {
+      "id": "m-t2-m-waves",
+      "gender": "m",
+      "tone": "t2",
+      "hair": "m-waves",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t2-m-waves.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t2-m-waves.jpg"
+    },
+    {
+      "id": "m-t2-m-fade",
+      "gender": "m",
+      "tone": "t2",
+      "hair": "m-fade",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t2-m-fade.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t2-m-fade.jpg"
+    },
+    {
+      "id": "m-t2-m-buzz",
+      "gender": "m",
+      "tone": "t2",
+      "hair": "m-buzz",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t2-m-buzz.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t2-m-buzz.jpg"
+    },
+    {
+      "id": "m-t2-m-curls",
+      "gender": "m",
+      "tone": "t2",
+      "hair": "m-curls",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t2-m-curls.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t2-m-curls.jpg"
+    },
+    {
+      "id": "m-t3-m-short",
+      "gender": "m",
+      "tone": "t3",
+      "hair": "m-short",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t3-m-short.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t3-m-short.jpg"
+    },
+    {
+      "id": "m-t3-m-waves",
+      "gender": "m",
+      "tone": "t3",
+      "hair": "m-waves",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t3-m-waves.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t3-m-waves.jpg"
+    },
+    {
+      "id": "m-t3-m-fade",
+      "gender": "m",
+      "tone": "t3",
+      "hair": "m-fade",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t3-m-fade.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t3-m-fade.jpg"
+    },
+    {
+      "id": "m-t3-m-buzz",
+      "gender": "m",
+      "tone": "t3",
+      "hair": "m-buzz",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t3-m-buzz.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t3-m-buzz.jpg"
+    },
+    {
+      "id": "m-t3-m-curls",
+      "gender": "m",
+      "tone": "t3",
+      "hair": "m-curls",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t3-m-curls.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t3-m-curls.jpg"
+    },
+    {
+      "id": "m-t4-m-short",
+      "gender": "m",
+      "tone": "t4",
+      "hair": "m-short",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t4-m-short.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t4-m-short.jpg"
+    },
+    {
+      "id": "m-t4-m-waves",
+      "gender": "m",
+      "tone": "t4",
+      "hair": "m-waves",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t4-m-waves.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t4-m-waves.jpg"
+    },
+    {
+      "id": "m-t4-m-fade",
+      "gender": "m",
+      "tone": "t4",
+      "hair": "m-fade",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t4-m-fade.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t4-m-fade.jpg"
+    },
+    {
+      "id": "m-t4-m-buzz",
+      "gender": "m",
+      "tone": "t4",
+      "hair": "m-buzz",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t4-m-buzz.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t4-m-buzz.jpg"
+    },
+    {
+      "id": "m-t4-m-curls",
+      "gender": "m",
+      "tone": "t4",
+      "hair": "m-curls",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t4-m-curls.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t4-m-curls.jpg"
+    },
+    {
+      "id": "m-t5-m-short",
+      "gender": "m",
+      "tone": "t5",
+      "hair": "m-short",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t5-m-short.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t5-m-short.jpg"
+    },
+    {
+      "id": "m-t5-m-waves",
+      "gender": "m",
+      "tone": "t5",
+      "hair": "m-waves",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t5-m-waves.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t5-m-waves.jpg"
+    },
+    {
+      "id": "m-t5-m-fade",
+      "gender": "m",
+      "tone": "t5",
+      "hair": "m-fade",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t5-m-fade.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t5-m-fade.jpg"
+    },
+    {
+      "id": "m-t5-m-buzz",
+      "gender": "m",
+      "tone": "t5",
+      "hair": "m-buzz",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t5-m-buzz.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t5-m-buzz.jpg"
+    },
+    {
+      "id": "m-t5-m-curls",
+      "gender": "m",
+      "tone": "t5",
+      "hair": "m-curls",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t5-m-curls.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t5-m-curls.jpg"
+    },
+    {
+      "id": "m-t6-m-short",
+      "gender": "m",
+      "tone": "t6",
+      "hair": "m-short",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t6-m-short.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t6-m-short.jpg"
+    },
+    {
+      "id": "m-t6-m-waves",
+      "gender": "m",
+      "tone": "t6",
+      "hair": "m-waves",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t6-m-waves.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t6-m-waves.jpg"
+    },
+    {
+      "id": "m-t6-m-fade",
+      "gender": "m",
+      "tone": "t6",
+      "hair": "m-fade",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t6-m-fade.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t6-m-fade.jpg"
+    },
+    {
+      "id": "m-t6-m-buzz",
+      "gender": "m",
+      "tone": "t6",
+      "hair": "m-buzz",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t6-m-buzz.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t6-m-buzz.jpg"
+    },
+    {
+      "id": "m-t6-m-curls",
+      "gender": "m",
+      "tone": "t6",
+      "hair": "m-curls",
+      "url": "https://cdn.moxtapp.ru/avatars/portraits/v1/m-t6-m-curls.jpg",
+      "thumbUrl": "https://cdn.moxtapp.ru/avatars/portraits/v1/thumbs/m-t6-m-curls.jpg"
+    }
+  ]
+}

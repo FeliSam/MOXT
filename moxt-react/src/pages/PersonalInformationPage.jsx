@@ -22,6 +22,7 @@ import { useGeographyOptions } from '../hooks/useGeographyOptions'
 import { useUploadProgress } from '../hooks/useUploadProgress'
 import { storageService } from '../services/storageService'
 import { UploadProgress } from '../components/ui/UploadProgress'
+import { AvatarBadge } from '../features/account/avatarDicebear/AvatarBadge'
 import { AvatarDicebearEditorLazy } from '../features/account/avatarDicebear/AvatarDicebearEditorLazy'
 import { useLoreleiFallbackSrc } from '../features/account/avatarDicebear/useLoreleiFallbackSrc'
 
@@ -51,6 +52,9 @@ export function PersonalInformationPage() {
   const { progress: avatarProgress, track: trackAvatarUpload } = useUploadProgress()
   const [avatarEditorOpen, setAvatarEditorOpen] = React.useState(false)
   const loreleiSrc = useLoreleiFallbackSrc(user, { size: 224 })
+  const loreleiUrl = useSelector((state) =>
+    user?.id ? state.account.preferences?.[user.id]?.avatarDicebear?.avatarUrl : null,
+  )
 
   const formik = useFormik({
     enableReinitialize: true,
@@ -196,6 +200,9 @@ export function PersonalInformationPage() {
                   <div className="flex size-28 items-center justify-center rounded-full bg-gradient-to-br from-brand-600 to-cyan-600 text-3xl font-black text-white shadow-lg ring-4 ring-[var(--app-accent-soft)]">
                     {initials || <FiUser />}
                   </div>
+                )}
+                {avatarPreview ? null : (
+                  <AvatarBadge url={user.avatarUrl} loreleiUrl={loreleiUrl} className="-top-2" />
                 )}
                 <button
                   type="button"

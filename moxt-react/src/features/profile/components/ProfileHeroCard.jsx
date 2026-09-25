@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { FiChevronRight, FiEdit2, FiEdit3 } from 'react-icons/fi'
+import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { Badge, VerifiedDisplayName } from '../../../components/ui/Badge'
 import { Card } from '../../../components/ui/Card'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { ReferralShareButton } from '../../referral/ReferralShareButton'
 import { avatarDisplayUrl } from '../../account/avatarDisplayUrl'
+import { AvatarBadge } from '../../account/avatarDicebear/AvatarBadge'
 import { AvatarDicebearEditorLazy } from '../../account/avatarDicebear/AvatarDicebearEditorLazy'
 import { useLoreleiFallbackSrc } from '../../account/avatarDicebear/useLoreleiFallbackSrc'
 import { profileInitials, roleLabelKeys } from '../profilePageConfig'
@@ -18,6 +20,9 @@ export function ProfileHeroCard({ profileCompletion, user }) {
   const roleLabel = roleKey ? t(roleKey) : user.role
   const [avatarEditorOpen, setAvatarEditorOpen] = useState(false)
   const loreleiSrc = useLoreleiFallbackSrc(user, { size: 160 })
+  const loreleiUrl = useSelector(
+    (state) => state.account.preferences?.[user.id]?.avatarDicebear?.avatarUrl,
+  )
 
   return (
     <Card variant={variant} className="relative overflow-hidden">
@@ -38,6 +43,7 @@ export function ProfileHeroCard({ profileCompletion, user }) {
                 {profileInitials(user.firstName, user.lastName)}
               </div>
             )}
+            <AvatarBadge url={user.avatarUrl} loreleiUrl={loreleiUrl} className="-top-2" />
             <button
               type="button"
               onClick={() => setAvatarEditorOpen(true)}

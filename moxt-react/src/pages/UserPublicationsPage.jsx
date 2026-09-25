@@ -83,6 +83,9 @@ export function UserPublicationsPage() {
   const { guestMode = false } = useOutletContext() || {}
   const { requireAccount } = useGuestAction()
   const currentUser = useSelector((state) => state.auth.user)
+  const ownLoreleiUrl = useSelector((state) =>
+    currentUser?.id ? state.account.preferences?.[currentUser.id]?.avatarDicebear?.avatarUrl : null,
+  )
   const appState = useSelector((state) => state)
   const guestPreview = useGuestUserPreview(guestMode ? userId : null)
   usePublicUserCatalogSync(userId, { enabled: Boolean(userId) && !guestMode })
@@ -380,6 +383,8 @@ export function UserPublicationsPage() {
         avatarUrl={
           scope === 'business' && ownBusiness?.logoUrl ? ownBusiness.logoUrl : avatarUrl
         }
+        avatarBadgeUrl={scope === 'business' && ownBusiness?.logoUrl ? '' : avatarUrl}
+        avatarLoreleiUrl={isOwner ? ownLoreleiUrl : ''}
         rating={aggregateRating}
         reviewsLabel={p3('publications.public.reviewsShort')}
         onAvatarEdit={isOwner && scope !== 'business' ? () => setAvatarEditorOpen(true) : null}

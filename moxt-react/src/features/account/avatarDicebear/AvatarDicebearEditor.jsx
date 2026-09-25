@@ -1,15 +1,10 @@
-import { useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import {
+  LuCamera,
   LuCheck,
   LuChevronRight,
-  LuDroplet,
-  LuEye,
-  LuGem,
-  LuGlasses,
   LuImage,
-  LuPalette,
-  LuScissors,
-  LuSmile,
+  LuPenTool,
   LuSparkles,
   LuX,
 } from 'react-icons/lu'
@@ -24,259 +19,111 @@ import { addToast } from '../../ui/uiSlice'
 import { updateAccountPreferences } from '../accountSlice'
 import './avatarEditor.css'
 import { AvatarPreviewRing } from './AvatarPreviewRing'
-import { loreleiSvgDataUri, loreleiToPngFile } from './createLoreleiAvatar'
+import { promptDonePreferences } from './avatarPrompt'
+import { MoxtMark, Segmented } from './editorParts'
+import { initialAvatarStyle } from './editorUtils'
 import {
-  BACKGROUND_COLORS,
-  EARRINGS_VARIANTS,
-  EYE_VARIANTS,
-  GLASSES_VARIANTS,
-  HAIR_COLORS,
-  HAIR_VARIANTS,
-  SKIN_COLORS,
   loreleiOptionsKey,
   preferencesToLoreleiOptions,
   randomizeLoreleiOptions,
 } from './loreleiOptions'
+import { PortraitControls } from './PortraitControls'
+import {
+  findPortrait,
+  initialPortraitChoice,
+  portraitChoiceKey,
+  randomPortraitChoice,
+} from './portraitOptions'
 import { profileDetailsFromUser, saveDicebearAvatar } from './saveDicebearAvatar'
+import { savePortraitAvatar } from './savePortraitAvatar'
 
-const TABS = [
-  { id: 'face', icon: LuSmile, labelKey: 'tabFace' },
-  { id: 'hair', icon: LuScissors, labelKey: 'tabHair' },
-  { id: 'accessories', icon: LuGem, labelKey: 'tabAccessories' },
-]
+// DiceBear n’est chargé que si l’utilisateur ouvre le style « Illustré ».
+const LoreleiControls = lazy(() => import('./LoreleiControls.jsx'))
 
-const CHECKERBOARD = {
-  backgroundImage:
-    'linear-gradient(45deg,#d4d4d8 25%,transparent 25%,transparent 75%,#d4d4d8 75%),linear-gradient(45deg,#d4d4d8 25%,transparent 25%,transparent 75%,#d4d4d8 75%)',
-  backgroundSize: '10px 10px',
-  backgroundPosition: '0 0,5px 5px',
-  backgroundColor: '#fafafa',
-}
-
-/** Couleur claire → coche foncée (lisibilité sur les teints clairs / fonds pastel). */
-function isLightColor(hex) {
-  if (!hex || hex === 'transparent') return true
-  const n = Number.parseInt(hex, 16)
-  const r = (n >> 16) & 255
-  const g = (n >> 8) & 255
-  const b = n & 255
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 165
-}
-
-function MoxtMark({ className = '' }) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className={className} fill="none">
-      <path
-        d="M3.5 19V5.5l8.5 8 8.5-8V19"
-        stroke="currentColor"
-        strokeWidth="2.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
-function Panel({ icon: Icon, title, hint, children }) {
-  return (
-    <section className="ave-panel min-w-0 rounded-[1.4rem] p-4">
-      <header className="mb-3 flex items-center gap-3">
-        <span className="ave-panel-icon grid size-9 shrink-0 place-items-center rounded-xl">
-          <Icon aria-hidden="true" className="size-[1.05rem]" />
-        </span>
-        <div className="min-w-0">
-          <h3 className="ave-panel-title leading-tight">{title}</h3>
-          {hint ? <p className="ave-muted mt-0.5 truncate text-xs">{hint}</p> : null}
-        </div>
-      </header>
-      {children}
-    </section>
-  )
-}
-
-function Scroller({ label, value, children }) {
-  const ref = useRef(null)
-  const mounted = useRef(false)
-  // Garde l’option sélectionnée visible (ouverture d’onglet, tirage aléatoire).
-  useLayoutEffect(() => {
-    const row = ref.current
-    const selected = row?.querySelector('[aria-checked="true"]')
-    const wasMounted = mounted.current
-    mounted.current = true
-    if (!row || !selected) return
-    const left = Math.max(0, selected.offsetLeft - (row.clientWidth - selected.offsetWidth) / 2)
-    if (typeof row.scrollTo === 'function')
-      row.scrollTo({ left, behavior: wasMounted ? 'smooth' : 'auto' })
-    else row.scrollLeft = left
-  }, [value])
-  return (
-    <div
-      ref={ref}
-      role="radiogroup"
-      aria-label={label}
-      className="ave-scroller scrollbar-hidden relative -mx-4 flex snap-x gap-2.5 overflow-x-auto scroll-px-4 px-4 py-2"
-    >
-      {children}
-    </div>
-  )
-}
-
-function Swatch({ color, selected, label, onSelect, small = false }) {
-  const transparent = color === 'transparent'
-  return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={selected}
-      aria-label={label}
-      title={label}
-      onClick={onSelect}
-      className={`ave-swatch relative grid shrink-0 snap-start place-items-center rounded-full ${
-        small ? 'size-8' : 'size-[2.6rem]'
-      } ${selected ? 'is-selected' : ''}`}
-      style={transparent ? CHECKERBOARD : { backgroundColor: `#${color}` }}
-    >
-      {selected ? (
-        <LuCheck
-          aria-hidden="true"
-          strokeWidth={3}
-          className={`${small ? 'size-3.5' : 'size-4'} ${
-            isLightColor(color) ? 'text-slate-900/75' : 'text-white'
-          }`}
-        />
-      ) : null}
-    </button>
-  )
-}
-
-function SwatchRow({ colors, value, onChange, labelFor, groupLabel, small = false }) {
-  return (
-    <Scroller label={groupLabel} value={value}>
-      {colors.map((color, index) => (
-        <Swatch
-          key={color}
-          color={color}
-          small={small}
-          selected={value === color}
-          label={labelFor(color, index)}
-          onSelect={() => onChange(color)}
-        />
-      ))}
-    </Scroller>
-  )
-}
-
-function Tile({ src, selected, label, onSelect }) {
-  return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={selected}
-      aria-label={label}
-      title={label}
-      onClick={onSelect}
-      className={`ave-tile relative grid size-[4.75rem] shrink-0 snap-start place-items-center overflow-hidden rounded-[1.15rem] ${
-        selected ? 'is-selected' : ''
-      }`}
-    >
-      <img src={src} alt="" className="size-[92%] object-contain" draggable="false" />
-      {selected ? (
-        <span className="ave-check absolute right-1.5 top-1.5 grid size-5 place-items-center rounded-full">
-          <LuCheck aria-hidden="true" strokeWidth={3.5} className="size-3" />
-        </span>
-      ) : null}
-    </button>
-  )
-}
-
-function AccessoryToggle({ icon: Icon, label, checked, onChange }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      onClick={() => onChange(!checked)}
-      className={`ave-acc flex min-w-0 items-center gap-2.5 rounded-2xl px-3 py-2.5 text-left ${
-        checked ? 'is-on' : ''
-      }`}
-    >
-      <Icon aria-hidden="true" className="ave-brand size-[1.1rem] shrink-0" />
-      <span className="min-w-0 flex-1 text-[0.82rem] font-semibold leading-tight">{label}</span>
-      <span
-        aria-hidden="true"
-        className={`ave-switch relative inline-flex h-6 w-10 shrink-0 items-center rounded-full ${
-          checked ? 'is-on' : ''
-        }`}
-      >
-        <span
-          className={`ave-switch-knob inline-block size-[1.1rem] rounded-full bg-white shadow ${
-            checked ? 'translate-x-[1.2rem]' : 'translate-x-[0.2rem]'
-          }`}
-        />
-      </span>
-    </button>
-  )
-}
-
-function useThumbs(options, field, variants, extra = {}) {
-  const key = loreleiOptionsKey(options)
-  return useMemo(
-    () =>
-      variants.map((variant) => ({
-        variant,
-        src: loreleiSvgDataUri(
-          { ...options, ...extra, [field]: variant, backgroundColor: 'transparent' },
-          { size: 96 },
-        ),
-      })),
+/** Aperçu Lorelei calculé à la demande (import dynamique de DiceBear). */
+function useLoreleiPreview(options, active) {
+  const key = active ? loreleiOptionsKey(options) : ''
+  const [src, setSrc] = useState('')
+  useEffect(() => {
+    if (!active) return undefined
+    let cancelled = false
+    import('./createLoreleiAvatar.js')
+      .then((mod) => {
+        if (!cancelled) setSrc(mod.loreleiSvgDataUri(options, { size: 360 }))
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [key, field, variants],
-  )
+  }, [key, active])
+  return active ? src : ''
+}
+
+function PanelFallback() {
+  return <div className="ave-panel h-48 animate-pulse rounded-[1.4rem]" aria-hidden="true" />
 }
 
 /**
- * Éditeur d’avatar Lorelei (DiceBear 9, rendu local) — « light editorial » en thème clair,
- * « dark glass » en thème sombre. Enregistrer : PNG → Yandex (media-api) → profiles.avatar_url.
+ * Éditeur d’avatar Moxt — deux styles :
+ * « Portrait » (défaut) : bibliothèque de 60 portraits photoréalistes sur le CDN
+ *   → profiles.avatar_url = URL du portrait, sans upload ;
+ * « Illustré » : DiceBear Lorelei rendu localement → PNG → Yandex (media-api).
+ * UI « light editorial » (thème clair) / « dark glass » (thème sombre).
  */
 export function AvatarDicebearEditor({ open = true, onClose, onChoosePhoto, onSaved }) {
   const dispatch = useDispatch()
   const { t } = useLanguage()
   const tx = (key, vars) => t(`profile.avatarEditor.${key}`, vars)
-  const uid = useId()
   const user = useSelector((state) => state.auth.user)
-  const storedPrefs = useSelector((state) =>
-    user?.id ? state.account.preferences?.[user.id]?.avatarDicebear : null,
+  const prefs = useSelector((state) => (user?.id ? state.account.preferences?.[user.id] : null))
+  const [style, setStyle] = useState(() =>
+    initialAvatarStyle({ prefs, avatarUrl: user?.avatarUrl }),
   )
-  const [options, setOptions] = useState(() => preferencesToLoreleiOptions(storedPrefs, user?.id))
-  const [initialKey] = useState(() => loreleiOptionsKey(options))
-  const [tab, setTab] = useState('face')
+  const [choice, setChoice] = useState(() =>
+    initialPortraitChoice({
+      prefs: prefs?.avatarPortrait,
+      avatarUrl: user?.avatarUrl,
+      userId: user?.id,
+    }),
+  )
+  const [options, setOptions] = useState(() =>
+    preferencesToLoreleiOptions(prefs?.avatarDicebear, user?.id),
+  )
+  const [initialLoreleiKey] = useState(() => loreleiOptionsKey(options))
   const [saving, setSaving] = useState(false)
   const [photoUploading, setPhotoUploading] = useState(false)
   const photoInputRef = useRef(null)
-  const tabRefs = useRef({})
   const { progress, track } = useUploadProgress()
-
-  const busy = saving || photoUploading
-  const alreadyApplied = Boolean(
-    storedPrefs?.avatarUrl && user?.avatarUrl && storedPrefs.avatarUrl === user.avatarUrl,
-  )
-  const dirty = loreleiOptionsKey(options) !== initialKey || !alreadyApplied
-  const optionsKey = loreleiOptionsKey(options)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const previewSrc = useMemo(() => loreleiSvgDataUri(options, { size: 360 }), [optionsKey])
-
-  const hairThumbs = useThumbs(options, 'hair', HAIR_VARIANTS)
-  const eyeThumbs = useThumbs(options, 'eyes', EYE_VARIANTS)
-  const glassesThumbs = useThumbs(options, 'glasses', GLASSES_VARIANTS, { glassesOn: true })
-  const earringThumbs = useThumbs(options, 'earrings', EARRINGS_VARIANTS, { earringsOn: true })
-
-  const set = (patch) => setOptions((prev) => ({ ...prev, ...patch }))
-  const numbered = (key) => (_value, index) => tx(key, { index: index + 1 })
+  const loreleiPreview = useLoreleiPreview(options, style === 'lorelei')
 
   if (!user) return null
 
+  const busy = saving || photoUploading
+  const portrait = findPortrait(choice)
+  const currentBase = String(user.avatarUrl || '').split('?')[0]
+  const loreleiApplied = Boolean(
+    prefs?.avatarDicebear?.avatarUrl &&
+    user.avatarUrl &&
+    prefs.avatarDicebear.avatarUrl === user.avatarUrl,
+  )
+  const dirty =
+    style === 'portrait'
+      ? Boolean(portrait) && currentBase !== portrait.url
+      : loreleiOptionsKey(options) !== initialLoreleiKey || !loreleiApplied
+  const previewSrc = style === 'portrait' ? portrait?.url : loreleiPreview
+
   const close = () => {
     if (!busy) onClose?.()
+  }
+
+  function savePreferences(patch) {
+    dispatch(
+      updateAccountPreferences({
+        userId: user.id,
+        preferences: { ...patch, ...promptDonePreferences(user.id, prefs?.avatarPrompt) },
+      }),
+    )
   }
 
   async function persistProfile(details) {
@@ -286,28 +133,40 @@ export function AvatarDicebearEditor({ open = true, onClose, onChoosePhoto, onSa
     return false
   }
 
+  async function saveCurrentStyle() {
+    if (style === 'portrait') {
+      return savePortraitAvatar({
+        user,
+        choice,
+        persistProfile,
+        persistPreferences: async (avatarPortrait) => {
+          savePreferences({ avatarPortrait, avatarStyle: 'portrait' })
+        },
+      })
+    }
+    const { loreleiToPngFile } = await import('./createLoreleiAvatar.js')
+    return track((onProgress) =>
+      saveDicebearAvatar({
+        user,
+        options,
+        onProgress,
+        renderPng: (opts) => loreleiToPngFile(opts, { size: 512 }),
+        // Chemin dédié (avatars/{id}/lorelei.png) : l’avatar illustré reste reconnaissable (badge).
+        uploadAvatar: (userId, file, extra) =>
+          storageService.uploadAvatar(userId, file, { ...extra, name: 'lorelei' }),
+        persistProfile,
+        persistPreferences: async (avatarDicebear) => {
+          savePreferences({ avatarDicebear, avatarStyle: 'lorelei' })
+        },
+      }),
+    )
+  }
+
   async function handleSave() {
-    if (busy) return
+    if (busy || !dirty) return
     setSaving(true)
     try {
-      const result = await track((onProgress) =>
-        saveDicebearAvatar({
-          user,
-          options,
-          onProgress,
-          renderPng: (opts) => loreleiToPngFile(opts, { size: 512 }),
-          uploadAvatar: (userId, file, extra) => storageService.uploadAvatar(userId, file, extra),
-          persistProfile,
-          persistPreferences: async (preferences) => {
-            dispatch(
-              updateAccountPreferences({
-                userId: user.id,
-                preferences: { avatarDicebear: preferences },
-              }),
-            )
-          },
-        }),
-      )
+      const result = await saveCurrentStyle()
       dispatch(
         addToast({
           title: tx('toastSavedTitle'),
@@ -332,6 +191,21 @@ export function AvatarDicebearEditor({ open = true, onClose, onChoosePhoto, onSa
     }
   }
 
+  function handleRandom() {
+    if (style === 'lorelei') {
+      setOptions((prev) => randomizeLoreleiOptions(prev))
+      return
+    }
+    setChoice((prev) => {
+      // Toujours un portrait différent de l’actuel.
+      for (let i = 0; i < 8; i += 1) {
+        const next = randomPortraitChoice()
+        if (portraitChoiceKey(next) !== portraitChoiceKey(prev)) return next
+      }
+      return prev
+    })
+  }
+
   function handlePhotoInstead() {
     if (busy) return
     if (onChoosePhoto) {
@@ -353,6 +227,7 @@ export function AvatarDicebearEditor({ open = true, onClose, onChoosePhoto, onSa
         storageService.uploadAvatar(user.id, file, { onProgress }),
       )
       const saved = await persistProfile(profileDetailsFromUser(user, { avatarUrl: url }))
+      savePreferences({ avatarStyle: 'photo' })
       dispatch(
         addToast({
           title: t('profile.personal.toastAvatarTitle'),
@@ -375,16 +250,6 @@ export function AvatarDicebearEditor({ open = true, onClose, onChoosePhoto, onSa
     } finally {
       setPhotoUploading(false)
     }
-  }
-
-  function handleTabKeyDown(event) {
-    const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0
-    if (!step) return
-    event.preventDefault()
-    const index = TABS.findIndex((item) => item.id === tab)
-    const next = TABS[(index + step + TABS.length) % TABS.length].id
-    setTab(next)
-    tabRefs.current[next]?.focus()
   }
 
   const displayName = `${user.firstName || ''} ${user.lastName || ''}`.trim()
@@ -435,167 +300,24 @@ export function AvatarDicebearEditor({ open = true, onClose, onChoosePhoto, onSa
           ) : null}
         </div>
 
-        {/* Réglages : un groupe à la fois */}
-        <div className="mt-5 min-w-0 lg:mt-4">
-          <div
-            role="tablist"
-            aria-label={tx('tabsAria')}
-            className="ave-tabs grid grid-cols-3 gap-1 rounded-2xl p-1"
-            onKeyDown={handleTabKeyDown}
-          >
-            {TABS.map(({ id, icon: Icon, labelKey }) => {
-              const active = tab === id
-              return (
-                <button
-                  key={id}
-                  ref={(el) => {
-                    tabRefs.current[id] = el
-                  }}
-                  type="button"
-                  role="tab"
-                  id={`${uid}-tab-${id}`}
-                  aria-selected={active}
-                  aria-controls={`${uid}-panel`}
-                  tabIndex={active ? 0 : -1}
-                  onClick={() => setTab(id)}
-                  className={`ave-tab flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-[0.76rem] font-semibold sm:flex-row sm:gap-1.5 sm:px-2 sm:py-2.5 sm:text-[0.82rem] ${
-                    active ? 'is-active' : ''
-                  }`}
-                >
-                  <Icon aria-hidden="true" className="size-4 shrink-0" />
-                  <span className="truncate">{tx(labelKey)}</span>
-                </button>
-              )
-            })}
-          </div>
-
-          <div
-            role="tabpanel"
-            id={`${uid}-panel`}
-            aria-labelledby={`${uid}-tab-${tab}`}
-            className="mt-4 grid gap-3"
-          >
-            {tab === 'face' ? (
-              <>
-                <Panel icon={LuDroplet} title={tx('sectionSkin')} hint={tx('hintSkin')}>
-                  <SwatchRow
-                    groupLabel={tx('sectionSkin')}
-                    colors={SKIN_COLORS}
-                    value={options.skinColor}
-                    onChange={(skinColor) => set({ skinColor })}
-                    labelFor={numbered('skinOption')}
-                  />
-                </Panel>
-                <Panel icon={LuEye} title={tx('sectionEyes')} hint={tx('hintEyes')}>
-                  <Scroller label={tx('sectionEyes')} value={options.eyes}>
-                    {eyeThumbs.map(({ variant, src }, index) => (
-                      <Tile
-                        key={variant}
-                        src={src}
-                        selected={options.eyes === variant}
-                        label={tx('eyesOption', { index: index + 1 })}
-                        onSelect={() => set({ eyes: variant })}
-                      />
-                    ))}
-                  </Scroller>
-                </Panel>
-              </>
-            ) : null}
-
-            {tab === 'hair' ? (
-              <>
-                <Panel icon={LuScissors} title={tx('sectionHair')} hint={tx('hintHair')}>
-                  <Scroller label={tx('sectionHair')} value={options.hair}>
-                    {hairThumbs.map(({ variant, src }, index) => (
-                      <Tile
-                        key={variant}
-                        src={src}
-                        selected={options.hair === variant}
-                        label={tx('hairOption', { index: index + 1 })}
-                        onSelect={() => set({ hair: variant })}
-                      />
-                    ))}
-                  </Scroller>
-                </Panel>
-                <Panel icon={LuPalette} title={tx('sectionHairColor')} hint={tx('hintHairColor')}>
-                  <SwatchRow
-                    groupLabel={tx('sectionHairColor')}
-                    colors={HAIR_COLORS}
-                    value={options.hairColor}
-                    onChange={(hairColor) => set({ hairColor })}
-                    labelFor={numbered('colorOption')}
-                  />
-                </Panel>
-              </>
-            ) : null}
-
-            {tab === 'accessories' ? (
-              <>
-                <Panel icon={LuGem} title={tx('sectionAccessories')} hint={tx('hintAccessories')}>
-                  <div className="grid grid-cols-2 gap-2">
-                    <AccessoryToggle
-                      icon={LuGlasses}
-                      label={tx('glasses')}
-                      checked={options.glassesOn}
-                      onChange={(glassesOn) => set({ glassesOn })}
-                    />
-                    <AccessoryToggle
-                      icon={LuGem}
-                      label={tx('earrings')}
-                      checked={options.earringsOn}
-                      onChange={(earringsOn) => set({ earringsOn })}
-                    />
-                  </div>
-                  {options.glassesOn ? (
-                    <div className="mt-3">
-                      <p className="ave-sublabel">{tx('glasses')}</p>
-                      <Scroller label={tx('glasses')} value={options.glasses}>
-                        {glassesThumbs.map(({ variant, src }, index) => (
-                          <Tile
-                            key={variant}
-                            src={src}
-                            selected={options.glasses === variant}
-                            label={`${tx('glasses')} ${index + 1}`}
-                            onSelect={() => set({ glassesOn: true, glasses: variant })}
-                          />
-                        ))}
-                      </Scroller>
-                    </div>
-                  ) : null}
-                  {options.earringsOn ? (
-                    <div className="mt-3">
-                      <p className="ave-sublabel">{tx('earrings')}</p>
-                      <Scroller label={tx('earrings')} value={options.earrings}>
-                        {earringThumbs.map(({ variant, src }, index) => (
-                          <Tile
-                            key={variant}
-                            src={src}
-                            selected={options.earrings === variant}
-                            label={`${tx('earrings')} ${index + 1}`}
-                            onSelect={() => set({ earringsOn: true, earrings: variant })}
-                          />
-                        ))}
-                      </Scroller>
-                    </div>
-                  ) : null}
-                </Panel>
-                <Panel icon={LuImage} title={tx('sectionBackground')} hint={tx('hintBackground')}>
-                  <SwatchRow
-                    small
-                    groupLabel={tx('sectionBackground')}
-                    colors={BACKGROUND_COLORS}
-                    value={options.backgroundColor}
-                    onChange={(backgroundColor) => set({ backgroundColor })}
-                    labelFor={(color, index) =>
-                      color === 'transparent'
-                        ? tx('transparent')
-                        : tx('colorOption', { index: index + 1 })
-                    }
-                  />
-                </Panel>
-              </>
-            ) : null}
-          </div>
+        {/* Réglages */}
+        <div className="mt-5 grid min-w-0 content-start gap-3 lg:mt-4">
+          <Segmented
+            label={tx('styleAria')}
+            value={style}
+            onChange={setStyle}
+            options={[
+              { id: 'portrait', label: tx('stylePortrait'), icon: LuCamera },
+              { id: 'lorelei', label: tx('styleIllustrated'), icon: LuPenTool },
+            ]}
+          />
+          {style === 'portrait' ? (
+            <PortraitControls choice={choice} onChange={setChoice} />
+          ) : (
+            <Suspense fallback={<PanelFallback />}>
+              <LoreleiControls options={options} onChange={setOptions} />
+            </Suspense>
+          )}
         </div>
       </div>
 
@@ -609,7 +331,7 @@ export function AvatarDicebearEditor({ open = true, onClose, onChoosePhoto, onSa
             <button
               type="button"
               disabled={busy}
-              onClick={() => setOptions((prev) => randomizeLoreleiOptions(prev))}
+              onClick={handleRandom}
               className="ave-btn ave-btn-secondary inline-flex h-[3.25rem] min-w-0 items-center justify-center gap-2 rounded-2xl px-3 text-[0.92rem] font-semibold"
             >
               <LuSparkles aria-hidden="true" className="size-[1.1rem] shrink-0" />

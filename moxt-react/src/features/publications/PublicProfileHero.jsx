@@ -1,6 +1,7 @@
 import { FiEdit2, FiStar } from 'react-icons/fi'
 import { VerifiedDisplayName } from '../../components/ui/Badge'
 import { avatarDisplayUrl } from '../account/avatarDisplayUrl'
+import { AvatarBadge } from '../account/avatarDicebear/AvatarBadge'
 import { resolveMediaDisplayUrl } from '../../services/media/mediaUrlUtils'
 
 function formatRatingAverage(average) {
@@ -49,6 +50,9 @@ export function PublicProfileHero({
   shareSlot = null,
   onAvatarEdit = null,
   avatarEditLabel = '',
+  /** URL brute de l’avatar perso (badge « Avatar » si portrait / illustré Moxt). */
+  avatarBadgeUrl = '',
+  avatarLoreleiUrl = '',
   className = '',
 }) {
   const resolvedCover = resolveMediaDisplayUrl(coverUrl) || coverUrl || ''
@@ -107,6 +111,9 @@ export function PublicProfileHero({
           >
             {initials}
           </span>
+          {resolvedAvatar ? (
+            <AvatarBadge url={avatarBadgeUrl} loreleiUrl={avatarLoreleiUrl} className="-top-2" />
+          ) : null}
           {onAvatarEdit ? (
             <button
               type="button"

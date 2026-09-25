@@ -34,6 +34,7 @@ import { Sidebar } from './Sidebar'
 import { KeyboardDismissChevron } from './KeyboardDismissChevron'
 
 import { WelcomeGate } from '../onboarding/WelcomeGate'
+import { AvatarPromptGate } from '../../features/account/avatarDicebear/AvatarPromptGate'
 
 import { PwaInstallBanner } from '../pwa/PwaInstallBanner'
 
@@ -373,6 +374,7 @@ export function AppLayout({ children }) {
       <PullToRefreshIndicator disabled={hideAppChrome || isMessagesRoute || isFeedMobileFeed} />
 
       <WelcomeGate />
+      <AvatarPromptGate />
 
       {hideAppChrome ? null : (
 

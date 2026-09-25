@@ -3,10 +3,13 @@
  */
 import { mediaConfig } from '../../config/mediaConfig.js'
 import { isCdnMediaUrl, isSupabaseStorageUrl } from '../../services/media/mediaUrlUtils.js'
+import { isLibraryPortrait, libraryPortraitDisplayUrl } from './avatarDicebear/portraitLibrary.js'
 
 export function avatarDisplayUrl(url, { width = 96, height } = {}) {
   if (!url || typeof url !== 'string') return url
   if (url.includes('/render/image/')) return url
+  // Portraits de la bibliothèque : fichiers statiques 256 / 512 px (pas de redimensionnement CDN).
+  if (isLibraryPortrait(url)) return libraryPortraitDisplayUrl(url, { width })
   if (isCdnMediaUrl(url)) {
     const h = height || width
     const base = url.split('?')[0]
