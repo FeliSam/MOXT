@@ -11,6 +11,9 @@ export const COVER_STYLE_IDS = Object.freeze({
   MAN_A_STEEL: 'man-a-steel',
   MAN_B_TOPO: 'man-b-topo',
   MAN_C_MESH: 'man-c-mesh',
+  /** Identité « Prune » du profil perso : vagues prune + rose (défaut). */
+  WOMAN_D_PRUNE: 'woman-d-prune',
+  MAN_D_PRUNE: 'man-d-prune',
 })
 
 export const BUSINESS_COVER_STYLES = Object.freeze([
@@ -21,12 +24,14 @@ export const BUSINESS_COVER_STYLES = Object.freeze([
 ])
 
 export const WOMAN_COVER_STYLES = Object.freeze([
+  COVER_STYLE_IDS.WOMAN_D_PRUNE,
   COVER_STYLE_IDS.WOMAN_A_SILK,
   COVER_STYLE_IDS.WOMAN_B_GLASS,
   COVER_STYLE_IDS.WOMAN_C_BLUSH,
 ])
 
 export const MAN_COVER_STYLES = Object.freeze([
+  COVER_STYLE_IDS.MAN_D_PRUNE,
   COVER_STYLE_IDS.MAN_A_STEEL,
   COVER_STYLE_IDS.MAN_B_TOPO,
   COVER_STYLE_IDS.MAN_C_MESH,
@@ -43,8 +48,9 @@ export const ALL_COVER_STYLES = Object.freeze([
 ])
 
 export const DEFAULT_BUSINESS_COVER_STYLE = COVER_STYLE_IDS.BUSINESS_B_EDITORIAL
-export const DEFAULT_WOMAN_COVER_STYLE = COVER_STYLE_IDS.WOMAN_A_SILK
-export const DEFAULT_MAN_COVER_STYLE = COVER_STYLE_IDS.MAN_A_STEEL
+// Profil perso sans style choisi : vagues prune (un style déjà enregistré reste prioritaire).
+export const DEFAULT_WOMAN_COVER_STYLE = COVER_STYLE_IDS.WOMAN_D_PRUNE
+export const DEFAULT_MAN_COVER_STYLE = COVER_STYLE_IDS.MAN_D_PRUNE
 
 export const COVER_STYLE_LABELS_FR = Object.freeze({
   [COVER_STYLE_IDS.BUSINESS_A_MESH]: 'Mesh teal',
@@ -57,6 +63,8 @@ export const COVER_STYLE_LABELS_FR = Object.freeze({
   [COVER_STYLE_IDS.MAN_A_STEEL]: 'Steel teal',
   [COVER_STYLE_IDS.MAN_B_TOPO]: 'Topo emerald',
   [COVER_STYLE_IDS.MAN_C_MESH]: 'Mesh midnight',
+  [COVER_STYLE_IDS.WOMAN_D_PRUNE]: 'Vagues prune & rose',
+  [COVER_STYLE_IDS.MAN_D_PRUNE]: 'Vagues prune nuit',
 })
 
 const COVER_STYLE_SET = new Set(ALL_COVER_STYLES)

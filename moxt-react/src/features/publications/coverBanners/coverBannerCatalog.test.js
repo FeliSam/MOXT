@@ -4,6 +4,9 @@ import {
   DEFAULT_BUSINESS_COVER_STYLE,
   DEFAULT_MAN_COVER_STYLE,
   DEFAULT_WOMAN_COVER_STYLE,
+  MAN_COVER_STYLES,
+  WOMAN_COVER_STYLES,
+  coverStyleCategory,
   defaultCoverStyleForPersonal,
   isCoverStyleId,
   normalizeProfileGender,
@@ -18,12 +21,25 @@ describe('coverBannerCatalog', () => {
     ).toBe(COVER_STYLE_IDS.BUSINESS_B_EDITORIAL)
   })
 
-  it('defaults woman / man personal styles', () => {
-    expect(DEFAULT_WOMAN_COVER_STYLE).toBe(COVER_STYLE_IDS.WOMAN_A_SILK)
-    expect(DEFAULT_MAN_COVER_STYLE).toBe(COVER_STYLE_IDS.MAN_A_STEEL)
-    expect(defaultCoverStyleForPersonal('female')).toBe(COVER_STYLE_IDS.WOMAN_A_SILK)
-    expect(defaultCoverStyleForPersonal('male')).toBe(COVER_STYLE_IDS.MAN_A_STEEL)
-    expect(defaultCoverStyleForPersonal(undefined)).toBe(COVER_STYLE_IDS.MAN_A_STEEL)
+  it('defaults woman / man personal styles to the prune waves', () => {
+    expect(DEFAULT_WOMAN_COVER_STYLE).toBe(COVER_STYLE_IDS.WOMAN_D_PRUNE)
+    expect(DEFAULT_MAN_COVER_STYLE).toBe(COVER_STYLE_IDS.MAN_D_PRUNE)
+    expect(defaultCoverStyleForPersonal('female')).toBe(COVER_STYLE_IDS.WOMAN_D_PRUNE)
+    expect(defaultCoverStyleForPersonal('male')).toBe(COVER_STYLE_IDS.MAN_D_PRUNE)
+    expect(defaultCoverStyleForPersonal(undefined)).toBe(COVER_STYLE_IDS.MAN_D_PRUNE)
+  })
+
+  it('keeps an explicitly chosen personal style and lists prune first', () => {
+    expect(
+      resolveCoverStyleId({ coverStyle: COVER_STYLE_IDS.WOMAN_A_SILK, category: 'personal' }),
+    ).toBe(COVER_STYLE_IDS.WOMAN_A_SILK)
+    expect(
+      resolveCoverStyleId({ coverStyle: COVER_STYLE_IDS.MAN_C_MESH, category: 'personal' }),
+    ).toBe(COVER_STYLE_IDS.MAN_C_MESH)
+    expect(WOMAN_COVER_STYLES[0]).toBe(COVER_STYLE_IDS.WOMAN_D_PRUNE)
+    expect(MAN_COVER_STYLES[0]).toBe(COVER_STYLE_IDS.MAN_D_PRUNE)
+    expect(coverStyleCategory(COVER_STYLE_IDS.WOMAN_D_PRUNE)).toBe('woman')
+    expect(coverStyleCategory(COVER_STYLE_IDS.MAN_D_PRUNE)).toBe('man')
   })
 
   it('normalizes gender aliases and keeps unknown as null', () => {

@@ -468,3 +468,179 @@ export function ManMeshMidnightCover({ className = '' }) {
     </div>
   )
 }
+
+/** woman-d-prune : vagues prune → rose (défaut profil perso Femme). */
+export function WomanPruneRoseCover({ className = '' }) {
+  const id = useCoverSvgIds('wD')
+  const bg = id('bg')
+  const waveA = id('waveA')
+  const waveB = id('waveB')
+  const grain = id('grain')
+
+  return (
+    <div
+      className={`relative isolate overflow-hidden bg-[#2b0f24] ${className}`}
+      aria-hidden="true"
+      data-cover-style="woman-d-prune"
+    >
+      <svg
+        className="absolute inset-0 h-full w-full"
+        viewBox="0 0 800 220"
+        preserveAspectRatio="xMidYMid slice"
+        xmlns="http://www.w3.org/2000/svg"
+        role="presentation"
+      >
+        <defs>
+          <linearGradient id={bg} x1="0%" y1="50%" x2="100%" y2="50%">
+            <stop offset="0%" stopColor="#2b0f24" />
+            <stop offset="50%" stopColor="#6b2d5c" />
+            <stop offset="100%" stopColor="#d98bb5" />
+          </linearGradient>
+          <linearGradient id={waveA} x1="0%" y1="100%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#8a3f75" />
+            <stop offset="45%" stopColor="#f3c1d8" />
+            <stop offset="75%" stopColor="#e79bbf" />
+            <stop offset="100%" stopColor="#a8568f" />
+          </linearGradient>
+          <linearGradient id={waveB} x1="20%" y1="100%" x2="90%" y2="0%">
+            <stop offset="0%" stopColor="#58244b" />
+            <stop offset="55%" stopColor="#dba6c8" />
+            <stop offset="100%" stopColor="#c77db3" />
+          </linearGradient>
+          {grainFilterDef(grain, 0.18)}
+        </defs>
+        <rect width="800" height="220" fill={`url(#${bg})`} />
+        <path
+          d="M300 240 C400 165 490 195 590 115 C670 55 735 35 820 5 L820 240 Z"
+          fill={`url(#${waveB})`}
+          opacity="0.95"
+        />
+        <path
+          d="M370 240 C470 150 555 180 655 100 C735 42 780 22 820 -8 L820 240 Z"
+          fill={`url(#${waveA})`}
+          opacity="0.88"
+        />
+        <path
+          d="M455 240 C545 150 625 165 715 90 C772 44 800 18 820 -18 L820 240 Z"
+          fill={`url(#${waveB})`}
+          opacity="0.7"
+        />
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <path
+            key={i}
+            d={`M${350 + i * 30} 215 C${455 + i * 25} ${145 - i * 8} ${555 + i * 20} ${165 - i * 6} ${675 + i * 15} ${92 - i * 10}`}
+            fill="none"
+            stroke="#fde7f1"
+            strokeWidth="0.8"
+            opacity={0.18 + i * 0.04}
+          />
+        ))}
+        <GrainOverlay id={grain} opacity={0.35} />
+      </svg>
+      <div className="pointer-events-none absolute inset-y-0 left-0 z-[1] w-[45%] bg-gradient-to-r from-[#2b0f24] via-[#2b0f24]/75 to-transparent" />
+      <div className="absolute inset-y-0 left-0 z-[2] flex w-[52%] max-w-[22rem] items-center pl-5 sm:pl-7">
+        <div>
+          <p
+            className="text-[1.85rem] font-semibold leading-none tracking-tight text-white sm:text-[2.15rem]"
+            style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
+          >
+            Moxt
+          </p>
+          <div
+            className="mt-2.5 h-px w-[4.5rem] rounded-full"
+            style={{ background: 'linear-gradient(90deg,#c77db3,#f3c1d8,#c77db3)' }}
+          />
+          <p className="mt-2 text-[0.7rem] font-semibold uppercase tracking-[0.38em] text-white/90">
+            Profil
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** man-d-prune : vagues prune nuit + filets rose (défaut profil perso Homme). */
+export function ManPruneNightCover({ className = '' }) {
+  const id = useCoverSvgIds('mD')
+  const bg = id('bg')
+  const wave = id('wave')
+  const glow = id('glow')
+  const grain = id('grain')
+
+  return (
+    <div
+      className={`relative isolate overflow-hidden bg-[#140712] ${className}`}
+      aria-hidden="true"
+      data-cover-style="man-d-prune"
+    >
+      <svg
+        className="absolute inset-0 h-full w-full"
+        viewBox="0 0 800 220"
+        preserveAspectRatio="xMidYMid slice"
+        xmlns="http://www.w3.org/2000/svg"
+        role="presentation"
+      >
+        <defs>
+          <linearGradient id={bg} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#140712" />
+            <stop offset="55%" stopColor="#3a1433" />
+            <stop offset="100%" stopColor="#6b2d5c" />
+          </linearGradient>
+          <linearGradient id={wave} x1="0%" y1="100%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#2a0f25" />
+            <stop offset="50%" stopColor="#6b2d5c" />
+            <stop offset="100%" stopColor="#a8568f" />
+          </linearGradient>
+          <linearGradient id={glow} x1="0%" y1="100%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#e79bbf" stopOpacity="0" />
+            <stop offset="45%" stopColor="#e79bbf" stopOpacity="0.85" />
+            <stop offset="100%" stopColor="#f3c1d8" stopOpacity="0.25" />
+          </linearGradient>
+          {grainFilterDef(grain, 0.18)}
+        </defs>
+        <rect width="800" height="220" fill={`url(#${bg})`} />
+        <path
+          d="M300 240 C420 170 510 190 600 120 C680 65 740 40 820 10 L820 240 Z"
+          fill={`url(#${wave})`}
+          opacity="0.9"
+        />
+        <path
+          d="M400 250 C505 165 590 175 690 102 C755 56 795 28 820 -8 L820 250 Z"
+          fill="#1d0a1a"
+          opacity="0.8"
+        />
+        <path
+          d="M280 230 C420 150 520 170 640 90 C720 40 780 20 840 -10"
+          fill="none"
+          stroke={`url(#${glow})`}
+          strokeWidth="6"
+          opacity="0.85"
+        />
+        <path
+          d="M300 242 C440 158 540 178 660 98 C740 48 800 28 850 -2"
+          fill="none"
+          stroke="#f3c1d8"
+          strokeWidth="1.2"
+          strokeDasharray="1.5 6"
+          opacity="0.55"
+        />
+        <GrainOverlay id={grain} opacity={0.35} />
+      </svg>
+      <div className="pointer-events-none absolute inset-y-0 left-0 z-[1] w-[48%] bg-gradient-to-r from-[#140712] via-[#140712]/80 to-transparent" />
+      <div className="absolute inset-y-0 left-0 z-[2] flex w-[52%] max-w-[22rem] items-center pl-5 sm:pl-7">
+        <div>
+          <p className="font-display text-[1.85rem] font-extrabold leading-none tracking-tight text-white sm:text-[2.15rem]">
+            Moxt
+          </p>
+          <div
+            className="mt-2.5 h-px w-[4.75rem] rounded-full"
+            style={{ background: 'linear-gradient(90deg,#c77db3,#f3c1d8)' }}
+          />
+          <p className="mt-2 text-[0.7rem] font-semibold uppercase tracking-[0.38em] text-white/80">
+            Profil
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}

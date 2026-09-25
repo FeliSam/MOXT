@@ -77,7 +77,8 @@ function BannerTile({ styleId, category, selected, label, onSelect }) {
 /**
  * Éditeur de bannière Moxt : même univers visuel que l’éditeur d’avatar
  * (« light editorial » en clair, « dark glass » en sombre).
- * Entreprise : 4 styles ; profil perso : onglets Femme / Homme (3 + 3), présélection selon le genre.
+ * Entreprise : 4 styles (vert) ; profil perso : onglets Femme / Homme (4 + 4), présélection selon le genre,
+ * accent prune (classe `bne-personal`).
  * `onUploadPhoto(file, { onProgress })` (optionnel) active le lien « Photo à la place ».
  */
 export function BannerEditor({
@@ -149,7 +150,7 @@ export function BannerEditor({
       onClose={close}
       title={tx('title')}
       bare
-      panelClassName="ave-root flex h-[100dvh] w-full flex-col overflow-hidden sm:h-auto sm:max-h-[min(92dvh,56rem)] sm:max-w-xl sm:rounded-[2rem] lg:max-w-[66rem]"
+      panelClassName={`ave-root ${isBusiness ? '' : 'bne-personal'} flex h-[100dvh] w-full flex-col overflow-hidden sm:h-auto sm:max-h-[min(92dvh,56rem)] sm:max-w-xl sm:rounded-[2rem] lg:max-w-[66rem]`}
     >
       <header className="relative z-10 grid flex-none grid-cols-[2.5rem_1fr_2.5rem] items-center px-4 pt-[max(0.85rem,env(safe-area-inset-top))] sm:px-6 sm:pt-5">
         <span aria-hidden="true" />

@@ -15,6 +15,8 @@ import {
   ManSteelTealCover,
   ManTopoEmeraldCover,
   ManMeshMidnightCover,
+  ManPruneNightCover,
+  WomanPruneRoseCover,
 } from './PersonalCoverStyles'
 
 const STYLE_COMPONENTS = {
@@ -28,6 +30,8 @@ const STYLE_COMPONENTS = {
   [COVER_STYLE_IDS.MAN_A_STEEL]: ManSteelTealCover,
   [COVER_STYLE_IDS.MAN_B_TOPO]: ManTopoEmeraldCover,
   [COVER_STYLE_IDS.MAN_C_MESH]: ManMeshMidnightCover,
+  [COVER_STYLE_IDS.WOMAN_D_PRUNE]: WomanPruneRoseCover,
+  [COVER_STYLE_IDS.MAN_D_PRUNE]: ManPruneNightCover,
 }
 
 /**

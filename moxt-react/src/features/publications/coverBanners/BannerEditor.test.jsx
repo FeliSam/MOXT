@@ -55,16 +55,16 @@ describe('BannerEditor', () => {
     expect(onClose).toHaveBeenCalled()
   })
 
-  it('perso : onglets Femme/Homme présélectionnés selon le genre, 3 styles par onglet', () => {
+  it('perso : onglets Femme/Homme présélectionnés selon le genre, 4 styles par onglet (prune par défaut)', () => {
     renderEditor({ category: 'personal', gender: 'female', value: null })
     const woman = screen.getByRole('radio', { name: 'profile.bannerEditor.woman' })
     expect(woman.getAttribute('aria-checked')).toBe('true')
-    expect(radios()).toHaveLength(3)
-    expect(screen.getByRole('radio', { name: 'Silk plum' }).getAttribute('aria-checked')).toBe(
+    expect(radios()).toHaveLength(4)
+    expect(screen.getByRole('radio', { name: 'Vagues prune & rose' }).getAttribute('aria-checked')).toBe(
       'true',
     )
     fireEvent.click(screen.getByRole('radio', { name: 'profile.bannerEditor.man' }))
-    expect(screen.getByRole('radio', { name: 'Steel teal' }).getAttribute('aria-checked')).toBe(
+    expect(screen.getByRole('radio', { name: 'Vagues prune nuit' }).getAttribute('aria-checked')).toBe(
       'true',
     )
   })
