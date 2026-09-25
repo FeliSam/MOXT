@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { FiBriefcase, FiBox, FiCalendar, FiFileText, FiPlay, FiRss, FiStar } from 'react-icons/fi'
+import { FiBriefcase, FiBox, FiCalendar, FiFileText, FiPlay, FiRss, FiSmile, FiStar } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Button } from '../../../components/ui/Button'
 import { Card } from '../../../components/ui/Card'
@@ -23,6 +23,7 @@ const MODULE_ICONS = {
   events: FiCalendar,
   jobs: FiBriefcase,
   parcels: FiBox,
+  avatar: FiSmile,
 }
 
 export function AdminModulesPanel() {

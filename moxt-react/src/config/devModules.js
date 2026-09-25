@@ -1,5 +1,14 @@
 /** Modules pilotés par l’admin — défaut false = beta off ; true = actif pour tous. */
-export const DEV_MODULE_IDS = ['stars', 'feed', 'news', 'videos', 'events', 'jobs', 'parcels']
+export const DEV_MODULE_IDS = [
+  'stars',
+  'feed',
+  'news',
+  'videos',
+  'events',
+  'jobs',
+  'parcels',
+  'avatar',
+]
 
 export const DEFAULT_DEV_MODULE_FLAGS = Object.freeze({
   stars: false,
@@ -9,6 +18,8 @@ export const DEFAULT_DEV_MODULE_FLAGS = Object.freeze({
   events: true,
   jobs: true,
   parcels: true,
+  /** Éditeur d’avatar Moxt (portraits, illustré), invitation et badge — réglages : admin ?view=avatar. */
+  avatar: true,
 })
 
 export const DEV_MODULE_META = {
@@ -46,6 +57,11 @@ export const DEV_MODULE_META = {
     labelKey: 'admin.modules.parcels',
     hintKey: 'admin.modules.parcelsHint',
     paths: ['/parcels'],
+  },
+  avatar: {
+    labelKey: 'admin.modules.avatar',
+    hintKey: 'admin.modules.avatarHint',
+    paths: [],
   },
 }
 

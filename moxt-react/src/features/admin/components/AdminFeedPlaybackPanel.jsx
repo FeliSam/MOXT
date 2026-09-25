@@ -8,36 +8,7 @@ import { loadFeedPlayback, saveFeedPlayback } from '../../platform/feedPlaybackS
 import { addToast } from '../../ui/uiSlice'
 import { CARD } from '../adminConfig'
 import { adminText } from '../adminI18n'
-
-function ToggleRow({ icon: Icon, label, hint, enabled, onToggle }) {
-  return (
-    <Card className={`${CARD} flex items-start gap-4 p-4`}>
-      <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--app-surface-muted)] text-[var(--app-text)]">
-        <Icon className="text-lg" aria-hidden />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="font-black">{label}</p>
-        <p className="mt-0.5 text-sm text-[var(--app-text-muted)]">{hint}</p>
-      </div>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={enabled}
-        aria-label={label}
-        onClick={onToggle}
-        className={`relative h-8 w-14 shrink-0 rounded-full transition ${
-          enabled ? 'bg-brand-600' : 'bg-[var(--app-border)]'
-        }`}
-      >
-        <span
-          className={`absolute top-1 size-6 rounded-full bg-white shadow transition ${
-            enabled ? 'left-7' : 'left-1'
-          }`}
-        />
-      </button>
-    </Card>
-  )
-}
+import { AdminToggleRow } from './AdminToggleRow'
 
 export function AdminFeedPlaybackPanel() {
   const { t } = useLanguage()
@@ -87,7 +58,7 @@ export function AdminFeedPlaybackPanel() {
         </p>
       </Card>
 
-      <ToggleRow
+      <AdminToggleRow
         icon={FiVolume2}
         label={adminText(t, 'admin.feed.soundOnByDefault')}
         hint={adminText(t, 'admin.feed.soundOnByDefaultHint')}
@@ -97,7 +68,7 @@ export function AdminFeedPlaybackPanel() {
         }
       />
 
-      <ToggleRow
+      <AdminToggleRow
         icon={FiPlay}
         label={adminText(t, 'admin.feed.tapPausesVideo')}
         hint={adminText(t, 'admin.feed.tapPausesVideoHint')}

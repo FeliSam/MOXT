@@ -50,6 +50,7 @@ import { PublicVideoThumbGrid } from '../features/publications/PublicVideoThumbG
 import { formatMemberSince, usePublicationProfile } from '../features/publications/usePublicationProfile'
 import { SubscribeButton } from '../features/account/SubscribeButton'
 import { AvatarDicebearEditorLazy } from '../features/account/avatarDicebear/AvatarDicebearEditorLazy'
+import { useAvatarModule } from '../features/platform/useAvatarModule'
 import { ContactButton } from '../features/communications/ContactButton'
 import { useGuestAction } from '../features/guest/useGuestAction'
 import { useGuestUserPreview } from '../features/guest/useGuestPreview'
@@ -91,6 +92,7 @@ export function UserPublicationsPage() {
   usePublicUserCatalogSync(userId, { enabled: Boolean(userId) && !guestMode })
   const isOwner = !guestMode && currentUser?.id === userId
   const [avatarEditorOpen, setAvatarEditorOpen] = useState(false)
+  const avatarModule = useAvatarModule()
 
   const viewParam = searchParams.get('view')
   const requestedArchiveTab = searchParams.get('status') === 'archived' ? 'archived' : 'active'
@@ -383,11 +385,19 @@ export function UserPublicationsPage() {
         avatarUrl={
           scope === 'business' && ownBusiness?.logoUrl ? ownBusiness.logoUrl : avatarUrl
         }
-        avatarBadgeUrl={scope === 'business' && ownBusiness?.logoUrl ? '' : avatarUrl}
+        avatarBadgeUrl={
+          !avatarModule.badgeEnabled || (scope === 'business' && ownBusiness?.logoUrl)
+            ? ''
+            : avatarUrl
+        }
         avatarLoreleiUrl={isOwner ? ownLoreleiUrl : ''}
         rating={aggregateRating}
         reviewsLabel={p3('publications.public.reviewsShort')}
-        onAvatarEdit={isOwner && scope !== 'business' ? () => setAvatarEditorOpen(true) : null}
+        onAvatarEdit={
+          isOwner && scope !== 'business' && avatarModule.editorAvailable
+            ? () => setAvatarEditorOpen(true)
+            : null
+        }
         avatarEditLabel={t('profile.avatarEditor.open')}
         actions={
           !isOwner ? (

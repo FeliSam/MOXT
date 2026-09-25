@@ -15,6 +15,7 @@ import { useLanguage } from '../../../contexts/useLanguage'
 import { useUploadProgress } from '../../../hooks/useUploadProgress'
 import { storageService } from '../../../services/storageService'
 import { setUser, updateProfile } from '../../auth/authSlice'
+import { useAvatarModule } from '../../platform/useAvatarModule'
 import { addToast } from '../../ui/uiSlice'
 import { updateAccountPreferences } from '../accountSlice'
 import './avatarEditor.css'
@@ -77,9 +78,18 @@ export function AvatarDicebearEditor({ open = true, onClose, onChoosePhoto, onSa
   const tx = (key, vars) => t(`profile.avatarEditor.${key}`, vars)
   const user = useSelector((state) => state.auth.user)
   const prefs = useSelector((state) => (user?.id ? state.account.preferences?.[user.id] : null))
-  const [style, setStyle] = useState(() =>
-    initialAvatarStyle({ prefs, avatarUrl: user?.avatarUrl }),
+  // Styles, style par défaut et lien photo pilotés par le module Avatar de l’admin.
+  const avatarModule = useAvatarModule()
+  const [pickedStyle, setStyle] = useState(() =>
+    initialAvatarStyle({
+      prefs,
+      avatarUrl: user?.avatarUrl,
+      defaultStyle: avatarModule.defaultStyle,
+      styles: avatarModule.styles,
+    }),
   )
+  // Style désactivé entre-temps par l’admin → style par défaut (toujours parmi les actifs).
+  const style = avatarModule.styles.includes(pickedStyle) ? pickedStyle : avatarModule.defaultStyle
   const [choice, setChoice] = useState(() =>
     initialPortraitChoice({
       prefs: prefs?.avatarPortrait,
@@ -97,7 +107,7 @@ export function AvatarDicebearEditor({ open = true, onClose, onChoosePhoto, onSa
   const { progress, track } = useUploadProgress()
   const loreleiPreview = useLoreleiPreview(options, style === 'lorelei')
 
-  if (!user) return null
+  if (!user || !avatarModule.editorAvailable) return null
 
   const busy = saving || photoUploading
   const portrait = findPortrait(choice)
@@ -302,15 +312,17 @@ export function AvatarDicebearEditor({ open = true, onClose, onChoosePhoto, onSa
 
         {/* Réglages */}
         <div className="mt-5 grid min-w-0 content-start gap-3 lg:mt-4">
-          <Segmented
-            label={tx('styleAria')}
-            value={style}
-            onChange={setStyle}
-            options={[
-              { id: 'portrait', label: tx('stylePortrait'), icon: LuCamera },
-              { id: 'lorelei', label: tx('styleIllustrated'), icon: LuPenTool },
-            ]}
-          />
+          {avatarModule.styles.length > 1 ? (
+            <Segmented
+              label={tx('styleAria')}
+              value={style}
+              onChange={setStyle}
+              options={[
+                { id: 'portrait', label: tx('stylePortrait'), icon: LuCamera },
+                { id: 'lorelei', label: tx('styleIllustrated'), icon: LuPenTool },
+              ].filter((option) => avatarModule.styles.includes(option.id))}
+            />
+          ) : null}
           {style === 'portrait' ? (
             <PortraitControls choice={choice} onChange={setChoice} />
           ) : (
@@ -355,24 +367,28 @@ export function AvatarDicebearEditor({ open = true, onClose, onChoosePhoto, onSa
               <span className="truncate">{saving ? tx('saving') : tx('save')}</span>
             </button>
           </div>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={handlePhotoInstead}
-            className="ave-link mx-auto mt-2 flex items-center gap-1.5 rounded-lg px-2 py-1 text-[0.8rem] font-medium disabled:opacity-50"
-          >
-            <LuImage aria-hidden="true" className="size-4" />
-            {tx('photoInstead')}
-            <LuChevronRight aria-hidden="true" className="size-3.5" />
-          </button>
-          <input
-            ref={photoInputRef}
-            type="file"
-            accept="image/*"
-            className="sr-only"
-            tabIndex={-1}
-            onChange={handlePhotoFile}
-          />
+          {avatarModule.photoEnabled ? (
+            <>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={handlePhotoInstead}
+                className="ave-link mx-auto mt-2 flex items-center gap-1.5 rounded-lg px-2 py-1 text-[0.8rem] font-medium disabled:opacity-50"
+              >
+                <LuImage aria-hidden="true" className="size-4" />
+                {tx('photoInstead')}
+                <LuChevronRight aria-hidden="true" className="size-3.5" />
+              </button>
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                tabIndex={-1}
+                onChange={handlePhotoFile}
+              />
+            </>
+          ) : null}
         </div>
       </footer>
     </Modal>

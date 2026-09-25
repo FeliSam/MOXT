@@ -99,3 +99,30 @@ describe('avatarPrompt — règles d’affichage', () => {
     expect(hasCustomAvatar({ user })).toBe(false)
   })
 })
+
+describe('avatarPrompt — réglages du module Avatar (admin)', () => {
+  it('invitation désactivée : jamais', () => {
+    expect(shouldShowAvatarPrompt({ user, state: null, now: NOW, enabled: false })).toBe(false)
+  })
+
+  it('max d’affichages configurable', () => {
+    const state = { shown: 3, lastShownAt: at(NOW - 48 * H) }
+    expect(shouldShowAvatarPrompt({ user, state, now: NOW })).toBe(false)
+    expect(shouldShowAvatarPrompt({ user, state, now: NOW, maxShows: 5 })).toBe(true)
+    expect(
+      shouldShowAvatarPrompt({
+        user,
+        state: { shown: 1, lastShownAt: at(NOW - 48 * H) },
+        now: NOW,
+        maxShows: 1,
+      }),
+    ).toBe(false)
+  })
+
+  it('délai min entre deux configurable', () => {
+    const state = { shown: 1, lastShownAt: at(NOW - 3 * H) }
+    expect(shouldShowAvatarPrompt({ user, state, now: NOW })).toBe(false)
+    expect(shouldShowAvatarPrompt({ user, state, now: NOW, intervalMs: 2 * H })).toBe(true)
+    expect(shouldShowAvatarPrompt({ user, state, now: NOW, intervalMs: 24 * H })).toBe(false)
+  })
+})

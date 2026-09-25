@@ -5,6 +5,8 @@
  * est marquée `done` ; au plus 3 affichages ; jamais deux fois dans la même session ; au moins
  * 12 h entre deux affichages (nouvelle connexion). État serveur : preferences.avatarPrompt
  * = { shown, lastShownAt, done } ; miroir localStorage pour éviter le flash avant hydratation.
+ * Le maximum, l’intervalle et l’activation sont réglables dans l’admin (module Avatar) ;
+ * les constantes ci-dessous restent les valeurs par défaut.
  */
 
 export const AVATAR_PROMPT_MAX = 3
@@ -53,12 +55,15 @@ export function shouldShowAvatarPrompt({
   now = Date.now(),
   shownThisSession = false,
   blocked = false,
+  enabled = true,
+  maxShows = AVATAR_PROMPT_MAX,
+  intervalMs = AVATAR_PROMPT_INTERVAL_MS,
 } = {}) {
-  if (!user?.id || blocked || shownThisSession) return false
+  if (!enabled || !user?.id || blocked || shownThisSession) return false
   if (hasCustomAvatar({ user, prefs })) return false
   const s = normalizePromptState(state)
-  if (s.done || s.shown >= AVATAR_PROMPT_MAX) return false
-  if (s.lastShownAt && now - Date.parse(s.lastShownAt) < AVATAR_PROMPT_INTERVAL_MS) return false
+  if (s.done || s.shown >= maxShows) return false
+  if (s.lastShownAt && now - Date.parse(s.lastShownAt) < intervalMs) return false
   return true
 }
 

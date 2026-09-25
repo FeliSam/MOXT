@@ -44,11 +44,18 @@ const USER = {
   avatarUrl: '',
 }
 
-function makeStore(actions, { user = USER, prefs = {} } = {}) {
+function makeStore(actions, { user = USER, prefs = {}, avatarModule = null } = {}) {
+  const moduleReducers = avatarModule
+    ? {
+        platformModules: () => ({ flags: { avatar: avatarModule.enabled !== false } }),
+        avatarSettings: () => ({ config: avatarModule.settings || {} }),
+      }
+    : {}
   return configureStore({
     reducer: {
       auth: () => ({ user }),
       account: () => ({ preferences: { [user.id]: prefs } }),
+      ...moduleReducers,
     },
     middleware: (getDefault) =>
       getDefault({ serializableCheck: false }).concat(() => (next) => (action) => {
@@ -194,5 +201,56 @@ describe('AvatarDicebearEditor — style Illustré (Lorelei)', () => {
       },
       avatarPrompt: { done: true },
     })
+  })
+})
+
+describe('AvatarDicebearEditor — réglages du module Avatar (admin)', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('module coupé : l’éditeur ne s’affiche pas', () => {
+    const { container } = renderEditor([], { avatarModule: { enabled: false } })
+    expect(container.innerHTML).toBe('')
+    expect(screen.queryByAltText('profile.avatarEditor.previewAlt')).toBeNull()
+  })
+
+  it('Illustré désactivé : pas de sélecteur de style, portrait seul', () => {
+    renderEditor([], {
+      prefs: { avatarStyle: 'lorelei' },
+      avatarModule: { settings: { loreleiEnabled: false } },
+    })
+    expect(
+      screen.queryByRole('radio', { name: /profile\.avatarEditor\.styleIllustrated/ }),
+    ).toBeNull()
+    expect(screen.getByAltText('profile.avatarEditor.previewAlt').getAttribute('src')).toMatch(
+      /^https:\/\/cdn\.moxtapp\.ru\/avatars\/portraits\/v1\//,
+    )
+  })
+
+  it('style par défaut Illustré (admin) pour un profil sans avatar', () => {
+    renderEditor([], { avatarModule: { settings: { defaultStyle: 'lorelei' } } })
+    expect(styleRadio('styleIllustrated').getAttribute('aria-checked')).toBe('true')
+    expect(initialAvatarStyle({ prefs: {}, avatarUrl: '', defaultStyle: 'lorelei' })).toBe(
+      'lorelei',
+    )
+    expect(
+      initialAvatarStyle({
+        prefs: {},
+        avatarUrl: '',
+        defaultStyle: 'lorelei',
+        styles: ['portrait'],
+      }),
+    ).toBe('portrait')
+  })
+
+  it('Photo perso désactivée : pas de lien « Photo à la place »', () => {
+    renderEditor([], { avatarModule: { settings: { photoEnabled: false } } })
+    expect(screen.queryByRole('button', { name: /profile\.avatarEditor\.photoInstead/ })).toBeNull()
+  })
+
+  it('défauts (ligne de réglages absente) : deux styles + lien photo', () => {
+    renderEditor([], { avatarModule: { settings: {} } })
+    expect(styleRadio('stylePortrait')).toBeTruthy()
+    expect(styleRadio('styleIllustrated')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /profile\.avatarEditor\.photoInstead/ })).toBeTruthy()
   })
 })
