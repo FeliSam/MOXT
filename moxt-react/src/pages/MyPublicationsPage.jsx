@@ -77,6 +77,7 @@ import {
   businessCityLabel,
   businessShareVersion,
 } from '../features/share/businessShareUtils'
+import { buildUserProfileShareUrl } from '../features/share/userShareUtils'
 import { PublicationScopeButton } from '../features/publications/PublicationScopeButton'
 import { usePublicationProfile } from '../features/publications/usePublicationProfile'
 import { SubscribersPanel } from '../features/account/SubscribersPanel'
@@ -461,16 +462,18 @@ export function MyPublicationsPage() {
         editCoverLabel={t('profile.personal.editBanner')}
         shareSlot={
           <ProfileQrShareButton
+            appearance="cover"
             type={isBusinessScope ? 'business' : 'user'}
             activityVisibility={isBusinessScope ? ownBusiness?.activityVisibility : undefined}
-            targetPath={
-              isBusinessScope ? undefined : `/users/${user.id}/publications`
-            }
             refreshKey={isBusinessScope ? businessShareVersion(ownBusiness) : undefined}
-            shareUrl={isBusinessScope ? buildBusinessShareUrl(ownBusiness) : undefined}
+            shareUrl={
+              isBusinessScope
+                ? buildBusinessShareUrl(ownBusiness)
+                : buildUserProfileShareUrl(user.id)
+            }
             shareText={isBusinessScope ? buildBusinessShareText(ownBusiness) : undefined}
             title={heroName}
-            subtitle={isBusinessScope ? heroCategory : displayName}
+            subtitle={isBusinessScope ? heroCategory : t('share.profileSubtitle')}
             verified={heroVerified}
             city={heroCity}
             sector={isBusinessScope ? heroCategory : undefined}

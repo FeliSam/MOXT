@@ -35,6 +35,7 @@ export function QrSharePanel({
   code,
   inviteCount,
   qrImageSrc,
+  hint: hintProp,
   qrSize = 260,
   showActions = true,
   className = '',
@@ -53,7 +54,7 @@ export function QrSharePanel({
       ? Number(inviteCount) * REFERRAL_STARS_PER_INVITE
       : null
 
-  const hint = t(`share.hints.${variant}`)
+  const hint = hintProp || t(`share.hints.${variant}`)
   const socialVariants = ['instagram', 'telegram', 'whatsapp']
   const resolvedShareTitle =
     shareTitle ||
@@ -200,15 +201,19 @@ export function QrSharePanel({
           </div>
         ) : null}
 
-        <div className="mt-7 rounded-[1.35rem] bg-white p-3.5 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.35)]">
+        {/* Modules toujours noirs sur blanc (clair comme sombre) + quiet zone blanche. */}
+        <div
+          className="mt-7 w-full rounded-[1.35rem] bg-white p-3.5 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.35)]"
+          style={{ maxWidth: qrSize + 28 }}
+        >
           <img
             key={shareUrl}
             src={qrUrl}
             alt={hint}
             width={qrSize}
             height={qrSize}
-            className="block object-contain"
-            style={{ width: qrSize, height: qrSize }}
+            className="mx-auto block aspect-square h-auto w-full bg-white object-contain"
+            style={{ maxWidth: qrSize }}
           />
         </div>
 

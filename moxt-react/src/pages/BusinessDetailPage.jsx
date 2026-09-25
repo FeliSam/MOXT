@@ -320,8 +320,9 @@ export function BusinessDetailPage() {
         onOpenReviews={() => setMainTab('avis')}
         shareSlot={
           <ProfileQrShareButton
+            appearance="cover"
             type="business"
-            activityVisibility={business.activityVisibility}
+            activityVisibility={isOwner ? business.activityVisibility : undefined}
             refreshKey={businessShareVersion(business)}
             shareUrl={buildBusinessShareUrl(business)}
             shareText={buildBusinessShareText(business)}

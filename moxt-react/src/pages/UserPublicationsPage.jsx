@@ -69,6 +69,14 @@ import {
 import { useLanguage } from '../contexts/useLanguage'
 import { phase3Text } from '../i18n/phase3I18n'
 import { isActiveVideo } from '../features/videos/videoUtils'
+import { ProfileQrShareButton } from '../features/share/ProfileQrShareButton'
+import {
+  buildBusinessShareText,
+  buildBusinessShareUrl,
+  businessCityLabel,
+  businessShareVersion,
+} from '../features/share/businessShareUtils'
+import { buildUserProfileShareUrl } from '../features/share/userShareUtils'
 
 const EMPTY_ICONS = {
   listing: FiShoppingBag,
@@ -330,6 +338,37 @@ export function UserPublicationsPage() {
     ? guestProfile?.avatarUrl
     : (isOwner && currentUser?.avatarUrl) || memberProfile?.avatarUrl
   const verified = Boolean(guestMode ? guestProfile?.verified : memberProfile?.verified)
+  // QR sur la couverture : même bouton que la fiche entreprise (haut droite).
+  const isBusinessHero = scope === 'business' && Boolean(ownBusiness)
+  const heroQrButton = isBusinessHero ? (
+    <ProfileQrShareButton
+      appearance="cover"
+      type="business"
+      activityVisibility={isOwner ? ownBusiness.activityVisibility : undefined}
+      refreshKey={businessShareVersion(ownBusiness)}
+      shareUrl={buildBusinessShareUrl(ownBusiness)}
+      shareText={buildBusinessShareText(ownBusiness)}
+      title={ownBusiness.name}
+      subtitle={ownBusiness.sector}
+      verified={['verified', 'approved', 'active'].includes(ownBusiness.status)}
+      city={businessCityLabel(ownBusiness)}
+      sector={ownBusiness.sector}
+      logoUrl={ownBusiness.logoUrl}
+    />
+  ) : (
+    <ProfileQrShareButton
+      appearance="cover"
+      type="user"
+      isOwnProfile={isOwner}
+      shareUrl={buildUserProfileShareUrl(userId)}
+      title={displayName}
+      subtitle={t('share.profileSubtitle')}
+      hint={isOwner ? undefined : t('share.hints.profileMember')}
+      verified={verified}
+      city={profileCity}
+      logoUrl={avatarUrl}
+    />
+  )
   const activeVideos = (publications.videos || []).filter(isActiveVideo)
   const memberSinceLabel = formatMemberSince(
     memberProfile?.memberSince || guestProfile?.memberSince || memberProfile?.createdAt || guestProfile?.createdAt,
@@ -394,6 +433,7 @@ export function UserPublicationsPage() {
       <PublicProfileHero
         name={displayName}
         verified={verified}
+        shareSlot={heroQrButton}
         category={
           scope === 'business' && ownBusiness
             ? ownBusiness.sector || t('publications.profile.businessBadge')
