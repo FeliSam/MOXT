@@ -17,8 +17,20 @@ import { MoxtCoverBanner } from './MoxtCoverBanner'
  * category: 'business' | 'personal'
  * For personal without gender, shows Homme / Femme tabs (defaults Homme).
  * Select a style then Appliquer to persist.
+ * The sheet is mounted only while open, so the draft restarts from `value` at each opening.
  */
-export function CoverStylePicker({
+export function CoverStylePicker(props) {
+  if (!props.open) return null
+  return <CoverStylePickerSheet {...props} />
+}
+
+function initialGenderTab(knownGender, value) {
+  if (knownGender === 'female') return 'woman'
+  if (knownGender === 'male') return 'man'
+  return value && WOMAN_COVER_STYLES.includes(value) ? 'woman' : 'man'
+}
+
+function CoverStylePickerSheet({
   open,
   onClose,
   category = 'business',
@@ -35,22 +47,8 @@ export function CoverStylePicker({
   closeLabel = 'Fermer',
 }) {
   const knownGender = normalizeProfileGender(gender)
-  const [genderTab, setGenderTab] = useState(knownGender === 'female' ? 'woman' : 'man')
+  const [genderTab, setGenderTab] = useState(() => initialGenderTab(knownGender, value))
   const [draft, setDraft] = useState(value)
-
-  useEffect(() => {
-    if (!open) return
-    setDraft(value)
-    setGenderTab(
-      knownGender === 'female'
-        ? 'woman'
-        : knownGender === 'male'
-          ? 'man'
-          : value && WOMAN_COVER_STYLES.includes(value)
-            ? 'woman'
-            : 'man',
-    )
-  }, [open, value, knownGender])
 
   const styleIds = useMemo(() => {
     if (category === 'business') return BUSINESS_COVER_STYLES
