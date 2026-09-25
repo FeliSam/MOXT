@@ -568,12 +568,9 @@ export function BusinessDetailPage() {
         value={coverEdit.value}
         onChange={coverEdit.onChange}
         labels={coverEdit.labels}
-        title={bt('businesses.setup.identity.coverStyle')}
-        hint={bt('businesses.setup.identity.coverStyleHint')}
-        applyLabel={bt('businesses.setup.identity.coverStyleApply')}
-        manLabel={bt('businesses.setup.identity.coverStyleMan')}
-        womanLabel={bt('businesses.setup.identity.coverStyleWoman')}
-        activeLabel={bt('businesses.setup.identity.coverStyleActive')}
+        previewName={business.name}
+        previewAvatarUrl={business.logoUrl}
+        onUploadPhoto={coverEdit.uploadPhoto}
       />
 
     </div>

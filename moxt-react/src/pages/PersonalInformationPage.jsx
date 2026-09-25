@@ -1,6 +1,15 @@
 import { useFormik } from 'formik'
 import React, { useRef } from 'react'
-import { FiCamera, FiCheckCircle, FiFlag, FiImage, FiMail, FiMapPin, FiSmile, FiUser } from 'react-icons/fi'
+import {
+  FiCamera,
+  FiCheckCircle,
+  FiFlag,
+  FiImage,
+  FiMail,
+  FiMapPin,
+  FiSmile,
+  FiUser,
+} from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Alert } from '../components/ui/Alert'
 import { BackButton } from '../components/ui/BackButton'

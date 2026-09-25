@@ -1,5 +1,6 @@
 export * from './coverBannerCatalog'
 export { MoxtCoverBanner } from './MoxtCoverBanner'
+export { BannerEditor } from './BannerEditor'
+export * from './bannerEditorUtils'
 export { CoverStylePicker, CoverStylePickerField } from './CoverStylePicker'
 export { useOwnerCoverStyleEdit } from './useOwnerCoverStyleEdit'
-
