@@ -678,6 +678,7 @@ export const en = {
     qrToShare: "QR code to share",
     showProfileQr: "Show profile QR code",
     showBusinessQr: "Show business QR code",
+    profileSubtitle: "MOXT profile",
     badge: {
       download: "Download the badge",
       generating: "Generating…",
@@ -705,6 +706,7 @@ export const en = {
     hints: {
       invite: "Scan to join MOXT",
       profile: "Scan to view my publications",
+      profileMember: "Scan to view this profile on MOXT",
       business: "Scan to discover this business",
       instagram: "Scan to follow MOXT on Instagram",
       telegram: "Scan to join the MOXT Telegram group",

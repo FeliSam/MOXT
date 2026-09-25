@@ -537,6 +537,7 @@ export const pt = {
     qrToShare: "QR code para partilhar",
     showProfileQr: "Mostrar QR code do perfil",
     showBusinessQr: "Mostrar QR code da empresa",
+    profileSubtitle: "Perfil MOXT",
     badge: {
       download: "Baixar o selo",
       generating: "Gerando…",
@@ -564,6 +565,7 @@ export const pt = {
     hints: {
       invite: "Digitalize para entrar no MOXT",
       profile: "Digitalize para ver as minhas publicações",
+      profileMember: "Digitalize para ver este perfil no MOXT",
       business: "Digitalize para descobrir esta empresa",
       instagram: "Digitalize para seguir a MOXT no Instagram",
       telegram: "Digitalize para entrar no grupo Telegram da MOXT",
