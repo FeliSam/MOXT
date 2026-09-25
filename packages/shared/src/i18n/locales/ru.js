@@ -1693,6 +1693,7 @@ export const ru = {
     },
     profile: {
       businessBadge: "Компания",
+      personalBadge: "Частное лицо",
       memberBadge: "Участник",
       memberSince: "Участник с: {date}",
       activeCount: "{count} активных",
@@ -2247,6 +2248,8 @@ export const ru = {
         'man-a-steel': "Бирюзовая сталь",
         'man-b-topo': "Изумрудный рельеф",
         'man-c-mesh': "Полночная сетка",
+        'woman-d-prune': "Сливово-розовые волны",
+        'man-d-prune': "Ночные сливовые волны",
       },
     },
     avatarEditor: {

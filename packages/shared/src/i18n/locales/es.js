@@ -1692,6 +1692,7 @@ export const es = {
     },
     profile: {
       businessBadge: "Empresa",
+      personalBadge: "Particular",
       memberBadge: "Membro",
       memberSince: "Membro desde: {date}",
       activeCount: "{count} activas",
@@ -2246,6 +2247,8 @@ export const es = {
         'man-a-steel': "Acero turquesa",
         'man-b-topo': "Topo esmeralda",
         'man-c-mesh': "Malla medianoche",
+        'woman-d-prune': "Olas ciruela y rosa",
+        'man-d-prune': "Olas ciruela noche",
       },
     },
     avatarEditor: {
