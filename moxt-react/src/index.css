@@ -5545,6 +5545,13 @@ input:not(:-webkit-autofill) {
 [data-profile-kind='personal'] button.profile-follow-tint:hover {
   background: var(--color-brand-100);
 }
+/* Ombre du bouton primaire : prune au lieu du vert codé en dur (rgba(8,112,95,…)). */
+[data-profile-kind='personal'] .btn-press.bg-brand-700 {
+  --tw-shadow-color: rgb(107 45 92 / 0.28);
+}
+.dark [data-profile-kind='personal'] .btn-press.bg-brand-700 {
+  --tw-shadow-color: rgb(199 125 179 / 0.22);
+}
 .dark [data-profile-kind='personal'] button.profile-follow-tint {
   border-color: color-mix(in srgb, #c77db3 45%, transparent);
   background: color-mix(in srgb, #c77db3 14%, var(--app-surface));
