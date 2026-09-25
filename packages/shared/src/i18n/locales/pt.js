@@ -8437,4 +8437,73 @@ export const pt = {
       },
     },
   },
+  confirmDialog: {
+    cancel: "Cancelar",
+    confirm: "Confirmar",
+    error: "Não foi possível concluir a ação. Tente novamente.",
+    subjectLabel: "Publicação",
+    publication: {
+      delete: {
+        title: "Excluir esta publicação?",
+        descriptionListing: "Ela desaparecerá definitivamente do seu perfil e do Marketplace.",
+        description: "Ela desaparecerá definitivamente do seu perfil e do MOXT.",
+        confirm: "Excluir",
+      },
+      archive: {
+        title: "Arquivar esta publicação?",
+        description: "Ela deixará de ser visível no seu perfil e nos feeds. Você poderá republicá-la na aba Arquivadas.",
+        confirm: "Arquivar",
+      },
+      republish: {
+        title: "Republicar esta publicação?",
+        description: "Ela voltará a ficar visível no seu perfil e nos feeds do MOXT.",
+        confirm: "Republicar",
+      },
+      duplicate: {
+        title: "Duplicar esta publicação?",
+        description: "Uma cópia será adicionada às suas publicações. O original não muda.",
+        confirm: "Duplicar",
+      },
+      markSold: {
+        title: "Marcar como vendido?",
+        description: "O anúncio passará para «Vendido» e deixará de estar à venda no Marketplace.",
+        confirm: "Marcar como vendido",
+      },
+      boost: {
+        title: "Destacar esta publicação?",
+        description: "Ela será destacada nos feeds durante {duration}. Nenhuma estrela será debitada.",
+        confirm: "Destacar",
+      },
+    },
+    subscription: {
+      unsubscribe: {
+        title: "Cancelar inscrição?",
+        description: "Você não receberá mais as novas publicações de {name}.",
+        confirm: "Cancelar inscrição",
+      },
+      notifyPref: {
+        title: "Alterar notificações?",
+        description: "Notificações de {name}: {pref}.",
+        confirm: "Salvar",
+      },
+      blockMessages: {
+        title: "Bloquear mensagens?",
+        description: "{name} não poderá mais enviar mensagens para você. Você pode desbloquear a qualquer momento.",
+        confirm: "Bloquear",
+      },
+      unblockMessages: {
+        title: "Desbloquear mensagens?",
+        description: "{name} poderá voltar a enviar mensagens para você.",
+        confirm: "Desbloquear",
+      },
+      unban: {
+        title: "Remover o banimento?",
+        description: "{name} poderá voltar a se inscrever nas suas publicações.",
+        confirm: "Remover banimento",
+      },
+      removeSubscriber: {
+        confirm: "Remover",
+      },
+    },
+  },
 }
