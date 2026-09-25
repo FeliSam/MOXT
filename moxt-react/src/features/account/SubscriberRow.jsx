@@ -15,6 +15,8 @@ import { Button } from '../../components/ui/Button'
 import { PillBadge, VerifiedDisplayName } from '../../components/ui/Badge'
 import { Modal } from '../../components/ui/Modal'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
+import { useConfirm } from '../../contexts/ConfirmDialogProvider'
+import { buildSubscriptionConfirm } from '../publications/publicationConfirm'
 import { useLanguage } from '../../contexts/useLanguage'
 import { phase3Text } from '../../i18n/phase3I18n'
 import { usePublicationProfile } from '../publications/usePublicationProfile'
@@ -133,6 +135,8 @@ export function SubscriberRow({
   const prefLabelKey = NOTIFY_LABEL_KEYS[subscriber.notifyPref]
   const prefLabel = prefLabelKey ? p3(prefLabelKey) : subscriber.notifyPref
 
+  const { confirm } = useConfirm()
+  const confirmAccent = publisherType === 'business' ? 'business' : 'personal'
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirmRemove, setConfirmRemove] = useState(false)
   const [banOpen, setBanOpen] = useState(false)
@@ -211,6 +215,21 @@ export function SubscriberRow({
     setMenuOpen(false)
   }
 
+  function requestBlockMessages() {
+    if (!conversation) {
+      handleBlockMessages()
+      return
+    }
+    setMenuOpen(false)
+    confirm({
+      ...buildSubscriptionConfirm(t, isBlocked ? 'unblockMessages' : 'blockMessages', {
+        name: displayName,
+        accent: confirmAccent,
+      }),
+      onConfirm: handleBlockMessages,
+    })
+  }
+
   function handleBlockMessages() {
     if (!conversation) {
       dispatch(
@@ -271,7 +290,7 @@ export function SubscriberRow({
 
             <MenuDivider />
 
-            <MenuItem icon={FiSlash} onClick={handleBlockMessages}>
+            <MenuItem icon={FiSlash} onClick={requestBlockMessages}>
               {isBlocked
                 ? p3('subscriptions.row.unblockMessages')
                 : p3('subscriptions.row.blockMessages')}
@@ -363,6 +382,8 @@ export function SubscriberRow({
         open={confirmRemove}
         title={p3('subscriptions.row.removeConfirmTitle')}
         description={p3('subscriptions.row.removeConfirmDesc', { name: displayName })}
+        subject={displayName}
+        confirmLabel={t('confirmDialog.subscription.removeSubscriber.confirm')}
         onCancel={() => setConfirmRemove(false)}
         onConfirm={handleRemove}
       />

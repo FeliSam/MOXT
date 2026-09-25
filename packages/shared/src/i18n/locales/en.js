@@ -8443,6 +8443,75 @@ export const en = {
       },
     },
   },
+  confirmDialog: {
+    cancel: "Cancel",
+    confirm: "Confirm",
+    error: "The action couldn't be completed. Please try again.",
+    subjectLabel: "Publication",
+    publication: {
+      delete: {
+        title: "Delete this publication?",
+        descriptionListing: "It will be permanently removed from your profile and the Marketplace.",
+        description: "It will be permanently removed from your profile and from MOXT.",
+        confirm: "Delete",
+      },
+      archive: {
+        title: "Archive this publication?",
+        description: "It will no longer be visible on your profile or in feeds. You can republish it from the Archived tab.",
+        confirm: "Archive",
+      },
+      republish: {
+        title: "Republish this publication?",
+        description: "It will be visible again on your profile and in MOXT feeds.",
+        confirm: "Republish",
+      },
+      duplicate: {
+        title: "Duplicate this publication?",
+        description: "A copy will be added to your publications. The original stays unchanged.",
+        confirm: "Duplicate",
+      },
+      markSold: {
+        title: "Mark as sold?",
+        description: "The listing will be marked “Sold” and no longer offered for purchase on the Marketplace.",
+        confirm: "Mark as sold",
+      },
+      boost: {
+        title: "Boost this publication?",
+        description: "It will be featured in feeds for {duration}. No stars will be charged.",
+        confirm: "Boost",
+      },
+    },
+    subscription: {
+      unsubscribe: {
+        title: "Unsubscribe?",
+        description: "You will no longer receive new publications from {name}.",
+        confirm: "Unsubscribe",
+      },
+      notifyPref: {
+        title: "Change notifications?",
+        description: "Notifications for {name}: {pref}.",
+        confirm: "Save",
+      },
+      blockMessages: {
+        title: "Block messages?",
+        description: "{name} will no longer be able to message you. You can unblock at any time.",
+        confirm: "Block",
+      },
+      unblockMessages: {
+        title: "Unblock messages?",
+        description: "{name} will be able to message you again.",
+        confirm: "Unblock",
+      },
+      unban: {
+        title: "Lift the ban?",
+        description: "{name} will be able to subscribe to your publications again.",
+        confirm: "Lift ban",
+      },
+      removeSubscriber: {
+        confirm: "Remove",
+      },
+    },
+  },
   coverBanner: {
     profile: "Profile",
     yourProfile: "Your profile",

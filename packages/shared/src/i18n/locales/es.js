@@ -8434,6 +8434,75 @@ export const es = {
       },
     },
   },
+  confirmDialog: {
+    cancel: "Cancelar",
+    confirm: "Confirmar",
+    error: "No se pudo completar la acción. Inténtalo de nuevo.",
+    subjectLabel: "Publicación",
+    publication: {
+      delete: {
+        title: "¿Eliminar esta publicación?",
+        descriptionListing: "Desaparecerá definitivamente de tu perfil y del Marketplace.",
+        description: "Desaparecerá definitivamente de tu perfil y de MOXT.",
+        confirm: "Eliminar",
+      },
+      archive: {
+        title: "¿Archivar esta publicación?",
+        description: "Ya no será visible en tu perfil ni en los feeds. Podrás volver a publicarla desde la pestaña Archivadas.",
+        confirm: "Archivar",
+      },
+      republish: {
+        title: "¿Volver a publicar esta publicación?",
+        description: "Volverá a ser visible en tu perfil y en los feeds de MOXT.",
+        confirm: "Volver a publicar",
+      },
+      duplicate: {
+        title: "¿Duplicar esta publicación?",
+        description: "Se añadirá una copia a tus publicaciones. El original no cambia.",
+        confirm: "Duplicar",
+      },
+      markSold: {
+        title: "¿Marcar como vendido?",
+        description: "El anuncio pasará a «Vendido» y ya no se ofrecerá para la compra en el Marketplace.",
+        confirm: "Marcar como vendido",
+      },
+      boost: {
+        title: "¿Destacar esta publicación?",
+        description: "Se destacará en los feeds durante {duration}. No se descontará ninguna estrella.",
+        confirm: "Destacar",
+      },
+    },
+    subscription: {
+      unsubscribe: {
+        title: "¿Cancelar la suscripción?",
+        description: "Ya no recibirás las nuevas publicaciones de {name}.",
+        confirm: "Cancelar suscripción",
+      },
+      notifyPref: {
+        title: "¿Cambiar las notificaciones?",
+        description: "Notificaciones de {name}: {pref}.",
+        confirm: "Guardar",
+      },
+      blockMessages: {
+        title: "¿Bloquear los mensajes?",
+        description: "{name} ya no podrá enviarte mensajes. Podrás desbloquearlo en cualquier momento.",
+        confirm: "Bloquear",
+      },
+      unblockMessages: {
+        title: "¿Desbloquear los mensajes?",
+        description: "{name} podrá volver a enviarte mensajes.",
+        confirm: "Desbloquear",
+      },
+      unban: {
+        title: "¿Levantar la expulsión?",
+        description: "{name} podrá volver a suscribirse a tus publicaciones.",
+        confirm: "Levantar expulsión",
+      },
+      removeSubscriber: {
+        confirm: "Quitar",
+      },
+    },
+  },
   coverBanner: {
     profile: "Perfil",
     yourProfile: "Tu perfil",
