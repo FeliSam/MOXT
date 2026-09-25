@@ -11,7 +11,7 @@ import {
   FiRepeat,
   FiShoppingBag,
 } from 'react-icons/fi'
-import { useDispatch, useSelector } from 'react-redux'
+import { useSelector } from 'react-redux'
 import { Link, Navigate, useOutletContext, useParams, useSearchParams } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
