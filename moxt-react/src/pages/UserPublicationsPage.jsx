@@ -684,12 +684,9 @@ export function UserPublicationsPage() {
         gender={coverEdit.gender}
         onChange={coverEdit.onChange}
         labels={coverEdit.labels}
-        title={t('profile.personal.coverStyleTitle')}
-        hint={t('profile.personal.coverStyleHint')}
-        applyLabel={t('profile.personal.coverStyleApply')}
-        manLabel={t('profile.personal.coverStyleMan')}
-        womanLabel={t('profile.personal.coverStyleWoman')}
-        activeLabel={t('profile.personal.coverStyleActive')}
+        previewName={displayName}
+        previewAvatarUrl={scope === 'business' && ownBusiness?.logoUrl ? ownBusiness.logoUrl : avatarUrl}
+        onUploadPhoto={coverEdit.uploadPhoto}
       />
 
     </div>

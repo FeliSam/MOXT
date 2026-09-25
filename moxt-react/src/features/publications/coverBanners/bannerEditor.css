@@ -1,0 +1,61 @@
+/* Éditeur de bannière : reprend l’univers de l’éditeur d’avatar (avatarEditor.css). */
+.bne-frame {
+  position: relative;
+  z-index: 1;
+  padding: 0.45rem;
+  border-radius: 1.75rem;
+  background: #fffdf9;
+  box-shadow:
+    0 0 0 1px rgba(22, 24, 28, 0.05),
+    0 30px 60px -28px rgba(15, 35, 70, 0.5);
+}
+.dark .bne-frame {
+  padding: 0.6rem;
+  background: radial-gradient(
+    circle at 30% 18%,
+    rgba(255, 255, 255, 0.15),
+    rgba(255, 255, 255, 0.03) 62%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.28),
+    inset 0 -14px 32px rgba(45, 212, 191, 0.12),
+    0 0 0 1px rgba(45, 212, 191, 0.12),
+    0 0 70px -14px rgba(45, 212, 191, 0.55),
+    0 30px 60px -30px rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.bne-media {
+  background: #efe9df;
+  box-shadow: inset 0 0 0 1px rgba(22, 24, 28, 0.05);
+}
+.dark .bne-media {
+  background: #11181a;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+.bne-scrim {
+  background: linear-gradient(180deg, transparent 38%, rgba(4, 10, 14, 0.62) 100%);
+}
+.bne-avatar {
+  border: 3px solid rgba(255, 255, 255, 0.92);
+  background: #0f766e;
+  box-shadow:
+    0 0 0 4px rgba(45, 212, 191, 0.28),
+    0 12px 28px -10px rgba(0, 0, 0, 0.6);
+}
+.dark .bne-avatar {
+  border-color: rgba(255, 255, 255, 0.85);
+  box-shadow:
+    0 0 0 4px rgba(45, 212, 191, 0.35),
+    0 0 26px -4px rgba(45, 212, 191, 0.7);
+}
+.bne-name {
+  color: #fff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+}
+.bne-tile-label {
+  color: #fff;
+  background: linear-gradient(180deg, transparent, rgba(4, 10, 14, 0.66));
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+}

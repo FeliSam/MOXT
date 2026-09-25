@@ -757,12 +757,9 @@ export function MyPublicationsPage() {
         gender={coverEdit.gender}
         onChange={coverEdit.onChange}
         labels={coverEdit.labels}
-        title={t('profile.personal.coverStyleTitle')}
-        hint={t('profile.personal.coverStyleHint')}
-        applyLabel={t('profile.personal.coverStyleApply')}
-        manLabel={t('profile.personal.coverStyleMan')}
-        womanLabel={t('profile.personal.coverStyleWoman')}
-        activeLabel={t('profile.personal.coverStyleActive')}
+        previewName={heroName}
+        previewAvatarUrl={heroAvatarUrl}
+        onUploadPhoto={coverEdit.uploadPhoto}
       />
 
       <ConfirmDialog
