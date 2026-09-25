@@ -4,6 +4,7 @@ import { avatarDisplayUrl } from '../account/avatarDisplayUrl'
 import { AvatarBadge } from '../account/avatarDicebear/AvatarBadge'
 import { resolveMediaDisplayUrl } from '../../services/media/mediaUrlUtils'
 import { MoxtCoverBanner } from './coverBanners/MoxtCoverBanner'
+import { profileInitials } from './profileInitials'
 import { resolveCoverStyleId } from './coverBanners/coverBannerCatalog'
 
 function formatRatingAverage(average) {
@@ -113,7 +114,7 @@ export function PublicProfileHero({
   const resolvedAvatar = resolvedAvatarRaw
     ? avatarDisplayUrl(resolvedAvatarRaw, { width: 160 })
     : ''
-  const initials = (avatarFallback || name || '?').slice(0, 2).toUpperCase()
+  const initials = profileInitials(name, avatarFallback)
   const metaLine = [category, city].filter(Boolean).join(' · ')
   const coverShellClass = 'h-44 w-full overflow-hidden rounded-2xl sm:h-52 sm:rounded-[1.25rem] lg:rounded-[1.5rem]'
   const canEditCover = Boolean(showCoverEdit && onEditCover)

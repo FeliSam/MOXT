@@ -18,6 +18,7 @@ import {
 } from './bannerEditorUtils'
 import { COVER_STYLE_LABELS_FR } from './coverBannerCatalog'
 import { MoxtCoverBanner } from './MoxtCoverBanner'
+import { profileInitials } from '../profileInitials'
 
 function PreviewAvatar({ src, initials, square }) {
   const [failed, setFailed] = useState(false)
@@ -110,7 +111,7 @@ export function BannerEditor({
   const busy = uploading
   const rawAvatar = resolveMediaDisplayUrl(previewAvatarUrl) || previewAvatarUrl || ''
   const avatarSrc = rawAvatar ? avatarDisplayUrl(rawAvatar, { width: 160 }) : ''
-  const initials = (previewName || '?').trim().slice(0, 2).toUpperCase() || '?'
+  const initials = profileInitials(previewName)
   const showProgress = progress.active || progress.phase === 'error'
 
   function close() {
