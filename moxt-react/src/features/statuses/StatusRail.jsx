@@ -2,6 +2,8 @@
  * Bandeau horizontal des statuts actifs, à placer entre l'en-tête/filtres et
  * le fil de posts. Ma bulle en premier (avec bouton "+" pour publier),
  * suivie des auteurs ayant des statuts non vus puis déjà vus.
+ * Chaque bulle montre la miniature du dernier élément publié (image, vidéo ou texte),
+ * avec repli sur l'avatar / le logo.
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { FiPlus } from 'react-icons/fi'
@@ -16,6 +18,7 @@ import { receiveRemoteStatus, removeRemoteStatus } from './statusesSlice'
 import { statusFromRemoteRow } from './statusRemote'
 import { refreshStatusesData, hydrateStatusRailIfEmpty } from './statusSync'
 import { writeStatusRailCache } from './statusRailCache'
+import { pickStatusThumb } from './statusThumb'
 
 /** Emprise visuelle unique (anneau inclus) pour aligner toutes les bulles. */
 const BUBBLE_OUTER = 'size-[3.75rem]'
@@ -38,6 +41,71 @@ function AvatarFace({ src, initial, shapeClass, muted = false }) {
   )
 }
 
+/**
+ * Miniature du dernier élément (image / vidéo / texte) dans la bulle.
+ * En cas d’échec de chargement : miniature → média d’origine → avatar / logo (`fallback`).
+ */
+function StatusThumbFace({ thumb, fallback }) {
+  const [stage, setStage] = useState(0)
+  const face = `${AVATAR_INNER} rounded-full`
+
+  if (thumb.kind === 'text') {
+    return (
+      <span
+        data-testid="status-thumb-text"
+        className={`grid ${face} place-items-center overflow-hidden px-1 ${
+          thumb.background ? '' : 'bg-gradient-to-br from-brand-800 via-brand-600 to-[var(--app-cobalt)]'
+        }`}
+        style={thumb.background ? { background: thumb.background } : undefined}
+      >
+        <span className="line-clamp-3 break-words text-center text-[8.5px] font-bold leading-[1.15] text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.35)]">
+          {thumb.text}
+        </span>
+      </span>
+    )
+  }
+
+  const sources = [thumb.src, thumb.fullSrc].filter(
+    (src, index, list) => src && list.indexOf(src) === index,
+  )
+  const src = sources[stage]
+  const next = () => setStage((value) => value + 1)
+
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        draggable="false"
+        data-testid={`status-thumb-${thumb.kind}`}
+        onError={next}
+        className={`${face} object-cover`}
+      />
+    )
+  }
+
+  // Vidéo sans poster : première frame, sans lecture automatique ni son.
+  if (thumb.kind === 'video' && thumb.videoSrc && stage <= sources.length) {
+    return (
+      <video
+        src={`${thumb.videoSrc.split('#')[0]}#t=0.1`}
+        preload="metadata"
+        muted
+        playsInline
+        tabIndex={-1}
+        aria-hidden="true"
+        data-testid="status-thumb-video"
+        onError={next}
+        className={`${face} pointer-events-none object-cover`}
+      />
+    )
+  }
+
+  return fallback
+}
+
 function StatusBubble({
   label,
   onOpen,
@@ -50,16 +118,22 @@ function StatusBubble({
   addLabel = null,
   onAdd = null,
   mutedAvatar = false,
+  thumb = null,
   tone = 'light',
 }) {
   const feed = tone === 'feed'
+  const avatarFace = <AvatarFace src={avatarUrl} initial={initial} shapeClass={shapeClass} />
   return (
     <div className="flex w-[4.25rem] shrink-0 flex-col items-center gap-1.5 text-center">
       <button type="button" onClick={onOpen} className="relative grid place-items-center">
         <span className={`relative grid ${BUBBLE_OUTER} place-items-center overflow-visible`}>
           {hasStatus ? (
             <StatusRing hasStatus hasUnseen={hasUnseen} className="size-full">
-              <AvatarFace src={avatarUrl} initial={initial} shapeClass={shapeClass} />
+              {thumb ? (
+                <StatusThumbFace key={thumb.key} thumb={thumb} fallback={avatarFace} />
+              ) : (
+                avatarFace
+              )}
             </StatusRing>
           ) : (
             <AvatarFace
@@ -231,6 +305,7 @@ export function StatusRail({
           hasStatus={Boolean(myGroup)}
           hasUnseen={Boolean(myGroup?.hasUnseen)}
           mutedAvatar={!myGroup}
+          thumb={myGroup ? pickStatusThumb(myGroup) : null}
           addLabel={t('status.rail.addYours')}
           onAdd={() => setComposerOpen(true)}
           tone={tone}
@@ -245,6 +320,7 @@ export function StatusRail({
             shapeClass="rounded-2xl"
             hasStatus
             hasUnseen={myBusinessGroup.hasUnseen}
+            thumb={pickStatusThumb(myBusinessGroup)}
             tone={tone}
           />
         ) : null}
@@ -259,6 +335,7 @@ export function StatusRail({
             shapeClass={group.businessId ? 'rounded-2xl' : 'rounded-full'}
             hasStatus
             hasUnseen={group.hasUnseen}
+            thumb={pickStatusThumb(group)}
             badge="MOXT"
             tone={tone}
           />
@@ -274,6 +351,7 @@ export function StatusRail({
             shapeClass={group.businessId ? 'rounded-2xl' : 'rounded-full'}
             hasStatus
             hasUnseen={group.hasUnseen}
+            thumb={pickStatusThumb(group)}
             tone={tone}
           />
         ))}
