@@ -27,6 +27,7 @@ const defaultPreferences = {
   notifSysteme: 'high',
   notifNewSubscribers: true,
   messageSuggestionsEnabled: true,
+  coverStyle: undefined,
 }
 
 const ACCOUNT_DEFAULTS = {

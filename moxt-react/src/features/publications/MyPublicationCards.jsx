@@ -70,7 +70,7 @@ function PublicationCardShell({
 
   return (
     <article
-      className={`group relative h-full overflow-hidden rounded-[1.4rem] shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-card-hover)] ${
+      className={`group relative h-full overflow-hidden rounded-[1.4rem] border-0 bg-transparent shadow-[var(--shadow-card)] outline-none ring-0 transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-card-hover)] ${
         archived ? archivedPublicationCardClass : ''
       }`}
     >
@@ -114,7 +114,7 @@ function PublicationCardShell({
         </div>
       </Link>
       {actions ? (
-        <div className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,7.75rem),1fr))] gap-1.5 bg-[var(--app-surface)] p-2.5 max-sm:flex max-sm:flex-wrap max-sm:justify-start [&>a]:min-w-0 [&>button]:min-w-0 [&_button]:min-w-0 [&_button]:w-full [&_button]:max-w-full [&_button]:flex-wrap [&_button]:whitespace-normal max-sm:[&>a]:inline-flex max-sm:[&>a]:shrink-0 max-sm:[&_button]:!size-9 max-sm:[&_button]:!min-h-9 max-sm:[&_button]:!w-9 max-sm:[&_button]:!max-w-none max-sm:[&_button]:!shrink-0 max-sm:[&_button]:!flex-none max-sm:[&_button]:!p-0 max-sm:[&_button]:!flex-nowrap max-sm:[&_.btn-label]:sr-only">
+        <div className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,7.75rem),1fr))] gap-1.5 bg-transparent p-2.5 max-sm:flex max-sm:flex-wrap max-sm:justify-start [&>a]:min-w-0 [&>button]:min-w-0 [&_button]:min-w-0 [&_button]:w-full [&_button]:max-w-full [&_button]:flex-wrap [&_button]:whitespace-normal max-sm:[&>a]:inline-flex max-sm:[&>a]:shrink-0 max-sm:[&_button]:!size-9 max-sm:[&_button]:!min-h-9 max-sm:[&_button]:!w-9 max-sm:[&_button]:!max-w-none max-sm:[&_button]:!shrink-0 max-sm:[&_button]:!flex-none max-sm:[&_button]:!p-0 max-sm:[&_button]:!flex-nowrap max-sm:[&_.btn-label]:sr-only">
           <Link to={path} onClick={handleGuestClick}>
             <Button
               variant="secondary"

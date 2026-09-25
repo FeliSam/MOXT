@@ -4,6 +4,7 @@ import {
   FiShield,
 } from 'react-icons/fi'
 import { useMemo } from 'react'
+// cover edit uses hook state
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useOutletContext, useParams, useSearchParams } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
@@ -51,6 +52,8 @@ import {
   publicationTotalCount,
 } from '../features/publications/publicationCatalogUtils'
 import { PublicProfileHero } from '../features/publications/PublicProfileHero'
+import { CoverStylePicker } from '../features/publications/coverBanners/CoverStylePicker'
+import { useOwnerCoverStyleEdit } from '../features/publications/coverBanners/useOwnerCoverStyleEdit'
 import { PublicProfileTabs } from '../features/publications/PublicProfileTabs'
 import { PublicVideoThumbGrid } from '../features/publications/PublicVideoThumbGrid'
 import { MarketplaceListingCard } from '../features/marketplace/MarketplaceListingCard'
@@ -132,6 +135,12 @@ export function BusinessDetailPage() {
   const memberSinceLabel = formatMemberSince(profile.memberSince)
 
   const isOwner = !guestMode && business?.ownerId === user?.id
+
+  const coverEdit = useOwnerCoverStyleEdit({
+    category: 'business',
+    business: !guestMode && isOwner ? business : null,
+    coverStyle: business?.coverStyle,
+  })
   const isAdminViewer = isStaffRole(user)
   const { visibility, loading: visibilityLoading } = useBusinessActivityVisibility(
     business,
@@ -300,8 +309,15 @@ export function BusinessDetailPage() {
         avatarUrl={business.logoUrl}
         coverAlt={bt('businesses.detail.bannerAlt', { name: business.name })}
         avatarAlt={bt('businesses.detail.logoAlt', { name: business.name })}
+        coverCategory="business"
+        coverStyle={business.coverStyle}
+        emptyCoverVariant="editorial-dark"
+        showCoverEdit={Boolean(isOwner && !guestMode && !business.bannerUrl)}
+        onEditCover={coverEdit.openEditor}
+        editCoverLabel={bt('businesses.detail.editBanner')}
         rating={rating}
         reviewsLabel={p3('publications.public.reviewsShort')}
+        onOpenReviews={() => setMainTab('avis')}
         shareSlot={
           <ProfileQrShareButton
             type="business"
@@ -544,6 +560,22 @@ export function BusinessDetailPage() {
           currentUser={user}
         />
       )}
+
+      <CoverStylePicker
+        open={coverEdit.open}
+        onClose={coverEdit.closeEditor}
+        category="business"
+        value={coverEdit.value}
+        onChange={coverEdit.onChange}
+        labels={coverEdit.labels}
+        title={bt('businesses.setup.identity.coverStyle')}
+        hint={bt('businesses.setup.identity.coverStyleHint')}
+        applyLabel={bt('businesses.setup.identity.coverStyleApply')}
+        manLabel={bt('businesses.setup.identity.coverStyleMan')}
+        womanLabel={bt('businesses.setup.identity.coverStyleWoman')}
+        activeLabel={bt('businesses.setup.identity.coverStyleActive')}
+      />
+
     </div>
   )
 }

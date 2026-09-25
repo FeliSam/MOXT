@@ -44,7 +44,11 @@ import {
 } from '../features/publications/publicationCatalogUtils'
 import { PublicationCatalogNav } from '../features/publications/PublicationCatalogNav'
 import { PublicationScopeButton } from '../features/publications/PublicationScopeButton'
+import { selectAccountPreferences } from '../features/account/accountSlice'
+import { defaultCoverStyleForPersonal } from '../features/publications/coverBanners/coverBannerCatalog'
 import { PublicProfileHero } from '../features/publications/PublicProfileHero'
+import { CoverStylePicker } from '../features/publications/coverBanners/CoverStylePicker'
+import { useOwnerCoverStyleEdit } from '../features/publications/coverBanners/useOwnerCoverStyleEdit'
 import { PublicProfileTabs } from '../features/publications/PublicProfileTabs'
 import { PublicVideoThumbGrid } from '../features/publications/PublicVideoThumbGrid'
 import { formatMemberSince, usePublicationProfile } from '../features/publications/usePublicationProfile'
@@ -82,6 +86,7 @@ export function UserPublicationsPage() {
   const { guestMode = false } = useOutletContext() || {}
   const { requireAccount } = useGuestAction()
   const currentUser = useSelector((state) => state.auth.user)
+  const preferences = useSelector((state) => selectAccountPreferences(state, currentUser?.id))
   const appState = useSelector((state) => state)
   const guestPreview = useGuestUserPreview(guestMode ? userId : null)
   usePublicUserCatalogSync(userId, { enabled: Boolean(userId) && !guestMode })
@@ -221,6 +226,23 @@ export function UserPublicationsPage() {
     setSearchParams(params, { replace: true })
   }
 
+  const coverEditCategory = scope === 'business' ? 'business' : 'personal'
+  const coverEdit = useOwnerCoverStyleEdit({
+    category: coverEditCategory,
+    business: coverEditCategory === 'business' ? ownBusiness : null,
+    userId: coverEditCategory === 'personal' ? userId : null,
+    gender: memberProfile?.gender || currentUser?.gender,
+    coverStyle:
+      coverEditCategory === 'business'
+        ? ownBusiness?.coverStyle
+        : preferences?.coverStyle || defaultCoverStyleForPersonal(memberProfile?.gender || currentUser?.gender),
+  })
+  const showCoverEdit =
+    isOwner &&
+    !guestMode &&
+    (coverEditCategory === 'personal' || (coverEditCategory === 'business' && !ownBusiness?.bannerUrl))
+
+
   if (guestMode && guestPreview.loading) {
     return (
       <EmptyState
@@ -307,6 +329,7 @@ export function UserPublicationsPage() {
     publications.listings?.find((l) => l.images?.[0])?.images?.[0] ||
     ''
 
+
   const defaultTab = activeVideos.length > 0 ? 'videos' : 'publications'
   const mainTab =
     viewParam === 'avis' || viewParam === 'apercu'
@@ -375,8 +398,20 @@ export function UserPublicationsPage() {
         avatarUrl={
           scope === 'business' && ownBusiness?.logoUrl ? ownBusiness.logoUrl : avatarUrl
         }
+        coverCategory={scope === 'business' ? 'business' : 'personal'}
+        coverStyle={
+          scope === 'business'
+            ? ownBusiness?.coverStyle
+            : preferences?.coverStyle || defaultCoverStyleForPersonal(memberProfile?.gender || currentUser?.gender)
+        }
+        gender={memberProfile?.gender || currentUser?.gender}
+        emptyCoverVariant={scope === 'business' ? 'editorial-dark' : 'gradient'}
+        showCoverEdit={showCoverEdit}
+        onEditCover={coverEdit.openEditor}
+        editCoverLabel={t('profile.personal.editBanner')}
         rating={aggregateRating}
         reviewsLabel={p3('publications.public.reviewsShort')}
+        onOpenReviews={() => setMainTab('avis')}
         actions={
           !isOwner ? (
             <>
@@ -612,6 +647,23 @@ export function UserPublicationsPage() {
           currentUser={currentUser}
         />
       )}
+
+      <CoverStylePicker
+        open={coverEdit.open}
+        onClose={coverEdit.closeEditor}
+        category={coverEdit.category}
+        value={coverEdit.value}
+        gender={coverEdit.gender}
+        onChange={coverEdit.onChange}
+        labels={coverEdit.labels}
+        title={t('profile.personal.coverStyleTitle')}
+        hint={t('profile.personal.coverStyleHint')}
+        applyLabel={t('profile.personal.coverStyleApply')}
+        manLabel={t('profile.personal.coverStyleMan')}
+        womanLabel={t('profile.personal.coverStyleWoman')}
+        activeLabel={t('profile.personal.coverStyleActive')}
+      />
+
     </div>
   )
 }

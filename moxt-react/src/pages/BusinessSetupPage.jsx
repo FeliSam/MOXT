@@ -67,6 +67,10 @@ import {
   businessesSpotlightLabel,
   businessesText,
 } from '../features/businesses/businessesI18n'
+import { CoverStylePickerField } from '../features/publications/coverBanners/CoverStylePicker'
+import {
+  DEFAULT_BUSINESS_COVER_STYLE,
+} from '../features/publications/coverBanners/coverBannerCatalog'
 
 /* ─── Step definition ──────────────────────────────────────────────────── */
 const STEP_DEFS = [
@@ -392,6 +396,7 @@ export function BusinessSetupPage() {
       name: ownBusiness?.name || '',
       logoUrl: ownBusiness?.logoUrl || '',
       bannerUrl: ownBusiness?.bannerUrl || '',
+      coverStyle: ownBusiness?.coverStyle || DEFAULT_BUSINESS_COVER_STYLE,
       primaryActivity: ownBusiness?.primaryActivity || ownBusiness?.sector || '',
       secondaryActivity: ownBusiness?.secondaryActivity || '',
       sector: ownBusiness?.sector || '',
@@ -823,6 +828,25 @@ function IdentityStep({ businessId, errorFor, formik, userId }) {
           bannerProgress.phase === 'error' ? (
             <UploadProgress progress={bannerProgress} compact className="mt-3" />
           ) : null}
+
+          {!formik.values.bannerUrl ? (
+            <div className="mt-5 border-t border-[var(--app-border)] pt-4">
+              <p className="mb-2 text-sm font-bold">{bt('businesses.setup.identity.coverStyle')}</p>
+              <p className="mb-3 text-xs text-[var(--app-text-muted)]">
+                {bt('businesses.setup.identity.coverStyleHint')}
+              </p>
+              <CoverStylePickerField
+                category="business"
+                value={formik.values.coverStyle || DEFAULT_BUSINESS_COVER_STYLE}
+                onChange={(styleId) => formik.setFieldValue('coverStyle', styleId)}
+                buttonLabel={bt('businesses.setup.identity.coverStylePick')}
+              />
+            </div>
+          ) : (
+            <p className="mt-3 text-xs text-[var(--app-text-muted)]">
+              {bt('businesses.setup.identity.coverStyleHidden')}
+            </p>
+          )}
         </div>
       </Card>
     </div>

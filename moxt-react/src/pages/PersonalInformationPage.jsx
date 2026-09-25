@@ -1,6 +1,6 @@
 import { useFormik } from 'formik'
 import React, { useRef } from 'react'
-import { FiCamera, FiCheckCircle, FiFlag, FiMail, FiMapPin, FiUser } from 'react-icons/fi'
+import { FiCamera, FiCheckCircle, FiFlag, FiImage, FiMail, FiMapPin, FiUser } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Alert } from '../components/ui/Alert'
 import { BackButton } from '../components/ui/BackButton'
@@ -16,6 +16,12 @@ import { constrainPhone, phonePrefixForCallingCode } from '../config/phone'
 import { useLanguage } from '../contexts/useLanguage'
 import { createAuthSchemas } from '../features/auth/authSchemas'
 import { updateProfile, setUser } from '../features/auth/authSlice'
+import {
+  selectAccountPreferences,
+  updateAccountPreferences,
+} from '../features/account/accountSlice'
+import { CoverStylePickerField } from '../features/publications/coverBanners/CoverStylePicker'
+import { defaultCoverStyleForPersonal } from '../features/publications/coverBanners/coverBannerCatalog'
 import { EmailVerificationCard } from '../features/security/EmailVerificationCard'
 import { addToast } from '../features/ui/uiSlice'
 import { useGeographyOptions } from '../hooks/useGeographyOptions'
@@ -42,6 +48,8 @@ export function PersonalInformationPage() {
   const { language, t } = useLanguage()
   const { profileSchema } = createAuthSchemas(t)
   const { error, user } = useSelector((state) => state.auth)
+  const preferences = useSelector((state) => selectAccountPreferences(state, user?.id))
+  const coverStyle = preferences?.coverStyle || defaultCoverStyleForPersonal(user?.gender)
   const { countries } = useGeographyOptions()
   const avatarInputRef = useRef(null)
   const [avatarUploading, setAvatarUploading] = React.useState(false)
@@ -242,6 +250,29 @@ export function PersonalInformationPage() {
                 </button>
               ) : null}
             </Card>
+
+            <Card className="grid gap-4 p-4">
+              <SectionTitle icon={FiImage} label={t('profile.personal.coverStyleTitle')} />
+              <p className="text-xs text-[var(--app-text-muted)]">
+                {t('profile.personal.coverStyleHint')}
+              </p>
+              <CoverStylePickerField
+                category="personal"
+                value={coverStyle}
+                gender={user?.gender}
+                onChange={(styleId) => {
+                  if (!user?.id) return
+                  dispatch(
+                    updateAccountPreferences({
+                      userId: user.id,
+                      preferences: { coverStyle: styleId },
+                    }),
+                  )
+                }}
+                buttonLabel={t('profile.personal.coverStylePick')}
+              />
+            </Card>
+
 
             <Card className="p-4">
               <p className="text-xs font-black uppercase tracking-wide text-[var(--app-text-muted)]">
