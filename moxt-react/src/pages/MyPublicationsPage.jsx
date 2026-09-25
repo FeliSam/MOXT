@@ -65,9 +65,7 @@ import { PublicProfileTabs } from '../features/publications/PublicProfileTabs'
 import { PublicVideoThumbGrid } from '../features/publications/PublicVideoThumbGrid'
 import { CoverStylePicker } from '../features/publications/coverBanners/CoverStylePicker'
 import { useOwnerCoverStyleEdit } from '../features/publications/coverBanners/useOwnerCoverStyleEdit'
-import {
-  defaultCoverStyleForPersonal,
-} from '../features/publications/coverBanners/coverBannerCatalog'
+import { resolveOwnerPersonalCover } from '../features/publications/coverBanners/coverBannerCatalog'
 import { isActiveVideo } from '../features/videos/videoUtils'
 import { activityByValue } from '../config/businessActivities'
 import { ProfileQrShareButton } from '../features/share/ProfileQrShareButton'
@@ -77,6 +75,7 @@ import {
   businessCityLabel,
   businessShareVersion,
 } from '../features/share/businessShareUtils'
+import { buildUserProfileShareUrl } from '../features/share/userShareUtils'
 import { PublicationScopeButton } from '../features/publications/PublicationScopeButton'
 import { usePublicationProfile } from '../features/publications/usePublicationProfile'
 import { SubscribersPanel } from '../features/account/SubscribersPanel'
@@ -215,16 +214,22 @@ export function MyPublicationsPage() {
   const subscriptionsCount = subscriptions.length + subscriberCount
 
   const activeVideos = (publications.videos || []).filter(isActiveVideo)
+  const ownerCover = resolveOwnerPersonalCover({
+    isOwner: true,
+    ownPreferences: preferences,
+    ownGender: user?.gender,
+    memberProfile,
+  })
   const coverEditCategory = scope === 'business' ? 'business' : 'personal'
   const coverEdit = useOwnerCoverStyleEdit({
     category: coverEditCategory,
     business: coverEditCategory === 'business' ? ownBusiness : null,
     userId: coverEditCategory === 'personal' ? user.id : null,
-    gender: memberProfile?.gender || user?.gender,
+    gender: ownerCover.gender,
     coverStyle:
       coverEditCategory === 'business'
         ? ownBusiness?.coverStyle
-        : preferences?.coverStyle || defaultCoverStyleForPersonal(memberProfile?.gender || user?.gender),
+        : ownerCover.coverStyle,
   })
   const showCoverEdit =
     coverEditCategory === 'personal' || (coverEditCategory === 'business' && !ownBusiness?.bannerUrl)
@@ -432,7 +437,10 @@ export function MyPublicationsPage() {
   ]
 
   return (
-    <div className="grid min-w-0 max-w-full gap-5 overflow-x-clip sm:gap-6">
+    <div
+      className="grid min-w-0 max-w-full gap-5 overflow-x-clip sm:gap-6"
+      data-profile-kind={isBusinessScope ? undefined : 'personal'}
+    >
       <PublicProfileHero
         name={heroName}
         verified={heroVerified}
@@ -444,9 +452,9 @@ export function MyPublicationsPage() {
         coverStyle={
           isBusinessScope
             ? ownBusiness?.coverStyle
-            : preferences?.coverStyle || defaultCoverStyleForPersonal(memberProfile?.gender || user?.gender)
+            : ownerCover.coverStyle
         }
-        gender={memberProfile?.gender || user?.gender}
+        gender={ownerCover.gender}
         emptyCoverVariant={isBusinessScope ? 'editorial-dark' : 'gradient'}
         rating={aggregateRating}
         reviewsLabel={p3('publications.public.reviewsShort')}
@@ -459,18 +467,26 @@ export function MyPublicationsPage() {
         showCoverEdit={showCoverEdit}
         onEditCover={coverEdit.openEditor}
         editCoverLabel={t('profile.personal.editBanner')}
+        profileKind={isBusinessScope ? 'business' : 'personal'}
+        kindLabel={
+          isBusinessScope
+            ? t('publications.profile.businessBadge')
+            : t('publications.profile.personalBadge')
+        }
         shareSlot={
           <ProfileQrShareButton
+            appearance="cover"
             type={isBusinessScope ? 'business' : 'user'}
             activityVisibility={isBusinessScope ? ownBusiness?.activityVisibility : undefined}
-            targetPath={
-              isBusinessScope ? undefined : `/users/${user.id}/publications`
-            }
             refreshKey={isBusinessScope ? businessShareVersion(ownBusiness) : undefined}
-            shareUrl={isBusinessScope ? buildBusinessShareUrl(ownBusiness) : undefined}
+            shareUrl={
+              isBusinessScope
+                ? buildBusinessShareUrl(ownBusiness)
+                : buildUserProfileShareUrl(user.id)
+            }
             shareText={isBusinessScope ? buildBusinessShareText(ownBusiness) : undefined}
             title={heroName}
-            subtitle={isBusinessScope ? heroCategory : displayName}
+            subtitle={isBusinessScope ? heroCategory : t('share.profileSubtitle')}
             verified={heroVerified}
             city={heroCity}
             sector={isBusinessScope ? heroCategory : undefined}

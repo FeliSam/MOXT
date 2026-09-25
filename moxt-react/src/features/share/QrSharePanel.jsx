@@ -8,14 +8,9 @@ import { useLanguage } from '../../contexts/useLanguage'
 import { useStarsModuleEnabled } from '../stars/useStarsModuleEnabled'
 import { makeQrCodeUrl } from '../../utils/qrCode'
 import { DownloadBadgeButton } from './DownloadBadgeButton'
+import { profileInitials } from '../publications/profileInitials'
 
 const REFERRAL_STARS_PER_INVITE = 5
-
-function initialsFromTitle(title = '') {
-  const parts = title.trim().split(/\s+/).filter(Boolean)
-  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
-  return title.slice(0, 2).toUpperCase()
-}
 
 export function QrSharePanel({
   variant = 'profile',
@@ -35,6 +30,9 @@ export function QrSharePanel({
   code,
   inviteCount,
   qrImageSrc,
+  hint: hintProp,
+  /** 'prune' : carte QR du profil perso (identité prune) ; sinon teal / entreprise. */
+  tone,
   qrSize = 260,
   showActions = true,
   className = '',
@@ -53,7 +51,7 @@ export function QrSharePanel({
       ? Number(inviteCount) * REFERRAL_STARS_PER_INVITE
       : null
 
-  const hint = t(`share.hints.${variant}`)
+  const hint = hintProp || t(`share.hints.${variant}`)
   const socialVariants = ['instagram', 'telegram', 'whatsapp']
   const resolvedShareTitle =
     shareTitle ||
@@ -115,9 +113,11 @@ export function QrSharePanel({
         className="relative overflow-hidden rounded-[2rem] text-white shadow-[0_24px_60px_-20px_rgba(15,118,110,0.55)]"
       style={{
         background:
-          variant === 'business'
-            ? 'linear-gradient(165deg, #04141c 0%, #0a2430 40%, #0f172a 72%, #134e4a 100%)'
-            : 'linear-gradient(165deg, #04141c 0%, #0a2430 38%, #0d3a42 68%, #0f766e 100%)',
+          tone === 'prune'
+            ? 'linear-gradient(165deg, #140712 0%, #2a0f25 38%, #4a1a40 68%, #6b2d5c 100%)'
+            : variant === 'business'
+              ? 'linear-gradient(165deg, #04141c 0%, #0a2430 40%, #0f172a 72%, #134e4a 100%)'
+              : 'linear-gradient(165deg, #04141c 0%, #0a2430 38%, #0d3a42 68%, #0f766e 100%)',
       }}
     >
       <div
@@ -138,7 +138,7 @@ export function QrSharePanel({
           />
         ) : (
           <span className="grid size-[4.5rem] place-items-center rounded-full border-[3px] border-white/25 bg-white/12 text-xl font-black shadow-lg ring-4 ring-white/10">
-            {initialsFromTitle(title)}
+            {profileInitials(title)}
           </span>
         )}
 
@@ -200,15 +200,19 @@ export function QrSharePanel({
           </div>
         ) : null}
 
-        <div className="mt-7 rounded-[1.35rem] bg-white p-3.5 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.35)]">
+        {/* Modules toujours noirs sur blanc (clair comme sombre) + quiet zone blanche. */}
+        <div
+          className="mt-7 w-full rounded-[1.35rem] bg-white p-3.5 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.35)]"
+          style={{ maxWidth: qrSize + 28 }}
+        >
           <img
             key={shareUrl}
             src={qrUrl}
             alt={hint}
             width={qrSize}
             height={qrSize}
-            className="block object-contain"
-            style={{ width: qrSize, height: qrSize }}
+            className="mx-auto block aspect-square h-auto w-full bg-white object-contain"
+            style={{ maxWidth: qrSize }}
           />
         </div>
 
@@ -240,7 +244,7 @@ export function QrSharePanel({
                 </Button>
               ) : null}
               <Button
-                className="border border-white/20 bg-white/10 text-white shadow-none hover:bg-white/20"
+                className="!border !border-white/20 !bg-white/10 !text-white !shadow-none hover:!bg-white/20"
                 icon={copied ? FiCheck : FiCopy}
                 onClick={copyLink}
               >

@@ -311,6 +311,8 @@ export function BusinessDetailPage() {
         avatarAlt={bt('businesses.detail.logoAlt', { name: business.name })}
         coverCategory="business"
         coverStyle={business.coverStyle}
+        profileKind="business"
+        kindLabel={t('publications.profile.businessBadge')}
         emptyCoverVariant="editorial-dark"
         showCoverEdit={Boolean(isOwner && !guestMode && !business.bannerUrl)}
         onEditCover={coverEdit.openEditor}
@@ -320,8 +322,9 @@ export function BusinessDetailPage() {
         onOpenReviews={() => setMainTab('avis')}
         shareSlot={
           <ProfileQrShareButton
+            appearance="cover"
             type="business"
-            activityVisibility={business.activityVisibility}
+            activityVisibility={isOwner ? business.activityVisibility : undefined}
             refreshKey={businessShareVersion(business)}
             shareUrl={buildBusinessShareUrl(business)}
             shareText={buildBusinessShareText(business)}

@@ -1,8 +1,9 @@
+import { COVER_BANNER_LABELS_FR } from './coverBannerLabels'
 import { grainFilterDef, GrainOverlay, useCoverSvgIds } from './coverSvgShared'
 import { BusinessEditorialDarkCover } from '../BusinessEditorialDarkCover'
 
 /** business-a-mesh — Mesh teal, centered Moxt / Votre réseau business */
-export function BusinessMeshTealCover({ className = '' }) {
+export function BusinessMeshTealCover({ className = '', labels = COVER_BANNER_LABELS_FR }) {
   const id = useCoverSvgIds('bizA')
   const mesh = id('mesh')
   const glow = id('glow')
@@ -74,7 +75,7 @@ export function BusinessMeshTealCover({ className = '' }) {
           Moxt
         </p>
         <p className="mt-2 text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-white/90 sm:text-[0.7rem]">
-          Votre réseau business
+          {labels.yourBusinessNetwork}
         </p>
       </div>
     </div>
@@ -144,7 +145,7 @@ export function BusinessGlassFintechCover({ className = '' }) {
 }
 
 /** business-d-topo — Topo emerald */
-export function BusinessTopoEmeraldCover({ className = '' }) {
+export function BusinessTopoEmeraldCover({ className = '', labels = COVER_BANNER_LABELS_FR }) {
   const id = useCoverSvgIds('bizD')
   const grain = id('grain')
   const glow = id('glow')
@@ -216,7 +217,7 @@ export function BusinessTopoEmeraldCover({ className = '' }) {
           <span className="h-px w-10 bg-[#f3ecd4]/70" />
         </div>
         <p className="mt-2 text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-[#f3ecd4]/85">
-          Présent sur Moxt
+          {labels.onMoxt}
         </p>
       </div>
     </div>

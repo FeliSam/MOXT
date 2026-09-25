@@ -45,7 +45,7 @@ import {
 import { PublicationCatalogNav } from '../features/publications/PublicationCatalogNav'
 import { PublicationScopeButton } from '../features/publications/PublicationScopeButton'
 import { selectAccountPreferences } from '../features/account/accountSlice'
-import { defaultCoverStyleForPersonal } from '../features/publications/coverBanners/coverBannerCatalog'
+import { resolveOwnerPersonalCover } from '../features/publications/coverBanners/coverBannerCatalog'
 import { PublicProfileHero } from '../features/publications/PublicProfileHero'
 import { CoverStylePicker } from '../features/publications/coverBanners/CoverStylePicker'
 import { useOwnerCoverStyleEdit } from '../features/publications/coverBanners/useOwnerCoverStyleEdit'
@@ -69,6 +69,14 @@ import {
 import { useLanguage } from '../contexts/useLanguage'
 import { phase3Text } from '../i18n/phase3I18n'
 import { isActiveVideo } from '../features/videos/videoUtils'
+import { ProfileQrShareButton } from '../features/share/ProfileQrShareButton'
+import {
+  buildBusinessShareText,
+  buildBusinessShareUrl,
+  businessCityLabel,
+  businessShareVersion,
+} from '../features/share/businessShareUtils'
+import { buildUserProfileShareUrl } from '../features/share/userShareUtils'
 
 const EMPTY_ICONS = {
   listing: FiShoppingBag,
@@ -233,16 +241,22 @@ export function UserPublicationsPage() {
     setSearchParams(params, { replace: true })
   }
 
+  const ownerCover = resolveOwnerPersonalCover({
+    isOwner,
+    ownPreferences: preferences,
+    ownGender: currentUser?.gender,
+    memberProfile: guestMode ? guestProfile : memberProfile,
+  })
   const coverEditCategory = scope === 'business' ? 'business' : 'personal'
   const coverEdit = useOwnerCoverStyleEdit({
     category: coverEditCategory,
     business: coverEditCategory === 'business' ? ownBusiness : null,
     userId: coverEditCategory === 'personal' ? userId : null,
-    gender: memberProfile?.gender || currentUser?.gender,
+    gender: ownerCover.gender,
     coverStyle:
       coverEditCategory === 'business'
         ? ownBusiness?.coverStyle
-        : preferences?.coverStyle || defaultCoverStyleForPersonal(memberProfile?.gender || currentUser?.gender),
+        : ownerCover.coverStyle,
   })
   const showCoverEdit =
     isOwner &&
@@ -330,6 +344,37 @@ export function UserPublicationsPage() {
     ? guestProfile?.avatarUrl
     : (isOwner && currentUser?.avatarUrl) || memberProfile?.avatarUrl
   const verified = Boolean(guestMode ? guestProfile?.verified : memberProfile?.verified)
+  // QR sur la couverture : même bouton que la fiche entreprise (haut droite).
+  const isBusinessHero = scope === 'business' && Boolean(ownBusiness)
+  const heroQrButton = isBusinessHero ? (
+    <ProfileQrShareButton
+      appearance="cover"
+      type="business"
+      activityVisibility={isOwner ? ownBusiness.activityVisibility : undefined}
+      refreshKey={businessShareVersion(ownBusiness)}
+      shareUrl={buildBusinessShareUrl(ownBusiness)}
+      shareText={buildBusinessShareText(ownBusiness)}
+      title={ownBusiness.name}
+      subtitle={ownBusiness.sector}
+      verified={['verified', 'approved', 'active'].includes(ownBusiness.status)}
+      city={businessCityLabel(ownBusiness)}
+      sector={ownBusiness.sector}
+      logoUrl={ownBusiness.logoUrl}
+    />
+  ) : (
+    <ProfileQrShareButton
+      appearance="cover"
+      type="user"
+      isOwnProfile={isOwner}
+      shareUrl={buildUserProfileShareUrl(userId)}
+      title={displayName}
+      subtitle={t('share.profileSubtitle')}
+      hint={isOwner ? undefined : t('share.hints.profileMember')}
+      verified={verified}
+      city={profileCity}
+      logoUrl={avatarUrl}
+    />
+  )
   const activeVideos = (publications.videos || []).filter(isActiveVideo)
   const memberSinceLabel = formatMemberSince(
     memberProfile?.memberSince || guestProfile?.memberSince || memberProfile?.createdAt || guestProfile?.createdAt,
@@ -390,10 +435,20 @@ export function UserPublicationsPage() {
   ]
 
   return (
-    <div className="grid min-w-0 max-w-full gap-5 overflow-x-clip sm:gap-6">
+    <div
+      className="grid min-w-0 max-w-full gap-5 overflow-x-clip sm:gap-6"
+      data-profile-kind={isBusinessHero ? undefined : 'personal'}
+    >
       <PublicProfileHero
         name={displayName}
         verified={verified}
+        shareSlot={heroQrButton}
+        profileKind={isBusinessHero ? 'business' : 'personal'}
+        kindLabel={
+          isBusinessHero
+            ? t('publications.profile.businessBadge')
+            : t('publications.profile.personalBadge')
+        }
         category={
           scope === 'business' && ownBusiness
             ? ownBusiness.sector || t('publications.profile.businessBadge')
@@ -424,9 +479,9 @@ export function UserPublicationsPage() {
         coverStyle={
           scope === 'business'
             ? ownBusiness?.coverStyle
-            : preferences?.coverStyle || defaultCoverStyleForPersonal(memberProfile?.gender || currentUser?.gender)
+            : ownerCover.coverStyle
         }
-        gender={memberProfile?.gender || currentUser?.gender}
+        gender={ownerCover.gender}
         emptyCoverVariant={scope === 'business' ? 'editorial-dark' : 'gradient'}
         showCoverEdit={showCoverEdit}
         onEditCover={coverEdit.openEditor}
@@ -440,7 +495,7 @@ export function UserPublicationsPage() {
               {guestMode ? (
                 <Button
                   variant="secondary"
-                  className="w-full"
+                  className="profile-follow-tint w-full"
                   onClick={handleGuestInteract}
                 >
                   {p3('publications.public.follow')}
@@ -451,7 +506,7 @@ export function UserPublicationsPage() {
                   publisherId={userId}
                   publisherName={displayName}
                   publisherPath={`/users/${userId}/publications`}
-                  className="w-full"
+                  className="profile-follow-tint w-full"
                   variant="secondary"
                   showIcon={false}
                   subscribeLabel={p3('publications.public.follow')}

@@ -39,6 +39,26 @@ export function parseMoxtScanTarget(raw) {
     }
   }
 
+  // QR entreprise / profil servis par la passerelle OG (share.moxtapp.ru/share/{kind}/{id}).
+  const shareMatch = pathname.match(/^\/share\/(user|profile|business)\/([^/]+)\/?$/i)
+  if (shareMatch?.[2]) {
+    const shareId = shareMatch[2]
+    if (shareMatch[1].toLowerCase() === 'business') {
+      return {
+        type: 'business',
+        path: `/businesses/${shareId}`,
+        labelKey: 'share.scanner.targets.business',
+        businessId: shareId,
+      }
+    }
+    return {
+      type: 'user',
+      path: `/users/${shareId}/publications`,
+      labelKey: 'share.scanner.targets.user',
+      userId: shareId,
+    }
+  }
+
   const userMatch = pathname.match(/^\/users\/([^/]+)(?:\/(?:publications|annonces))?\/?$/i)
   if (userMatch?.[1]) {
     const userId = userMatch[1]

@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../services/supabaseClient'
 import { isProfileVerified } from '../profile/userProfileUtils'
+import { genderFromPreferences } from './coverBanners/coverBannerCatalog'
 
-function mapRemoteProfile(row) {
+const BASE_COLUMNS = 'first_name, last_name, city, country, avatar_url, status, created_at, updated_at'
+
+export function mapRemoteProfile(row) {
   if (!row) return null
   return {
     firstName: row.first_name || '',
@@ -12,7 +15,18 @@ function mapRemoteProfile(row) {
     avatarUrl: row.avatar_url || null,
     verified: row.status === 'verified',
     memberSince: row.created_at || row.updated_at || null,
+    // Seuls le style de bannière et le genre sont repris des préférences du membre.
+    coverStyle: row.preferences?.coverStyle || null,
+    gender: genderFromPreferences(row.preferences),
   }
+}
+
+function fetchProfileRow(userId) {
+  const query = (columns) => supabase.from('profiles').select(columns).eq('id', userId).maybeSingle()
+  // Si la colonne preferences n'est pas lisible, on retombe sur les colonnes de base.
+  return query(`${BASE_COLUMNS}, preferences`).then((result) =>
+    result.error ? query(BASE_COLUMNS) : result,
+  )
 }
 
 export function formatMemberSince(value) {
@@ -43,11 +57,7 @@ export function usePublicationProfile(userId, currentUser) {
       return undefined
     }
 
-    supabase
-      .from('profiles')
-      .select('first_name, last_name, city, country, avatar_url, status, created_at, updated_at')
-      .eq('id', userId)
-      .maybeSingle()
+    fetchProfileRow(userId)
       .then(({ data, error }) => {
         if (cancelled) return
         if (error) {

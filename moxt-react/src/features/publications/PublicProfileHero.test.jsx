@@ -29,18 +29,18 @@ describe('PublicProfileHero empty cover', () => {
     expect(container.querySelector('[data-cover-style="business-c-glass"]')).toBeTruthy()
   })
 
-  it('renders woman silk default for personal female', () => {
+  it('renders the prune-rose default for personal female', () => {
     const { container } = render(
       <PublicProfileHero name="Awa" coverCategory="personal" gender="female" />,
     )
-    expect(container.querySelector('[data-cover-style="woman-a-silk"]')).toBeTruthy()
+    expect(container.querySelector('[data-cover-style="woman-d-prune"]')).toBeTruthy()
   })
 
-  it('renders man steel default when gender unknown', () => {
+  it('renders the prune-night default when gender unknown', () => {
     const { container } = render(
       <PublicProfileHero name="Sam" coverCategory="personal" />,
     )
-    expect(container.querySelector('[data-cover-style="man-a-steel"]')).toBeTruthy()
+    expect(container.querySelector('[data-cover-style="man-d-prune"]')).toBeTruthy()
   })
 
   it('keeps real banner image when coverUrl is set', () => {
@@ -79,6 +79,36 @@ describe('PublicProfileHero empty cover', () => {
       <PublicProfileHero name="Public" coverCategory="business" />,
     )
     expect(screen.queryByText('Modifier la bannière')).toBeNull()
+  })
+})
+
+describe('PublicProfileHero profile kind', () => {
+  it('personal : avatar rond avec anneau + chip « Particulier »', () => {
+    const { container } = render(
+      <PublicProfileHero
+        name="Рикардо Оке"
+        coverCategory="personal"
+        profileKind="personal"
+        kindLabel="Particulier"
+      />,
+    )
+    expect(screen.getByText('Particulier')).toBeTruthy()
+    expect(container.querySelector('[data-profile-kind-chip="personal"]')).toBeTruthy()
+    const initials = screen.getByText('РИ')
+    expect(initials.className).toMatch(/rounded-full/)
+  })
+
+  it('business : logo carré arrondi + chip « Entreprise »', () => {
+    render(
+      <PublicProfileHero
+        name="Moxt Services"
+        coverCategory="business"
+        profileKind="business"
+        kindLabel="Entreprise"
+      />,
+    )
+    expect(screen.getByText('Entreprise')).toBeTruthy()
+    expect(screen.getByText('MO').className).toMatch(/rounded-\[1\.15rem\]/)
   })
 })
 

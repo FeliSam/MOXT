@@ -677,6 +677,7 @@ export const ru = {
     qrToShare: "QR-код для отправки",
     showProfileQr: "Показать QR-код профиля",
     showBusinessQr: "Показать QR-код компании",
+    profileSubtitle: "Профиль в MOXT",
     badge: {
       download: "Скачать бейдж",
       generating: "Создание…",
@@ -704,6 +705,7 @@ export const ru = {
     hints: {
       invite: "Сканируйте, чтобы присоединиться к MOXT",
       profile: "Сканируйте, чтобы увидеть мои публикации",
+      profileMember: "Сканируйте, чтобы открыть этот профиль в MOXT",
       business: "Сканируйте, чтобы узнать о компании",
       instagram: "Сканируйте, чтобы подписаться на MOXT в Instagram",
       telegram: "Сканируйте, чтобы присоединиться к группе Telegram MOXT",
@@ -1691,6 +1693,7 @@ export const ru = {
     },
     profile: {
       businessBadge: "Компания",
+      personalBadge: "Частное лицо",
       memberBadge: "Участник",
       memberSince: "Участник с: {date}",
       activeCount: "{count} активных",
@@ -2245,6 +2248,8 @@ export const ru = {
         'man-a-steel': "Бирюзовая сталь",
         'man-b-topo': "Изумрудный рельеф",
         'man-c-mesh': "Полночная сетка",
+        'woman-d-prune': "Сливово-розовые волны",
+        'man-d-prune': "Ночные сливовые волны",
       },
     },
     avatarEditor: {
@@ -8432,5 +8437,12 @@ export const ru = {
           "Сначала подтвердите email в разделе Безопасность, чтобы публиковать, затем исследуйте свободно.",
       },
     },
+  },
+  coverBanner: {
+    profile: "Профиль",
+    yourProfile: "Ваш профиль",
+    onMoxt: "На Moxt",
+    yourNetwork: "Ваша сеть",
+    yourBusinessNetwork: "Ваша бизнес-сеть",
   },
 }

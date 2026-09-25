@@ -678,6 +678,7 @@ export const fr = {
     qrToShare: "QR code à partager",
     showProfileQr: "Afficher le QR code du profil",
     showBusinessQr: "Afficher le QR code entreprise",
+    profileSubtitle: "Profil MOXT",
     badge: {
       download: "Télécharger le badge",
       generating: "Génération…",
@@ -705,6 +706,7 @@ export const fr = {
     hints: {
       invite: "Scannez pour rejoindre MOXT",
       profile: "Scannez pour voir mes publications",
+      profileMember: "Scannez pour voir ce profil sur MOXT",
       business: "Scannez pour découvrir cette entreprise",
       instagram: "Scannez pour suivre MOXT sur Instagram",
       telegram: "Scannez pour rejoindre le groupe Telegram MOXT",
@@ -1694,6 +1696,7 @@ export const fr = {
     },
     profile: {
       businessBadge: "Entreprise",
+      personalBadge: "Particulier",
       memberBadge: "Membre",
       memberSince: "Membre depuis : {date}",
       activeCount: "{count} actives",
@@ -2250,6 +2253,8 @@ export const fr = {
         'man-a-steel': "Acier teal",
         'man-b-topo': "Topo émeraude",
         'man-c-mesh': "Mesh minuit",
+        'woman-d-prune': "Vagues prune & rose",
+        'man-d-prune': "Vagues prune nuit",
       },
     },
     avatarEditor: {
@@ -8454,5 +8459,12 @@ export const fr = {
           "Confirmez d’abord votre e-mail dans Sécurité pour débloquer toutes les publications, puis explorez librement.",
       },
     },
+  },
+  coverBanner: {
+    profile: "Profil",
+    yourProfile: "Votre profil",
+    onMoxt: "Présent sur Moxt",
+    yourNetwork: "Votre réseau",
+    yourBusinessNetwork: "Votre réseau business",
   },
 }

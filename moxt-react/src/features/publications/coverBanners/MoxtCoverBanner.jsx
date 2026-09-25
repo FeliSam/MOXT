@@ -1,3 +1,6 @@
+import { useContext } from 'react'
+import { LanguageContext } from '../../../contexts/language-context'
+import { coverBannerLabels } from './coverBannerLabels'
 import {
   COVER_STYLE_IDS,
   resolveCoverStyleId,
@@ -15,6 +18,8 @@ import {
   ManSteelTealCover,
   ManTopoEmeraldCover,
   ManMeshMidnightCover,
+  ManPruneNightCover,
+  WomanPruneRoseCover,
 } from './PersonalCoverStyles'
 
 const STYLE_COMPONENTS = {
@@ -28,6 +33,8 @@ const STYLE_COMPONENTS = {
   [COVER_STYLE_IDS.MAN_A_STEEL]: ManSteelTealCover,
   [COVER_STYLE_IDS.MAN_B_TOPO]: ManTopoEmeraldCover,
   [COVER_STYLE_IDS.MAN_C_MESH]: ManMeshMidnightCover,
+  [COVER_STYLE_IDS.WOMAN_D_PRUNE]: WomanPruneRoseCover,
+  [COVER_STYLE_IDS.MAN_D_PRUNE]: ManPruneNightCover,
 }
 
 /**
@@ -46,6 +53,9 @@ export function MoxtCoverBanner({
     category,
     gender,
   })
+  // Pas de throw hors LanguageProvider (rendus isolés) : repli sur les libellés FR.
+  const language = useContext(LanguageContext)
+  const labels = coverBannerLabels(language?.t)
   const Component = STYLE_COMPONENTS[resolved] || BusinessEditorialCover
-  return <Component className={className} />
+  return <Component className={className} labels={labels} />
 }
