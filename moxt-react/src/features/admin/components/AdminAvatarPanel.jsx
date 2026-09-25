@@ -266,7 +266,7 @@ export function AdminAvatarPanel() {
             {adminText(t, 'admin.avatar.description')}
           </p>
         </div>
-        <p className="rounded-xl border border-brand-200/70 bg-brand-50/80 px-3 py-2 text-xs text-brand-900 dark:border-brand-900/40 dark:bg-brand-950/30 dark:text-brand-100">
+        <p className="rounded-xl border border-brand-200/70 bg-brand-50/80 px-3 py-2 text-xs text-brand-900 dark:border-brand-900/40 dark:bg-brand-900/30 dark:text-brand-100">
           {adminText(t, 'admin.avatar.hint')}
         </p>
       </Card>
