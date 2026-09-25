@@ -1,4 +1,4 @@
-import { FiStar } from 'react-icons/fi'
+import { FiEdit2, FiStar } from 'react-icons/fi'
 import { VerifiedDisplayName } from '../../components/ui/Badge'
 import { avatarDisplayUrl } from '../account/avatarDisplayUrl'
 import { resolveMediaDisplayUrl } from '../../services/media/mediaUrlUtils'
@@ -47,6 +47,8 @@ export function PublicProfileHero({
   avatarAlt = '',
   actions = null,
   shareSlot = null,
+  onAvatarEdit = null,
+  avatarEditLabel = '',
   className = '',
 }) {
   const resolvedCover = resolveMediaDisplayUrl(coverUrl) || coverUrl || ''
@@ -105,6 +107,17 @@ export function PublicProfileHero({
           >
             {initials}
           </span>
+          {onAvatarEdit ? (
+            <button
+              type="button"
+              onClick={onAvatarEdit}
+              aria-label={avatarEditLabel || undefined}
+              title={avatarEditLabel || undefined}
+              className="absolute -bottom-1.5 -right-1.5 grid size-8 place-items-center rounded-full border-2 border-[var(--app-surface)] bg-brand-700 text-white shadow-md transition hover:scale-105 hover:bg-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-accent)] dark:bg-[var(--app-teal)] dark:text-slate-950"
+            >
+              <FiEdit2 className="size-3.5" aria-hidden="true" />
+            </button>
+          ) : null}
         </div>
 
         {shareSlot ? <div className="absolute right-3 top-3 z-10 sm:right-4 sm:top-4">{shareSlot}</div> : null}

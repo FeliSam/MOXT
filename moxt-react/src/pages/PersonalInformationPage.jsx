@@ -1,6 +1,6 @@
 import { useFormik } from 'formik'
 import React, { useRef } from 'react'
-import { FiCamera, FiCheckCircle, FiFlag, FiMail, FiMapPin, FiUser } from 'react-icons/fi'
+import { FiCamera, FiCheckCircle, FiFlag, FiMail, FiMapPin, FiSmile, FiUser } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Alert } from '../components/ui/Alert'
 import { BackButton } from '../components/ui/BackButton'
@@ -22,6 +22,8 @@ import { useGeographyOptions } from '../hooks/useGeographyOptions'
 import { useUploadProgress } from '../hooks/useUploadProgress'
 import { storageService } from '../services/storageService'
 import { UploadProgress } from '../components/ui/UploadProgress'
+import { AvatarDicebearEditorLazy } from '../features/account/avatarDicebear/AvatarDicebearEditorLazy'
+import { useLoreleiFallbackSrc } from '../features/account/avatarDicebear/useLoreleiFallbackSrc'
 
 function SectionTitle({ icon: Icon, label }) {
   const I = Icon
@@ -47,6 +49,8 @@ export function PersonalInformationPage() {
   const [avatarUploading, setAvatarUploading] = React.useState(false)
   const [avatarPreview, setAvatarPreview] = React.useState('')
   const { progress: avatarProgress, track: trackAvatarUpload } = useUploadProgress()
+  const [avatarEditorOpen, setAvatarEditorOpen] = React.useState(false)
+  const loreleiSrc = useLoreleiFallbackSrc(user, { size: 224 })
 
   const formik = useFormik({
     enableReinitialize: true,
@@ -86,7 +90,8 @@ export function PersonalInformationPage() {
 
   if (!user) return null
 
-  const displayedAvatar = avatarPreview || formik.values.avatarUrl
+  const uploadedAvatar = avatarPreview || formik.values.avatarUrl
+  const displayedAvatar = uploadedAvatar || loreleiSrc
 
   async function persistProfile(overrides = {}) {
     const values = { ...formik.values, ...overrides }
@@ -226,12 +231,21 @@ export function PersonalInformationPage() {
               >
                 {avatarUploading ? t('profile.personal.uploading') : t('profile.personal.choosePhoto')}
               </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                icon={FiSmile}
+                disabled={avatarUploading}
+                onClick={() => setAvatarEditorOpen(true)}
+              >
+                {t('profile.avatarEditor.open')}
+              </Button>
               {avatarProgress.active ||
               avatarProgress.phase === 'done' ||
               avatarProgress.phase === 'error' ? (
                 <UploadProgress progress={avatarProgress} compact className="w-full" />
               ) : null}
-              {displayedAvatar ? (
+              {uploadedAvatar ? (
                 <button
                   type="button"
                   className="text-xs text-red-600 hover:underline disabled:opacity-50"
@@ -384,6 +398,12 @@ export function PersonalInformationPage() {
         <SectionTitle icon={FiMail} label={t('profile.personal.emailLabel')} />
         <EmailVerificationCard variant="embedded" idPrefix="profile" />
       </Card>
+
+      <AvatarDicebearEditorLazy
+        open={avatarEditorOpen}
+        onClose={() => setAvatarEditorOpen(false)}
+        onChoosePhoto={() => avatarInputRef.current?.click()}
+      />
     </div>
   )
 }
