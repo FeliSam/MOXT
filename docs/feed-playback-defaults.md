@@ -4,9 +4,16 @@
 
 - `videoFeedAudio.js` initialise `feedMuted = false`.
 - `useFeedVideoPlayback` tente d’abord l’autoplay **avec** le mute global (donc unmuted si défaut ON).
-- Si le navigateur bloque (souvent iOS Safari sans geste), le hook **rejoue en muet**, puis tente `muted = false` juste après `play()` réussi.
+- Si le navigateur bloque (souvent iOS Safari sans geste), le hook **rejoue en muet et y reste** jusqu’à un tap sur le bouton volume (unmute = geste utilisateur). Ne pas forcer `muted = false` juste après le fallback : cela coupe la lecture et affiche l’overlay play.
+- La slide synchronise un `policyMuted` local pour que l’attribut React `muted` reste aligné avec l’élément (sinon React ré-applique unmuted et bloque l’autoplay).
 - L’utilisateur peut toujours couper/réactiver le son via le bouton volume (override local de session).
 - L’admin peut forcer le muet global via `app_feed_playback.soundOnByDefault` (Admin → Fil vidéo).
+
+## Autoplay au swipe
+
+- Slide active : `autoPlay` + `play()` via le hook (watchdog si media ready mais paused).
+- Devenir active (snap suivant / retour) réinitialise la pause utilisateur et relance la lecture ; la précédente est pausée.
+- Tap-to-pause (`tapPausesVideo`) reste disponible, mais l’état initial / actif doit être en lecture.
 
 ## Tap = pause + overlay play
 
