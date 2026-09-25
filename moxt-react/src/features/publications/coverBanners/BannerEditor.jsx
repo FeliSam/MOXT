@@ -51,23 +51,25 @@ function BannerTile({ styleId, category, selected, label, onSelect }) {
       aria-label={label}
       title={label}
       onClick={onSelect}
-      className={`ave-tile relative aspect-[16/7] w-full overflow-hidden rounded-[1.15rem] ${
+      className={`ave-tile relative flex w-full min-w-0 flex-col overflow-hidden rounded-[1.15rem] p-1.5 text-left ${
         selected ? 'is-selected' : ''
       }`}
     >
-      <MoxtCoverBanner
-        styleId={styleId}
-        category={category}
-        className="pointer-events-none absolute inset-0 h-full w-full"
-      />
-      <span className="bne-tile-label absolute inset-x-0 bottom-0 truncate px-2.5 pb-1.5 pt-4 text-left text-[0.72rem] font-semibold">
+      <span className="relative block aspect-[16/7] w-full overflow-hidden rounded-[0.8rem]">
+        <MoxtCoverBanner
+          styleId={styleId}
+          category={category}
+          className="pointer-events-none absolute inset-0 h-full w-full"
+        />
+        {selected ? (
+          <span className="ave-check absolute right-1.5 top-1.5 grid size-5 place-items-center rounded-full">
+            <LuCheck aria-hidden="true" strokeWidth={3.5} className="size-3" />
+          </span>
+        ) : null}
+      </span>
+      <span className="block truncate px-1 pb-0.5 pt-1.5 text-[0.76rem] font-semibold">
         {label}
       </span>
-      {selected ? (
-        <span className="ave-check absolute right-1.5 top-1.5 grid size-5 place-items-center rounded-full">
-          <LuCheck aria-hidden="true" strokeWidth={3.5} className="size-3" />
-        </span>
-      ) : null}
     </button>
   )
 }
@@ -193,10 +195,11 @@ export function BannerEditor({
                   className="absolute inset-0 h-full w-full"
                 />
                 <div aria-hidden="true" className="bne-scrim absolute inset-0" />
-                <div className="absolute inset-x-4 bottom-4 flex items-end gap-3 sm:inset-x-5 sm:bottom-5">
+                {/* À droite : les visuels portent leur propre typographie à gauche / au centre. */}
+                <div className="absolute inset-x-4 bottom-4 flex flex-row-reverse items-end gap-3 sm:inset-x-5 sm:bottom-5">
                   <PreviewAvatar src={avatarSrc} initials={initials} square={isBusiness} />
                   {previewName ? (
-                    <p className="ave-serif bne-name min-w-0 truncate pb-1 text-xl sm:text-2xl">
+                    <p className="ave-serif bne-name min-w-0 truncate pb-1 text-right text-xl sm:text-2xl">
                       {previewName}
                     </p>
                   ) : null}
