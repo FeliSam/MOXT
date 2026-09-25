@@ -6,7 +6,8 @@ import financeReducer from '../features/finance/financeSlice'
 import jobsReducer, { updateApplicationStatus } from '../features/jobs/jobSlice'
 import parcelsReducer, { updateParcelRequestStatus } from '../features/parcels/parcelSlice'
 import p2pReducer, { createOffer, updateOfferStatus } from '../features/p2p/p2pSlice'
-import postsReducer, { createPost } from '../features/posts/postsSlice'
+import postsReducer, { addComment, createPost, toggleLike } from '../features/posts/postsSlice'
+import videosReducer, { addVideoComment, toggleVideoLike } from '../features/videos/videosSlice'
 import transfersReducer, {
   createTransfer,
   declarePayment,
@@ -766,5 +767,229 @@ describe('interactionMiddleware', () => {
     store.dispatch(updateOfferStatus({ id: 'P2P-ARCHIVED-1', status: 'active' }))
 
     expect(rpcMock).not.toHaveBeenCalledWith('moxt_notify_all_users', expect.anything())
+  })
+
+  it('notifie l auteur d un post Actualites sur like et commentaire', () => {
+    const store = configureStore({
+      reducer: {
+        auth: () => ({ user: { id: 'liker', firstName: 'Sam', lastName: 'L' } }),
+        communications: communicationsReducer,
+        ui: uiReducer,
+        posts: postsReducer,
+        videos: videosReducer,
+        jobs: () => ({ applications: [], items: [] }),
+        events: () => ({ registrations: [], items: [] }),
+        parcels: () => ({ items: [] }),
+        businesses: () => ({ items: [] }),
+        marketplace: () => ({ items: [] }),
+        finance: () => ({ payments: [], receipts: [], walletEntries: [] }),
+        account: () => ({ preferences: {}, subscriptions: [] }),
+        administration: () => ({ users: [] }),
+        reviews: () => ({ items: [] }),
+        disputes: () => ({ items: [] }),
+        p2p: () => ({ orders: [], offers: [] }),
+      },
+      preloadedState: {
+        communications: { conversations: [], notifications: [], support: [] },
+        posts: {
+          items: [
+            {
+              id: 'POST-LIKE-1',
+              authorId: 'author1',
+              authorName: 'Amina',
+              message: 'Publication',
+              status: 'published',
+              likes: [],
+              comments: [],
+            },
+          ],
+        },
+      },
+      middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(interactionMiddleware),
+    })
+
+    store.dispatch(toggleLike({ postId: 'POST-LIKE-1', userId: 'liker' }))
+    expect(store.getState().communications.notifications).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ userId: 'author1', type: 'post', link: '/news/POST-LIKE-1' }),
+      ]),
+    )
+
+    store.dispatch(
+      addComment({
+        postId: 'POST-LIKE-1',
+        authorId: 'liker',
+        authorName: 'Sam L',
+        text: 'Bravo',
+      }),
+    )
+    const commentsNotifs = store
+      .getState()
+      .communications.notifications.filter((item) => String(item.message || '').includes('Bravo'))
+    expect(commentsNotifs).toHaveLength(1)
+    expect(commentsNotifs[0].userId).toBe('author1')
+  })
+
+  it('ne notifie pas soi-meme sur like / commentaire de son post', () => {
+    const store = configureStore({
+      reducer: {
+        auth: () => ({ user: { id: 'author1', firstName: 'Amina', lastName: 'K' } }),
+        communications: communicationsReducer,
+        ui: uiReducer,
+        posts: postsReducer,
+        videos: videosReducer,
+        jobs: () => ({ applications: [], items: [] }),
+        events: () => ({ registrations: [], items: [] }),
+        parcels: () => ({ items: [] }),
+        businesses: () => ({ items: [] }),
+        marketplace: () => ({ items: [] }),
+        finance: () => ({ payments: [], receipts: [], walletEntries: [] }),
+        account: () => ({ preferences: {}, subscriptions: [] }),
+        administration: () => ({ users: [] }),
+        reviews: () => ({ items: [] }),
+        disputes: () => ({ items: [] }),
+        p2p: () => ({ orders: [], offers: [] }),
+      },
+      preloadedState: {
+        communications: { conversations: [], notifications: [], support: [] },
+        posts: {
+          items: [
+            {
+              id: 'POST-SELF-1',
+              authorId: 'author1',
+              message: 'Moi',
+              status: 'published',
+              likes: [],
+              comments: [],
+            },
+          ],
+        },
+      },
+      middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(interactionMiddleware),
+    })
+
+    store.dispatch(toggleLike({ postId: 'POST-SELF-1', userId: 'author1' }))
+    store.dispatch(
+      addComment({
+        postId: 'POST-SELF-1',
+        authorId: 'author1',
+        authorName: 'Amina K',
+        text: 'Note perso',
+      }),
+    )
+    expect(store.getState().communications.notifications).toHaveLength(0)
+  })
+
+  it('notifie le proprietaire d une video Actualites sur like et commentaire', () => {
+    const store = configureStore({
+      reducer: {
+        auth: () => ({ user: { id: 'liker', firstName: 'Sam', lastName: 'L' } }),
+        communications: communicationsReducer,
+        ui: uiReducer,
+        posts: postsReducer,
+        videos: videosReducer,
+        jobs: () => ({ applications: [], items: [] }),
+        events: () => ({ registrations: [], items: [] }),
+        parcels: () => ({ items: [] }),
+        businesses: () => ({
+          items: [{ id: 'B1', ownerId: 'owner-fallback', name: 'Cafe' }],
+        }),
+        marketplace: () => ({ items: [] }),
+        finance: () => ({ payments: [], receipts: [], walletEntries: [] }),
+        account: () => ({ preferences: {}, subscriptions: [] }),
+        administration: () => ({ users: [] }),
+        reviews: () => ({ items: [] }),
+        disputes: () => ({ items: [] }),
+        p2p: () => ({ orders: [], offers: [] }),
+      },
+      preloadedState: {
+        communications: { conversations: [], notifications: [], support: [] },
+        videos: {
+          items: [
+            {
+              id: 'VID-1',
+              ownerId: 'owner1',
+              businessId: 'B1',
+              title: 'Clip',
+              status: 'active',
+              likes: [],
+              comments: [],
+            },
+          ],
+        },
+      },
+      middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(interactionMiddleware),
+    })
+
+    store.dispatch(toggleVideoLike({ videoId: 'VID-1', userId: 'liker' }))
+    expect(store.getState().communications.notifications).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ userId: 'owner1', type: 'post', link: '/news/VID-1' }),
+      ]),
+    )
+
+    store.dispatch(
+      addVideoComment({
+        videoId: 'VID-1',
+        authorId: 'liker',
+        authorName: 'Sam L',
+        text: 'Super clip',
+      }),
+    )
+    const commentNotifs = store
+      .getState()
+      .communications.notifications.filter((item) => String(item.message || '').includes('Super clip'))
+    expect(commentNotifs).toHaveLength(1)
+    expect(commentNotifs[0].userId).toBe('owner1')
+  })
+
+  it('ne notifie pas le proprietaire video qui like / commente sa propre video', () => {
+    const store = configureStore({
+      reducer: {
+        auth: () => ({ user: { id: 'owner1', firstName: 'Owner', lastName: 'One' } }),
+        communications: communicationsReducer,
+        ui: uiReducer,
+        posts: postsReducer,
+        videos: videosReducer,
+        jobs: () => ({ applications: [], items: [] }),
+        events: () => ({ registrations: [], items: [] }),
+        parcels: () => ({ items: [] }),
+        businesses: () => ({ items: [] }),
+        marketplace: () => ({ items: [] }),
+        finance: () => ({ payments: [], receipts: [], walletEntries: [] }),
+        account: () => ({ preferences: {}, subscriptions: [] }),
+        administration: () => ({ users: [] }),
+        reviews: () => ({ items: [] }),
+        disputes: () => ({ items: [] }),
+        p2p: () => ({ orders: [], offers: [] }),
+      },
+      preloadedState: {
+        communications: { conversations: [], notifications: [], support: [] },
+        videos: {
+          items: [
+            {
+              id: 'VID-SELF',
+              ownerId: 'owner1',
+              title: 'Mine',
+              status: 'active',
+              likes: [],
+              comments: [],
+            },
+          ],
+        },
+      },
+      middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(interactionMiddleware),
+    })
+
+    store.dispatch(toggleVideoLike({ videoId: 'VID-SELF', userId: 'owner1' }))
+    store.dispatch(
+      addVideoComment({
+        videoId: 'VID-SELF',
+        authorId: 'owner1',
+        authorName: 'Owner One',
+        text: 'Note',
+      }),
+    )
+    expect(store.getState().communications.notifications).toHaveLength(0)
   })
 })

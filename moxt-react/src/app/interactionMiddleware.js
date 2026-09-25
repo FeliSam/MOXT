@@ -335,6 +335,12 @@ export const interactionMiddleware = (store) => {
   if (action.type === 'posts/addComment') {
     triggers.handlePostComment(before, after, action)
   }
+  if (action.type === 'videos/toggleVideoLike') {
+    triggers.handleVideoLike(before, after, action)
+  }
+  if (action.type === 'videos/addVideoComment') {
+    triggers.handleVideoComment(before, after, action)
+  }
   if (action.type === 'p2p/acceptOffer') {
     triggers.handleP2PAcceptOffer(after, action)
   }

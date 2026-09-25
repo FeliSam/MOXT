@@ -326,8 +326,8 @@ export function createNotificationDispatcher(store) {
       const previous = before.posts.items.find((item) => item.id === postId)
       const post = after.posts.items.find((item) => item.id === postId)
       if (!post?.authorId || !previous) return
-      const likedBefore = previous.likes?.includes(userId)
-      const likedAfter = post.likes?.includes(userId)
+      const likedBefore = Array.isArray(previous.likes) && previous.likes.includes(userId)
+      const likedAfter = Array.isArray(post.likes) && post.likes.includes(userId)
       if (likedBefore || !likedAfter) return
 
       const actor = after.auth.user
@@ -365,6 +365,67 @@ export function createNotificationDispatcher(store) {
           }),
           type: 'post',
           link: newsPostPath(post.id),
+        },
+        'notifActualites',
+      )
+    },
+    /** Actualités video cards + Fil vidéo : likes/comments live on videos slice, not posts. */
+    handleVideoLike(before, after, action) {
+      const { videoId, userId } = action.payload
+      const previous = before.videos?.items?.find((item) => item.id === videoId)
+      const video = after.videos?.items?.find((item) => item.id === videoId)
+      if (!video || !previous) return
+      const likedBefore = Array.isArray(previous.likes) && previous.likes.includes(userId)
+      const likedAfter = Array.isArray(video.likes) && video.likes.includes(userId)
+      if (likedBefore || !likedAfter) return
+
+      const ownerId =
+        video.ownerId ||
+        after.businesses?.items?.find((item) => item.id === video.businessId)?.ownerId ||
+        null
+      if (!ownerId) return
+
+      const actor = after.auth.user
+      const actorName = actor
+        ? `${actor.firstName || ''} ${actor.lastName || ''}`.trim()
+        : notifyT('shared.notifications.someoneAlt')
+      notifyUser(
+        ownerId,
+        {
+          title: notifyT('shared.notifications.post.likeTitle'),
+          message: notifyT('shared.notifications.post.likeBody', {
+            name: actorName || notifyT('shared.notifications.someone'),
+          }),
+          type: 'post',
+          link: newsPostPath(video.id),
+        },
+        'notifActualites',
+      )
+    },
+    handleVideoComment(before, after, action) {
+      const previous = before.videos?.items?.find((item) => item.id === action.payload.videoId)
+      const video = after.videos?.items?.find((item) => item.id === action.payload.videoId)
+      const comment = action.payload.comment
+      if (!video || !comment) return
+      if ((previous?.comments?.length || 0) >= (video.comments?.length || 0)) return
+
+      const ownerId =
+        video.ownerId ||
+        after.businesses?.items?.find((item) => item.id === video.businessId)?.ownerId ||
+        null
+      if (!ownerId) return
+      if (comment.authorId === ownerId) return
+
+      notifyUser(
+        ownerId,
+        {
+          title: notifyT('shared.notifications.post.commentTitle'),
+          message: notifyT('shared.notifications.post.commentBody', {
+            name: comment.authorName || notifyT('shared.notifications.someone'),
+            text: String(comment.text).slice(0, 100),
+          }),
+          type: 'post',
+          link: newsPostPath(video.id),
         },
         'notifActualites',
       )
