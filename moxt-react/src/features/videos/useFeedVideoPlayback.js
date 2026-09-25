@@ -33,19 +33,41 @@ function isActivelyPlaying(node) {
 
 /**
  * Lecture auto TikTok-style : play quand la slide est active, pause sinon.
- * Tente d’abord avec le mute global ; si le navigateur bloque (iOS), rejoue en muet.
+ * Tente d’abord avec le mute global ; si le navigateur bloque (iOS), rejoue en muet
+ * et y reste (pas d’unmute forcé sans geste — sinon pause + overlay play).
  * Reprend au retour de background Capacitor / onglet UNIQUEMENT si le Fil est
  * encore au premier plan. Quitter le Fil, unmount, ou pause native arrête le son.
  *
  * Watchdog: if the active card stays paused while media is ready (readyState≥2),
  * keep calling play() — covers aborted initial play() when canplay already fired.
+ *
+ * @param {object} options
+ * @param {() => void} [options.onAutoplayMutedFallback] — called when unmuted
+ *   autoplay is blocked and playback continues muted (sync UI mute icon).
  */
-export function useFeedVideoPlayback(videoRef, { active, muted, playbackUrl, videoId, videoEl = null }) {
+export function useFeedVideoPlayback(
+  videoRef,
+  { active, muted, playbackUrl, videoId, videoEl = null, onAutoplayMutedFallback = null },
+) {
   const userPausedRef = useRef(false)
+  const wasActiveRef = useRef(false)
+  const mutedFallbackRef = useRef(onAutoplayMutedFallback)
+
+  useEffect(() => {
+    mutedFallbackRef.current = onAutoplayMutedFallback
+  }, [onAutoplayMutedFallback])
 
   useEffect(() => {
     userPausedRef.current = false
   }, [videoId, playbackUrl])
+
+  // Swipe back onto a card must autoplay again (tap-to-pause is per visit).
+  useEffect(() => {
+    if (active && !wasActiveRef.current) {
+      userPausedRef.current = false
+    }
+    wasActiveRef.current = Boolean(active)
+  }, [active])
 
   useEffect(() => {
     const el = videoEl || videoRef.current
@@ -65,6 +87,8 @@ export function useFeedVideoPlayback(videoRef, { active, muted, playbackUrl, vid
     let playInFlight = false
     let retryTimer = 0
     let watchdogTimer = 0
+    /** Once unmuted play is blocked, keep forcing muted for this active session. */
+    let forcedMuted = false
 
     function clearRetry() {
       if (retryTimer) {
@@ -90,25 +114,26 @@ export function useFeedVideoPlayback(videoRef, { active, muted, playbackUrl, vid
       if (playInFlight) return
 
       primeFeedVideoElement(node)
-      node.muted = Boolean(muted)
+      const wantMuted = Boolean(muted) || forcedMuted
+      node.muted = wantMuted
 
       const start = (forceMuted = false) => {
         if (forceMuted) node.muted = true
         const playResult = node.play()
         if (!playResult?.then) return Promise.resolve()
-        return playResult.then(() => {
-          if (!muted && forceMuted && !cancelled && videoRef.current === node) {
-            node.muted = false
-          }
-        })
+        return playResult
       }
 
       playInFlight = true
-      start()
+      start(wantMuted)
         .catch(() => {
           if (cancelled || userPausedRef.current) return undefined
-          // Unmuted blocked (or aborted) — retry muted once.
-          if (!muted) return start(true)
+          // Unmuted blocked (or aborted) — retry muted and stay muted.
+          if (!wantMuted) {
+            forcedMuted = true
+            mutedFallbackRef.current?.()
+            return start(true)
+          }
           return undefined
         })
         .catch(() => {

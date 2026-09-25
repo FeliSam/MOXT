@@ -264,6 +264,9 @@ function FeedVideoPlayer({ video, active, onActivate }) {
   const [error, setError] = useState(false)
   const [paused, setPaused] = useState(false)
   const [muted, setMuted] = useVideoFeedMuted()
+  /** Browser blocked unmuted autoplay — keep element muted until user taps unmute. */
+  const [policyMuted, setPolicyMuted] = useState(false)
+  const effectiveMuted = Boolean(muted || policyMuted)
   const src = useCachedMediaUrl(video.videoUrl, {
     kind: 'video',
     mediaId: video.id,
@@ -280,19 +283,32 @@ function FeedVideoPlayer({ video, active, onActivate }) {
     primeFeedVideoElement(node)
   }, [])
 
+  const onAutoplayMutedFallback = useCallback(() => {
+    setPolicyMuted(true)
+  }, [])
+
   const playback = useFeedVideoPlayback(videoRef, {
     active,
-    muted,
+    muted: effectiveMuted,
     playbackUrl,
     videoId: video.id,
     videoEl,
+    onAutoplayMutedFallback,
   })
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reset player when video source changes
     setError(false)
     setPaused(false)
+    setPolicyMuted(false)
   }, [video.id])
+
+  // Becoming the active snap card: clear stale paused UI; hook restarts play().
+  useEffect(() => {
+    if (!active) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- optimistic UI while autoplay starts
+    setPaused(false)
+  }, [active])
 
   useEffect(() => {
     if (active && !wasActiveRef.current) {
@@ -316,6 +332,18 @@ function FeedVideoPlayer({ video, active, onActivate }) {
     }
   }, [videoEl])
 
+  function setMutedFromUser(next) {
+    const value = typeof next === 'function' ? next(muted) : next
+    if (!value) setPolicyMuted(false)
+    setMuted(value)
+    const el = videoRef.current
+    if (!el || !active) return
+    // Apply immediately (hook closure may still see previous effectiveMuted).
+    el.muted = Boolean(value)
+    // Unmute / mute toggles are user gestures — keep the active card playing.
+    el.play()?.catch?.(() => {})
+  }
+
   function onTapVideo() {
     const el = videoRef.current
     if (!el) return
@@ -327,7 +355,7 @@ function FeedVideoPlayer({ video, active, onActivate }) {
       playback.pauseByUser()
       return
     }
-    playback.toggleMute(setMuted)
+    playback.toggleMute(setMutedFromUser)
   }
 
   const showPlayOverlay = active && paused && !error
@@ -343,8 +371,8 @@ function FeedVideoPlayer({ video, active, onActivate }) {
         playsInline
         webkit-playsinline=""
         loop
-        muted={muted}
-        autoPlay={active && muted}
+        muted={effectiveMuted}
+        autoPlay={active}
         preload={active ? 'auto' : 'metadata'}
         onClick={onTapVideo}
         onError={() => setError(true)}
@@ -364,20 +392,20 @@ function FeedVideoPlayer({ video, active, onActivate }) {
           </span>
         </button>
       ) : null}
-      {muted && !error ? (
+      {effectiveMuted && !error ? (
         <button
           type="button"
-          onClick={() => setMuted(false)}
+          onClick={() => setMutedFromUser(false)}
           className="pointer-events-auto absolute left-3 z-10 grid size-10 place-items-center rounded-full bg-black/45 text-white backdrop-blur-sm top-[var(--feed-chrome-top)]"
           aria-label={p3('videos.feed.unmute')}
         >
           <FiVolumeX />
         </button>
       ) : null}
-      {!muted && !error ? (
+      {!effectiveMuted && !error ? (
         <button
           type="button"
-          onClick={() => setMuted(true)}
+          onClick={() => setMutedFromUser(true)}
           className="pointer-events-auto absolute left-3 z-10 grid size-10 place-items-center rounded-full bg-black/35 text-white/80 top-[var(--feed-chrome-top)]"
           aria-label={p3('videos.feed.mute')}
         >

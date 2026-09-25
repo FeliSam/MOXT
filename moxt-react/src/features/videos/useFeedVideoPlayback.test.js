@@ -172,4 +172,93 @@ describe('useFeedVideoPlayback', () => {
     expect(playCount).toBe(afterUserPause)
     expect(paused).toBe(true)
   })
+
+  it('si autoplay unmuted est bloqué, rejoue en muet et y reste (pas d’unmute forcé)', async () => {
+    setFeedPlaybackAllowed(true)
+    const el = document.createElement('video')
+    let playCount = 0
+    let paused = true
+    const fallback = vi.fn()
+    el.pause = () => {
+      paused = true
+    }
+    el.play = () => {
+      playCount += 1
+      if (!el.muted) {
+        return Promise.reject(new DOMException('NotAllowedError', 'NotAllowedError'))
+      }
+      paused = false
+      return Promise.resolve()
+    }
+    Object.defineProperty(el, 'paused', { configurable: true, get: () => paused })
+    Object.defineProperty(el, 'ended', { configurable: true, get: () => false })
+    Object.defineProperty(el, 'readyState', { configurable: true, get: () => 4 })
+    const videoRef = { current: el }
+
+    renderHook(() =>
+      useFeedVideoPlayback(videoRef, {
+        active: true,
+        muted: false,
+        playbackUrl: 'https://example.com/v.mp4',
+        videoId: 'v1',
+        onAutoplayMutedFallback: fallback,
+      }),
+    )
+
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(playCount).toBeGreaterThanOrEqual(2)
+    expect(paused).toBe(false)
+    expect(el.muted).toBe(true)
+    expect(fallback).toHaveBeenCalled()
+  })
+
+  it('redevient autoplay quand la slide repasse active après pause utilisateur', async () => {
+    setFeedPlaybackAllowed(true)
+    const el = document.createElement('video')
+    let playCount = 0
+    let paused = true
+    el.pause = () => {
+      paused = true
+    }
+    el.play = () => {
+      playCount += 1
+      paused = false
+      return Promise.resolve()
+    }
+    Object.defineProperty(el, 'paused', { configurable: true, get: () => paused })
+    Object.defineProperty(el, 'ended', { configurable: true, get: () => false })
+    Object.defineProperty(el, 'readyState', { configurable: true, get: () => 4 })
+    const videoRef = { current: el }
+
+    const { result, rerender } = renderHook(
+      ({ active }) =>
+        useFeedVideoPlayback(videoRef, {
+          active,
+          muted: true,
+          playbackUrl: 'https://example.com/v.mp4',
+          videoId: 'v1',
+        }),
+      { initialProps: { active: true } },
+    )
+
+    await act(async () => {
+      result.current.pauseByUser()
+    })
+    expect(paused).toBe(true)
+    const afterPause = playCount
+
+    await act(async () => {
+      rerender({ active: false })
+    })
+    await act(async () => {
+      rerender({ active: true })
+    })
+
+    expect(playCount).toBeGreaterThan(afterPause)
+    expect(paused).toBe(false)
+  })
 })
