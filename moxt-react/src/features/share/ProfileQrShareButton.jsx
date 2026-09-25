@@ -96,6 +96,7 @@ export function ProfileQrShareButton({
           city={city}
           sector={sector}
           hint={hint}
+          tone={isBusiness ? undefined : 'prune'}
           shareUrl={shareUrl}
           shareTitle={
             isBusiness

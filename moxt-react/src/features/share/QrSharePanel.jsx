@@ -36,6 +36,8 @@ export function QrSharePanel({
   inviteCount,
   qrImageSrc,
   hint: hintProp,
+  /** 'prune' : carte QR du profil perso (identité prune) ; sinon teal / entreprise. */
+  tone,
   qrSize = 260,
   showActions = true,
   className = '',
@@ -116,9 +118,11 @@ export function QrSharePanel({
         className="relative overflow-hidden rounded-[2rem] text-white shadow-[0_24px_60px_-20px_rgba(15,118,110,0.55)]"
       style={{
         background:
-          variant === 'business'
-            ? 'linear-gradient(165deg, #04141c 0%, #0a2430 40%, #0f172a 72%, #134e4a 100%)'
-            : 'linear-gradient(165deg, #04141c 0%, #0a2430 38%, #0d3a42 68%, #0f766e 100%)',
+          tone === 'prune'
+            ? 'linear-gradient(165deg, #140712 0%, #2a0f25 38%, #4a1a40 68%, #6b2d5c 100%)'
+            : variant === 'business'
+              ? 'linear-gradient(165deg, #04141c 0%, #0a2430 40%, #0f172a 72%, #134e4a 100%)'
+              : 'linear-gradient(165deg, #04141c 0%, #0a2430 38%, #0d3a42 68%, #0f766e 100%)',
       }}
     >
       <div

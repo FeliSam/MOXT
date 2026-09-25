@@ -311,6 +311,8 @@ export function BusinessDetailPage() {
         avatarAlt={bt('businesses.detail.logoAlt', { name: business.name })}
         coverCategory="business"
         coverStyle={business.coverStyle}
+        profileKind="business"
+        kindLabel={t('publications.profile.businessBadge')}
         emptyCoverVariant="editorial-dark"
         showCoverEdit={Boolean(isOwner && !guestMode && !business.bannerUrl)}
         onEditCover={coverEdit.openEditor}

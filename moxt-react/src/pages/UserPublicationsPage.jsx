@@ -429,11 +429,20 @@ export function UserPublicationsPage() {
   ]
 
   return (
-    <div className="grid min-w-0 max-w-full gap-5 overflow-x-clip sm:gap-6">
+    <div
+      className="grid min-w-0 max-w-full gap-5 overflow-x-clip sm:gap-6"
+      data-profile-kind={isBusinessHero ? undefined : 'personal'}
+    >
       <PublicProfileHero
         name={displayName}
         verified={verified}
         shareSlot={heroQrButton}
+        profileKind={isBusinessHero ? 'business' : 'personal'}
+        kindLabel={
+          isBusinessHero
+            ? t('publications.profile.businessBadge')
+            : t('publications.profile.personalBadge')
+        }
         category={
           scope === 'business' && ownBusiness
             ? ownBusiness.sector || t('publications.profile.businessBadge')
@@ -480,7 +489,7 @@ export function UserPublicationsPage() {
               {guestMode ? (
                 <Button
                   variant="secondary"
-                  className="w-full"
+                  className="profile-follow-tint w-full"
                   onClick={handleGuestInteract}
                 >
                   {p3('publications.public.follow')}
@@ -491,7 +500,7 @@ export function UserPublicationsPage() {
                   publisherId={userId}
                   publisherName={displayName}
                   publisherPath={`/users/${userId}/publications`}
-                  className="w-full"
+                  className="profile-follow-tint w-full"
                   variant="secondary"
                   showIcon={false}
                   subscribeLabel={p3('publications.public.follow')}

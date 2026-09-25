@@ -1,4 +1,4 @@
-import { FiEdit2, FiImage, FiStar } from 'react-icons/fi'
+import { FiBriefcase, FiEdit2, FiImage, FiStar, FiUser } from 'react-icons/fi'
 import { VerifiedDisplayName } from '../../components/ui/Badge'
 import { avatarDisplayUrl } from '../account/avatarDisplayUrl'
 import { AvatarBadge } from '../account/avatarDicebear/AvatarBadge'
@@ -74,6 +74,8 @@ function EmptyCoverFallback({ coverStyle, variant, category, gender, className }
  * coverCategory — 'business' | 'personal' | 'woman' | 'man' (default resolution).
  * gender — optional profile gender for personal defaults (no DB field yet).
  * showCoverEdit / onEditCover — owner floating « Modifier la bannière » on empty Moxt cover.
+ * profileKind — 'personal' (avatar rond + anneau, accent prune via [data-profile-kind]) | 'business'.
+ * kindLabel — chip « Particulier » / « Entreprise » sous la ville / les étoiles.
  */
 export function PublicProfileHero({
   name,
@@ -83,6 +85,8 @@ export function PublicProfileHero({
   coverUrl,
   avatarUrl,
   avatarFallback,
+  profileKind,
+  kindLabel = '',
   rating,
   reviewsLabel = 'avis',
   coverAlt = '',
@@ -145,7 +149,9 @@ export function PublicProfileHero({
             <img
               src={resolvedAvatar}
               alt={avatarAlt || name || ''}
-              className="size-[4.5rem] rounded-[1.15rem] border-[3px] border-[var(--app-surface)] object-cover shadow-md sm:size-20"
+              className={`size-[4.5rem] border-[3px] border-[var(--app-surface)] object-cover shadow-md sm:size-20 ${
+                profileKind === 'personal' ? 'rounded-full ring-2 ring-brand-400' : 'rounded-[1.15rem]'
+              }`}
               loading="eager"
               decoding="async"
               fetchPriority="high"
@@ -157,9 +163,9 @@ export function PublicProfileHero({
             />
           ) : null}
           <span
-            className={`grid size-[4.5rem] place-items-center rounded-[1.15rem] border-[3px] border-[var(--app-surface)] bg-[var(--app-accent-soft)] text-xl font-black text-[var(--app-accent)] shadow-md sm:size-20 sm:text-2xl ${
-              resolvedAvatar ? 'hidden' : ''
-            }`}
+            className={`grid size-[4.5rem] place-items-center border-[3px] border-[var(--app-surface)] bg-[var(--app-accent-soft)] text-xl font-black text-[var(--app-accent)] shadow-md sm:size-20 sm:text-2xl ${
+              profileKind === 'personal' ? 'rounded-full ring-2 ring-brand-400' : 'rounded-[1.15rem]'
+            } ${resolvedAvatar ? 'hidden' : ''}`}
           >
             {initials}
           </span>
@@ -213,6 +219,21 @@ export function PublicProfileHero({
             reviewsLabel={reviewsLabel}
             onOpenReviews={onOpenReviews}
           />
+          {kindLabel ? (
+            <p className="mt-2 flex">
+              <span
+                className="inline-flex items-center gap-1 rounded-full border border-brand-200 bg-brand-50 px-2.5 py-0.5 text-[11px] font-bold text-brand-700 dark:border-brand-800 dark:bg-[var(--app-accent-soft)] dark:text-brand-300"
+                data-profile-kind-chip={profileKind || undefined}
+              >
+                {profileKind === 'business' ? (
+                  <FiBriefcase className="size-3" aria-hidden="true" />
+                ) : (
+                  <FiUser className="size-3" aria-hidden="true" />
+                )}
+                {kindLabel}
+              </span>
+            </p>
+          ) : null}
         </div>
 
         {actions ? <div className="grid grid-cols-2 gap-2.5 pt-1">{actions}</div> : null}

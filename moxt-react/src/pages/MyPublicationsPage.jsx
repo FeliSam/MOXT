@@ -433,7 +433,10 @@ export function MyPublicationsPage() {
   ]
 
   return (
-    <div className="grid min-w-0 max-w-full gap-5 overflow-x-clip sm:gap-6">
+    <div
+      className="grid min-w-0 max-w-full gap-5 overflow-x-clip sm:gap-6"
+      data-profile-kind={isBusinessScope ? undefined : 'personal'}
+    >
       <PublicProfileHero
         name={heroName}
         verified={heroVerified}
@@ -460,6 +463,12 @@ export function MyPublicationsPage() {
         showCoverEdit={showCoverEdit}
         onEditCover={coverEdit.openEditor}
         editCoverLabel={t('profile.personal.editBanner')}
+        profileKind={isBusinessScope ? 'business' : 'personal'}
+        kindLabel={
+          isBusinessScope
+            ? t('publications.profile.businessBadge')
+            : t('publications.profile.personalBadge')
+        }
         shareSlot={
           <ProfileQrShareButton
             appearance="cover"
