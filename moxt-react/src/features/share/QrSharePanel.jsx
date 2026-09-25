@@ -249,7 +249,7 @@ export function QrSharePanel({
                 </Button>
               ) : null}
               <Button
-                className="border border-white/20 bg-white/10 text-white shadow-none hover:bg-white/20"
+                className="!border !border-white/20 !bg-white/10 !text-white !shadow-none hover:!bg-white/20"
                 icon={copied ? FiCheck : FiCopy}
                 onClick={copyLink}
               >
