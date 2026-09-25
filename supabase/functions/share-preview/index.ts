@@ -296,6 +296,7 @@ const SHARE_KIND_ALIASES: Record<string, string> = {
   profiles: 'user',
   users: 'user',
   listings: 'listing',
+  marketplace: 'listing',
   annonce: 'listing',
   annonces: 'listing',
   videos: 'video',
@@ -559,6 +560,54 @@ function parseOgCardPath(pathname: string) {
   return { kind, entityId }
 }
 
+
+/** App site paths (moxtapp.ru/parcels/..., /marketplace/...) → share kind/id. */
+function parseAppEntityPath(pathname: string, search = '') {
+  const rawPath = String(pathname || '').split('?')[0]
+  const path = rawPath.startsWith('/') ? rawPath : `/${rawPath}`
+  const parts = path.split('/').filter(Boolean)
+  if (!parts.length) return null
+
+  const section = parts[0]
+  const rest = parts.slice(1)
+  const reserved = new Set(['mine', 'publish', 'edit', 'applications', 'new', 'history', 'orders'])
+
+  if (section === 'feed') {
+    const params = new URLSearchParams(
+      String(search || '').startsWith('?') ? String(search).slice(1) : String(search || ''),
+    )
+    const item = String(params.get('item') || '').trim()
+    if (!item) return null
+    const colon = item.indexOf(':')
+    if (colon <= 0) return null
+    const kind = normalizeShareKind(item.slice(0, colon))
+    const entityId = item.slice(colon + 1).trim()
+    if (!SHARE_KINDS.has(kind) || !entityId) return null
+    return { kind, entityId }
+  }
+
+  if (rest.length < 1) return null
+  const id = decodeURIComponent(rest[0] || '').trim()
+  if (!id || reserved.has(id.toLowerCase())) return null
+  if (rest[1] && reserved.has(String(rest[1]).toLowerCase())) return null
+
+  const sectionToKind: Record<string, string> = {
+    marketplace: 'listing',
+    parcels: 'parcel',
+    colis: 'parcel',
+    jobs: 'job',
+    events: 'event',
+    businesses: 'business',
+    users: 'user',
+    p2p: 'p2p',
+    news: 'post',
+  }
+  const kind = sectionToKind[section]
+  if (!kind) return null
+  if (section === 'p2p' && id.toLowerCase() === 'orders') return null
+  return { kind, entityId: id }
+}
+
 function parseSharePath(pathname: string) {
   const parts = pathname.split('/').filter(Boolean)
   const fnIndex = parts.indexOf('share-preview')
@@ -623,7 +672,14 @@ Deno.serve(async (req) => {
       return new Response(svg, { headers })
     }
 
-    const parsed = parseSharePath(url.pathname)
+    // Accept /share/{kind}/{id}, bare {kind}/{id}, OR app paths /parcels/{id}, /marketplace/{id}, …
+    // Strip Edge /functions/v1/share-preview prefix before site-path parse.
+    const pathParts = url.pathname.split('/').filter(Boolean)
+    const fnIdx = pathParts.indexOf('share-preview')
+    const sitePathname =
+      fnIdx >= 0 ? '/' + pathParts.slice(fnIdx + 1).join('/') : url.pathname
+    const parsed =
+      parseSharePath(url.pathname) || parseAppEntityPath(sitePathname, url.search)
     if (!parsed) {
       return new Response('Not found', { status: 404 })
     }

@@ -18,6 +18,7 @@ export const SHARE_KIND_ALIASES = {
   profiles: 'user',
   users: 'user',
   listings: 'listing',
+  marketplace: 'listing',
   annonce: 'listing',
   annonces: 'listing',
   videos: 'video',
@@ -57,6 +58,71 @@ const PUBLIC_SHARE_PATH_PREFIXES = [
   '/events/',
   '/p2p/',
 ]
+
+
+/** Reserved last segments that are app screens, not entity ids. */
+const RESERVED_ENTITY_SEGMENTS = new Set([
+  'mine',
+  'publish',
+  'edit',
+  'applications',
+  'new',
+  'history',
+  'orders',
+])
+
+/**
+ * Map an app URL path (+ optional search) to share-preview { kind, entityId }.
+ * Inverse of buildFeedSharePath / resolveTargetPath.
+ * Returns null for list pages, reserved screens, or unknown routes.
+ */
+export function parseAppEntityPath(pathname, search = '') {
+  const rawPath = String(pathname || '').split('?')[0]
+  const path = rawPath.startsWith('/') ? rawPath : `/${rawPath}`
+  const parts = path.split('/').filter(Boolean)
+  if (!parts.length) return null
+
+  const section = parts[0]
+  const rest = parts.slice(1)
+
+  // /feed?item=kind:id
+  if (section === 'feed') {
+    const params = new URLSearchParams(
+      String(search || '').startsWith('?') ? String(search).slice(1) : String(search || ''),
+    )
+    const item = String(params.get('item') || '').trim()
+    if (!item) return null
+    const colon = item.indexOf(':')
+    if (colon <= 0) return null
+    const kind = normalizeShareKind(item.slice(0, colon))
+    const entityId = item.slice(colon + 1).trim()
+    if (!isSharePreviewKind(kind) || !entityId) return null
+    return { kind, entityId }
+  }
+
+  if (rest.length < 1) return null
+  const id = decodeURIComponent(rest[0] || '').trim()
+  if (!id || RESERVED_ENTITY_SEGMENTS.has(id.toLowerCase())) return null
+  // /marketplace/:id/edit → not a share card
+  if (rest[1] && RESERVED_ENTITY_SEGMENTS.has(String(rest[1]).toLowerCase())) return null
+
+  const sectionToKind = {
+    marketplace: 'listing',
+    parcels: 'parcel',
+    colis: 'parcel',
+    jobs: 'job',
+    events: 'event',
+    businesses: 'business',
+    users: 'user',
+    p2p: 'p2p',
+    news: 'post',
+  }
+  const kind = sectionToKind[section]
+  if (!kind) return null
+  // p2p/orders/:id is order detail, not offer share
+  if (section === 'p2p' && id.toLowerCase() === 'orders') return null
+  return { kind, entityId: id }
+}
 
 export function isPublicSharePath(path) {
   const value = String(path || '').trim()
