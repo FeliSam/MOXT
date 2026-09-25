@@ -61,6 +61,7 @@ const businessSlice = createSlice({
             name: values.name.trim(),
             logoUrl: values.logoUrl?.trim() || '',
             bannerUrl: values.bannerUrl?.trim() || '',
+            coverStyle: values.coverStyle || values.cover_style || '',
             primaryActivity,
             secondaryActivity: values.secondaryActivity || '',
             sector: values.sector?.trim() || primaryActivity,
