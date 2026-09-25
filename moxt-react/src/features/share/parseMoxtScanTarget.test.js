@@ -64,3 +64,21 @@ describe('parseMoxtScanTarget', () => {
     expect(parseMoxtScanTarget('hello-world')).toBeNull()
   })
 })
+
+describe('parseMoxtScanTarget — passerelle share.moxtapp.ru', () => {
+  it('ouvre la fiche entreprise depuis le QR entreprise (/share/business/:id)', () => {
+    expect(parseMoxtScanTarget('https://share.moxtapp.ru/share/business/biz-42')).toMatchObject({
+      type: 'business',
+      path: '/businesses/biz-42',
+      businessId: 'biz-42',
+    })
+  })
+
+  it('ouvre le profil membre depuis /share/user/:id', () => {
+    expect(parseMoxtScanTarget('https://share.moxtapp.ru/share/user/u-7')).toMatchObject({
+      type: 'user',
+      path: '/users/u-7/publications',
+      userId: 'u-7',
+    })
+  })
+})
