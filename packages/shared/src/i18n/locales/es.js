@@ -8434,4 +8434,11 @@ export const es = {
       },
     },
   },
+  coverBanner: {
+    profile: "Perfil",
+    yourProfile: "Tu perfil",
+    onMoxt: "Presente en Moxt",
+    yourNetwork: "Tu red",
+    yourBusinessNetwork: "Tu red de negocios",
+  },
 }

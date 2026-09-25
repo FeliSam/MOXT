@@ -8460,4 +8460,11 @@ export const fr = {
       },
     },
   },
+  coverBanner: {
+    profile: "Profil",
+    yourProfile: "Votre profil",
+    onMoxt: "Présent sur Moxt",
+    yourNetwork: "Votre réseau",
+    yourBusinessNetwork: "Votre réseau business",
+  },
 }

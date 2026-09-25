@@ -8443,4 +8443,11 @@ export const en = {
       },
     },
   },
+  coverBanner: {
+    profile: "Profile",
+    yourProfile: "Your profile",
+    onMoxt: "On Moxt",
+    yourNetwork: "Your network",
+    yourBusinessNetwork: "Your business network",
+  },
 }
