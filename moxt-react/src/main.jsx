@@ -123,9 +123,11 @@ async function bootstrap() {
   const { loadPlatformModules } = await import('./features/platform/platformModulesSlice')
   const { loadStoreLocales } = await import('./features/platform/storeLocalesSlice')
   const { loadFeedPlayback } = await import('./features/platform/feedPlaybackSlice')
+  const { loadAvatarSettings } = await import('./features/platform/avatarSettingsSlice')
   void store.dispatch(loadPlatformModules())
   void store.dispatch(loadStoreLocales())
   void store.dispatch(loadFeedPlayback())
+  void store.dispatch(loadAvatarSettings())
 
   createRoot(document.getElementById('root')).render(
     <StrictMode>

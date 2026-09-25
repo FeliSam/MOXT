@@ -1,10 +1,16 @@
-import { FiChevronRight, FiEdit3 } from 'react-icons/fi'
+import { useState } from 'react'
+import { FiChevronRight, FiEdit2, FiEdit3 } from 'react-icons/fi'
+import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { Badge, VerifiedDisplayName } from '../../../components/ui/Badge'
 import { Card } from '../../../components/ui/Card'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { ReferralShareButton } from '../../referral/ReferralShareButton'
 import { avatarDisplayUrl } from '../../account/avatarDisplayUrl'
+import { AvatarBadge } from '../../account/avatarDicebear/AvatarBadge'
+import { AvatarDicebearEditorLazy } from '../../account/avatarDicebear/AvatarDicebearEditorLazy'
+import { useLoreleiFallbackSrc } from '../../account/avatarDicebear/useLoreleiFallbackSrc'
+import { useAvatarModule } from '../../platform/useAvatarModule'
 import { profileInitials, roleLabelKeys } from '../profilePageConfig'
 
 export function ProfileHeroCard({ profileCompletion, user }) {
@@ -13,25 +19,47 @@ export function ProfileHeroCard({ profileCompletion, user }) {
   const displayName = `${user.firstName} ${user.lastName}`.trim()
   const roleKey = roleLabelKeys[user.role]
   const roleLabel = roleKey ? t(roleKey) : user.role
+  const [avatarEditorOpen, setAvatarEditorOpen] = useState(false)
+  const avatarModule = useAvatarModule()
+  const loreleiSrc = useLoreleiFallbackSrc(user, { size: 160 })
+  const loreleiUrl = useSelector(
+    (state) => state.account.preferences?.[user.id]?.avatarDicebear?.avatarUrl,
+  )
 
   return (
     <Card variant={variant} className="relative overflow-hidden">
       <div className="relative z-10 flex flex-col gap-5 sm:flex-row sm:items-center">
         <div className="flex items-start justify-between gap-3 sm:contents">
-          {user.avatarUrl ? (
-            <img
-              src={avatarDisplayUrl(user.avatarUrl, { width: 160 })}
-              alt={displayName}
-              className="size-20 shrink-0 rounded-[var(--radius-card)] border border-[var(--app-border)] object-cover shadow-[var(--shadow-card)]"
-            />
-          ) : (
-            <div
-              aria-hidden="true"
-              className="grid size-20 shrink-0 place-items-center rounded-[var(--radius-card)] border border-[var(--app-border)] bg-[var(--app-surface-muted)] text-2xl font-black text-[var(--app-accent)] dark:text-[var(--app-teal)]"
-            >
-              {profileInitials(user.firstName, user.lastName)}
-            </div>
-          )}
+          <div className="relative shrink-0">
+            {user.avatarUrl || loreleiSrc ? (
+              <img
+                src={user.avatarUrl ? avatarDisplayUrl(user.avatarUrl, { width: 160 }) : loreleiSrc}
+                alt={displayName}
+                className="size-20 shrink-0 rounded-[var(--radius-card)] border border-[var(--app-border)] bg-[var(--app-surface-muted)] object-cover shadow-[var(--shadow-card)]"
+              />
+            ) : (
+              <div
+                aria-hidden="true"
+                className="grid size-20 shrink-0 place-items-center rounded-[var(--radius-card)] border border-[var(--app-border)] bg-[var(--app-surface-muted)] text-2xl font-black text-[var(--app-accent)] dark:text-[var(--app-teal)]"
+              >
+                {profileInitials(user.firstName, user.lastName)}
+              </div>
+            )}
+            {avatarModule.badgeEnabled ? (
+              <AvatarBadge url={user.avatarUrl} loreleiUrl={loreleiUrl} className="-top-2" />
+            ) : null}
+            {avatarModule.editorAvailable ? (
+              <button
+                type="button"
+                onClick={() => setAvatarEditorOpen(true)}
+                aria-label={t('profile.avatarEditor.openAria')}
+                title={t('profile.avatarEditor.open')}
+                className="absolute -bottom-1.5 -right-1.5 grid size-8 place-items-center rounded-full border-2 border-[var(--app-surface)] bg-brand-700 text-white shadow-md transition hover:scale-105 hover:bg-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-accent)] dark:bg-[var(--app-teal)] dark:text-slate-950"
+              >
+                <FiEdit2 className="size-3.5" aria-hidden="true" />
+              </button>
+            ) : null}
+          </div>
           <ReferralShareButton compact className="sm:hidden" />
         </div>
 
@@ -100,6 +128,10 @@ export function ProfileHeroCard({ profileCompletion, user }) {
           </Link>
         ) : null}
       </div>
+      <AvatarDicebearEditorLazy
+        open={avatarEditorOpen}
+        onClose={() => setAvatarEditorOpen(false)}
+      />
     </Card>
   )
 }

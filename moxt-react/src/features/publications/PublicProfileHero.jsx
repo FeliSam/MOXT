@@ -1,6 +1,7 @@
-import { FiImage, FiStar } from 'react-icons/fi'
+import { FiEdit2, FiImage, FiStar } from 'react-icons/fi'
 import { VerifiedDisplayName } from '../../components/ui/Badge'
 import { avatarDisplayUrl } from '../account/avatarDisplayUrl'
+import { AvatarBadge } from '../account/avatarDicebear/AvatarBadge'
 import { resolveMediaDisplayUrl } from '../../services/media/mediaUrlUtils'
 import { MoxtCoverBanner } from './coverBanners/MoxtCoverBanner'
 import { resolveCoverStyleId } from './coverBanners/coverBannerCatalog'
@@ -88,6 +89,11 @@ export function PublicProfileHero({
   avatarAlt = '',
   actions = null,
   shareSlot = null,
+  onAvatarEdit = null,
+  avatarEditLabel = '',
+  /** URL brute de l’avatar perso (badge « Avatar » si portrait / illustré Moxt). */
+  avatarBadgeUrl = '',
+  avatarLoreleiUrl = '',
   coverStyle,
   emptyCoverVariant = 'gradient',
   coverCategory = 'personal',
@@ -157,6 +163,20 @@ export function PublicProfileHero({
           >
             {initials}
           </span>
+          {resolvedAvatar ? (
+            <AvatarBadge url={avatarBadgeUrl} loreleiUrl={avatarLoreleiUrl} className="-top-2" />
+          ) : null}
+          {onAvatarEdit ? (
+            <button
+              type="button"
+              onClick={onAvatarEdit}
+              aria-label={avatarEditLabel || undefined}
+              title={avatarEditLabel || undefined}
+              className="absolute -bottom-1.5 -right-1.5 grid size-8 place-items-center rounded-full border-2 border-[var(--app-surface)] bg-brand-700 text-white shadow-md transition hover:scale-105 hover:bg-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-accent)] dark:bg-[var(--app-teal)] dark:text-slate-950"
+            >
+              <FiEdit2 className="size-3.5" aria-hidden="true" />
+            </button>
+          ) : null}
         </div>
 
         {shareSlot ? <div className="absolute right-3 top-3 z-10 sm:right-4 sm:top-4">{shareSlot}</div> : null}

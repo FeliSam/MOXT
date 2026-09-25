@@ -154,10 +154,12 @@ async function uploadImageBatch(files, { onProgress, version = '' }, buildPathAn
 }
 
 export const storageService = {
-  async uploadAvatar(userId, file, { onProgress } = {}) {
+  /** `name` : nom de fichier optionnel (ex. 'lorelei' pour l’avatar illustré), 'avatar' par défaut. */
+  async uploadAvatar(userId, file, { onProgress, name } = {}) {
+    const baseName = /^[a-z0-9-]{1,32}$/.test(String(name || '')) ? name : 'avatar'
     return compressThenUpload(file, { maxPx: 512, quality: 0.88, onProgress }, async (compressed) => {
       const extension = compressed.type === 'image/png' ? 'png' : 'jpg'
-      return upload('avatars', `${userId}/avatar.${extension}`, compressed, { onProgress })
+      return upload('avatars', `${userId}/${baseName}.${extension}`, compressed, { onProgress })
     })
   },
 

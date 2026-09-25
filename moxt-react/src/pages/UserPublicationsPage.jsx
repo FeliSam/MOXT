@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   FiArchive,
   FiArrowLeft,
@@ -53,6 +53,8 @@ import { PublicProfileTabs } from '../features/publications/PublicProfileTabs'
 import { PublicVideoThumbGrid } from '../features/publications/PublicVideoThumbGrid'
 import { formatMemberSince, usePublicationProfile } from '../features/publications/usePublicationProfile'
 import { SubscribeButton } from '../features/account/SubscribeButton'
+import { AvatarDicebearEditorLazy } from '../features/account/avatarDicebear/AvatarDicebearEditorLazy'
+import { useAvatarModule } from '../features/platform/useAvatarModule'
 import { ContactButton } from '../features/communications/ContactButton'
 import { useGuestAction } from '../features/guest/useGuestAction'
 import { useGuestUserPreview } from '../features/guest/useGuestPreview'
@@ -86,11 +88,16 @@ export function UserPublicationsPage() {
   const { guestMode = false } = useOutletContext() || {}
   const { requireAccount } = useGuestAction()
   const currentUser = useSelector((state) => state.auth.user)
+  const ownLoreleiUrl = useSelector((state) =>
+    currentUser?.id ? state.account.preferences?.[currentUser.id]?.avatarDicebear?.avatarUrl : null,
+  )
   const preferences = useSelector((state) => selectAccountPreferences(state, currentUser?.id))
   const appState = useSelector((state) => state)
   const guestPreview = useGuestUserPreview(guestMode ? userId : null)
   usePublicUserCatalogSync(userId, { enabled: Boolean(userId) && !guestMode })
   const isOwner = !guestMode && currentUser?.id === userId
+  const [avatarEditorOpen, setAvatarEditorOpen] = useState(false)
+  const avatarModule = useAvatarModule()
 
   const viewParam = searchParams.get('view')
   const requestedArchiveTab = searchParams.get('status') === 'archived' ? 'archived' : 'active'
@@ -318,7 +325,10 @@ export function UserPublicationsPage() {
   const profileCity = (guestMode ? guestProfile?.city : memberProfile?.city) || profile.city
   const profileCountry =
     (guestMode ? guestProfile?.country : memberProfile?.country) || profile.country
-  const avatarUrl = guestMode ? guestProfile?.avatarUrl : memberProfile?.avatarUrl
+  // Propriétaire : l’avatar du store auth reflète immédiatement un nouvel upload (photo ou Lorelei).
+  const avatarUrl = guestMode
+    ? guestProfile?.avatarUrl
+    : (isOwner && currentUser?.avatarUrl) || memberProfile?.avatarUrl
   const verified = Boolean(guestMode ? guestProfile?.verified : memberProfile?.verified)
   const activeVideos = (publications.videos || []).filter(isActiveVideo)
   const memberSinceLabel = formatMemberSince(
@@ -398,6 +408,18 @@ export function UserPublicationsPage() {
         avatarUrl={
           scope === 'business' && ownBusiness?.logoUrl ? ownBusiness.logoUrl : avatarUrl
         }
+        avatarBadgeUrl={
+          !avatarModule.badgeEnabled || (scope === 'business' && ownBusiness?.logoUrl)
+            ? ''
+            : avatarUrl
+        }
+        avatarLoreleiUrl={isOwner ? ownLoreleiUrl : ''}
+        onAvatarEdit={
+          isOwner && scope !== 'business' && avatarModule.editorAvailable
+            ? () => setAvatarEditorOpen(true)
+            : null
+        }
+        avatarEditLabel={t('profile.avatarEditor.open')}
         coverCategory={scope === 'business' ? 'business' : 'personal'}
         coverStyle={
           scope === 'business'
@@ -487,6 +509,12 @@ export function UserPublicationsPage() {
       ) : null}
 
       <PublicProfileTabs active={mainTab} onChange={setMainTab} tabs={publicTabs} />
+      {isOwner ? (
+        <AvatarDicebearEditorLazy
+          open={avatarEditorOpen}
+          onClose={() => setAvatarEditorOpen(false)}
+        />
+      ) : null}
 
       {mainTab === 'apercu' ? (
         <div className="grid gap-5">
