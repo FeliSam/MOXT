@@ -1,3 +1,6 @@
+import { useContext } from 'react'
+import { LanguageContext } from '../../../contexts/language-context'
+import { coverBannerLabels } from './coverBannerLabels'
 import {
   COVER_STYLE_IDS,
   resolveCoverStyleId,
@@ -50,6 +53,9 @@ export function MoxtCoverBanner({
     category,
     gender,
   })
+  // Pas de throw hors LanguageProvider (rendus isolés) : repli sur les libellés FR.
+  const language = useContext(LanguageContext)
+  const labels = coverBannerLabels(language?.t)
   const Component = STYLE_COMPONENTS[resolved] || BusinessEditorialCover
-  return <Component className={className} />
+  return <Component className={className} labels={labels} />
 }

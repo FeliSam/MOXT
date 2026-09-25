@@ -8,14 +8,9 @@ import { useLanguage } from '../../contexts/useLanguage'
 import { useStarsModuleEnabled } from '../stars/useStarsModuleEnabled'
 import { makeQrCodeUrl } from '../../utils/qrCode'
 import { DownloadBadgeButton } from './DownloadBadgeButton'
+import { profileInitials } from '../publications/profileInitials'
 
 const REFERRAL_STARS_PER_INVITE = 5
-
-function initialsFromTitle(title = '') {
-  const parts = title.trim().split(/\s+/).filter(Boolean)
-  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
-  return title.slice(0, 2).toUpperCase()
-}
 
 export function QrSharePanel({
   variant = 'profile',
@@ -143,7 +138,7 @@ export function QrSharePanel({
           />
         ) : (
           <span className="grid size-[4.5rem] place-items-center rounded-full border-[3px] border-white/25 bg-white/12 text-xl font-black shadow-lg ring-4 ring-white/10">
-            {initialsFromTitle(title)}
+            {profileInitials(title)}
           </span>
         )}
 

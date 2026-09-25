@@ -1,3 +1,4 @@
+import { profileInitials } from '../publications/profileInitials'
 /** MOXT digital share badge — neon Russia–Africa card (1080×1620). */
 
 const WIDTH = 1080
@@ -52,9 +53,7 @@ function loadImage(src, { crossOrigin } = {}) {
 }
 
 function initials(name = '') {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
-  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
-  return name.slice(0, 2).toUpperCase()
+  return profileInitials(name)
 }
 
 function wrapText(ctx, text, maxWidth) {

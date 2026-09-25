@@ -1,7 +1,8 @@
+import { COVER_BANNER_LABELS_FR } from './coverBannerLabels'
 import { grainFilterDef, GrainOverlay, useCoverSvgIds } from './coverSvgShared'
 
 /** woman-a-silk */
-export function WomanSilkPlumCover({ className = '' }) {
+export function WomanSilkPlumCover({ className = '', labels = COVER_BANNER_LABELS_FR }) {
   const id = useCoverSvgIds('wA')
   const silk = id('silk')
   const silk2 = id('silk2')
@@ -82,7 +83,7 @@ export function WomanSilkPlumCover({ className = '' }) {
             style={{ background: 'linear-gradient(90deg,#c58d86,#e8c4b8,#c58d86)' }}
           />
           <p className="mt-2 text-[0.7rem] font-semibold uppercase tracking-[0.38em] text-white/90">
-            Profil
+            {labels.profile}
           </p>
         </div>
       </div>
@@ -91,7 +92,7 @@ export function WomanSilkPlumCover({ className = '' }) {
 }
 
 /** woman-b-glass */
-export function WomanGlassLavenderCover({ className = '' }) {
+export function WomanGlassLavenderCover({ className = '', labels = COVER_BANNER_LABELS_FR }) {
   const id = useCoverSvgIds('wB')
   const bg = id('bg')
   const grain = id('grain')
@@ -163,7 +164,7 @@ export function WomanGlassLavenderCover({ className = '' }) {
             Moxt
           </p>
           <div className="mx-auto mt-2.5 h-px w-16 bg-white/70" />
-          <p className="mt-2 text-sm font-medium text-white/95">Votre profil</p>
+          <p className="mt-2 text-sm font-medium text-white/95">{labels.yourProfile}</p>
         </div>
       </div>
     </div>
@@ -233,7 +234,7 @@ export function WomanBlushFloralCover({ className = '' }) {
 }
 
 /** man-a-steel */
-export function ManSteelTealCover({ className = '' }) {
+export function ManSteelTealCover({ className = '', labels = COVER_BANNER_LABELS_FR }) {
   const id = useCoverSvgIds('mA')
   const steel = id('steel')
   const teal = id('teal')
@@ -298,7 +299,7 @@ export function ManSteelTealCover({ className = '' }) {
           </p>
           <div className="mt-2.5 h-px w-[4.75rem] rounded-full bg-white/85" />
           <p className="mt-2 text-[0.7rem] font-semibold uppercase tracking-[0.38em] text-white/75">
-            Profil
+            {labels.profile}
           </p>
         </div>
       </div>
@@ -307,7 +308,7 @@ export function ManSteelTealCover({ className = '' }) {
 }
 
 /** man-b-topo */
-export function ManTopoEmeraldCover({ className = '' }) {
+export function ManTopoEmeraldCover({ className = '', labels = COVER_BANNER_LABELS_FR }) {
   const id = useCoverSvgIds('mB')
   const glow = id('glow')
   const grain = id('grain')
@@ -378,7 +379,7 @@ export function ManTopoEmeraldCover({ className = '' }) {
           <span className="h-px w-10 bg-[#f5f0dc]/70" />
         </div>
         <p className="mt-2 text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-[#f5f0dc]/85">
-          Présent sur Moxt
+          {labels.onMoxt}
         </p>
       </div>
     </div>
@@ -386,7 +387,7 @@ export function ManTopoEmeraldCover({ className = '' }) {
 }
 
 /** man-c-mesh */
-export function ManMeshMidnightCover({ className = '' }) {
+export function ManMeshMidnightCover({ className = '', labels = COVER_BANNER_LABELS_FR }) {
   const id = useCoverSvgIds('mC')
   const bg = id('bg')
   const streak = id('streak')
@@ -458,7 +459,7 @@ export function ManMeshMidnightCover({ className = '' }) {
           <p className="font-display text-[1.85rem] font-extrabold leading-none tracking-tight text-white sm:text-[2.15rem]">
             Moxt
           </p>
-          <p className="mt-2 text-sm font-medium text-white/90">Votre réseau</p>
+          <p className="mt-2 text-sm font-medium text-white/90">{labels.yourNetwork}</p>
           <div
             className="mt-2 h-0.5 w-16 rounded-full"
             style={{ background: 'linear-gradient(90deg,#0077ff,#3db4ff)' }}
@@ -470,7 +471,7 @@ export function ManMeshMidnightCover({ className = '' }) {
 }
 
 /** woman-d-prune : vagues prune → rose (défaut profil perso Femme). */
-export function WomanPruneRoseCover({ className = '' }) {
+export function WomanPruneRoseCover({ className = '', labels = COVER_BANNER_LABELS_FR }) {
   const id = useCoverSvgIds('wD')
   const bg = id('bg')
   const waveA = id('waveA')
@@ -551,7 +552,7 @@ export function WomanPruneRoseCover({ className = '' }) {
             style={{ background: 'linear-gradient(90deg,#c77db3,#f3c1d8,#c77db3)' }}
           />
           <p className="mt-2 text-[0.7rem] font-semibold uppercase tracking-[0.38em] text-white/90">
-            Profil
+            {labels.profile}
           </p>
         </div>
       </div>
@@ -560,7 +561,7 @@ export function WomanPruneRoseCover({ className = '' }) {
 }
 
 /** man-d-prune : vagues prune nuit + filets rose (défaut profil perso Homme). */
-export function ManPruneNightCover({ className = '' }) {
+export function ManPruneNightCover({ className = '', labels = COVER_BANNER_LABELS_FR }) {
   const id = useCoverSvgIds('mD')
   const bg = id('bg')
   const wave = id('wave')
@@ -637,7 +638,7 @@ export function ManPruneNightCover({ className = '' }) {
             style={{ background: 'linear-gradient(90deg,#c77db3,#f3c1d8)' }}
           />
           <p className="mt-2 text-[0.7rem] font-semibold uppercase tracking-[0.38em] text-white/80">
-            Profil
+            {labels.profile}
           </p>
         </div>
       </div>

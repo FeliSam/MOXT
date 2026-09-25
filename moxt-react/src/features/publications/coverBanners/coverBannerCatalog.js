@@ -106,6 +106,27 @@ export function defaultCoverStyleForPersonal(gender) {
     : DEFAULT_MAN_COVER_STYLE
 }
 
+/** Genre d'un membre d'après ses préférences (champ explicite ou éditeur d'avatar). */
+export function genderFromPreferences(preferences) {
+  return preferences?.gender || preferences?.avatarDicebear?.preferences?.gender || null
+}
+
+/**
+ * Bannière perso du PROPRIÉTAIRE du profil (style choisi, sinon défaut selon son genre).
+ * - propriétaire : ses préférences (redux) ;
+ * - visiteur : les préférences publiques du membre (`memberProfile.coverStyle` / `gender`,
+ *   lues dans profiles.preferences) — jamais celles du visiteur.
+ */
+export function resolveOwnerPersonalCover({ isOwner, ownPreferences, ownGender, memberProfile } = {}) {
+  if (isOwner) {
+    const gender =
+      ownGender || genderFromPreferences(ownPreferences) || memberProfile?.gender || null
+    return { gender, coverStyle: ownPreferences?.coverStyle || defaultCoverStyleForPersonal(gender) }
+  }
+  const gender = memberProfile?.gender || null
+  return { gender, coverStyle: memberProfile?.coverStyle || defaultCoverStyleForPersonal(gender) }
+}
+
 export function defaultCoverStyleForCategory(category, gender) {
   if (category === 'business') return DEFAULT_BUSINESS_COVER_STYLE
   if (category === 'woman') return DEFAULT_WOMAN_COVER_STYLE

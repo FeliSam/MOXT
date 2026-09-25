@@ -45,7 +45,7 @@ import {
 import { PublicationCatalogNav } from '../features/publications/PublicationCatalogNav'
 import { PublicationScopeButton } from '../features/publications/PublicationScopeButton'
 import { selectAccountPreferences } from '../features/account/accountSlice'
-import { defaultCoverStyleForPersonal } from '../features/publications/coverBanners/coverBannerCatalog'
+import { resolveOwnerPersonalCover } from '../features/publications/coverBanners/coverBannerCatalog'
 import { PublicProfileHero } from '../features/publications/PublicProfileHero'
 import { CoverStylePicker } from '../features/publications/coverBanners/CoverStylePicker'
 import { useOwnerCoverStyleEdit } from '../features/publications/coverBanners/useOwnerCoverStyleEdit'
@@ -241,16 +241,22 @@ export function UserPublicationsPage() {
     setSearchParams(params, { replace: true })
   }
 
+  const ownerCover = resolveOwnerPersonalCover({
+    isOwner,
+    ownPreferences: preferences,
+    ownGender: currentUser?.gender,
+    memberProfile: guestMode ? guestProfile : memberProfile,
+  })
   const coverEditCategory = scope === 'business' ? 'business' : 'personal'
   const coverEdit = useOwnerCoverStyleEdit({
     category: coverEditCategory,
     business: coverEditCategory === 'business' ? ownBusiness : null,
     userId: coverEditCategory === 'personal' ? userId : null,
-    gender: memberProfile?.gender || currentUser?.gender,
+    gender: ownerCover.gender,
     coverStyle:
       coverEditCategory === 'business'
         ? ownBusiness?.coverStyle
-        : preferences?.coverStyle || defaultCoverStyleForPersonal(memberProfile?.gender || currentUser?.gender),
+        : ownerCover.coverStyle,
   })
   const showCoverEdit =
     isOwner &&
@@ -473,9 +479,9 @@ export function UserPublicationsPage() {
         coverStyle={
           scope === 'business'
             ? ownBusiness?.coverStyle
-            : preferences?.coverStyle || defaultCoverStyleForPersonal(memberProfile?.gender || currentUser?.gender)
+            : ownerCover.coverStyle
         }
-        gender={memberProfile?.gender || currentUser?.gender}
+        gender={ownerCover.gender}
         emptyCoverVariant={scope === 'business' ? 'editorial-dark' : 'gradient'}
         showCoverEdit={showCoverEdit}
         onEditCover={coverEdit.openEditor}

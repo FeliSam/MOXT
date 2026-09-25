@@ -8507,4 +8507,11 @@ export const ru = {
       },
     },
   },
+  coverBanner: {
+    profile: "Профиль",
+    yourProfile: "Ваш профиль",
+    onMoxt: "На Moxt",
+    yourNetwork: "Ваша сеть",
+    yourBusinessNetwork: "Ваша бизнес-сеть",
+  },
 }
