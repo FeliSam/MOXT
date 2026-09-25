@@ -105,4 +105,34 @@ describe('AvatarDicebearEditor', () => {
       avatarUrl: 'https://cdn.moxt.test/avatars/u-1/avatar.png?v=1',
     })
   })
+  it('affiche un groupe à la fois via les onglets', () => {
+    render(
+      <Provider store={makeStore([])}>
+        <AvatarDicebearEditor open onClose={() => {}} />
+      </Provider>,
+    )
+    expect(
+      screen.getAllByRole('radio', { name: /profile\.avatarEditor\.skinOption/ }).length,
+    ).toBeGreaterThan(0)
+    expect(
+      screen.queryAllByRole('radio', { name: /profile\.avatarEditor\.hairOption/ }),
+    ).toHaveLength(0)
+    fireEvent.click(screen.getByRole('tab', { name: /profile\.avatarEditor\.tabHair/ }))
+    expect(
+      screen
+        .getByRole('tab', { name: /profile\.avatarEditor\.tabHair/ })
+        .getAttribute('aria-selected'),
+    ).toBe('true')
+    expect(
+      screen.getAllByRole('radio', { name: /profile\.avatarEditor\.hairOption/ }).length,
+    ).toBeGreaterThan(0)
+    expect(
+      screen.queryAllByRole('radio', { name: /profile\.avatarEditor\.skinOption/ }),
+    ).toHaveLength(0)
+    fireEvent.click(screen.getByRole('tab', { name: /profile\.avatarEditor\.tabAccessories/ }))
+    const glasses = screen.getByRole('switch', { name: /profile\.avatarEditor\.glasses/ })
+    expect(glasses.getAttribute('aria-checked')).toBe('false')
+    fireEvent.click(glasses)
+    expect(glasses.getAttribute('aria-checked')).toBe('true')
+  })
 })
