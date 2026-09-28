@@ -2,6 +2,7 @@ import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 import {
   conversationFromRemoteRow,
+  fetchParticipantProfiles,
   mergeParticipantProfiles,
   resolveConversationPeer,
   selectInboxConversations,
@@ -427,6 +428,34 @@ export function getConversationPeer(
   return resolveConversationPeer(conversation, userId, fallbackName) as ConversationPeer;
 }
 
+/** Conversation absente de l’inbox (lien direct /messages/:id). */
+export const ensureConversation = createAsyncThunk(
+  'messages/ensureConversation',
+  async (conversationId: string, { getState }) => {
+    const state = getState() as { messages: MessagesState };
+    const existing = state.messages.conversations.find((item) => item.id === conversationId);
+    if (existing) return existing;
+    if (!supabase) return null;
+    const { data, error } = await supabase.from('conversations').select('*').eq('id', conversationId).maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!data) return null;
+    const ids = Array.isArray(data.participant_ids) ? data.participant_ids.map(String) : [];
+    let profiles: Record<string, unknown> = {};
+    try {
+      profiles = await fetchParticipantProfiles(supabase, ids);
+    } catch {
+      profiles = {};
+    }
+    const stored = (data.participant_profiles && typeof data.participant_profiles === 'object'
+      ? data.participant_profiles
+      : {}) as Record<string, unknown>;
+    return mapConversationRow({
+      ...data,
+      participant_profiles: { ...stored, ...profiles },
+    });
+  },
+);
+
 export const loadConversationMessages = createAsyncThunk(
   'messages/loadConversationMessages',
   async (conversationId: string, { getState }) => {
@@ -691,6 +720,13 @@ const messagesSlice = createSlice({
       })
       .addCase(loadConversations.rejected, (state) => {
         state.loading = false;
+      })
+      .addCase(ensureConversation.fulfilled, (state, action) => {
+        const conversation = action.payload;
+        if (!conversation) return;
+        if (!state.conversations.some((item) => item.id === conversation.id)) {
+          state.conversations.unshift(conversation);
+        }
       })
       .addCase(loadConversationMessages.pending, (state, action) => {
         const conv = state.conversations.find((c) => c.id === action.meta.arg);

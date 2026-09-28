@@ -62,7 +62,8 @@ export function trackScreen(screenName: string) {
 export function reportError(error: Error, context?: Record<string, string>) {
   Sentry.captureException(error, { extra: context });
   if (__DEV__) {
-    console.error('[Monitoring] Error:', error.message, context);
+    // warn : console.error ouvre un toast Expo qui reste à l’écran après l’erreur.
+    console.warn('[Monitoring] Error:', error.message, context);
   }
 }
 

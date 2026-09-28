@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react';
-import { useLocalSearchParams, router } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import { useLocalSearchParams, usePathname, router } from 'expo-router';
 import {
   Dimensions,
   Image,
@@ -21,7 +21,9 @@ import { Card } from '@/components/ui/Card';
 import { DetailMetrics, TrustPanel } from '@/components/ui/DetailBlocks';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, radii, shadows, spacing, typography } from '@/theme/colors';
-import { useAppSelector } from '@/store/store';
+import { loadListingById } from '@/store/marketplace';
+import { useAppDispatch, useAppSelector } from '@/store/store';
+import { idFromPath, routeParam } from '@/utils/routeParam';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const IMAGE_WIDTH = SCREEN_WIDTH - 40;
@@ -47,15 +49,38 @@ const CONDITION_LABELS: Record<string, string> = {
 
 export default function ListingDetailScreen() {
   const colors = useThemeColors();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id?: string | string[] }>();
+  const pathnameId = idFromPath(usePathname());
+  const id = routeParam(params.id) || pathnameId;
+  const dispatch = useAppDispatch();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [pending, setPending] = useState(true);
   const scrollRef = useRef<ScrollView>(null);
+  const fetched = useRef(false);
 
   const listing = useAppSelector((state) =>
     state.marketplace.items.find((l) => l.id === id),
   );
 
+  useEffect(() => {
+    if (!id) {
+      setPending(false);
+      return;
+    }
+    if (listing || fetched.current) {
+      setPending(false);
+      return;
+    }
+    fetched.current = true;
+    dispatch(loadListingById(id))
+      .finally(() => setPending(false))
+      .catch(() => undefined);
+  }, [dispatch, id, listing]);
+
   if (!listing) {
+    if (pending) {
+      return <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} />;
+    }
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg }}>

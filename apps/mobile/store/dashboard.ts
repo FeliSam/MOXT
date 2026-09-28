@@ -102,7 +102,13 @@ export const loadBusinessReviews = createAsyncThunk('dashboard/businessReviews',
 const dashboardSlice = createSlice({
   name: 'dashboard',
   initialState,
-  reducers: {},
+  reducers: {
+    upsertP2POffer(state, action: { payload: P2POffer }) {
+      const index = state.p2pOffers.findIndex((item) => item.id === action.payload.id);
+      if (index >= 0) state.p2pOffers[index] = { ...state.p2pOffers[index], ...action.payload };
+      else state.p2pOffers.unshift(action.payload);
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(loadDashboardData.pending, (state) => {
@@ -122,3 +128,4 @@ const dashboardSlice = createSlice({
 });
 
 export const dashboardReducer = dashboardSlice.reducer;
+export const { upsertP2POffer } = dashboardSlice.actions;

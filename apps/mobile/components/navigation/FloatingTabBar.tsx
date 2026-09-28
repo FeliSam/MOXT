@@ -1,4 +1,5 @@
 import type { BottomTabBarProps } from 'expo-router/build/react-navigation/bottom-tabs';
+import { router } from 'expo-router';
 
 import { BottomNavBar } from '@/components/navigation/BottomNavBar';
 import { useAppSelector } from '@/store/store';
@@ -17,6 +18,11 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
     <BottomNavBar
       activeRoute={activeRoute}
       onTabPress={(route) => {
+        // Le web ouvre « Nouveau transfert » (/transfers), pas l’historique.
+        if (route === 'transfers') {
+          router.push('/transfer/wizard' as never);
+          return;
+        }
         const routeIndex = state.routes.findIndex((r) => r.name === route);
         if (routeIndex === -1) return;
         const target = state.routes[routeIndex];

@@ -1,5 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+import { asStringList } from '@/utils/stringList';
+
 export type ParcelItem = {
   id: string;
   ownerId?: string;
@@ -32,7 +34,13 @@ const parcelsSlice = createSlice({
   initialState: { items: [], requests: [] } as ParcelsState,
   reducers: {
     setAll(state, action: PayloadAction<Partial<ParcelsState>>) {
-      if (action.payload.items) state.items = action.payload.items;
+      if (action.payload.items) {
+        state.items = action.payload.items.map((item) => ({
+          ...item,
+          acceptedTypes: asStringList(item.acceptedTypes),
+          rejectedTypes: asStringList(item.rejectedTypes),
+        }));
+      }
       if (action.payload.requests) state.requests = action.payload.requests;
     },
   },

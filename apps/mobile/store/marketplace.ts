@@ -43,6 +43,14 @@ const initialState: MarketplaceState = {
   error: null,
 };
 
+/** Fiche absente du catalogue (lien direct /listing/:id). */
+export const loadListingById = createAsyncThunk('marketplace/loadListingById', async (id: string) => {
+  if (!supabase || !id) return null;
+  const { data, error } = await supabase.from('listings').select('*').eq('id', id).maybeSingle();
+  if (error) throw new Error(error.message);
+  return data ? mapRow(data) : null;
+});
+
 export const loadListings = createAsyncThunk(
   'marketplace/loadListings',
   async () => {
@@ -101,9 +109,21 @@ const marketplaceSlice = createSlice({
     setListings(state, action: PayloadAction<ListingItem[]>) {
       state.items = action.payload;
     },
+    upsertListing(state, action: PayloadAction<ListingItem>) {
+      const index = state.items.findIndex((item) => item.id === action.payload.id);
+      if (index >= 0) state.items[index] = { ...state.items[index], ...action.payload };
+      else state.items.unshift(action.payload);
+    },
   },
   extraReducers: (builder) => {
     builder
+      .addCase(loadListingById.fulfilled, (state, action) => {
+        const listing = action.payload;
+        if (!listing) return;
+        const index = state.items.findIndex((item) => item.id === listing.id);
+        if (index >= 0) state.items[index] = { ...state.items[index], ...listing };
+        else state.items.unshift(listing);
+      })
       .addCase(loadListings.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -134,5 +154,5 @@ const marketplaceSlice = createSlice({
   },
 });
 
-export const { setListings } = marketplaceSlice.actions;
+export const { setListings, upsertListing } = marketplaceSlice.actions;
 export const marketplaceReducer = marketplaceSlice.reducer;

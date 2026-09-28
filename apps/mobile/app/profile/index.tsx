@@ -77,7 +77,7 @@ const SECTIONS: { id: string; titleKey: string; links: LinkItem[] }[] = [
     titleKey: 'profile.sections.documents',
     links: [
       { labelKey: 'profile.links.documents', icon: FileText, route: '/kyc' },
-      { labelKey: 'profile.links.receipts', icon: FileText, route: '/wallet' },
+      { labelKey: 'profile.links.receipts', icon: FileText, route: '/receipts' },
       { labelKey: 'profile.links.disputes', icon: AlertTriangle, route: '/disputes' },
       { labelKey: 'profile.links.support', icon: HelpCircle, route: '/support' },
       { labelKey: 'profile.links.legal', icon: FileText, route: 'https://moxtapp.ru/legal/mentions' },

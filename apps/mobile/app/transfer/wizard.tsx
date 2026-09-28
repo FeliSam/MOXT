@@ -126,7 +126,7 @@ export default function TransferWizardScreen() {
       });
       if (error) throw new Error(error.message);
       await dispatch(loadCoreData());
-      router.replace(`/transfer/${transferId}` as any);
+      router.replace(`/transfer/${transferId}?created=1` as any);
     } catch (err: any) {
       Alert.alert('Erreur', err.message || 'Création impossible.');
     } finally {

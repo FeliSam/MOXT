@@ -54,7 +54,7 @@ const rgba = (hex: string, a: number) => {
 
 /** Copie de PUBLISH_OPTIONS (features/feed/FeedPublishMenu.jsx), même ordre. */
 const OPTIONS: Option[] = [
-  { id: 'transfer', label: 'Transfert', hint: 'Envoyer de l’argent rapidement', icon: Repeat, route: '/(tabs)/transfers',
+  { id: 'transfer', label: 'Transfert', hint: 'Envoyer de l’argent rapidement', icon: Repeat, route: '/transfer/wizard',
     from: rgba('#14b8a6', 0.15), to: rgba('#34d399', 0.1), fromDark: rgba('#14b8a6', 0.25), toDark: rgba('#34d399', 0.1), fg: '#0f766e', fgDark: '#ccfbf1' },
   { id: 'p2p', label: 'P2P', hint: 'Créer une offre d’échange', icon: Users, route: '/p2p/publish',
     from: rgba('#06b6d4', 0.15), to: rgba('#60a5fa', 0.1), fromDark: rgba('#06b6d4', 0.2), toDark: rgba('#60a5fa', 0.1), fg: '#0e7490', fgDark: '#cffafe' },

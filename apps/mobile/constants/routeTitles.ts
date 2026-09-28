@@ -4,7 +4,7 @@
  */
 export const TAB_ROUTE_PATHS: Record<string, string> = {
   index: '/dashboard',
-  transfers: '/transfers',
+  transfers: '/transfers/history',
   marketplace: '/marketplace',
   feed: '/feed',
   moxt: '/moxt',
@@ -16,6 +16,8 @@ export const TAB_ROUTE_PATHS: Record<string, string> = {
 export const ROUTE_TITLES: Record<string, string> = {
   '/dashboard': 'Accueil',
   '/transfers': 'Nouveau transfert',
+  '/transfers/history': 'Historique',
+  '/receipts': 'Reçus',
   '/marketplace': 'Marketplace',
   '/feed': 'Fil d’actualité',
   '/moxt': 'MOXT',

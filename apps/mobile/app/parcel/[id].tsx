@@ -12,6 +12,7 @@ import { StatusBadge } from '@/components/ui/Badge';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, radii, shadows, spacing, typography } from '@/theme/colors';
 import { useAppSelector } from '@/store/store';
+import { asStringList } from '@/utils/stringList';
 
 export default function ParcelDetailScreen() {
   const colors = useThemeColors();
@@ -119,8 +120,8 @@ export default function ParcelDetailScreen() {
                 { label: 'Kg restants', value: parcel.remainingKg != null ? `${parcel.remainingKg} kg` : null },
                 { label: 'Max / article', value: parcel.maxWeightPerItem != null ? `${parcel.maxWeightPerItem} kg` : null },
                 { label: 'Date limite de dépôt', value: parcel.depositDeadline ? formatShortDate(parcel.depositDeadline) : null },
-                { label: 'Types acceptés', value: parcel.acceptedTypes?.length ? parcel.acceptedTypes.join(', ') : null },
-                { label: 'Types refusés', value: parcel.rejectedTypes?.length ? parcel.rejectedTypes.join(', ') : null },
+                { label: 'Types acceptés', value: asStringList(parcel.acceptedTypes).join(', ') || null },
+                { label: 'Types refusés', value: asStringList(parcel.rejectedTypes).join(', ') || null },
                 { label: 'Conditions', value: parcel.conditions },
               ]}
             />

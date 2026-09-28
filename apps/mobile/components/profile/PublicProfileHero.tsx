@@ -9,6 +9,7 @@ import { VerifiedIcon } from '@/components/ui/VerifiedIcon';
 import { avatarDisplayUrl } from '@/utils/avatarDisplayUrl';
 import { useTheme } from '@/theme/ThemeContext';
 
+import { AvatarBadge } from './AvatarBadge';
 import { MoxtCoverBanner, type CoverLabels } from './CoverBanner';
 import { resolveCoverStyleId } from './coverStyles';
 import { useBrandScale, useScopeColors, type ProfileKind } from './identity';
@@ -178,21 +179,24 @@ export function PublicProfileHero({
         </View>
 
         <View style={{ position: 'absolute', bottom: -40, left: 16, zIndex: 10 }}>
-          {avatar ? (
-            <Image
-              source={{ uri: avatar }}
-              style={[avatarFrame, { backgroundColor: colors.surface }]}
-              contentFit="cover"
-              onError={() => setAvatarFailed(true)}
-              accessibilityLabel={name}
-            />
-          ) : (
-            <View style={[avatarFrame, { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentSoft }]}>
-              <AppText className="text-xl font-black" style={{ color: colors.accent }}>
-                {profileInitials(name)}
-              </AppText>
-            </View>
-          )}
+          <View>
+            {avatar ? (
+              <Image
+                source={{ uri: avatar }}
+                style={[avatarFrame, { backgroundColor: colors.surface }]}
+                contentFit="cover"
+                onError={() => setAvatarFailed(true)}
+                accessibilityLabel={name}
+              />
+            ) : (
+              <View style={[avatarFrame, { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentSoft }]}>
+                <AppText className="text-xl font-black" style={{ color: colors.accent }}>
+                  {profileInitials(name)}
+                </AppText>
+              </View>
+            )}
+            <AvatarBadge url={avatarUrl} top={-6} />
+          </View>
         </View>
 
         {shareSlot ? <View style={{ position: 'absolute', right: 12, top: 12, zIndex: 10 }}>{shareSlot}</View> : null}

@@ -1,19 +1,18 @@
+import { useEffect, useState } from 'react';
 import { Image, Pressable, ScrollView, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Heart } from 'lucide-react-native';
 
+import { collectPostImages, withPostImages } from '@moxt/shared/domain/postMedia.js';
+import { entityFromRemoteRow } from '@moxt/shared/services/rowUtils.js';
+
 import { AppChrome } from '@/components/chrome/AppChrome';
 import { EntityAvatar } from '@/components/profile/EntityAvatar';
 import { AppText } from '@/components/ui/AppText';
+import { supabase } from '@/services/supabase';
 import { toggleEngagementLike } from '@/store/engagement';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useTheme } from '@/theme/ThemeContext';
-
-function asImages(post: Record<string, unknown>) {
-  const list = Array.isArray(post.images) ? post.images.filter((src): src is string => typeof src === 'string') : [];
-  if (list.length) return list;
-  return typeof post.imageUrl === 'string' && post.imageUrl ? [post.imageUrl] : [];
-}
 
 /** Fiche d'un post (web /news/:postId) : auteur, texte, photos, j'aime. */
 export default function PostDetailScreen() {
@@ -21,7 +20,43 @@ export default function PostDetailScreen() {
   const dispatch = useAppDispatch();
   const { colors } = useTheme();
   const user = useAppSelector((state) => state.auth.user);
-  const post = useAppSelector((state) => state.feed.posts.find((item) => item.id === id));
+  const cached = useAppSelector((state) => state.feed.posts.find((item) => item.id === id));
+  const [remote, setRemote] = useState<Record<string, unknown> | null>(null);
+
+  useEffect(() => {
+    if (cached || !id || !supabase) return undefined;
+    let alive = true;
+    supabase
+      .from('posts')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle()
+      .then(
+        ({ data }) => {
+          if (alive && data) setRemote(withPostImages(entityFromRemoteRow(data)) as Record<string, unknown>);
+        },
+        () => undefined,
+      );
+    return () => {
+      alive = false;
+    };
+  }, [cached, id]);
+
+  const post = (cached ? withPostImages(cached) : remote) as {
+    id: string;
+    authorId?: string;
+    authorName?: string;
+    authorAvatarUrl?: string | null;
+    title?: string;
+    text?: string;
+    content?: string;
+    message?: string;
+    createdAt?: string;
+    likes?: unknown;
+    images?: unknown;
+    imageUrl?: unknown;
+    payload?: unknown;
+  } | null;
 
   if (!post) {
     return (
@@ -35,7 +70,7 @@ export default function PostDetailScreen() {
 
   const likes = Array.isArray(post.likes) ? post.likes.map(String) : [];
   const liked = Boolean(user?.id && likes.includes(user.id));
-  const images = asImages(post);
+  const images = collectPostImages(post);
   const text = String(post.text || post.content || post.message || '');
   const when = post.createdAt ? new Date(String(post.createdAt)).toLocaleString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : '';
 

@@ -23,6 +23,7 @@ import { subscribePresenceUpdates } from '@/services/chatRealtime';
 import { pickImageOrPdf, uploadLikeWeb, type UploadFile } from '@/services/mediaUpload';
 import {
   buildConversationTimeline,
+  ensureConversation,
   getConversationPeer,
   loadConversationMessages,
   markConversationRead,
@@ -78,6 +79,8 @@ export default function ChatScreen() {
   const [preview, setPreview] = useState<string | null>(null);
   const listRef = useRef<FlatList>(null);
   const initialUnread = useRef<number | null>(null);
+  const lookupFor = useRef<string | null>(null);
+  const [lookupDone, setLookupDone] = useState(false);
 
   if (conversation && user?.id && initialUnread.current == null) {
     initialUnread.current = conversation.unreadBy?.[user.id] || 0;
@@ -99,6 +102,15 @@ export default function ChatScreen() {
       hide.remove();
     };
   }, []);
+
+  useEffect(() => {
+    if (!id || conversation || lookupFor.current === id) return;
+    lookupFor.current = id;
+    setLookupDone(false);
+    dispatch(ensureConversation(id))
+      .finally(() => setLookupDone(true))
+      .catch(() => undefined);
+  }, [conversation, dispatch, id]);
 
   useEffect(() => {
     if (!id || !conversation) return;
@@ -198,6 +210,9 @@ export default function ChatScreen() {
   }
 
   if (!conversation || !peer) {
+    if (!lookupDone) {
+      return <View style={{ flex: 1, backgroundColor: colors.background }} />;
+    }
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background, gap: 12 }}>
         <AppText className="text-lg font-black text-app-text">Conversation introuvable</AppText>

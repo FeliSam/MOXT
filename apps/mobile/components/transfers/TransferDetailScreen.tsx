@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, router } from 'expo-router';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { useLocalSearchParams, usePathname, router } from 'expo-router';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+
+import { transferFromRemoteRow } from '@moxt/shared/domain/transferRemote.js';
 
 import {
   directionLabel,
@@ -14,7 +16,10 @@ import { BackHeader } from '@/components/chrome/BackHeader';
 import { AppScreen } from '@/components/ui/Card';
 import { PROGRESS_STEPS, TRANSFER_STATUS_LABELS } from '@/constants/transfers';
 import { twTransfer } from '@/constants/transferTailwind';
-import { useAppSelector } from '@/store/store';
+import { supabase } from '@/services/supabase';
+import { upsertTransfer, transferMatches } from '@/store/transfers';
+import { useAppDispatch, useAppSelector } from '@/store/store';
+import { idFromPath, routeParam } from '@/utils/routeParam';
 import { cn } from '@/lib/cn';
 
 const NEXT_STEP: Record<string, { title: string; description: string }> = {
@@ -41,15 +46,58 @@ const NEXT_STEP: Record<string, { title: string; description: string }> = {
 };
 
 export default function TransferDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id?: string | string[]; created?: string | string[] }>();
+  const transferId = routeParam(params.id) || idFromPath(usePathname());
+  const justCreated = routeParam(params.created) === '1';
+  const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user);
   const transfer = useAppSelector((state) =>
-    state.transfers.items.find((t: any) => t.id === id),
+    state.transfers.items.find((item) => transferMatches(item as any, transferId)),
   );
   const [proofUri, setProofUri] = useState<string | null>(null);
-  const [showToast, setShowToast] = useState(true);
+  const [showToast, setShowToast] = useState(justCreated);
+  const [loading, setLoading] = useState(!transfer);
+
+  useEffect(() => {
+    if (!justCreated) return undefined;
+    const timer = setTimeout(() => setShowToast(false), 4000);
+    return () => clearTimeout(timer);
+  }, [justCreated]);
+
+  useEffect(() => {
+    if (!transferId || !supabase) {
+      setLoading(false);
+      return undefined;
+    }
+    let alive = true;
+    const client = supabase;
+    async function load() {
+      const byId = await client.from('transfers').select('*').eq('id', transferId).maybeSingle();
+      let row = byId.data;
+      if (!row && !byId.error) {
+        const byReference = await client.from('transfers').select('*').filter('payload->>id', 'eq', transferId).limit(1);
+        row = byReference.data?.[0] || null;
+      }
+      if (!alive) return;
+      if (row) dispatch(upsertTransfer(transferFromRemoteRow(row) as any));
+      setLoading(false);
+    }
+    load().catch(() => {
+      if (alive) setLoading(false);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [dispatch, transferId]);
 
   if (!transfer) {
+    if (loading) {
+      return (
+        <AppScreen edges={['top']} className="items-center justify-center">
+          <ActivityIndicator />
+        </AppScreen>
+      );
+    }
     return (
       <AppScreen edges={['top']} className="items-center justify-center gap-4">
         <Text className="text-xl font-black text-app-text dark:text-zinc-50">Transfert introuvable</Text>
@@ -87,13 +135,13 @@ export default function TransferDetailScreen() {
           <Text className="text-[10px] font-black uppercase tracking-widest text-brand-700 dark:text-brand-400">
             {t.id}
           </Text>
-          <Text className="mt-1 text-2xl font-black text-app-text dark:text-zinc-50">Transfer details</Text>
+          <Text className="mt-1 text-2xl font-black text-app-text dark:text-zinc-50">Détails du transfert</Text>
           <Text className="mt-1 text-sm text-app-text-muted dark:text-zinc-400">
             {directionLabel(t.direction || '')} · créé le{' '}
             {t.createdAt || t.created_at ? formatTransferDate(t.createdAt || t.created_at) : '—'}
           </Text>
           <Pressable className={cn(twTransfer.navBack, 'mt-4 self-start px-4')} onPress={() => router.back()}>
-            <Text className={twTransfer.navBackText}>← Back</Text>
+            <Text className={twTransfer.navBackText}>← Retour</Text>
           </Pressable>
         </View>
 

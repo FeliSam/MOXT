@@ -159,6 +159,10 @@ export function AppBottomTabBar({ activeRoute = 'transfers' }: { activeRoute?: s
     <BottomNavBar
       activeRoute={activeRoute}
       onTabPress={(route) => {
+        if (route === 'transfers') {
+          router.push('/transfer/wizard' as never);
+          return;
+        }
         router.push((route === 'index' ? '/(tabs)' : `/(tabs)/${route}`) as never);
       }}
     />

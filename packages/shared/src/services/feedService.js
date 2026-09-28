@@ -1,3 +1,4 @@
+import { withPostImages } from '../domain/postMedia.js'
 import { fromRows } from '../utils/remoteRowMapper.js'
 import { entityFromRemoteRow, rowsOrThrow } from './rowUtils.js'
 
@@ -18,7 +19,7 @@ export async function fetchFeedPosts(client, userId, { isStaff = false } = {}) {
     .order('last_shared_at', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
     .limit(isStaff ? POSTS_STAFF_LIMIT : POSTS_LIMIT)
-  return rowsOrThrow(result, 'Publications').map(entityFromRemoteRow).filter(Boolean)
+  return rowsOrThrow(result, 'Publications').map(entityFromRemoteRow).filter(Boolean).map(withPostImages)
 }
 
 export async function fetchVideos(client, { limit = VIDEOS_LIMIT } = {}) {

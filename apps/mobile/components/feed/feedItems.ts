@@ -1,4 +1,5 @@
-import { isActiveListing, isActiveParcel, isActiveVideo } from '@moxt/shared/domain/publicationRules.js';
+import { collectPostImages } from '@moxt/shared/domain/postMedia.js';
+import { isActiveListing, isActiveParcel, isActivePost, isActiveVideo } from '@moxt/shared/domain/publicationRules.js';
 import { formatCurrency } from '@moxt/shared/utils/formatters.js';
 
 export type FeedKind = 'video' | 'listing' | 'parcel' | 'job' | 'event' | 'post' | 'p2p';
@@ -157,9 +158,10 @@ export function buildFeedItems(src: {
     });
   }
   for (const p of src.posts) {
-    if (!p?.id || (p.status && p.status !== 'published')) continue;
+    if (!isActivePost(p)) continue;
     // Post lié à une fiche catalogue : le web ne l'affiche pas comme onglet « Posts ».
-    if (p.sourceId && String(p.sourceType || '').trim()) continue;
+    const sourceType = String(p.sourceType || '').trim();
+    if (p.sourceId && sourceType && sourceType !== 'free') continue;
     items.push({
       id: `post:${p.id}`,
       kind: 'post',
@@ -168,7 +170,7 @@ export function buildFeedItems(src: {
       publisher: userPublisher(p.authorId, p.authorName, p.authorAvatarUrl || ''),
       title: p.title || '',
       caption: p.message || p.text || p.content || '',
-      image: p.imageUrl || (p.images || [])[0] || '',
+      image: collectPostImages(p)[0] || '',
       videoUrl: '',
       stats: { views: 0, likes: count(p.likes), comments: count(p.comments), shares: 0 },
       liked: likedBy(p.likes, src.userId),
