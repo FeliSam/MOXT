@@ -22,6 +22,8 @@ import {
   type LucideIcon,
 } from 'lucide-react-native';
 
+import { setPresenceListener, type PresenceState } from '@/services/chatRealtime';
+
 import { HeaderActionButton, HeaderChip } from '@/components/chrome/HeaderChrome';
 import { HEADER, headerPaddingTop } from '@/components/chrome/headerTokens';
 import { ASSISTANT_ID, MoxtiBadge } from '@/components/messages/MoxtiBadge';
@@ -92,15 +94,18 @@ function ConversationRow({
   userId,
   divided,
   assistant = false,
+  onlineIds,
 }: {
   conversation?: Conversation;
   userId: string;
   divided: boolean;
   assistant?: boolean;
+  onlineIds?: Record<string, boolean>;
 }) {
   const { t } = useLanguage();
   const { colors, isDark } = useTheme();
   const peer = !assistant && conversation ? getConversationPeer(conversation, userId, t('messages.userFallback')) : null;
+  const online = Boolean(peer?.id && onlineIds?.[peer.id]);
   const unread = !assistant && conversation ? conversation.unreadBy?.[userId] || 0 : 0;
   const pinned = Boolean(!assistant && conversation?.pinnedBy?.includes(userId));
   const muted = Boolean(!assistant && conversation?.mutedBy?.includes(userId));
@@ -134,6 +139,22 @@ function ConversationRow({
         ) : (
           <EntityAvatar name={peer?.name || ''} src={peer?.avatarUrl} size={44} shape="user" from={brand[600]} />
         )}
+        {online ? (
+          <View
+            accessibilityLabel={t('messages.activity.online')}
+            style={{
+              position: 'absolute',
+              top: -1,
+              right: -1,
+              width: 12,
+              height: 12,
+              borderRadius: 6,
+              backgroundColor: '#22c55e',
+              borderWidth: 2,
+              borderColor: colors.background,
+            }}
+          />
+        ) : null}
         {RelatedIcon ? (
           <View
             style={{
@@ -296,11 +317,23 @@ export default function MessagesTabScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [onlineIds, setOnlineIds] = useState<Record<string, boolean>>({});
   const userId = user?.id || '';
 
   useEffect(() => {
     if (user?.id) dispatch(loadConversations(user.id));
   }, [dispatch, user?.id]);
+
+  useEffect(() => {
+    setPresenceListener((state: PresenceState) => {
+      const next: Record<string, boolean> = {};
+      for (const [id, value] of Object.entries(state)) {
+        if (value.online) next[id] = true;
+      }
+      setOnlineIds(next);
+    });
+    return () => setPresenceListener(() => undefined);
+  }, []);
 
   const mine = useMemo(() => conversations.filter((c) => c.participantIds?.includes(userId)), [conversations, userId]);
   const activeHuman = useMemo(() => mine.filter((c) => !c.archivedBy?.includes(userId)), [mine, userId]);
@@ -385,7 +418,7 @@ export default function MessagesTabScreen() {
             </AppText>
           ) : null}
           {visible.map((conversation, index) => (
-            <ConversationRow key={conversation.id} conversation={conversation} userId={userId} divided={index < visible.length - 1} />
+            <ConversationRow key={conversation.id} conversation={conversation} userId={userId} divided={index < visible.length - 1} onlineIds={onlineIds} />
           ))}
           {!visible.length && filter === 'all' && !showArchived ? (
             <View className="border border-dashed border-app-border bg-app-surface" style={[{ marginHorizontal: 8, marginTop: 8, borderRadius: 21.6, padding: 24, alignItems: 'center' }, shadows.card]}>
@@ -459,7 +492,7 @@ export default function MessagesTabScreen() {
                 {query.trim() ? t('messages.resultsCount', { count: searchResults.length }) : t('messages.conversations')}
               </AppText>
               {searchResults.map((conversation, index) => (
-                <ConversationRow key={conversation.id} conversation={conversation} userId={userId} divided={index < searchResults.length - 1} />
+                <ConversationRow key={conversation.id} conversation={conversation} userId={userId} divided={index < searchResults.length - 1} onlineIds={onlineIds} />
               ))}
               {query.trim() && !searchResults.length ? (
                 <AppText className="text-center text-sm text-app-text-faint" style={{ padding: 24 }}>

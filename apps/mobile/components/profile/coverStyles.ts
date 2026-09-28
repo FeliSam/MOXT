@@ -36,6 +36,21 @@ export function genderFromPreferences(preferences: Record<string, any> | null | 
   return preferences?.gender || preferences?.avatarDicebear?.preferences?.gender || null;
 }
 
+/** Même ordre que coverBannerCatalog.js (défaut prune en tête). */
+export const WOMAN_COVER_STYLES: CoverStyleId[] = [
+  COVER_STYLE_IDS.WOMAN_D_PRUNE,
+  COVER_STYLE_IDS.WOMAN_A_SILK,
+  COVER_STYLE_IDS.WOMAN_B_GLASS,
+  COVER_STYLE_IDS.WOMAN_C_BLUSH,
+];
+
+export const MAN_COVER_STYLES: CoverStyleId[] = [
+  COVER_STYLE_IDS.MAN_D_PRUNE,
+  COVER_STYLE_IDS.MAN_A_STEEL,
+  COVER_STYLE_IDS.MAN_B_TOPO,
+  COVER_STYLE_IDS.MAN_C_MESH,
+];
+
 export function defaultCoverStyleForPersonal(gender: unknown): CoverStyleId {
   return normalizeProfileGender(gender) === 'female' ? COVER_STYLE_IDS.WOMAN_D_PRUNE : COVER_STYLE_IDS.MAN_D_PRUNE;
 }

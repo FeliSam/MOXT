@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Image, Platform, Pressable, ScrollView, Share, View, useWindowDimensions, type ViewToken } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -24,6 +24,7 @@ import {
 } from 'lucide-react-native';
 
 import { usePublisherSubscription } from '@/components/account/SubscribeButton';
+import { StarsGiftButton } from '@/components/feed/StarsGiftButton';
 import { usePublishMenu } from '@/components/chrome/PublishMenuSheet';
 import { FeedCommentsSheet } from '@/components/feed/FeedCommentsSheet';
 import { FeedMedia } from '@/components/feed/FeedMedia';
@@ -32,6 +33,7 @@ import { AppText } from '@/components/ui/AppText';
 import { VerifiedIcon } from '@/components/ui/VerifiedIcon';
 import { brand } from '@/theme/palette';
 import { shareVideo, toggleEngagementLike, type EngagementKind } from '@/store/engagement';
+import { recordVideoView } from '@/store/feed';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
 
@@ -139,6 +141,7 @@ function FeedSlide({
 }) {
   const colors = useThemeColors();
   const userId = useAppSelector((s) => s.auth.user?.id);
+  const starsEnabled = useAppSelector((s) => Boolean(s.platform.flags.stars));
   const isOwner = Boolean(userId && (item.publisher.ownerId === userId || (item.publisher.type === 'user' && item.publisher.id === userId)));
   const dispatch = useAppDispatch();
   const icon = { size: 19.7, color: '#ffffff', strokeWidth: 2 } as const;
@@ -237,6 +240,9 @@ function FeedSlide({
             </AppText>
             {item.publisher.verified ? <VerifiedIcon size={14} color="#34d399" /> : null}
           </View>
+          {starsEnabled && isSubscribed && item.publisher.id && !(item.publisher.type === 'user' && item.publisher.id === userId) ? (
+            <StarsGiftButton publisherType={item.publisher.type} publisherId={item.publisher.id} publisherName={item.publisher.name} />
+          ) : null}
           {!isOwner && item.publisher.id && !isSubscribed ? (
             <Pressable
               accessibilityLabel="S'abonner"
@@ -322,6 +328,7 @@ function FeedSlide({
  * slides verticales aimantées, pastilles de type, bouton +, rail d'actions et méta en bas.
  */
 export default function FeedTab() {
+  const dispatch = useAppDispatch();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const openPublish = usePublishMenu();
@@ -366,6 +373,20 @@ export default function FeedTab() {
   const showFilters = all.length > 0 && filters.length > 2;
   const ordered = useStableOrder(all);
   const items = type === 'all' ? ordered : ordered.filter((i) => i.kind === type);
+  const viewed = useRef(new Set<string>());
+
+  // Même déclencheur que VideoFeedSlide : slide active, pas l'auteur, une fois, après 350 ms.
+  useEffect(() => {
+    const item = items[activeIndex];
+    if (!item || item.kind !== 'video') return undefined;
+    if (userId && (item.publisher.ownerId === userId || (item.publisher.type === 'user' && item.publisher.id === userId))) return undefined;
+    if (viewed.current.has(item.entityId)) return undefined;
+    viewed.current.add(item.entityId);
+    const timer = setTimeout(() => {
+      dispatch(recordVideoView(item.entityId));
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [activeIndex, dispatch, items, userId]);
 
   const onViewable = useCallback(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     const first = viewableItems.find((v) => v.isViewable);

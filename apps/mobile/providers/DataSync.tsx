@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from 'react';
 
 import { registerForPushNotifications } from '@/services/notifications';
+import { subscribePresence, unsubscribePresence } from '@/services/chatRealtime';
 import { subscribeRealtime, unsubscribeRealtime } from '@/services/realtime';
 import { loadCoreData } from '@/store/data';
 import { loadConversations } from '@/store/messages';
@@ -35,9 +36,11 @@ export function DataSync({ children }: { children: ReactNode }) {
       });
 
       subscribeRealtime(userId, dispatch, () => store.getState());
+      subscribePresence(userId);
 
       return () => {
         unsubscribeRealtime();
+        unsubscribePresence();
       };
     }
   }, [dispatch, status, userId]);

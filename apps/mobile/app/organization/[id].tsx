@@ -29,7 +29,10 @@ import { WEB_BUTTON_TEXT } from '@/components/ui/webButtonText';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ExpandableText } from '@/components/ui/ExpandableText';
 import { useLanguage } from '@/providers/LanguageProvider';
+import { buildBusinessContactSnapshot, openContactConversation } from '@moxt/shared/services/contactService.js';
+
 import { supabase } from '@/services/supabase';
+import { receiveRemoteConversation, mapConversationRow } from '@/store/messages';
 import { loadBusiness } from '@/store/account';
 import type { ListingItem } from '@/store/marketplace';
 import { useAppDispatch, useAppSelector } from '@/store/store';
@@ -264,15 +267,41 @@ export default function BusinessProfileScreen() {
     { key: 'apercu', label: 'À propos', alwaysShow: true },
   ];
 
-  function contact() {
+  async function contact() {
+    if (!user?.id) {
+      router.push('/login' as never);
+      return;
+    }
+    if (!business?.ownerId || !supabase) return;
     const existing = conversations.find(
-      (c) => c.participantIds?.includes(String(business?.ownerId)) && c.participantIds?.includes(String(user?.id)),
+      (c) => c.participantIds?.includes(String(business.ownerId)) && c.participantIds?.includes(String(user.id)),
     );
     if (existing) {
       router.push(`/messages/${existing.id}` as never);
       return;
     }
-    showNotice('Contacter', "La prise de contact avec une entreprise se fait pour l'instant depuis moxtapp.ru.");
+    try {
+      const result = await openContactConversation(supabase, {
+        createdBy: user.id,
+        ownerId: String(business.ownerId),
+        senderName: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+        relatedType: 'business',
+        relatedId: business.id,
+        relatedPath: `/businesses/${business.id}`,
+        relatedSnapshot: buildBusinessContactSnapshot(business),
+        participantProfiles: {
+          [user.id]: {
+            firstName: user.firstName || '',
+            lastName: user.lastName || '',
+            avatarUrl: user.avatarUrl || null,
+          },
+        },
+      });
+      dispatch(receiveRemoteConversation(mapConversationRow(result.conversation as unknown as Record<string, unknown>)));
+      router.push(`/messages/${result.id}` as never);
+    } catch (error) {
+      showNotice('Contacter', error instanceof Error ? error.message : 'Conversation impossible.');
+    }
   }
 
   return (

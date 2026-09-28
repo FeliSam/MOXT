@@ -35,7 +35,8 @@ export function subscribePresence(userId: string) {
   if (!supabase) return;
   unsubscribePresence();
 
-  presenceChannel = supabase.channel('online-users', {
+  // Même canal que le web (realtimeService presence-online) pour que la pastille soit partagée.
+  presenceChannel = supabase.channel('presence-online', {
     config: { presence: { key: userId } },
   });
 
@@ -55,8 +56,7 @@ export function subscribePresence(userId: string) {
     .subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
         await presenceChannel!.track({
-          userId,
-          lastSeen: new Date().toISOString(),
+          online_at: new Date().toISOString(),
         });
       }
     });

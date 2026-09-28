@@ -119,6 +119,7 @@ export function MyPublicationCard({
   onArchive,
   onReactivate,
   onDelete,
+  readonly = false,
 }: {
   type: PublicationType;
   item: PublicationItem;
@@ -127,6 +128,8 @@ export function MyPublicationCard({
   onArchive?: () => void;
   onReactivate?: () => void;
   onDelete?: () => void;
+  /** Vue publique : pas de boutons de gestion. */
+  readonly?: boolean;
 }) {
   const { t } = useLanguage();
   const shadows = useShadows();
@@ -173,6 +176,7 @@ export function MyPublicationCard({
           </View>
         </LinearGradient>
       </Pressable>
+      {readonly ? null : (
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, padding: 10 }}>
         <ActionButton icon={ExternalLink} label="Ouvrir" onPress={onOpen} />
         <ActionButton icon={Edit2} label="Modifier" onPress={onEdit} />
@@ -183,6 +187,7 @@ export function MyPublicationCard({
         ) : null}
         <ActionButton icon={Trash2} label="Supprimer" danger onPress={onDelete} />
       </View>
+      )}
     </View>
   );
 }

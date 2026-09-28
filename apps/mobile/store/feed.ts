@@ -6,6 +6,7 @@ import {
   fetchVideos,
   groupStatusesByAuthor,
 } from '@moxt/shared/services/feedService.js';
+import { incrementEntityView } from '@moxt/shared/services/viewsService.js';
 import { supabase } from '../services/supabase';
 import { commentAdded, commentRemoved, likeToggled, videoShareIncremented, type EngagementKind } from './engagementActions';
 import { toggleLikeList } from '@moxt/shared/services/engagementService.js';
@@ -82,6 +83,12 @@ export const loadFeed = createAsyncThunk('feed/load', async (userId: string) => 
   };
 });
 
+/** Vue d'une vidéo après 350 ms d'affichage (videos/incrementVideoView). Le RPC ignore l'auteur. */
+export const recordVideoView = createAsyncThunk('feed/recordView', async (videoId: string) => {
+  if (!supabase) return null;
+  return incrementEntityView(supabase, 'video', videoId) as Promise<number | null>;
+});
+
 function findEntity(state: FeedState, kind: EngagementKind, id: string): Record<string, unknown> | undefined {
   if (kind === 'video') return state.videos.find((item) => item.id === id);
   if (kind === 'post') return state.posts.find((item) => item.id === id);
@@ -123,6 +130,11 @@ const feedSlice = createSlice({
       .addCase(videoShareIncremented, (state, action) => {
         const video = state.videos.find((item) => item.id === action.payload.videoId);
         if (video) video.shareCount = (Number(video.shareCount) || 0) + 1;
+      })
+      .addCase(recordVideoView.fulfilled, (state, action) => {
+        if (action.payload == null) return;
+        const video = state.videos.find((item) => item.id === action.meta.arg);
+        if (video) video.viewCount = action.payload;
       });
   },
 });

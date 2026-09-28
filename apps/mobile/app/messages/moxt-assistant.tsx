@@ -10,6 +10,9 @@ import { HEADER, headerPaddingTop } from '@/components/chrome/headerTokens';
 import { MoxtiBadge } from '@/components/messages/MoxtiBadge';
 import { AppText } from '@/components/ui/AppText';
 import { useLanguage } from '@/providers/LanguageProvider';
+import { askMoxti } from '@moxt/shared/services/assistantService.js';
+
+import { supabase } from '@/services/supabase';
 import { useAppSelector } from '@/store/store';
 import { brand, withAlphaColor } from '@/theme/palette';
 import { useTheme } from '@/theme/ThemeContext';
@@ -36,16 +39,16 @@ const CHIP_SHADOW = '0 8px 24px rgba(15,23,42,0.08)';
 
 /**
  * Conversation Moxti (AiAssistantPanel du web, ?conversation=moxt-assistant).
- * Écran purement local : il ne lit ni ne marque aucune conversation en base. Les réponses
- * de l'IA (fonction ai-assistant) restent sur le web pour l'instant.
+ * Écran local (historique AsyncStorage) qui appelle la même fonction Edge ai-assistant que le web.
  */
 export default function MoxtAssistantScreen() {
   const insets = useSafeAreaInsets();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { colors } = useTheme();
   const userId = useAppSelector((state) => state.auth.user?.id);
   const [history, setHistory] = useState<AssistantEntry[]>([]);
   const [question, setQuestion] = useState('');
+  const [sending, setSending] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const storageKey = `moxt-ai-assistant-${userId || 'guest'}`;
 
@@ -63,9 +66,30 @@ export default function MoxtAssistantScreen() {
     };
   }, [storageKey]);
 
-  function ask(text: string) {
-    if (!text.trim()) return;
-    showNotice(t('messages.assistant.name'), "Les réponses de Moxti sont disponibles sur moxtapp.ru pour l'instant.");
+  async function ask(text: string) {
+    const questionText = text.trim();
+    if (!questionText || sending) return;
+    const userEntry: AssistantEntry = { id: `u-${Date.now()}`, role: 'user', text: questionText };
+    const next = [...history, userEntry];
+    setHistory(next);
+    setQuestion('');
+    setSending(true);
+    try {
+      const answer = await askMoxti(supabase, {
+        question: questionText,
+        history: next,
+        language: language || 'fr',
+      });
+      const withReply = [...next, { id: `a-${Date.now()}`, role: 'assistant' as const, text: answer.text }];
+      setHistory(withReply.slice(-30));
+      AsyncStorage.setItem(storageKey, JSON.stringify(withReply.slice(-30))).catch(() => undefined);
+    } catch (error) {
+      const fallback = error instanceof Error ? error.message : "Moxti n'a pas pu répondre. Réessayez.";
+      const withReply = [...next, { id: `a-${Date.now()}`, role: 'assistant' as const, text: fallback }];
+      setHistory(withReply.slice(-30));
+    } finally {
+      setSending(false);
+    }
   }
 
   function clearHistory() {

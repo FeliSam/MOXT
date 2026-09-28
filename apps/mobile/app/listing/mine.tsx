@@ -22,7 +22,13 @@ import {
 } from '@moxt/shared/utils/reviewUtils.js';
 import { selectPublisherSubscriberList } from '@moxt/shared/services/subscriptionsService.js';
 
+import { buildPublicationConfirm } from '@moxt/shared/domain/publicationConfirm.js';
+import { archiveStatus, deletePublication, republishStatus, setPublicationStatus } from '@moxt/shared/services/publicationMutations.js';
+import { updateAccountPreferences } from '@moxt/shared/services/accountWrites.js';
+
 import { usePublishMenu } from '@/components/chrome/PublishMenuSheet';
+import { CoverStyleSheet } from '@/components/profile/CoverStyleSheet';
+import { ConfirmSheet, type ConfirmRequest } from '@/components/ui/ConfirmSheet';
 import { ChipTabs, UnderlineTabs } from '@/components/profile/CatalogTabs';
 import { defaultCoverStyleForPersonal } from '@/components/profile/coverStyles';
 import { prune } from '@/components/profile/identity';
@@ -65,10 +71,17 @@ function publicationRoute(type: PublicationType, item: PublicationItem) {
   return null;
 }
 
-/** Actions de gestion pas encore branchées sur mobile : message clair au lieu d'une écriture. */
-function webOnly(action: string) {
-  showNotice(action, 'Cette action se fait depuis le site MOXT pour le moment.');
-}
+const BUSINESS_READY = new Set(['verified', 'approved', 'active']);
+
+const PUBLISH_ROUTES: Partial<Record<PublicationType, string>> = {
+  listing: '/listing/create',
+  parcel: '/publish/parcel',
+  job: '/publish/job',
+  event: '/publish/event',
+  video: '/publish/video',
+  post: '/publish/post',
+  other: '/p2p/publish',
+};
 
 /**
  * Mes publications — vue perso du web (MyPublicationsPage) : identité prune,
@@ -83,10 +96,15 @@ export default function MyPublicationsScreen() {
   const shadows = useShadows();
   const openPublish = usePublishMenu();
   const user = useAppSelector((state) => state.auth.user);
+  const businesses = useAppSelector((state) => state.account.businesses);
   const allSubscriptions = useAppSelector((state) => state.account.subscriptions);
   const [publications, setPublications] = useState<Publications>(emptyPublications() as Publications);
   const [loaded, setLoaded] = useState(false);
-  const [profile, setProfile] = useState<{ coverStyle?: string | null; gender?: string | null } | null>(null);
+  const [profile, setProfile] = useState<{ coverStyle?: string | null; gender?: string | null; preferences?: Record<string, unknown> } | null>(null);
+  const [confirming, setConfirming] = useState<ConfirmRequest | null>(null);
+  const [confirmRun, setConfirmRun] = useState<(() => Promise<void>) | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [coverOpen, setCoverOpen] = useState(false);
   const [reviews, setReviews] = useState<Record<string, unknown>[]>([]);
   const [requestedArchiveTab, setArchiveTab] = useState<string>(params.status === 'archived' ? 'archived' : 'active');
   const [requestedTypeTab, setTypeTab] = useState<string>(TYPE_TABS.includes(params.type as PublicationType) ? String(params.type) : 'listing');
@@ -106,7 +124,7 @@ export default function MyPublicationsScreen() {
       .catch(() => undefined)
       .finally(() => !cancelled && setLoaded(true));
     fetchPublicProfile(supabase, user.id)
-      .then((row) => !cancelled && setProfile(row))
+      .then((row) => !cancelled && setProfile(row as typeof profile))
       .catch(() => undefined);
     return () => {
       cancelled = true;
@@ -164,6 +182,63 @@ export default function MyPublicationsScreen() {
   const onArchiveChange = useCallback((key: string) => setArchiveTab(key), []);
   const onTypeChange = useCallback((key: string) => setTypeTab(key), []);
 
+  const reloadPublications = useCallback(() => {
+    if (!supabase || !user?.id) return;
+    fetchUserPublications(supabase, user.id)
+      .then((result) => setPublications(result.publications as Publications))
+      .catch(() => undefined);
+  }, [user?.id]);
+
+  function askConfirm(action: 'delete' | 'archive' | 'republish', type: PublicationType, item: PublicationItem, run: () => Promise<void>) {
+    if (action === 'republish' && type !== 'post' && item.businessId) {
+      const business = businesses.find((entry) => entry.id === item.businessId);
+      if (!business || !BUSINESS_READY.has(String(business.status || ''))) {
+        showNotice('Republier', "L'entreprise doit être vérifiée pour republier cette publication.");
+        return;
+      }
+    }
+    setConfirming(buildPublicationConfirm(t, action, { type, item, scope: 'personal' }) as ConfirmRequest);
+    setConfirmRun(() => run);
+  }
+
+  async function runConfirmed() {
+    if (!confirmRun) return;
+    setBusy(true);
+    try {
+      await confirmRun();
+      setConfirming(null);
+      reloadPublications();
+    } catch (error) {
+      showNotice(t('confirmDialog.error') === 'confirmDialog.error' ? 'Action impossible' : t('confirmDialog.error'), error instanceof Error ? error.message : '');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function changeStatus(type: PublicationType, item: PublicationItem, status: string) {
+    return askConfirm(status === 'archived' ? 'archive' : 'republish', type, item, async () => {
+      await setPublicationStatus(supabase, type, item.id, status);
+    });
+  }
+
+  function removePublication(type: PublicationType, item: PublicationItem) {
+    return askConfirm('delete', type, item, async () => {
+      await deletePublication(supabase, type, item.id);
+    });
+  }
+
+  async function saveCover(styleId: string) {
+    if (!supabase || !user?.id) return;
+    setCoverOpen(false);
+    try {
+      const { data } = await supabase.from('profiles').select('preferences').eq('id', user.id).maybeSingle();
+      await updateAccountPreferences(supabase, user.id, { coverStyle: styleId }, (data?.preferences || {}) as Record<string, unknown>);
+      setProfile((prev) => ({ ...(prev || {}), coverStyle: styleId }));
+    } catch (error) {
+      showNotice('Bannière', error instanceof Error ? error.message : 'Enregistrement impossible.');
+    }
+  }
+
   if (!user) return null;
   const displayName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Mon profil';
   const coverStyle = profile?.coverStyle || defaultCoverStyleForPersonal(profile?.gender);
@@ -171,6 +246,7 @@ export default function MyPublicationsScreen() {
   const accent = isDark ? prune[400] : prune[700];
 
   return (
+    <>
     <ProfilePageShell pathname="/publications/mine" scope="personal">
       <PublicProfileHero
         name={displayName}
@@ -185,7 +261,7 @@ export default function MyPublicationsScreen() {
         rating={rating}
         reviewsLabel="avis"
         showCoverEdit
-        onEditCover={() => webOnly(t('profile.personal.editBanner'))}
+        onEditCover={() => setCoverOpen(true)}
         editCoverLabel={t('profile.personal.editBanner')}
         shareSlot={
           <ProfileQrButton type="user" shareUrl={userProfileShareUrl(user.id)} title={displayName} subtitle={t('share.profileSubtitle')} verified={Boolean(user.verified)} city={user.city} accent={accent} />
@@ -194,7 +270,7 @@ export default function MyPublicationsScreen() {
           <>
             <Pressable
               accessibilityRole="link"
-              onPress={() => webOnly(t('publications.mine.publicView'))}
+              onPress={() => router.push(`/users/${user.id}/publications` as never)}
               className="flex-row items-center justify-center border border-app-border-md bg-app-surface"
               style={{ minHeight: 44, borderRadius: 12, paddingHorizontal: 20, gap: 8, width: '48.5%' }}>
               <Eye size={18} color={colors.text} strokeWidth={2} />
@@ -202,7 +278,11 @@ export default function MyPublicationsScreen() {
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              onPress={() => (typeTab === 'listing' ? router.push('/listing/create' as never) : openPublish())}
+              onPress={() => {
+                const route = PUBLISH_ROUTES[typeTab];
+                if (route) router.push(route as never);
+                else openPublish();
+              }}
               style={{
                 width: '100%',
                 minHeight: 44,
@@ -242,7 +322,14 @@ export default function MyPublicationsScreen() {
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
             {activeVideos.map((video: PublicationItem) => (
               <View key={video.id} style={{ width: '48%' }}>
-                <MyPublicationCard type="video" item={video} onOpen={() => router.push('/(tabs)/feed?type=video' as never)} onEdit={() => webOnly('Modifier')} onArchive={() => webOnly('Archiver')} onDelete={() => webOnly('Supprimer')} />
+                <MyPublicationCard
+                  type="video"
+                  item={video}
+                  onOpen={() => router.push('/(tabs)/feed?type=video' as never)}
+                  onEdit={() => router.push(`/publications/edit?type=video&id=${video.id}` as never)}
+                  onArchive={() => changeStatus('video', video, archiveStatus())}
+                  onDelete={() => removePublication('video', video)}
+                />
               </View>
             ))}
           </View>
@@ -286,11 +373,11 @@ export default function MyPublicationsScreen() {
                     <MyPublicationCard
                       type={typeTab}
                       item={item}
-                      onOpen={() => (route ? router.push(route as never) : webOnly('Ouvrir'))}
-                      onEdit={() => webOnly('Modifier')}
-                      onArchive={() => webOnly('Archiver')}
-                      onReactivate={() => webOnly('Republier')}
-                      onDelete={() => webOnly('Supprimer')}
+                      onOpen={() => (route ? router.push(route as never) : router.push(`/publications/edit?type=${typeTab}&id=${item.id}` as never))}
+                      onEdit={() => router.push(`/publications/edit?type=${typeTab}&id=${item.id}` as never)}
+                      onArchive={() => changeStatus(typeTab, item, archiveStatus())}
+                      onReactivate={() => changeStatus(typeTab, item, republishStatus(typeTab))}
+                      onDelete={() => removePublication(typeTab, item)}
                     />
                   </View>
                 );
@@ -300,5 +387,21 @@ export default function MyPublicationsScreen() {
         </View>
       )}
     </ProfilePageShell>
+    <ConfirmSheet
+      request={confirming}
+      busy={busy}
+      onCancel={() => {
+        if (!busy) setConfirming(null);
+      }}
+      onConfirm={() => void runConfirmed()}
+    />
+    <CoverStyleSheet
+      visible={coverOpen}
+      gender={profile?.gender}
+      selected={coverStyle}
+      onClose={() => setCoverOpen(false)}
+      onSelect={(styleId) => void saveCover(styleId)}
+    />
+    </>
   );
 }
