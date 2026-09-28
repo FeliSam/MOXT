@@ -1,3 +1,6 @@
+// Règles d’archive des vidéos : source unique partagée web + mobile.
+import { isActiveVideo, isArchivedVideo } from '@moxt/shared/domain/publicationRules.js'
+
 /** Helpers catalogue / feed / upload pour les vidéos entreprise. */
 
 export const VIDEO_MAX_DURATION_MS = 90_000
@@ -33,13 +36,7 @@ const VIDEO_EXT_BY_MIME = {
   'video/mkv': 'mkv',
 }
 
-export function isActiveVideo(video) {
-  return video?.status === 'active'
-}
-
-export function isArchivedVideo(video) {
-  return video ? !isActiveVideo(video) : false
-}
+export { isActiveVideo, isArchivedVideo }
 
 export function buildVideoObjectKey(businessId, videoId, extension = 'mp4') {
   const safeBusiness = String(businessId || 'business').replace(/[^a-zA-Z0-9_-]/g, '_')

@@ -1,0 +1,68 @@
+import { entityFromRemoteRow, rowsOrEmpty } from './rowUtils.js'
+import { fromRow } from '../utils/remoteRowMapper.js'
+import {
+  emptyPublications,
+  filterPublicationsByScope,
+  isActiveListing,
+  publicationArchiveCounts,
+  publicationTypeCounts,
+} from '../domain/publicationRules.js'
+
+export const OWN_PUBLICATIONS_LIMIT = 200
+
+const OWNER_TABLES = [
+  ['listings', 'listings', 'owner_id'],
+  ['parcels', 'parcels', 'owner_id'],
+  ['jobs', 'jobs', 'owner_id'],
+  ['events', 'events', 'owner_id'],
+  ['videos', 'videos', 'owner_id'],
+  ['posts', 'posts', 'author_id'],
+  ['others', 'p2p_offers', 'owner_id'],
+]
+
+/**
+ * Toutes les publications du compte (actives + archivées, toutes catégories dont « Autres » = offres P2P).
+ * Le web sélectionne par propriétaire dans ses catalogues chargés ; ici on interroge directement
+ * par owner_id / author_id (mêmes tables, mêmes règles d’archive) pour ne rien perdre au-delà
+ * des limites de catalogue.
+ */
+export async function fetchUserPublications(client, userId, { limit = OWN_PUBLICATIONS_LIMIT } = {}) {
+  if (!client || !userId) return { publications: emptyPublications(), errors: [] }
+  const results = await Promise.all(
+    OWNER_TABLES.map(([, table, column]) =>
+      client.from(table).select('*').eq(column, userId).order('created_at', { ascending: false }).limit(limit),
+    ),
+  )
+  const publications = emptyPublications()
+  const errors = []
+  OWNER_TABLES.forEach(([key, table], index) => {
+    const result = results[index]
+    if (result?.error) errors.push({ table, message: result.error.message })
+    publications[key] = rowsOrEmpty(result).map(entityFromRemoteRow).filter(Boolean)
+  })
+  return { publications, errors }
+}
+
+/** Résumé « Mes publications » comme la page web (portée personnelle, en attente comptée en actif). */
+export function summarizeUserPublications(publications, { scope = 'personal', includePending = true } = {}) {
+  const scoped = filterPublicationsByScope(publications, scope)
+  return {
+    scoped,
+    archiveCounts: publicationArchiveCounts(scoped, { includePending }),
+    activeTypeCounts: publicationTypeCounts(scoped, 'active', { includePending }),
+    archivedTypeCounts: publicationTypeCounts(scoped, 'archived', { includePending }),
+  }
+}
+
+export { fromRow }
+
+/** Même fenêtre que le web (LISTINGS_PUBLIC_LIMIT) pour le catalogue des annonces. */
+export const LISTINGS_PUBLIC_LIMIT = 500
+
+/** Catalogue annonces comme le web (500 plus récentes, RLS), filtré sur les annonces actives. */
+export async function fetchActiveListings(client, { limit = LISTINGS_PUBLIC_LIMIT } = {}) {
+  if (!client) return []
+  const result = await client.from('listings').select('*').order('created_at', { ascending: false }).limit(limit)
+  if (result.error) throw result.error
+  return (result.data || []).filter((row) => isActiveListing(row))
+}

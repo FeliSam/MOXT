@@ -1,27 +1,21 @@
 import { supabase } from '../../services/supabaseClient'
 import { isProfileVerified } from '../profile/userProfileUtils'
 import { messagesText } from './messagesI18n'
+import {
+  fetchParticipantProfiles,
+  formatProfileName,
+  getOtherParticipantId,
+} from '@moxt/shared/domain/conversationRules.js'
 
-export function formatProfileName(profile) {
-  if (!profile) return ''
-  const name = `${profile.firstName || ''} ${profile.lastName || ''}`.trim()
-  return name || profile.name || ''
-}
-
-export function isParticipantDisplayName(conversation, title) {
-  const normalized = String(title || '').trim().toLowerCase()
-  if (!normalized || !conversation) return false
-  const profiles = conversation.participantProfiles || {}
-  return Object.values(profiles).some((profile) => {
-    const name = formatProfileName(profile)
-    return Boolean(name) && name.trim().toLowerCase() === normalized
-  })
-}
-
-export function getOtherParticipantId(conversation, currentUserId) {
-  const ids = conversation?.participantIds || []
-  return ids.find((id) => id && id !== currentUserId) || ids[0] || null
-}
+// Règles messagerie : source unique partagée web + mobile.
+export {
+  buildParticipantProfilesMap,
+  formatProfileName,
+  getOtherParticipantId,
+  isParticipantDisplayName,
+  mergeParticipantProfiles,
+  profileFromRemoteRow,
+} from '@moxt/shared/domain/conversationRules.js'
 
 export function getConversationPeer(conversation, currentUserId, t) {
   const otherId = getOtherParticipantId(conversation, currentUserId)
@@ -56,76 +50,6 @@ export function resolveContactProfileFromEntity(entity, t) {
   }
 }
 
-export function profileFromRemoteRow(row) {
-  if (!row?.id) return null
-  return {
-    firstName: row.first_name || '',
-    lastName: row.last_name || '',
-    avatarUrl: row.avatar_url || null,
-    status: row.status || '',
-    verified: row.status === 'verified',
-    lastActiveAt: row.last_active_at || null,
-  }
-}
-
 export async function fetchParticipantProfilesFromRemote(participantIds) {
-  const unique = [
-    ...new Set(
-      (participantIds || [])
-        .map((id) => String(id || '').trim())
-        .filter((id) =>
-          /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id),
-        ),
-    ),
-  ]
-  if (!unique.length || !supabase) return {}
-
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id, first_name, last_name, avatar_url, status, last_active_at')
-    .in('id', unique)
-  if (error) throw error
-
-  return Object.fromEntries(
-    (data || []).map((row) => [row.id, profileFromRemoteRow(row)]).filter(([, profile]) => profile),
-  )
-}
-
-export function buildParticipantProfilesMap({
-  participantIds,
-  remoteProfiles = {},
-  currentUser,
-  ownerId,
-  contactProfile,
-}) {
-  const profiles = {}
-  for (const participantId of participantIds) {
-    if (remoteProfiles[participantId]) {
-      profiles[participantId] = remoteProfiles[participantId]
-      continue
-    }
-    if (currentUser?.id === participantId) {
-      profiles[participantId] = {
-        firstName: currentUser.firstName || '',
-        lastName: currentUser.lastName || '',
-        avatarUrl: currentUser.avatarUrl || null,
-        verified: Boolean(currentUser.verified),
-        status: currentUser.verified ? 'verified' : '',
-      }
-      continue
-    }
-    if (participantId === ownerId && contactProfile) {
-      profiles[participantId] = contactProfile
-    }
-  }
-  return profiles
-}
-
-export function mergeParticipantProfiles(existing = {}, incoming = {}) {
-  const merged = { ...existing }
-  for (const [userId, profile] of Object.entries(incoming)) {
-    if (!profile) continue
-    merged[userId] = { ...merged[userId], ...profile }
-  }
-  return merged
+  return fetchParticipantProfiles(supabase, participantIds)
 }

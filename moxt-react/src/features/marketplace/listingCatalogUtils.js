@@ -1,15 +1,10 @@
 import { categoriesForType, LISTING_TYPES_META } from '../../config/listingConfig'
 import { listingOptionLabel, marketplaceText } from './marketplaceI18n'
 
-const ARCHIVED_STATUSES = new Set(['archived', 'sold', 'expired', 'draft'])
+// Règles d’archive des annonces : source unique partagée web + mobile.
+import { isActiveListing, isArchivedListing } from '@moxt/shared/domain/publicationRules.js'
 
-export function isActiveListing(listing) {
-  return listing?.status === 'active'
-}
-
-export function isArchivedListing(listing) {
-  return ARCHIVED_STATUSES.has(listing?.status)
-}
+export { isActiveListing, isArchivedListing }
 
 export function listingTypeLabel(type, t) {
   const option = LISTING_TYPES_META.find((item) => item.value === type)
