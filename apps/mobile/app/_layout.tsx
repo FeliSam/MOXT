@@ -14,6 +14,7 @@ import { Provider } from 'react-redux';
 
 import { AuthGate } from '@/components/AuthGate';
 import { BackHeader } from '@/components/chrome/BackHeader';
+import { PublishMenuProvider } from '@/components/chrome/PublishMenuSheet';
 import { SentryErrorBoundary } from '@/components/SentryErrorBoundary';
 import { AuthBootstrap } from '@/providers/AuthBootstrap';
 import { DataSync } from '@/providers/DataSync';
@@ -89,6 +90,7 @@ function RootLayoutNav() {
         <AuthGate>
           <DataSync>
             <OfflineSync>
+              <PublishMenuProvider>
               <Stack
                 screenOptions={({ route }) => {
                   const title = STACK_HEADER_TITLES[route.name];
@@ -103,6 +105,7 @@ function RootLayoutNav() {
                 <Stack.Screen name="transfer" />
                 <Stack.Screen name="design-system" />
               </Stack>
+              </PublishMenuProvider>
             </OfflineSync>
           </DataSync>
         </AuthGate>

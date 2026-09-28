@@ -11,10 +11,10 @@ import { useAppDispatch, useAppSelector } from '@/store/store';
 import { brand, withAlphaColor } from '@/theme/palette';
 import { useShadows, useTheme, useThemeCssVars } from '@/theme/ThemeContext';
 
-type NotifyPref = 'all' | 'important' | 'muted';
+export type NotifyPref = 'all' | 'important' | 'muted';
 type PublisherType = 'user' | 'business';
 
-const PREFS: { id: NotifyPref; label: string; hint: string; Icon: typeof Bell }[] = [
+export const PREFS: { id: NotifyPref; label: string; hint: string; Icon: typeof Bell }[] = [
   { id: 'all', label: 'Toutes les annonces', hint: 'Marketplace, colis, jobs, événements et publications', Icon: Bell },
   { id: 'important', label: 'Importantes seulement', hint: 'Annonces marketplace et publications du fil', Icon: Star },
   { id: 'muted', label: 'Sourdine', hint: 'Priorité dans les listes, sans notification', Icon: VolumeX },
@@ -46,7 +46,7 @@ export function usePublisherSubscription(publisherType: PublisherType, publisher
 }
 
 /** Menu « Notifications reçues » (web SubscriptionNotifyMenu), en feuille basse sur mobile. */
-function NotifySheet({
+export function NotifySheet({
   open,
   onClose,
   activePref,

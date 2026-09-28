@@ -23,6 +23,9 @@ export const ROUTE_TITLES: Record<string, string> = {
   '/messages': 'Messagerie',
   '/notifications': 'Notifications',
   '/design-system': 'Design system',
+  '/profile': 'Mon profil',
+  '/publications/mine': 'Mes publications',
+  '/businesses/detail': 'Fiche entreprise',
 };
 
 export function titleForTabRoute(routeName: string): string {

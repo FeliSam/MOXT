@@ -1,333 +1,303 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { Pressable, View } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+import { Eye, Plus, ShoppingBag } from 'lucide-react-native';
 
 import {
   PUBLICATION_TYPE_IDS,
-  PUBLICATION_TYPE_LABELS,
   emptyPublications,
   filterPublicationsByTabs,
+  isActiveVideo,
   preferredPublicationArchiveTab,
+  publicationTotalCount,
 } from '@moxt/shared/domain/publicationRules.js';
+import { fetchUserPublications, summarizeUserPublications } from '@moxt/shared/services/publicationsService.js';
+import { fetchPublicProfile } from '@moxt/shared/services/profileService.js';
+import { fetchReviewsForTargetScope } from '@moxt/shared/services/reviewsService.js';
 import {
-  fetchUserPublications,
-  summarizeUserPublications,
-} from '@moxt/shared/services/publicationsService.js';
+  REVIEW_TARGET_TYPES,
+  calculateAggregateRating,
+  collectPublicationTargetIds,
+  filterAggregateReviews,
+} from '@moxt/shared/utils/reviewUtils.js';
+import { selectPublisherSubscriberList } from '@moxt/shared/services/subscriptionsService.js';
 
-import { PageHeader } from '@/components/ui/PageHeader';
-import { supabase } from '@/services/supabase';
+import { usePublishMenu } from '@/components/chrome/PublishMenuSheet';
+import { ChipTabs, UnderlineTabs } from '@/components/profile/CatalogTabs';
+import { defaultCoverStyleForPersonal } from '@/components/profile/coverStyles';
+import { prune } from '@/components/profile/identity';
+import { ProfilePageShell } from '@/components/profile/ProfilePageShell';
+import { ProfileQrButton, userProfileShareUrl } from '@/components/profile/ProfileQrButton';
+import { MyPublicationCard, PUBLICATION_TYPES, type PublicationItem, type PublicationType } from '@/components/profile/PublicationCard';
+import { PublicProfileHero } from '@/components/profile/PublicProfileHero';
+import { PublicProfileTabs } from '@/components/profile/PublicProfileTabs';
+import { SubscriptionsPanel } from '@/components/profile/SubscriptionsPanel';
+import { AppText } from '@/components/ui/AppText';
 import { useLanguage } from '@/providers/LanguageProvider';
-import { selectMySubscriptions } from '@/store/account';
-import { useAppSelector } from '@/store/store';
-import { useThemeColors } from '@/theme/ThemeContext';
-import { radii, shadows, spacing, typography } from '@/theme/colors';
-import { BackHeader } from '@/components/chrome/BackHeader';
+import { supabase } from '@/services/supabase';
+import { loadSubscriptions, selectMySubscriptions } from '@/store/account';
+import { useAppDispatch, useAppSelector } from '@/store/store';
+import { useShadows, useTheme } from '@/theme/ThemeContext';
+import { showNotice } from '@/utils/notice';
 
 type ArchiveTab = 'active' | 'archived';
-type TypeTab = 'listing' | 'parcel' | 'job' | 'event' | 'video' | 'post' | 'other';
+type Publications = Record<'listings' | 'parcels' | 'jobs' | 'events' | 'videos' | 'posts' | 'others', PublicationItem[]>;
 
-type Publication = {
-  id: string;
-  title?: string;
-  status?: string;
-  views?: number;
-  origin?: string;
-  destination?: string;
-  fromCurrency?: string;
-  toCurrency?: string;
-  amount?: number;
-  text?: string;
-  content?: string;
-  [key: string]: unknown;
+const TYPE_TABS = PUBLICATION_TYPE_IDS as PublicationType[];
+
+/** PUBLISH_LINKS du web : libellé du bouton principal selon le type affiché. */
+const PUBLISH_LABELS: Record<PublicationType, string> = {
+  listing: 'Publier une annonce',
+  parcel: 'Publier un colis',
+  job: 'Publier un job',
+  event: 'Publier un événement',
+  video: 'Publier une vidéo',
+  post: 'Publier sur le fil',
+  other: 'Proposer une offre',
 };
 
-type Publications = Record<
-  'listings' | 'parcels' | 'jobs' | 'events' | 'videos' | 'posts' | 'others',
-  Publication[]
->;
-
-const TYPE_TABS: TypeTab[] = PUBLICATION_TYPE_IDS as TypeTab[];
-
-const STATUS_LABELS: Record<string, string> = {
-  active: 'Active',
-  published: 'Publiée',
-  pending_review: 'En vérification',
-  archived: 'Archivée',
-  sold: 'Vendue',
-  expired: 'Expirée',
-  draft: 'Brouillon',
-  completed: 'Terminé',
-  full: 'Complet',
-  closed: 'Clôturée',
-};
-
-function publicationTitle(type: TypeTab, item: Publication) {
-  if (type === 'parcel') return `${item.origin || '?'} → ${item.destination || '?'}`;
-  if (type === 'other') {
-    const pair = [item.fromCurrency, item.toCurrency].filter(Boolean).join(' → ');
-    return item.title || (pair ? `Offre P2P ${pair}` : 'Offre P2P');
-  }
-  if (type === 'post') return item.title || String(item.text || item.content || 'Publication').slice(0, 80);
-  return item.title || 'Sans titre';
-}
-
-function publicationRoute(type: TypeTab, item: Publication) {
+function publicationRoute(type: PublicationType, item: PublicationItem) {
   if (type === 'listing') return `/listing/${item.id}`;
   if (type === 'job') return `/jobs/${item.id}`;
-  if (type === 'parcel') return '/(tabs)/parcels';
+  if (type === 'parcel') return `/parcel/${item.id}`;
+  if (type === 'video') return `/(tabs)/feed?type=video`;
   return null;
 }
 
+/** Actions de gestion pas encore branchées sur mobile : message clair au lieu d'une écriture. */
+function webOnly(action: string) {
+  showNotice(action, 'Cette action se fait depuis le site MOXT pour le moment.');
+}
+
 /**
- * Mes publications — mêmes règles que la page web (portée personnelle, en attente comptée
- * comme active, toutes catégories dont « Autres » = offres P2P), données chargées par
- * propriétaire via le service partagé.
+ * Mes publications — vue perso du web (MyPublicationsPage) : identité prune,
+ * hero public avec bannière, onglets Publications / Vidéos / Abonnements,
+ * Actives / Archives, tuiles de type et cartes de gestion.
  */
 export default function MyPublicationsScreen() {
-  const { translateLabel } = useLanguage();
-  const colors = useThemeColors();
+  const params = useLocalSearchParams<{ panel?: string; status?: string; type?: string }>();
+  const dispatch = useAppDispatch();
+  const { t } = useLanguage();
+  const { colors, isDark } = useTheme();
+  const shadows = useShadows();
+  const openPublish = usePublishMenu();
   const user = useAppSelector((state) => state.auth.user);
-  const [publications, setPublications] = useState<Publications>(
-    emptyPublications() as Publications,
-  );
-  const [loading, setLoading] = useState(false);
-  const [requestedArchiveTab, setArchiveTab] = useState<ArchiveTab>('active');
-  const [requestedTypeTab, setTypeTab] = useState<TypeTab>('listing');
-  // Web : panneau « Abonnements » de Mes publications (?panel=subscriptions).
-  const [panel, setPanel] = useState<'publications' | 'subscriptions'>('publications');
   const allSubscriptions = useAppSelector((state) => state.account.subscriptions);
-  const mySubscriptions = useMemo(
-    () => selectMySubscriptions(allSubscriptions, user?.id),
-    [allSubscriptions, user?.id],
-  );
-  const followedUsers = mySubscriptions.filter((item) => item.publisherType === 'user');
-  const followedBusinesses = mySubscriptions.filter((item) => item.publisherType === 'business');
-
-  const reload = useCallback(async () => {
-    if (!supabase || !user?.id) return;
-    setLoading(true);
-    try {
-      const result = await fetchUserPublications(supabase, user.id);
-      setPublications(result.publications as Publications);
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.id]);
+  const [publications, setPublications] = useState<Publications>(emptyPublications() as Publications);
+  const [loaded, setLoaded] = useState(false);
+  const [profile, setProfile] = useState<{ coverStyle?: string | null; gender?: string | null } | null>(null);
+  const [reviews, setReviews] = useState<Record<string, unknown>[]>([]);
+  const [requestedArchiveTab, setArchiveTab] = useState<string>(params.status === 'archived' ? 'archived' : 'active');
+  const [requestedTypeTab, setTypeTab] = useState<string>(TYPE_TABS.includes(params.type as PublicationType) ? String(params.type) : 'listing');
+  const [mainView, setMainView] = useState<string>(params.panel === 'subscriptions' || params.panel === 'subscribers' ? 'subscriptions' : '');
 
   useEffect(() => {
-    reload();
-  }, [reload]);
+    if (!allSubscriptions.length) dispatch(loadSubscriptions());
+  }, [dispatch]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!supabase || !user?.id) return undefined;
+    let cancelled = false;
+    fetchUserPublications(supabase, user.id)
+      .then((result) => {
+        if (!cancelled) setPublications(result.publications as Publications);
+      })
+      .catch(() => undefined)
+      .finally(() => !cancelled && setLoaded(true));
+    fetchPublicProfile(supabase, user.id)
+      .then((row) => !cancelled && setProfile(row))
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   const summary = useMemo(() => summarizeUserPublications(publications), [publications]);
-  const archiveCounts = summary.archiveCounts as { active: number; archived: number };
-  const archiveTab = preferredPublicationArchiveTab(summary.scoped, requestedArchiveTab, {
-    includePending: true,
-  }) as ArchiveTab;
-  const typeCounts = (archiveTab === 'active'
-    ? summary.activeTypeCounts
-    : summary.archivedTypeCounts) as Record<TypeTab, number>;
-  const visibleTypeTabs = TYPE_TABS.filter((id) => (typeCounts[id] ?? 0) > 0);
-  const typeTab: TypeTab =
-    visibleTypeTabs.includes(requestedTypeTab) || !visibleTypeTabs.length
-      ? requestedTypeTab
-      : visibleTypeTabs[0];
+  const publicationIds = useMemo(() => collectPublicationTargetIds(summary.scoped), [summary.scoped]);
+  const publicationKey = JSON.stringify(publicationIds);
 
-  const visible = useMemo(() => {
-    const filtered = filterPublicationsByTabs(summary.scoped, {
-      archiveTab,
-      typeTab,
-      includePending: true,
-    }) as Record<TypeTab, Publication[]>;
-    return (filtered[typeTab] || []).map((item) => ({
-      id: item.id,
-      title: publicationTitle(typeTab, item),
-      subtitle: [
-        STATUS_LABELS[String(item.status)] || item.status,
-        typeTab === 'listing' ? `${item.views || 0} ${translateLabel('vues')}` : null,
-      ]
-        .filter(Boolean)
-        .join(' · '),
-      route: publicationRoute(typeTab, item),
-    }));
-  }, [archiveTab, summary.scoped, translateLabel, typeTab]);
+  // Note agrégée du profil + publications liées (useScopedProfileReviews du web).
+  useEffect(() => {
+    if (!supabase || !user?.id || !loaded) return undefined;
+    let cancelled = false;
+    fetchReviewsForTargetScope(supabase, {
+      profileTargetType: REVIEW_TARGET_TYPES.USER_PROFILE,
+      profileTargetId: user.id,
+      publicationIds,
+    })
+      .then((rows) => !cancelled && setReviews(rows as Record<string, unknown>[]))
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, loaded, publicationKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const rating = useMemo(() => {
+    if (!user?.id) return { average: 0, count: 0 };
+    const scoped = filterAggregateReviews(reviews, { profileTargetType: REVIEW_TARGET_TYPES.USER_PROFILE, profileTargetId: user.id, publicationIds });
+    return calculateAggregateRating(scoped) as { average: number; count: number };
+  }, [reviews, user?.id, publicationIds]);
+
+  const archiveCounts = summary.archiveCounts as { active: number; archived: number };
+  const archiveTab = preferredPublicationArchiveTab(summary.scoped, requestedArchiveTab, { includePending: true }) as ArchiveTab;
+  const typeCounts = (archiveTab === 'active' ? summary.activeTypeCounts : summary.archivedTypeCounts) as Record<PublicationType, number>;
+  const visibleTypeTabs = TYPE_TABS.filter((id) => (typeCounts[id] ?? 0) > 0);
+  const typeTab: PublicationType = (visibleTypeTabs.includes(requestedTypeTab as PublicationType) || !visibleTypeTabs.length
+    ? requestedTypeTab
+    : visibleTypeTabs[0]) as PublicationType;
+  const visible = useMemo(
+    () => filterPublicationsByTabs(summary.scoped, { archiveTab, typeTab, includePending: true }) as Record<PublicationType, PublicationItem[]>,
+    [archiveTab, summary.scoped, typeTab],
+  );
+  const hasAnyPublication = publicationTotalCount(summary.scoped) > 0;
+  const activeVideos = (summary.scoped.videos || []).filter(isActiveVideo);
+
+  const mySubscriptions = useMemo(() => selectMySubscriptions(allSubscriptions, user?.id), [allSubscriptions, user?.id]);
+  const subscribers = useMemo(
+    () => (user?.id ? (selectPublisherSubscriberList(allSubscriptions, 'user', user.id) as typeof allSubscriptions) : []),
+    [allSubscriptions, user?.id],
+  );
+  const defaultMainTab = activeVideos.length > 0 ? 'videos' : 'publications';
+  const activeMain = mainView || defaultMainTab;
+  const onMainChange = useCallback((key: string) => setMainView(key), []);
+  const onArchiveChange = useCallback((key: string) => setArchiveTab(key), []);
+  const onTypeChange = useCallback((key: string) => setTypeTab(key), []);
+
+  if (!user) return null;
+  const displayName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Mon profil';
+  const coverStyle = profile?.coverStyle || defaultCoverStyleForPersonal(profile?.gender);
+  const publishLabel = PUBLISH_LABELS[typeTab] || PUBLISH_LABELS.listing;
+  const accent = isDark ? prune[400] : prune[700];
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.header}>
-        <BackHeader inline title="Mes publications" />
-      </View>
-      <PageHeader
-        eyebrow="Compte"
-        title={translateLabel('Mes publications')}
-        description={
-          loading
-            ? 'Chargement…'
-            : `${archiveCounts.active} active(s) · ${archiveCounts.archived} archive(s)`
+    <ProfilePageShell pathname="/publications/mine" scope="personal">
+      <PublicProfileHero
+        name={displayName}
+        verified={Boolean(user.verified)}
+        city={user.city}
+        avatarUrl={user.avatarUrl}
+        profileKind="personal"
+        kindLabel={t('publications.profile.personalBadge')}
+        coverCategory="personal"
+        coverStyle={coverStyle}
+        gender={profile?.gender}
+        rating={rating}
+        reviewsLabel="avis"
+        showCoverEdit
+        onEditCover={() => webOnly(t('profile.personal.editBanner'))}
+        editCoverLabel={t('profile.personal.editBanner')}
+        shareSlot={
+          <ProfileQrButton type="user" shareUrl={userProfileShareUrl(user.id)} title={displayName} subtitle={t('share.profileSubtitle')} verified={Boolean(user.verified)} city={user.city} accent={accent} />
+        }
+        actions={
+          <>
+            <Pressable
+              accessibilityRole="link"
+              onPress={() => webOnly(t('publications.mine.publicView'))}
+              className="flex-row items-center justify-center border border-app-border-md bg-app-surface"
+              style={{ minHeight: 44, borderRadius: 12, paddingHorizontal: 20, gap: 8, width: '48.5%' }}>
+              <Eye size={18} color={colors.text} strokeWidth={2} />
+              <AppText className="text-sm font-semibold text-app-text">{t('publications.mine.publicView') || 'Vue publique'}</AppText>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => (typeTab === 'listing' ? router.push('/listing/create' as never) : openPublish())}
+              style={{
+                width: '100%',
+                minHeight: 44,
+                borderRadius: 12,
+                paddingHorizontal: 20,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                backgroundColor: isDark ? prune[400] : prune[700],
+                boxShadow: isDark ? '0 4px 14px rgba(199,125,179,0.22)' : '0 4px 14px rgba(107,45,92,0.28)',
+              }}>
+              <Plus size={18} color={isDark ? '#020617' : '#ffffff'} strokeWidth={2} />
+              <AppText className="text-sm font-semibold" style={{ color: isDark ? '#020617' : '#ffffff' }}>
+                {publishLabel}
+              </AppText>
+            </Pressable>
+          </>
         }
       />
 
-      <View style={styles.tabs}>
-        {([
-          ['publications', 'Publications', archiveCounts.active + archiveCounts.archived],
-          ['subscriptions', 'Abonnements', mySubscriptions.length],
-        ] as const).map(([key, label, count]) => (
-          <Pressable
-            key={key}
-            testID={`publication-panel-${key}`}
-            style={[
-              styles.tab,
-              {
-                backgroundColor: panel === key ? colors.surfaceMuted : colors.surface,
-                borderColor: panel === key ? colors.primary : colors.border,
-              },
-            ]}
-            onPress={() => setPanel(key)}>
-            <Text style={{ color: colors.text, fontWeight: '800' }}>
-              {translateLabel(label)} ({count})
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <PublicProfileTabs
+        kind="personal"
+        active={activeMain}
+        onChange={onMainChange}
+        tabs={[
+          { key: 'publications', label: 'Publications', count: archiveCounts.active + archiveCounts.archived, alwaysShow: true },
+          { key: 'videos', label: 'Vidéos', count: activeVideos.length, alwaysShow: true },
+          { key: 'subscriptions', label: 'Abonnements', count: mySubscriptions.length + subscribers.length, alwaysShow: true },
+        ]}
+      />
 
-      {panel === 'subscriptions' ? (
-        <ScrollView contentContainerStyle={styles.list}>
-          {([
-            ['Membres', followedUsers],
-            ['Entreprises', followedBusinesses],
-          ] as const).map(([label, items]) => (
-            <View key={label} style={{ gap: spacing.sm }}>
-              <Text style={[styles.cardTitle, { color: colors.textMuted }]}>
-                {translateLabel(label)} · {items.length}
-              </Text>
-              {items.map((item) => (
-                <Pressable
-                  key={item.id}
-                  testID={`subscription-${item.publisherType}-${item.publisherId}`}
-                  style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }, shadows.card]}
-                  onPress={() =>
-                    item.publisherType === 'business'
-                      ? router.push(`/organization/${item.publisherId}` as any)
-                      : undefined
-                  }>
-                  <View style={{ flex: 1, gap: 4 }}>
-                    <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>
-                      {item.publisherName || item.publisherId}
-                    </Text>
-                    <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-                      {translateLabel('Toutes les annonces')}
-                    </Text>
-                  </View>
-                  {item.publisherType === 'business' ? (
-                    <Text style={{ color: colors.primary, fontWeight: '800' }}>→</Text>
-                  ) : null}
-                </Pressable>
-              ))}
-            </View>
-          ))}
-        </ScrollView>
-      ) : (
-      <>
-      <View style={styles.tabs}>
-        {(['active', 'archived'] as const).map((key) => (
-          <Pressable
-            key={key}
-            testID={`publication-archive-${key}`}
-            style={[
-              styles.tab,
-              {
-                backgroundColor: archiveTab === key ? colors.primary : colors.surface,
-                borderColor: colors.border,
-              },
-            ]}
-            onPress={() => setArchiveTab(key)}>
-            <Text style={{ color: archiveTab === key ? '#fff' : colors.text, fontWeight: '800' }}>
-              {translateLabel(key === 'active' ? 'Actives' : 'Archives')} (
-              {archiveCounts[key]})
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <ScrollView
-        horizontal
-        style={styles.typeTabsScroll}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.typeTabs}>
-        {visibleTypeTabs.map((tabId) => (
-          <Pressable
-            key={tabId}
-            testID={`publication-type-${tabId}`}
-            style={[
-              styles.typeTab,
-              {
-                backgroundColor: typeTab === tabId ? colors.primary : colors.surface,
-                borderColor: colors.border,
-              },
-            ]}
-            onPress={() => setTypeTab(tabId)}>
-            <Text style={{ color: typeTab === tabId ? '#fff' : colors.text, fontWeight: '700' }}>
-              {translateLabel(PUBLICATION_TYPE_LABELS[tabId])} ({typeCounts[tabId]})
-            </Text>
-          </Pressable>
-        ))}
-      </ScrollView>
-
-      <ScrollView contentContainerStyle={styles.list}>
-        {visible.length === 0 ? (
-          <View style={styles.empty}>
-            <Text style={{ fontSize: 40 }}>{typeTab === 'parcel' ? '📦' : typeTab === 'job' ? '💼' : '📋'}</Text>
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>
-              {translateLabel(
-                archiveTab === 'active' ? 'Aucune publication active' : 'Aucune archive',
-              )}
-            </Text>
+      {activeMain === 'subscriptions' ? (
+        <SubscriptionsPanel subscriptions={mySubscriptions} subscribers={subscribers} scale={prune} />
+      ) : activeMain === 'videos' ? (
+        activeVideos.length ? (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+            {activeVideos.map((video: PublicationItem) => (
+              <View key={video.id} style={{ width: '48%' }}>
+                <MyPublicationCard type="video" item={video} onOpen={() => router.push('/(tabs)/feed?type=video' as never)} onEdit={() => webOnly('Modifier')} onArchive={() => webOnly('Archiver')} onDelete={() => webOnly('Supprimer')} />
+              </View>
+            ))}
           </View>
         ) : (
-          visible.map((item) => (
-            <Pressable
-              key={item.id}
-              style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }, shadows.card]}
-              onPress={() => item.route && router.push(item.route as any)}>
-              <View style={{ flex: 1, gap: 4 }}>
-                <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={2}>
-                  {item.title}
-                </Text>
-                <Text style={{ color: colors.textMuted, fontSize: 12 }}>{item.subtitle}</Text>
-              </View>
-              <Text style={{ color: colors.primary, fontWeight: '800' }}>→</Text>
-            </Pressable>
-          ))
-        )}
-      </ScrollView>
-      </>
+          <View className="items-center rounded-card-lg border border-app-border bg-app-surface p-6" style={[{ gap: 6 }, shadows.card]}>
+            <AppText className="text-base font-black text-app-text">Aucune vidéo</AppText>
+            <AppText className="text-center text-sm text-app-text-muted">Vos vidéos publiées apparaîtront ici.</AppText>
+          </View>
+        )
+      ) : (
+        <View style={{ gap: 16 }}>
+          {archiveCounts.archived > 0 ? (
+            <UnderlineTabs
+              scale={prune}
+              active={archiveTab}
+              onChange={onArchiveChange}
+              tabs={[
+                { key: 'active', label: 'Actives', count: archiveCounts.active, alwaysShow: true },
+                { key: 'archived', label: 'Archives', count: archiveCounts.archived },
+              ]}
+            />
+          ) : null}
+          <ChipTabs
+            scale={prune}
+            active={typeTab}
+            onChange={onTypeChange}
+            tabs={visibleTypeTabs.map((id) => ({ key: id, label: PUBLICATION_TYPES[id].label, count: typeCounts[id], icon: PUBLICATION_TYPES[id].icon, colors: PUBLICATION_TYPES[id].chip }))}
+          />
+          {loaded && !hasAnyPublication ? (
+            <View className="items-center rounded-card-lg border border-app-border bg-app-surface p-6" style={[{ gap: 8 }, shadows.card]}>
+              <ShoppingBag size={28} color={colors.textFaint} />
+              <AppText className="text-base font-black text-app-text">Aucune publication</AppText>
+              <AppText className="text-center text-sm text-app-text-muted">Vos annonces, colis, jobs et offres apparaîtront ici.</AppText>
+            </View>
+          ) : (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+              {(visible[typeTab] || []).map((item) => {
+                const route = publicationRoute(typeTab, item);
+                return (
+                  <View key={item.id} style={{ width: '48%' }}>
+                    <MyPublicationCard
+                      type={typeTab}
+                      item={item}
+                      onOpen={() => (route ? router.push(route as never) : webOnly('Ouvrir'))}
+                      onEdit={() => webOnly('Modifier')}
+                      onArchive={() => webOnly('Archiver')}
+                      onReactivate={() => webOnly('Republier')}
+                      onDelete={() => webOnly('Supprimer')}
+                    />
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </View>
       )}
-    </SafeAreaView>
+    </ProfilePageShell>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
-  backRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.sm },
-  backArrow: { fontSize: 18, fontWeight: '800' },
-  backLabel: { ...typography.label },
-  tabs: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, marginBottom: spacing.sm },
-  tab: { flex: 1, borderWidth: 1, borderRadius: radii.lg, paddingVertical: spacing.sm, alignItems: 'center' },
-  // Sans flexGrow: 0, la barre horizontale s'étire en hauteur sur le web.
-  typeTabsScroll: { flexGrow: 0 },
-  typeTabs: { gap: spacing.sm, paddingHorizontal: spacing.lg, marginBottom: spacing.md, alignItems: 'center' },
-  typeTab: { borderWidth: 1, borderRadius: radii.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-  list: { padding: spacing.lg, gap: spacing.md },
-  card: {
-    borderWidth: 1,
-    borderRadius: radii.xl,
-    padding: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  cardTitle: { ...typography.label },
-  empty: { alignItems: 'center', gap: spacing.sm, paddingTop: spacing.xl },
-  emptyTitle: { ...typography.sectionTitle },
-});
