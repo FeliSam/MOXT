@@ -1,68 +1,46 @@
-import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect } from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
 
-import { ImagePickerButton } from '@/components/ImagePickerButton';
-import { supabase } from '@/services/supabase';
-import { useAppSelector } from '@/store/store';
+import { loadVerification } from '@/store/account';
+import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
-import { brand, radii, shadows, spacing, typography } from '@/theme/colors';
+import { radii, spacing, typography } from '@/theme/colors';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { BackHeader } from '@/components/chrome/BackHeader';
 
 type KycStatus = 'not_started' | 'pending' | 'verified' | 'rejected';
 
+function toKycStatus(status: string | null, verified: boolean): KycStatus {
+  if (verified || status === 'approved' || status === 'verified') return 'verified';
+  if (status === 'rejected') return 'rejected';
+  if (status) return 'pending';
+  return 'not_started';
+}
+
+/**
+ * Vérification d’identité : statut lu dans `verification_requests` / `identity_profiles`
+ * comme le web (les tables mobiles `kyc` / `kyc_requests` n’existent pas côté web).
+ * L’envoi de pièces depuis le mobile (documents personnels du web) = phase 3.
+ */
 export default function KycScreen() {
+  const dispatch = useAppDispatch();
   const colors = useThemeColors();
-  const user = useAppSelector((state) => state.auth.user);
-  const [frontUri, setFrontUri] = useState<string | null>(null);
-  const [backUri, setBackUri] = useState<string | null>(null);
-  const [status, setStatus] = useState<KycStatus>('not_started');
-  const [loading, setLoading] = useState(false);
+  const userId = useAppSelector((state) => state.auth.user?.id);
+  const verification = useAppSelector((state) => state.account.verification);
 
-  const handleSubmit = async () => {
-    if (!frontUri) { Alert.alert('Photo requise', 'Veuillez prendre la photo du recto de votre pièce.'); return; }
-    if (!supabase || !user) return;
-    setLoading(true);
-    try {
-      const frontName = `kyc_${user.id}_front_${Date.now()}.jpg`;
-      const frontResponse = await fetch(frontUri);
-      const frontBlob = await frontResponse.blob();
-      await supabase.storage.from('kyc').upload(frontName, frontBlob, { contentType: 'image/jpeg' });
+  useEffect(() => {
+    if (userId) dispatch(loadVerification(userId));
+  }, [dispatch, userId]);
 
-      if (backUri) {
-        const backName = `kyc_${user.id}_back_${Date.now()}.jpg`;
-        const backResponse = await fetch(backUri);
-        const backBlob = await backResponse.blob();
-        await supabase.storage.from('kyc').upload(backName, backBlob, { contentType: 'image/jpeg' });
-      }
-
-      await supabase.from('kyc_requests').insert({
-        id: `KYC-${Date.now().toString(36).toUpperCase()}`,
-        user_id: user.id,
-        front_image: frontName,
-        back_image: backUri ? `kyc_${user.id}_back_${Date.now()}.jpg` : null,
-        status: 'pending',
-        created_at: new Date().toISOString(),
-      });
-
-      setStatus('pending');
-      Alert.alert('Document envoyé', 'Votre pièce d\'identité est en cours de vérification.');
-    } catch (err: any) {
-      Alert.alert('Erreur', err.message || 'Envoi impossible.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const status = toKycStatus(verification.status, verification.verified);
 
   const statusConfig: Record<KycStatus, { icon: string; label: string; color: string }> = {
     not_started: { icon: '🪪', label: 'Non vérifié', color: colors.textMuted },
     pending: { icon: '⏳', label: 'En cours de vérification', color: colors.warning },
     verified: { icon: '✅', label: 'Identité vérifiée', color: colors.success },
-    rejected: { icon: '❌', label: 'Rejeté — renvoyez un document', color: colors.danger },
+    rejected: { icon: '❌', label: 'Refusée — renvoyez un document depuis le site', color: colors.danger },
   };
 
   const cfg = statusConfig[status];
@@ -70,35 +48,21 @@ export default function KycScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <BackHeader inline title="Vérification KYC" />
+        <BackHeader inline title="Vérification" />
 
         <PageHeader eyebrow="SÉCURITÉ" title="Vérification d'identité" />
 
-        {/* Status card */}
         <Card>
           <View style={styles.statusInner}>
             <Text style={styles.statusIcon}>{cfg.icon}</Text>
             <Text style={[styles.statusLabel, { color: cfg.color }]}>{cfg.label}</Text>
+            {verification.requestedAt ? (
+              <Text style={[typography.caption, { color: colors.textMuted }]}>
+                Demande du {new Date(verification.requestedAt).toLocaleDateString('fr-FR')}
+              </Text>
+            ) : null}
           </View>
         </Card>
-
-        {status === 'not_started' || status === 'rejected' ? (
-          <>
-            <Card>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Recto de la pièce *</Text>
-              <ImagePickerButton label="Photo recto" currentUri={frontUri} onImageSelected={setFrontUri} />
-            </Card>
-
-            <Card>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Verso (optionnel)</Text>
-              <ImagePickerButton label="Photo verso" currentUri={backUri} onImageSelected={setBackUri} />
-            </Card>
-
-            <Button variant="primary" size="lg" onPress={handleSubmit} loading={loading}>
-              Envoyer pour vérification
-            </Button>
-          </>
-        ) : null}
 
         {status === 'verified' ? (
           <View style={[styles.verifiedCard, { backgroundColor: colors.successBg, borderColor: colors.successBorder }]}>
@@ -106,7 +70,11 @@ export default function KycScreen() {
               Votre identité est confirmée. Vous bénéficiez de limites de transfert élevées.
             </Text>
           </View>
-        ) : null}
+        ) : (
+          <Text style={[typography.body, { color: colors.textSecondary }]}>
+            L’envoi des pièces d’identité se fait pour l’instant depuis le site MOXT (Compte → Vérification).
+          </Text>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

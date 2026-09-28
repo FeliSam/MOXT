@@ -1,0 +1,108 @@
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+
+import {
+  fetchActiveStatuses,
+  fetchFeedPosts,
+  fetchVideos,
+  groupStatusesByAuthor,
+} from '@moxt/shared/services/feedService.js';
+import { supabase } from '../services/supabase';
+
+export type FeedPost = {
+  id: string;
+  authorId?: string;
+  authorName?: string;
+  authorAvatarUrl?: string | null;
+  title?: string;
+  text?: string;
+  content?: string;
+  imageUrl?: string | null;
+  status?: string;
+  createdAt?: string;
+  lastSharedAt?: string | null;
+  [key: string]: unknown;
+};
+
+export type FeedVideo = {
+  id: string;
+  title?: string;
+  businessId?: string;
+  status?: string;
+  createdAt?: string;
+  [key: string]: unknown;
+};
+
+export type StatusItem = {
+  id: string;
+  authorId: string;
+  authorName?: string;
+  authorAvatarUrl?: string | null;
+  businessId?: string | null;
+  images: string[];
+  viewedBy: string[];
+  createdAt?: string;
+  expiresAt?: string;
+  isOfficial?: boolean;
+};
+
+export type StatusGroup = {
+  key: string;
+  authorId: string;
+  businessId: string | null;
+  name: string;
+  avatarUrl: string | null;
+  isOfficial: boolean;
+  items: StatusItem[];
+  unseen: boolean;
+};
+
+type FeedState = {
+  posts: FeedPost[];
+  videos: FeedVideo[];
+  statuses: StatusItem[];
+  status: 'idle' | 'loading' | 'ready' | 'error';
+};
+
+const initialState: FeedState = { posts: [], videos: [], statuses: [], status: 'idle' };
+
+/** Fil comme le web : posts (publiés + les miens), vidéos (50), statuts non expirés (60). */
+export const loadFeed = createAsyncThunk('feed/load', async (userId: string) => {
+  if (!supabase) return { posts: [], videos: [], statuses: [] };
+  const [posts, videos, statuses] = await Promise.all([
+    fetchFeedPosts(supabase, userId).catch(() => []),
+    fetchVideos(supabase).catch(() => []),
+    fetchActiveStatuses(supabase).catch(() => []),
+  ]);
+  return {
+    posts: posts as FeedPost[],
+    videos: videos as FeedVideo[],
+    statuses: statuses as StatusItem[],
+  };
+});
+
+const feedSlice = createSlice({
+  name: 'feed',
+  initialState,
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(loadFeed.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(loadFeed.fulfilled, (state, action) => {
+        state.posts = action.payload.posts;
+        state.videos = action.payload.videos;
+        state.statuses = action.payload.statuses;
+        state.status = 'ready';
+      })
+      .addCase(loadFeed.rejected, (state) => {
+        state.status = 'error';
+      });
+  },
+});
+
+export const feedReducer = feedSlice.reducer;
+
+export function selectStatusGroups(statuses: StatusItem[], userId?: string | null): StatusGroup[] {
+  return groupStatusesByAuthor(statuses, userId) as StatusGroup[];
+}

@@ -1,23 +1,25 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
 import { useLanguage } from '@/providers/LanguageProvider';
-import { removeFavorite, FavoriteItem } from '@/store/favorites';
+import { loadFavorites, removeFavorite, FavoriteItem } from '@/store/favorites';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { radii, shadows, spacing, typography } from '@/theme/colors';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { BackHeader } from '@/components/chrome/BackHeader';
 
-const TYPE_ICONS: Record<string, string> = { listing: '🏪', parcel: '📦', job: '💼' };
+const TYPE_ICONS: Record<string, string> = { listing: '🏪', parcel: '📦', job: '💼', business: '🏢', event: '📅' };
 
 /* Web : sections par type de contenu favori */
-const SECTIONS: { type: FavoriteItem['type']; title: string }[] = [
-  { type: 'listing', title: 'Annonces' },
-  { type: 'parcel', title: 'Colis' },
-  { type: 'job', title: 'Jobs' },
+/* Web (FAVORITE_CATEGORIES) : Annonces, Colis, Jobs, Autres (entreprises + événements) */
+const SECTIONS: { key: string; types: FavoriteItem['type'][]; title: string }[] = [
+  { key: 'listing', types: ['listing'], title: 'Annonces' },
+  { key: 'parcel', types: ['parcel'], title: 'Colis' },
+  { key: 'job', types: ['job'], title: 'Jobs' },
+  { key: 'other', types: ['business', 'event'], title: 'Autres' },
 ];
 
 function FavoriteCard({ item }: { item: FavoriteItem }) {
@@ -28,6 +30,7 @@ function FavoriteCard({ item }: { item: FavoriteItem }) {
     if (item.type === 'listing') router.push(`/listing/${item.id}` as any);
     else if (item.type === 'parcel') router.push(`/parcel/${item.id}` as any);
     else if (item.type === 'job') router.push(`/jobs/${item.id}` as any);
+    else if (item.type === 'business') router.push(`/organization/${item.id}` as any);
   };
 
   return (
@@ -49,10 +52,16 @@ function FavoriteCard({ item }: { item: FavoriteItem }) {
 export default function FavoritesScreen() {
   const { translateLabel } = useLanguage();
   const colors = useThemeColors();
+  const dispatch = useAppDispatch();
+  const userId = useAppSelector((state) => state.auth.user?.id);
   const items = useAppSelector((state) => state.favorites.items);
 
+  useEffect(() => {
+    if (userId) dispatch(loadFavorites(userId));
+  }, [dispatch, userId]);
+
   const grouped = useMemo(
-    () => SECTIONS.map((s) => ({ ...s, data: items.filter((i) => i.type === s.type) })),
+    () => SECTIONS.map((s) => ({ ...s, data: items.filter((i) => s.types.includes(i.type)) })),
     [items],
   );
 
@@ -79,7 +88,7 @@ export default function FavoritesScreen() {
         ) : (
           grouped.map((section) =>
             section.data.length ? (
-              <View key={section.type} style={{ gap: spacing.sm }}>
+              <View key={section.key} style={{ gap: spacing.sm }}>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>
                   {section.title}
                   <Text style={{ color: colors.textFaint }}>  ·  {section.data.length}</Text>

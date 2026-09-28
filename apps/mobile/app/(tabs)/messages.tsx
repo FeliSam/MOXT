@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   Modal,
   Pressable,
   StyleSheet,
@@ -15,7 +16,7 @@ import { router } from 'expo-router';
 import { IconButton } from '@/components/ui';
 import { ListCard } from '@/components/ui/ListCard';
 import { useLanguage } from '@/providers/LanguageProvider';
-import { Conversation, loadConversations } from '@/store/messages';
+import { Conversation, getConversationPeer, loadConversations, selectInboxList } from '@/store/messages';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { brand, radii, spacing } from '@/theme/colors';
 import { useShadows, useThemeColors } from '@/theme/ThemeContext';
@@ -54,6 +55,13 @@ function ConversationCard({
     empty: t('messages.noMessageYet'),
   });
   const unread = (conversation.unreadBy?.[currentUserId || ''] || 0) > 0;
+  // Interlocuteur comme le web : profil de l’autre participant, puis titre, puis « Utilisateur ».
+  const fallbackLabel = t('messages.userFallback');
+  const peer = getConversationPeer(
+    conversation,
+    currentUserId,
+    fallbackLabel && fallbackLabel !== 'messages.userFallback' ? fallbackLabel : 'Utilisateur',
+  );
   const previewAt = getMobileConversationPreviewAt(conversation);
 
   return (
@@ -61,13 +69,17 @@ function ConversationCard({
       selected={unread}
       className="min-h-[76px] flex-row items-center gap-3 p-4"
       onPress={() => router.push(`/messages/${conversation.id}` as never)}>
-      <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-        <Text style={styles.avatarText}>{getInitials(conversation.title) || 'M'}</Text>
-      </View>
+      {peer.avatarUrl ? (
+        <Image source={{ uri: peer.avatarUrl }} style={styles.avatar} />
+      ) : (
+        <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+          <Text style={styles.avatarText}>{getInitials(peer.name) || 'M'}</Text>
+        </View>
+      )}
       <View style={styles.cardBody}>
         <View style={styles.cardTitleRow}>
           <Text selectable numberOfLines={1} style={[styles.cardTitle, { color: colors.text }]}>
-            {conversation.title}
+            {peer.name}
           </Text>
           {unread ? <View style={[styles.unreadDot, { backgroundColor: colors.teal }]} /> : null}
         </View>
@@ -108,13 +120,15 @@ export default function MessagesTabScreen() {
   const filteredConversations = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase('fr');
 
-    return conversations.filter((conversation) => {
+    // Même liste que le web : non archivées (ou archivées), non vides, épinglées puis récentes.
+    const inbox = selectInboxList(conversations, user?.id, { showArchived: filter === 'archived' });
+    return inbox.filter((conversation) => {
       const unread = (conversation.unreadBy?.[user?.id || ''] || 0) > 0;
       if (filter === 'unread' && !unread) return false;
-      if (filter === 'archived') return false;
       if (!normalizedQuery) return true;
       const preview = getMobileConversationPreview(conversation, user?.id);
-      return `${conversation.title} ${preview}`
+      const peerName = getConversationPeer(conversation, user?.id).name;
+      return `${peerName} ${preview}`
         .toLocaleLowerCase('fr')
         .includes(normalizedQuery);
     });

@@ -1,3 +1,4 @@
+import { markConversationRead as markConversationReadRemote } from '@moxt/shared/services/inboxService.js';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 import { receiveMessage } from '@/store/messages';
@@ -102,21 +103,11 @@ export async function clearTypingIndicator() {
   await typingChannel.untrack();
 }
 
-export async function markMessagesRead(conversationId: string, userId: string) {
+/**
+ * Lecture comme le web : RPC moxt_mark_conversation_read (compteurs `unread_by` des conversations).
+ * L’ancienne table mobile `read_receipts` n’existe pas côté web.
+ */
+export async function markMessagesRead(conversationId: string, _userId?: string) {
   if (!supabase) return;
-  await supabase.from('read_receipts').upsert(
-    { conversation_id: conversationId, user_id: userId, read_at: new Date().toISOString() },
-    { onConflict: 'conversation_id,user_id' },
-  );
-}
-
-export async function getReadReceipts(conversationId: string): Promise<Record<string, string>> {
-  if (!supabase) return {};
-  const { data } = await supabase
-    .from('read_receipts')
-    .select('user_id, read_at')
-    .eq('conversation_id', conversationId);
-  const map: Record<string, string> = {};
-  (data || []).forEach((row: any) => { map[row.user_id] = row.read_at; });
-  return map;
+  await markConversationReadRemote(supabase, conversationId);
 }

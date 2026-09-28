@@ -6,7 +6,12 @@ module.exports = {
   testMatch: ['**/__tests__/**/*.test.ts'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
   transform: {
-    '^.+\\.[tj]sx?$': ['ts-jest', { tsconfig: '__tests__/tsconfig.json', useESM: false }],
+    '^.+\\.tsx?$': ['ts-jest', { tsconfig: '__tests__/tsconfig.json', useESM: false }],
+    // Modules JS partagés (@moxt/shared) : ESM → CommonJS pour Jest.
+    '^.+\\.jsx?$': [
+      'babel-jest',
+      { configFile: false, babelrc: false, plugins: ['@babel/plugin-transform-modules-commonjs'] },
+    ],
   },
   transformIgnorePatterns: [
     'node_modules/(?!(@moxt|@supabase)/)',

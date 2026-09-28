@@ -1,24 +1,67 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSelector, createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+import {
+  countUnreadNotifications,
+  selectVisibleNotificationList,
+  upsertNotification,
+} from '@moxt/shared/domain/notificationRules.js';
+import {
+  fetchNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
+} from '@moxt/shared/services/notificationsService.js';
+import { supabase } from '../services/supabase';
+
+/** Même forme que les notifications web (table `notifications`). */
 export type NotificationItem = {
   id: string;
+  userId: string | null;
   title: string;
-  body: string;
-  type?: 'transfer' | 'parcel' | 'marketplace' | 'message' | 'system';
+  message: string;
+  type: string;
+  link: string | null;
+  priority: string;
   read: boolean;
-  createdAt: string;
-  relatedId?: string;
+  archived: boolean;
+  createdAt: string | null;
 };
 
 type NotificationsState = {
   items: NotificationItem[];
+  status: 'idle' | 'loading' | 'ready' | 'error';
+  error: string | null;
   pushToken: string | null;
 };
 
 const initialState: NotificationsState = {
   items: [],
+  status: 'idle',
+  error: null,
   pushToken: null,
 };
+
+/** Chargement serveur (mêmes requête et filtres que le web). */
+export const loadNotifications = createAsyncThunk(
+  'notifications/load',
+  async (userId: string): Promise<NotificationItem[]> => {
+    if (!supabase) return [];
+    return (await fetchNotifications(supabase, userId)) as NotificationItem[];
+  },
+);
+
+/** Marque lue localement puis côté serveur (même écriture que le web). */
+export const markAsRead = createAsyncThunk('notifications/markAsRead', async (id: string) => {
+  if (supabase) await markNotificationRead(supabase, id);
+  return id;
+});
+
+export const markAllAsRead = createAsyncThunk(
+  'notifications/markAllAsRead',
+  async (userId: string) => {
+    if (supabase) await markAllNotificationsRead(supabase, userId);
+    return userId;
+  },
+);
 
 const notificationsSlice = createSlice({
   name: 'notifications',
@@ -27,27 +70,61 @@ const notificationsSlice = createSlice({
     setPushToken(state, action: PayloadAction<string | null>) {
       state.pushToken = action.payload;
     },
-    addNotification(state, action: PayloadAction<Omit<NotificationItem, 'id' | 'read' | 'createdAt'>>) {
-      state.items.unshift({
-        ...action.payload,
-        id: `NOTIF-${Date.now().toString(36).toUpperCase()}`,
-        read: false,
-        createdAt: new Date().toISOString(),
-      });
-    },
-    markAsRead(state, action: PayloadAction<string>) {
-      const item = state.items.find((n) => n.id === action.payload);
-      if (item) item.read = true;
-    },
-    markAllAsRead(state) {
-      state.items.forEach((n) => { n.read = true; });
+    /** Temps réel (INSERT / UPDATE sur `notifications`). */
+    notificationUpserted(state, action: PayloadAction<NotificationItem>) {
+      if (action.payload.type === 'message') return;
+      state.items = upsertNotification(state.items, action.payload) as NotificationItem[];
     },
     clearAll(state) {
       state.items = [];
+      state.status = 'idle';
     },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(loadNotifications.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addCase(loadNotifications.fulfilled, (state, action) => {
+        state.items = action.payload;
+        state.status = 'ready';
+      })
+      .addCase(loadNotifications.rejected, (state, action) => {
+        state.status = 'error';
+        state.error = action.error.message || 'Chargement des notifications impossible';
+      })
+      .addCase(markAsRead.pending, (state, action) => {
+        const item = state.items.find((n) => n.id === action.meta.arg);
+        if (item) item.read = true;
+      })
+      .addCase(markAllAsRead.pending, (state) => {
+        state.items.forEach((n) => {
+          n.read = true;
+        });
+      });
   },
 });
 
-export const { setPushToken, addNotification, markAsRead, markAllAsRead, clearAll } =
-  notificationsSlice.actions;
+export const { setPushToken, notificationUpserted, clearAll } = notificationsSlice.actions;
 export const notificationsReducer = notificationsSlice.reducer;
+
+type WithNotifications = {
+  notifications: NotificationsState;
+  auth: { user: { id: string } | null };
+};
+
+const selectItems = (state: WithNotifications) => state.notifications.items;
+const selectUserId = (state: WithNotifications) => state.auth.user?.id ?? null;
+
+/** Liste visible (web selectVisibleNotifications). */
+export const selectVisibleNotifications = createSelector(
+  [selectItems, selectUserId],
+  (items, userId) => selectVisibleNotificationList(items, userId) as NotificationItem[],
+);
+
+/** Badge cloche (web selectUnreadNotificationCount). */
+export const selectUnreadNotificationCount = createSelector(
+  [selectItems, selectUserId],
+  (items, userId) => countUnreadNotifications(items, userId) as number,
+);

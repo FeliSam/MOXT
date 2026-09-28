@@ -1,8 +1,15 @@
+import { useEffect } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
-import { markAllAsRead, markAsRead } from '@/store/notifications';
+import {
+  loadNotifications,
+  markAllAsRead,
+  markAsRead,
+  selectUnreadNotificationCount,
+  selectVisibleNotifications,
+} from '@/store/notifications';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { BackHeader } from '@/components/chrome/BackHeader';
 
@@ -16,8 +23,14 @@ const TYPE_ICONS: Record<string, string> = {
 
 export default function NotificationsScreen() {
   const dispatch = useAppDispatch();
-  const items = useAppSelector((state) => state.notifications.items);
-  const unreadCount = items.filter((n) => !n.read).length;
+  const userId = useAppSelector((state) => state.auth.user?.id);
+  const items = useAppSelector(selectVisibleNotifications);
+  const unreadCount = useAppSelector(selectUnreadNotificationCount);
+  const loading = useAppSelector((state) => state.notifications.status === 'loading');
+
+  useEffect(() => {
+    if (userId) dispatch(loadNotifications(userId));
+  }, [dispatch, userId]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -26,7 +39,7 @@ export default function NotificationsScreen() {
         <View style={styles.headerTop}>
           <Text style={styles.title}>Notifications</Text>
           {unreadCount > 0 ? (
-            <Pressable onPress={() => dispatch(markAllAsRead())}>
+            <Pressable onPress={() => userId && dispatch(markAllAsRead(userId))}>
               <Text style={styles.markAllText}>Tout marquer lu</Text>
             </Pressable>
           ) : null}
@@ -38,6 +51,8 @@ export default function NotificationsScreen() {
         data={items}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
+        refreshing={loading}
+        onRefresh={() => userId && dispatch(loadNotifications(userId))}
         renderItem={({ item }) => (
           <Pressable
             style={[styles.notifCard, !item.read && styles.notifCardUnread]}
@@ -45,8 +60,8 @@ export default function NotificationsScreen() {
             <Text style={styles.notifIcon}>{TYPE_ICONS[item.type || 'system'] || '🔔'}</Text>
             <View style={styles.notifBody}>
               <Text style={styles.notifTitle}>{item.title}</Text>
-              <Text style={styles.notifText} numberOfLines={2}>{item.body}</Text>
-              <Text style={styles.notifDate}>{new Date(item.createdAt).toLocaleDateString('fr-FR')}</Text>
+              <Text style={styles.notifText} numberOfLines={2}>{item.message}</Text>
+              <Text style={styles.notifDate}>{new Date(item.createdAt || 0).toLocaleDateString('fr-FR')}</Text>
             </View>
             {!item.read ? <View style={styles.unreadDot} /> : null}
           </Pressable>
