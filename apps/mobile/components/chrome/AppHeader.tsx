@@ -5,6 +5,7 @@ import { Bell, History, MessageCircle, Newspaper, Package, Plus, type LucideIcon
 
 import { AppText } from '@/components/ui/AppText';
 import { getMobileHeaderActions, ROUTE_TITLES } from '@/constants/routeTitles';
+import { usePublishMenu } from '@/components/chrome/PublishMenuSheet';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { selectUnreadMessageCount } from '@/store/messages';
 import { selectUnreadNotificationCount } from '@/store/notifications';
@@ -42,8 +43,10 @@ export function AppHeader({ pathname }: { pathname: string }) {
     const today = new Date().toISOString().slice(0, 10);
     return (s.parcels.items as ParcelLike[]).filter((p) => isAvailableParcel(p, today)).length;
   });
-  // Modules « dev » du web (feed / parcels actifs, news masqué quand le fil est actif).
-  const actions = getMobileHeaderActions(pathname, { canFeed: true, canNews: false, canParcels: true });
+  // Modules « dev » du web (drapeaux app_module_flags, news masqué quand le fil est actif).
+  const flags = useAppSelector((s) => s.platform.flags);
+  const openPublish = usePublishMenu();
+  const actions = getMobileHeaderActions(pathname, { canFeed: flags.feed, canNews: flags.news, canParcels: flags.parcels });
   const title = translateLabel(ROUTE_TITLES[pathname] ?? 'MOXT');
 
   return (
@@ -72,7 +75,7 @@ export function AppHeader({ pathname }: { pathname: string }) {
 
       <View style={{ height: HEADER.height, flexDirection: 'row', alignItems: 'center', gap: HEADER.gap, flexShrink: 0 }}>
         {actions.showPublishMenu ? (
-          <HeaderActionButton accessibilityLabel={translateLabel('Publier')} onPress={() => router.push('/listing/create' as never)}>
+          <HeaderActionButton testID="header-publish" accessibilityLabel={translateLabel('Publier')} onPress={openPublish}>
             <HeaderIcon icon={Plus} />
           </HeaderActionButton>
         ) : null}

@@ -60,11 +60,89 @@ export const loadFavorites = createAsyncThunk(
   },
 );
 
+function createFavoriteId() {
+  const suffix =
+    (globalThis as { crypto?: { randomUUID?: () => string } }).crypto?.randomUUID?.() ||
+    `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  return `FAV-${suffix.toUpperCase()}`;
+}
+
+type ToggleFavoriteArgs = {
+  userId: string;
+  id: string;
+  type: FavoriteType;
+  title: string;
+  subtitle?: string;
+  path?: string;
+};
+
+/**
+ * Cœur comme le web (supabaseMiddleware `account/toggleAccountFavorite`) :
+ * bascule optimiste, puis upsert / delete dans la table `favorites` pour l'utilisateur connecté.
+ */
+export const toggleFavorite = createAsyncThunk(
+  'favorites/toggle',
+  async (args: ToggleFavoriteArgs, { getState, dispatch }) => {
+    const state = getState() as { favorites: FavoritesState };
+    const existing = state.favorites.items.find((f) => f.id === args.id && f.type === args.type);
+    if (existing) {
+      dispatch(favoritesSlice.actions.removeFavorite({ id: args.id, type: args.type }));
+    } else {
+      dispatch(
+        favoritesSlice.actions.addFavorite({
+          id: args.id,
+          type: args.type,
+          title: args.title,
+          subtitle: args.subtitle,
+          path: args.path,
+          favoriteId: createFavoriteId(),
+        }),
+      );
+    }
+    if (!supabase) return;
+    let {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (session?.user?.id !== args.userId) {
+      ({
+        data: { session },
+      } = await supabase.auth.refreshSession());
+    }
+    if (session?.user?.id !== args.userId) return;
+    const after = (getState() as { favorites: FavoritesState }).favorites.items.find(
+      (f) => f.id === args.id && f.type === args.type,
+    );
+    if (after) {
+      const { error } = await supabase.from('favorites').upsert(
+        {
+          id: after.favoriteId || createFavoriteId(),
+          user_id: args.userId,
+          related_type: args.type,
+          related_id: args.id,
+          title: args.title,
+          path: args.path,
+          created_at: after.addedAt,
+        },
+        { onConflict: 'id' },
+      );
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from('favorites')
+        .delete()
+        .eq('user_id', args.userId)
+        .eq('related_type', args.type)
+        .eq('related_id', args.id);
+      if (error) throw error;
+    }
+  },
+);
+
 const favoritesSlice = createSlice({
   name: 'favorites',
   initialState,
   reducers: {
-    // Bascule locale (optimiste). La persistance serveur des favoris depuis le mobile = phase 3.
+    // Bascule locale (optimiste) ; `toggleFavorite` écrit ensuite en base comme le web.
     addFavorite(state, action: PayloadAction<Omit<FavoriteItem, 'addedAt'>>) {
       const exists = state.items.some(
         (f) => f.id === action.payload.id && f.type === action.payload.type,

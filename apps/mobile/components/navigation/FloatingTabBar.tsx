@@ -10,6 +10,8 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
 
   // Mode invité : le web affiche la mise en page publique, sans barre du bas.
   if (!authenticated) return null;
+  // Fil plein écran (web FeedPage) : pas de barre du bas.
+  if (activeRoute === 'feed') return null;
 
   return (
     <BottomNavBar
