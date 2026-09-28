@@ -3,6 +3,8 @@ import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 
+import { businessActivityLabel } from '@moxt/shared/config/businessActivityLabels.js';
+
 import { BackHeader } from '@/components/chrome/BackHeader';
 import { loadBusiness, loadSubscriptions, selectMySubscriptions } from '@/store/account';
 import { useAppDispatch, useAppSelector } from '@/store/store';
@@ -44,8 +46,8 @@ export default function BusinessProfileScreen() {
 
   const facts: [string, string | undefined][] = business
     ? [
-        ['Activité', business.primaryActivity || undefined],
-        ['Activité secondaire', business.secondaryActivity || undefined],
+        ['Activité', businessActivityLabel(business.primaryActivity) || undefined],
+        ['Activité secondaire', businessActivityLabel(business.secondaryActivity) || undefined],
         ['Ville', [business.city, business.country].filter(Boolean).join(', ') || undefined],
         ['Adresse', business.address || undefined],
         ['Horaires', business.hours || undefined],

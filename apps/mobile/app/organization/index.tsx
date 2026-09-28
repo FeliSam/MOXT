@@ -3,6 +3,8 @@ import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
+import { businessActivityLabel } from '@moxt/shared/config/businessActivityLabels.js';
+
 import { PageHeader } from '@/components/ui';
 import { BackHeader } from '@/components/chrome/BackHeader';
 import {
@@ -47,7 +49,7 @@ function BusinessCard({ business, subtitle }: { business: Business; subtitle?: s
           {business.name || 'Entreprise'}
         </Text>
         <Text style={[styles.meta, { color: colors.textMuted }]} numberOfLines={1}>
-          {[subtitle, business.primaryActivity, place].filter(Boolean).join(' · ') || '—'}
+          {[subtitle, businessActivityLabel(business.primaryActivity), place].filter(Boolean).join(' · ') || '—'}
         </Text>
       </View>
       <Text style={[styles.chevron, { color: colors.textFaint }]}>›</Text>

@@ -18,6 +18,7 @@ import {
 import { PageHeader } from '@/components/ui/PageHeader';
 import { supabase } from '@/services/supabase';
 import { useLanguage } from '@/providers/LanguageProvider';
+import { selectMySubscriptions } from '@/store/account';
 import { useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { radii, shadows, spacing, typography } from '@/theme/colors';
@@ -93,6 +94,15 @@ export default function MyPublicationsScreen() {
   const [loading, setLoading] = useState(false);
   const [requestedArchiveTab, setArchiveTab] = useState<ArchiveTab>('active');
   const [requestedTypeTab, setTypeTab] = useState<TypeTab>('listing');
+  // Web : panneau « Abonnements » de Mes publications (?panel=subscriptions).
+  const [panel, setPanel] = useState<'publications' | 'subscriptions'>('publications');
+  const allSubscriptions = useAppSelector((state) => state.account.subscriptions);
+  const mySubscriptions = useMemo(
+    () => selectMySubscriptions(allSubscriptions, user?.id),
+    [allSubscriptions, user?.id],
+  );
+  const followedUsers = mySubscriptions.filter((item) => item.publisherType === 'user');
+  const followedBusinesses = mySubscriptions.filter((item) => item.publisherType === 'business');
 
   const reload = useCallback(async () => {
     if (!supabase || !user?.id) return;
@@ -157,6 +167,67 @@ export default function MyPublicationsScreen() {
         }
       />
 
+      <View style={styles.tabs}>
+        {([
+          ['publications', 'Publications', archiveCounts.active + archiveCounts.archived],
+          ['subscriptions', 'Abonnements', mySubscriptions.length],
+        ] as const).map(([key, label, count]) => (
+          <Pressable
+            key={key}
+            testID={`publication-panel-${key}`}
+            style={[
+              styles.tab,
+              {
+                backgroundColor: panel === key ? colors.surfaceMuted : colors.surface,
+                borderColor: panel === key ? colors.primary : colors.border,
+              },
+            ]}
+            onPress={() => setPanel(key)}>
+            <Text style={{ color: colors.text, fontWeight: '800' }}>
+              {translateLabel(label)} ({count})
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {panel === 'subscriptions' ? (
+        <ScrollView contentContainerStyle={styles.list}>
+          {([
+            ['Membres', followedUsers],
+            ['Entreprises', followedBusinesses],
+          ] as const).map(([label, items]) => (
+            <View key={label} style={{ gap: spacing.sm }}>
+              <Text style={[styles.cardTitle, { color: colors.textMuted }]}>
+                {translateLabel(label)} · {items.length}
+              </Text>
+              {items.map((item) => (
+                <Pressable
+                  key={item.id}
+                  testID={`subscription-${item.publisherType}-${item.publisherId}`}
+                  style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }, shadows.card]}
+                  onPress={() =>
+                    item.publisherType === 'business'
+                      ? router.push(`/organization/${item.publisherId}` as any)
+                      : undefined
+                  }>
+                  <View style={{ flex: 1, gap: 4 }}>
+                    <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>
+                      {item.publisherName || item.publisherId}
+                    </Text>
+                    <Text style={{ color: colors.textMuted, fontSize: 12 }}>
+                      {translateLabel('Toutes les annonces')}
+                    </Text>
+                  </View>
+                  {item.publisherType === 'business' ? (
+                    <Text style={{ color: colors.primary, fontWeight: '800' }}>→</Text>
+                  ) : null}
+                </Pressable>
+              ))}
+            </View>
+          ))}
+        </ScrollView>
+      ) : (
+      <>
       <View style={styles.tabs}>
         {(['active', 'archived'] as const).map((key) => (
           <Pressable
@@ -225,6 +296,8 @@ export default function MyPublicationsScreen() {
           ))
         )}
       </ScrollView>
+      </>
+      )}
     </SafeAreaView>
   );
 }
