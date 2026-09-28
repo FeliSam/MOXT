@@ -1,163 +1,148 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text } from 'react-native';
-import { router } from 'expo-router';
+import { useMemo } from 'react';
+import { ScrollView, View } from 'react-native';
 
+import { selectDashboardP2POffers } from '@moxt/shared/domain/p2pRules.js';
+import { TRANSFER_STATUS, transferCurrenciesForCountry } from '@moxt/shared/domain/transferConfig.js';
+
+import { DashboardBento } from '@/components/dashboard/DashboardBento';
+import { DashboardCalcBand } from '@/components/dashboard/DashboardCalcBand';
 import { DashboardDiscoverySection } from '@/components/dashboard/DashboardDiscoverySection';
-import { DashboardHeroSection } from '@/components/dashboard/DashboardHeroSection';
-import { DashboardOverviewSection } from '@/components/dashboard/DashboardOverviewSection';
-import { DashboardQuickActionsSection } from '@/components/dashboard/DashboardQuickActionsSection';
+import { DashboardOverviewPanels } from '@/components/dashboard/DashboardOverviewPanels';
 import { DashboardSearchSection } from '@/components/dashboard/DashboardSearchSection';
-import { DashboardServiceSection } from '@/components/dashboard/DashboardServiceSection';
+import { DashboardTodoInbox, type TodoItem } from '@/components/dashboard/DashboardTodoInbox';
+import { P2POfferCard } from '@/components/dashboard/P2POfferCard';
+import { StatusRail } from '@/components/dashboard/StatusRail';
+import { WebSectionHeading } from '@/components/dashboard/webUi';
 import { AppScreen } from '@/components/ui/Card';
-import { tw } from '@/constants/dashboardTailwind';
+import { usePublishMenu } from '@/components/chrome/PublishMenuSheet';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
 import { useLanguage } from '@/providers/LanguageProvider';
-import { supabase } from '@/services/supabase';
-import { logout } from '@/store/auth';
 import { addFavorite, removeFavorite } from '@/store/favorites';
+import type { P2POffer } from '@/store/dashboard';
+import { canAccessModule } from '@/store/platform';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 
+/** Carrousel P2P : w-[min(20.5rem,86vw)] à 390 px. */
+const P2P_CARD_W = Math.min(328, 390 * 0.86);
+
+/**
+ * Accueil connecté — même ordre que moxt-react/src/pages/DashboardPage.jsx (viewport mobile) :
+ * statuts, bento des services, bandeau calculette, recherche, offres P2P, actions à faire,
+ * entreprises, taux, transferts en cours, découverte (colis, jobs, événements, annonces,
+ * actualités, activité). Les actions rapides sont masquées sur mobile comme sur le web.
+ */
 export default function DashboardHomeScreen() {
   const dispatch = useAppDispatch();
-  const { translateLabel } = useLanguage();
-  const user = useAppSelector((state) => state.auth.user);
-  const transfers = useAppSelector((state) => state.transfers.items);
-  const parcels = useAppSelector((state) => state.parcels.items);
-  const listings = useAppSelector((state) => state.marketplace.items);
-  const favorites = useAppSelector((state) => state.favorites.items);
-  const conversations = useAppSelector((state) => state.messages.conversations.length);
-  const authStatus = useAppSelector((state) => state.auth.status);
-  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  const { t } = useLanguage();
+  const openPublish = usePublishMenu();
+  const user = useAppSelector((s) => s.auth.user);
+  const transfers = useAppSelector((s) => s.transfers.items);
+  const parcels = useAppSelector((s) => s.parcels.items);
+  const listings = useAppSelector((s) => s.marketplace.items);
+  const favorites = useAppSelector((s) => s.favorites.items);
+  const conversations = useAppSelector((s) => s.messages.conversations.length);
+  const flags = useAppSelector((s) => s.platform.flags);
+  const dash = useAppSelector((s) => s.dashboard);
+  const posts = useAppSelector((s) => s.feed.posts);
+  const rate = useExchangeRate('XOF');
 
-  const [sendAmount, setSendAmount] = useState('5000');
-  const [rubToXof, setRubToXof] = useState(true);
-  const numericAmount = parseFloat(sendAmount.replace(',', '.')) || 0;
-  const estimation = rubToXof ? numericAmount * 7.3953 : numericAmount / 7.3953;
-  const currencyFrom = rubToXof ? 'RUB' : 'XOF';
-  const currencyTo = rubToXof ? 'XOF' : 'RUB';
+  const originCountry = user?.originCountry || (user?.country !== 'RU' ? user?.country : 'BJ') || 'BJ';
+  const p2pOffers = useMemo(
+    () =>
+      selectDashboardP2POffers(dash.p2pOffers, { currencies: transferCurrenciesForCountry(originCountry) }) as P2POffer[],
+    [dash.p2pOffers, originCountry],
+  );
 
-  const [jobs, setJobs] = useState<any[]>([]);
-  const [events, setEvents] = useState<any[]>([]);
-
-  useEffect(() => {
-    if (authStatus !== 'authenticated' || !supabase) return;
-    (async () => {
-      try {
-        const [j, e] = await Promise.allSettled([
-          supabase
-            .from('jobs')
-            .select('id, title, city, salary, currency, sector, type')
-            .eq('status', 'active')
-            .order('created_at', { ascending: false })
-            .limit(5),
-          supabase
-            .from('events')
-            .select('id, title, city, format, category, start_at')
-            .order('start_at', { ascending: true })
-            .limit(5),
-        ]);
-        if (j.status === 'fulfilled' && j.value.data) setJobs(j.value.data);
-        if (e.status === 'fulfilled' && e.value.data) setEvents(e.value.data);
-      } catch {
-        /* sections masquées si indisponible */
-      }
-    })();
-  }, [authStatus]);
-
+  const myTransfers = useMemo(() => transfers.filter((item) => item.userId === user?.id), [transfers, user?.id]);
   const activeTransfers = useMemo(
-    () => transfers.filter((t) => t.status !== 'completed' && t.status !== 'cancelled'),
-    [transfers],
+    () =>
+      myTransfers.filter(
+        (item) =>
+          ![TRANSFER_STATUS.COMPLETED, TRANSFER_STATUS.CANCELLED, TRANSFER_STATUS.EXPIRED].includes(item.status ?? ''),
+      ),
+    [myTransfers],
   );
-  const toDeclareCount = useMemo(
-    () => transfers.filter((t) => t.status === 'pending').length,
-    [transfers],
+  const todoItems = useMemo<TodoItem[]>(() => {
+    const pending = myTransfers.filter((item) => item.status === TRANSFER_STATUS.PENDING).length;
+    return pending
+      ? [{ labelKey: 'dashboard.overview.todoPendingTransfers', count: pending, to: '/(tabs)/transfers' }]
+      : [];
+  }, [myTransfers]);
+
+  // Web selectDashboard* : colis actifs, jobs actifs, événements publiés, annonces actives.
+  const liveParcels = useMemo(
+    () => (canAccessModule(flags, 'parcels') ? parcels.filter((p: { status?: string }) => p.status === 'active').slice(0, 5) : []),
+    [parcels, flags],
+  );
+  const jobs = useMemo(
+    () => (dash.jobs as { status?: string }[]).filter((j) => j.status === 'active').slice(0, 5),
+    [dash.jobs],
+  );
+  const events = useMemo(() => dash.events.filter((e) => e.status === 'published').slice(0, 5), [dash.events]);
+  const activeListings = useMemo(() => listings.filter((l) => l.status === 'active').slice(0, 4), [listings]);
+  const newsPosts = useMemo(
+    () =>
+      canAccessModule(flags, 'news')
+        ? posts.filter((p) => !p.status || p.status === 'published').slice(0, 4)
+        : [],
+    [posts, flags],
   );
 
-  const profileFields = [user?.firstName, user?.lastName, user?.email, (user as any)?.phone ?? (user as any)?.russianPhone];
-  const profileCompletion = Math.round((profileFields.filter(Boolean).length / profileFields.length) * 100);
-  const verified = (user as any)?.verified === true;
-  const onboardingSteps = [
-    { label: 'Vérifier votre compte', done: verified },
-    { label: 'Compléter votre profil', done: profileCompletion === 100 },
-    { label: 'Réaliser un premier transfert', done: transfers.length > 0 },
-  ];
-  const onboardingDone = onboardingSteps.filter((s) => s.done).length;
+  const isFav = (id: string) => favorites.some((f) => f.id === id && f.type === 'listing');
+  const toggleFav = (listing: { id: string; title?: string; city?: string }) => {
+    if (isFav(listing.id)) dispatch(removeFavorite({ id: listing.id, type: 'listing' }));
+    else dispatch(addFavorite({ id: listing.id, type: 'listing', title: listing.title ?? '', subtitle: listing.city }));
+  };
 
-  function isFav(id: string) {
-    return favorites.some((f) => f.id === id && f.type === 'listing');
-  }
-  function toggleFav(listing: any) {
-    if (isFav(listing.id)) {
-      dispatch(removeFavorite({ id: listing.id, type: 'listing' }));
-    } else {
-      dispatch(addFavorite({ id: listing.id, type: 'listing', title: listing.title, subtitle: listing.city }));
-    }
-  }
+  if (!user) return <AppScreen edges={[]}>{null}</AppScreen>;
 
   return (
     <AppScreen edges={[]}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerClassName={cnScroll()}>
-        <DashboardServiceSection />
-        <DashboardHeroSection
-          firstName={user?.firstName}
-          sendAmount={sendAmount}
-          setSendAmount={setSendAmount}
-          rubToXof={rubToXof}
-          setRubToXof={setRubToXof}
-          estimation={estimation}
-          currencyFrom={currencyFrom}
-          currencyTo={currencyTo}
-        />
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 128, gap: 24 }}>
+        <StatusRail onAdd={() => openPublish()} />
+        <DashboardBento />
+        <DashboardCalcBand user={user} />
         <DashboardSearchSection />
-        <DashboardQuickActionsSection />
-        <DashboardOverviewSection
-          verified={verified}
-          toDeclareCount={toDeclareCount}
-          activeTransfers={activeTransfers}
-          profileCompletion={profileCompletion}
-          onboardingSteps={onboardingSteps}
-          onboardingDone={onboardingDone}
-        />
-        <DashboardDiscoverySection
-          listings={listings}
-          parcels={parcels}
-          jobs={jobs}
-          events={events}
-          isFav={isFav}
-          toggleFav={toggleFav}
-          transfersCount={transfers.length}
-          conversationsCount={conversations}
-        />
 
-        {isAdmin ? (
-          <Pressable
-            className="mx-4 items-center rounded-2xl bg-emerald-50 px-5 py-3.5 shadow-sm dark:bg-emerald-950/30"
-            onPress={() => router.push('/admin' as any)}>
-            <Text className="text-sm font-bold text-emerald-700 dark:text-emerald-300">⚙️  Administration</Text>
-          </Pressable>
+        {p2pOffers.length > 0 ? (
+          <View style={{ gap: 12 }}>
+            <WebSectionHeading title={t('dashboard.discovery.latestP2P')} link="/search" />
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ marginHorizontal: -16 }}
+              contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 20, gap: 12 }}>
+              {p2pOffers.map((offer) => (
+                <View key={offer.id} style={{ width: P2P_CARD_W }}>
+                  <P2POfferCard
+                    offer={offer}
+                    orders={dash.p2pOrders}
+                    reviews={dash.reviews}
+                    ownerVerified={offer.ownerId === user.id ? user.verified : undefined}
+                  />
+                </View>
+              ))}
+            </ScrollView>
+          </View>
         ) : null}
-        <Pressable
-          className={cnSpecial('bg-app-surface shadow-sm dark:bg-zinc-900')}
-          onPress={() => router.push('/settings' as any)}>
-          <Text className="text-sm font-bold text-app-text-secondary dark:text-zinc-400">
-            {translateLabel('Paramètres')}
-          </Text>
-        </Pressable>
-        <Pressable
-          className={cnSpecial('bg-red-50 dark:bg-red-950/30')}
-          onPress={() => dispatch(logout())}>
-          <Text className="text-sm font-bold text-red-600 dark:text-red-400">{translateLabel('Se déconnecter')}</Text>
-        </Pressable>
+
+        <DashboardTodoInbox todoItems={todoItems} />
+        <DashboardOverviewPanels activeTransfers={activeTransfers} rate={rate} user={user} />
+
+        <View style={{ marginHorizontal: -16 }}>
+          <DashboardDiscoverySection
+            listings={activeListings}
+            parcels={liveParcels}
+            jobs={jobs}
+            events={events}
+            posts={newsPosts}
+            isFav={isFav}
+            toggleFav={toggleFav}
+            transfersCount={myTransfers.length}
+            conversationsCount={conversations}
+          />
+        </View>
       </ScrollView>
     </AppScreen>
   );
-}
-
-function cnScroll() {
-  return `${tw.page} pb-32 pt-3`;
-}
-
-function cnSpecial(extra: string) {
-  return `mx-4 items-center rounded-2xl px-5 py-3.5 ${extra}`;
 }

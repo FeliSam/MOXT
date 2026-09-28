@@ -7,6 +7,9 @@ import { loadConversations } from '@/store/messages';
 import { loadBusinesses, loadSubscriptions } from '@/store/account';
 import { loadFavorites } from '@/store/favorites';
 import { loadNotifications, setPushToken } from '@/store/notifications';
+import { loadModuleFlags } from '@/store/platform';
+import { loadFeed } from '@/store/feed';
+import { loadDashboardData } from '@/store/dashboard';
 import { useAppDispatch, useAppSelector, store } from '@/store/store';
 
 export function DataSync({ children }: { children: ReactNode }) {
@@ -23,6 +26,9 @@ export function DataSync({ children }: { children: ReactNode }) {
       dispatch(loadFavorites(userId));
       dispatch(loadBusinesses(userId));
       dispatch(loadSubscriptions());
+      dispatch(loadModuleFlags());
+      dispatch(loadFeed(userId));
+      dispatch(loadDashboardData(userId));
 
       registerForPushNotifications().then((token) => {
         if (token) dispatch(setPushToken(token));
