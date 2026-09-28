@@ -21,7 +21,7 @@ import {
 import { AppText } from '@/components/ui/AppText';
 import { canAccessModule, type ModuleId } from '@/store/platform';
 import { useAppSelector } from '@/store/store';
-import { useShadows, useTheme } from '@/theme/ThemeContext';
+import { useShadows, useTheme, useThemeCssVars } from '@/theme/ThemeContext';
 
 /** Textes du web (moxt-react/src/i18n/phase3I18n.js, clés feed.publish.*). */
 const TEXT = {
@@ -113,6 +113,7 @@ export function PublishMenuProvider({ children }: { children: ReactNode }) {
 function PublishMenuSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
+  const cssVars = useThemeCssVars();
   const shadows = useShadows();
   const flags = useAppSelector((s) => s.platform.flags);
   const options = useMemo(
@@ -130,7 +131,7 @@ function PublishMenuSheet({ visible, onClose }: { visible: boolean; onClose: () 
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-      <View style={{ flex: 1 }} testID="publish-menu">
+      <View style={[{ flex: 1 }, cssVars]} testID="publish-menu">
         <Pressable
           accessibilityLabel={TEXT.close}
           onPress={onClose}

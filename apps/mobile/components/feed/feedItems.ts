@@ -1,4 +1,4 @@
-import { isActiveListing, isActiveVideo } from '@moxt/shared/domain/publicationRules.js';
+import { isActiveListing, isActiveParcel, isActiveVideo } from '@moxt/shared/domain/publicationRules.js';
 import { formatCurrency } from '@moxt/shared/utils/formatters.js';
 
 export type FeedKind = 'video' | 'listing' | 'parcel' | 'job' | 'event' | 'post' | 'p2p';
@@ -120,7 +120,7 @@ export function buildFeedItems(src: {
     });
   }
   for (const p of src.parcels) {
-    if (!p?.id || p.status !== 'active') continue;
+    if (!p?.id || !isActiveParcel(p)) continue;
     items.push({
       id: `parcel:${p.id}`,
       kind: 'parcel',

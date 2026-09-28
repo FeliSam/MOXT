@@ -79,7 +79,8 @@ function BentoTile({ item, style }: { item: CoreService; style?: ViewStyle }) {
       <View style={{ flex: 1, paddingTop: 16, paddingHorizontal: 16, paddingBottom: 17.6, paddingRight: 16 + 56, zIndex: 1 }}>
         <View style={{ flex: 1, justifyContent: 'space-between' }}>
           <View style={{ minWidth: 0 }}>
-            <AppText className={`${titleClass} font-black text-app-text`} style={{ letterSpacing: -0.4 }}>
+            {/* Sur le web, un mot seul plus large que la colonne déborde au lieu d'être coupé. */}
+            <AppText className={`${titleClass} font-black text-app-text`} style={{ letterSpacing: -0.4, marginRight: -56 }}>
               {t(item.titleKey)}
             </AppText>
             {showDescription ? (

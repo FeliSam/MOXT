@@ -163,7 +163,7 @@ function MarketplaceListingCardComponent({
           </View>
           <AppText
             numberOfLines={3}
-            className="text-sm font-black text-white"
+            className="font-display text-sm text-white"
             style={{ lineHeight: 19.25, textShadowColor: 'rgba(0,0,0,0.3)', textShadowRadius: 2, textShadowOffset: { width: 0, height: 1 } }}>
             {listing.title}
           </AppText>

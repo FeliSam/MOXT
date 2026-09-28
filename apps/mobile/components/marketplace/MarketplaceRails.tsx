@@ -76,12 +76,13 @@ function RailShell({
   return (
     <View className="gap-3">
       <View className="flex-row items-start justify-between gap-3">
-        <AppText className="text-sm font-black text-app-text" style={{ letterSpacing: -0.35 }}>
+        {/* Web : h2 → police display (index.css) ; le bouton hérite de `font: inherit` → 16px normal. */}
+        <AppText className="font-display text-sm text-app-text" style={{ letterSpacing: -0.35 }}>
           {title}
         </AppText>
         {onViewAll ? (
           <Pressable onPress={onViewAll} hitSlop={6}>
-            <AppText className="text-xs font-bold text-brand-700 dark:text-brand-400">{viewAllLabel}</AppText>
+            <AppText className="text-base font-normal text-brand-700 dark:text-brand-400">{viewAllLabel}</AppText>
           </Pressable>
         ) : null}
       </View>

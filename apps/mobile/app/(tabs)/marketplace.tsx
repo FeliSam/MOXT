@@ -164,7 +164,7 @@ export default function MarketplaceScreen() {
   const colors = useThemeColors();
   const isDark = useIsDark();
   const shadows = useShadows();
-  const { width: viewportWidth } = useWindowDimensions();
+  const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
   const items = useAppSelector((s) => s.marketplace.items);
   const loading = useAppSelector((s) => s.marketplace.loading);
   const authStatus = useAppSelector((s) => s.auth.status);
@@ -178,6 +178,18 @@ export default function MarketplaceScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const didAutoScroll = useRef(false);
   const discoverY = useRef(0);
+  const anchorY = useRef(0);
+  const wrapperY = useRef(0);
+  const contentHeight = useRef(0);
+
+  /** useScrollToSecondSection du web : la page s'ouvre sur les tuiles (scroll-mt-24), une fois le contenu assez haut. */
+  function tryAutoScroll() {
+    if (didAutoScroll.current || !anchorY.current) return;
+    const target = Math.max(0, anchorY.current - 16);
+    if (contentHeight.current < target + viewportHeight) return;
+    didAutoScroll.current = true;
+    requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: target, animated: false }));
+  }
   const community = isDark ? COMMUNITY.dark : COMMUNITY.light;
 
   const contentWidth = Math.min(viewportWidth, 960) - 32;
@@ -230,7 +242,12 @@ export default function MarketplaceScreen() {
     setRefreshing(false);
   }, [dispatch]);
 
-  const scrollToDiscover = () => scrollRef.current?.scrollTo({ y: Math.max(0, discoverY.current - 12), animated: true });
+  // Positions onLayout relatives au parent : padding (12) + bloc tuiles + section + titre « Découvrir ».
+  const scrollToDiscover = () =>
+    scrollRef.current?.scrollTo({
+      y: Math.max(0, 12 + anchorY.current + wrapperY.current + discoverY.current - 16),
+      animated: true,
+    });
   const activeFilterCount = [filters.category, filters.city, filters.min, filters.max].filter(Boolean).length;
   const categoryOptions = filters.type ? CATEGORIES_BY_TYPE[filters.type] || [] : [];
 
@@ -247,7 +264,11 @@ export default function MarketplaceScreen() {
       <ScrollView
         ref={scrollRef}
         showsVerticalScrollIndicator={false}
-        onContentSizeChange={(width, height) => setContentSize({ width, height })}
+        onContentSizeChange={(width, height) => {
+          setContentSize({ width, height });
+          contentHeight.current = height;
+          tryAutoScroll();
+        }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={brand[700]} />}
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 128 }}>
         <WarmBackground width={contentSize.width} height={contentSize.height} />
@@ -266,10 +287,8 @@ export default function MarketplaceScreen() {
           <View
             style={{ gap: 20 }}
             onLayout={(e) => {
-              if (didAutoScroll.current) return;
-              didAutoScroll.current = true;
-              const y = e.nativeEvent.layout.y;
-              requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: y, animated: false }));
+              anchorY.current = e.nativeEvent.layout.y;
+              tryAutoScroll();
             }}>
             <ScrollView
               horizontal
@@ -308,7 +327,7 @@ export default function MarketplaceScreen() {
                     value={filters.query}
                     onChangeText={(query) => update({ query })}
                     numberOfLines={1}
-                    className="rounded-xl pl-11 pr-12 text-sm text-app-text"
+                    className="rounded-xl pl-11 pr-12 text-base text-app-text"
                     style={{ minHeight: 52, backgroundColor: community.muted }}
                   />
                   {filters.query ? (
@@ -391,7 +410,7 @@ export default function MarketplaceScreen() {
                 <ActivityIndicator size="large" color={brand[700]} />
               </View>
             ) : feed.discover.length ? (
-              <View>
+              <View onLayout={(e) => (wrapperY.current = e.nativeEvent.layout.y)}>
                 {!searching ? (
                   <View style={{ gap: 24 }}>
                     <MarketplaceDiscoveryRail
@@ -429,7 +448,7 @@ export default function MarketplaceScreen() {
                     discoverY.current = e.nativeEvent.layout.y;
                   }}>
                   <View className="min-w-0">
-                    <AppText className="text-sm font-black text-app-text" style={{ letterSpacing: -0.35 }}>
+                    <AppText className="font-display text-sm text-app-text" style={{ letterSpacing: -0.35 }}>
                       {searching ? 'Résultats' : 'Découvrir'}
                     </AppText>
                     {searching ? (

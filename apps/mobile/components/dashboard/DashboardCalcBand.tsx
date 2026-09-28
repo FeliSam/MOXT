@@ -61,8 +61,9 @@ function CurrencyField({
           value={value}
           onChangeText={onChange}
           keyboardType="numeric"
-          className="font-extrabold"
-          style={{ flex: 1, minWidth: 0, fontSize: 20, lineHeight: 24, color: colors.text, padding: 0, letterSpacing: -0.5 }}
+          // Web : `font: inherit` (index.css) écrase text-[1.25rem] font-extrabold → 16px normal.
+          className="font-normal"
+          style={{ flex: 1, minWidth: 0, fontSize: 16, lineHeight: 24, color: colors.text, padding: 0, letterSpacing: -0.4 }}
         />
         <View
           style={{

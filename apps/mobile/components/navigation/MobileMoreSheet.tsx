@@ -15,6 +15,7 @@ import { cn } from '@/lib/cn';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { logout } from '@/store/auth';
 import { useAppDispatch, useAppSelector } from '@/store/store';
+import { useThemeCssVars } from '@/theme/ThemeContext';
 
 function GridIcon({ active }: { active?: boolean }) {
   return (
@@ -69,6 +70,7 @@ function MoreServiceTile({
 
 export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const dispatch = useAppDispatch();
+  const cssVars = useThemeCssVars();
   const { translateLabel } = useLanguage();
   const user = useAppSelector((s) => s.auth.user);
   const state = useAppSelector((s) => s);
@@ -97,6 +99,8 @@ export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () 
 
   return (
     <Modal visible={open} animationType="slide" transparent onRequestClose={handleClose}>
+      {/* Sur le web la modale sort de ThemeRoot : on repose les variables --app-*. */}
+      <View style={[{ flex: 1 }, cssVars]}>
       <Pressable className="flex-1 bg-slate-950/40" onPress={handleClose} />
 
       <View
@@ -206,6 +210,7 @@ export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () 
             </Text>
           </Pressable>
         </View>
+      </View>
       </View>
     </Modal>
   );

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { ScrollView, View } from 'react-native';
 
+import { isParcelBrowseArchived } from '@moxt/shared/domain/parcelRules.js';
 import { selectDashboardP2POffers } from '@moxt/shared/domain/p2pRules.js';
 import { TRANSFER_STATUS, transferCurrenciesForCountry } from '@moxt/shared/domain/transferConfig.js';
 
@@ -71,8 +72,11 @@ export default function DashboardHomeScreen() {
 
   // Web selectDashboard* : colis actifs, jobs actifs, événements publiés, annonces actives.
   const liveParcels = useMemo(
-    () => (canAccessModule(flags, 'parcels') ? parcels.filter((p: { status?: string }) => p.status === 'active').slice(0, 5) : []),
-    [parcels, flags],
+    () =>
+      (parcels as { status?: string }[])
+        .filter((p) => p.status === 'active' && !isParcelBrowseArchived(p))
+        .slice(0, 5),
+    [parcels],
   );
   const jobs = useMemo(
     () => (dash.jobs as { status?: string }[]).filter((j) => j.status === 'active').slice(0, 5),
