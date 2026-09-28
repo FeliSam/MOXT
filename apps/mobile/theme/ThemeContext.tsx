@@ -8,12 +8,28 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { useColorScheme as useSystemColorScheme } from 'react-native';
+import { useColorScheme as useSystemColorScheme, View } from 'react-native';
+import { vars } from 'nativewind';
 import { colorScheme as nativewindColorScheme } from 'react-native-css-interop';
+import { hexToRgbTriplet, themeColors } from '@moxt/shared/design/index.js';
 
 import { darkColors, getShadows, lightColors, type ThemeColors, type ThemeMode } from './colors';
 
+/** Même clé que le web (localStorage 'moxt-theme'). Valeurs : light | dark | system. */
 const STORAGE_KEY = 'moxt-theme';
+
+const kebab = (name: string) => name.replace(/[A-Z0-9]+/g, (m) => `-${m.toLowerCase()}`);
+
+function buildCssVars(mode: 'light' | 'dark') {
+  const palette = themeColors[mode] as Record<string, string>;
+  return vars(
+    Object.fromEntries(
+      Object.entries(palette).map(([key, hex]) => [`--app-${kebab(key)}`, hexToRgbTriplet(hex)]),
+    ),
+  );
+}
+
+const CSS_VARS = { light: buildCssVars('light'), dark: buildCssVars('dark') } as const;
 
 type ThemeContextValue = {
   theme: ThemeMode;
@@ -122,6 +138,19 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
   }
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+}
+
+/**
+ * Racine visuelle : pose les variables CSS `--app-*` (couleurs `app-*` de
+ * tailwind.config.js) et le fond de page, pour le thème résolu.
+ */
+export function ThemeRoot({ children }: { children: ReactNode }) {
+  const { resolvedTheme, colors } = useContext(ThemeContext);
+  return (
+    <View style={[{ flex: 1, backgroundColor: colors.background }, CSS_VARS[resolvedTheme]]}>
+      {children}
+    </View>
+  );
 }
 
 export function useThemeColors(): ThemeColors {

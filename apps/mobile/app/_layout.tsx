@@ -1,6 +1,10 @@
 import '../global.css';
 import 'react-native-reanimated';
 import 'react-native-url-polyfill/auto';
+import { Inter_400Regular } from '@expo-google-fonts/inter/400Regular';
+import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
+import { Manrope_700Bold } from '@expo-google-fonts/manrope/700Bold';
+import Feather from '@expo/vector-icons/Feather';
 import { useFonts } from 'expo-font';
 import { ThemeProvider as NavigationThemeProvider, Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -17,7 +21,7 @@ import { OfflineSync } from '@/providers/OfflineSync';
 import { useNotificationNavigation } from '@/services/deepLinking';
 import { initMonitoring } from '@/services/monitoring';
 import { store } from '@/store/store';
-import { AppThemeProvider, useTheme } from '@/theme/ThemeContext';
+import { AppThemeProvider, ThemeRoot, useTheme } from '@/theme/ThemeContext';
 import { getNavigationTheme } from '@/theme/navigationTheme';
 
 initMonitoring();
@@ -27,8 +31,12 @@ export { ErrorBoundary } from 'expo-router';
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  // Polices du web : Inter 400 / 600 (texte), Manrope 700 (titres) + police d'icônes Feather.
   const [loaded, error] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    Inter_400Regular,
+    Inter_600SemiBold,
+    Manrope_700Bold,
+    ...Feather.font,
   });
 
   useEffect(() => {
@@ -60,6 +68,7 @@ function RootLayoutNav() {
   return (
     <NavigationThemeProvider value={navigationTheme}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
+      <ThemeRoot>
       <AuthGate>
         <DataSync>
           <OfflineSync>
@@ -86,6 +95,7 @@ function RootLayoutNav() {
             <Stack.Screen name="favorites" options={{ title: 'Favoris', headerShown: true }} />
             <Stack.Screen name="search" options={{ title: 'Recherche', headerShown: true }} />
             <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+            <Stack.Screen name="design-system" options={{ headerShown: false }} />
             <Stack.Screen name="kyc" options={{ title: 'Vérification KYC', headerShown: true }} />
             <Stack.Screen name="referral" options={{ title: 'Parrainage', headerShown: true }} />
             <Stack.Screen name="wallet" options={{ title: 'Portefeuille', headerShown: true }} />
@@ -105,6 +115,7 @@ function RootLayoutNav() {
           </OfflineSync>
         </DataSync>
       </AuthGate>
+      </ThemeRoot>
     </NavigationThemeProvider>
   );
 }

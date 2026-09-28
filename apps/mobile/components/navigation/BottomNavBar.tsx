@@ -42,8 +42,9 @@ export function BottomNavBar({
       <View
         className="absolute left-3 right-3 flex-row gap-0.5 rounded-2xl bg-white/95 p-1 shadow-lg dark:bg-zinc-900/95"
         style={{ bottom: Math.max(insets.bottom, 12) }}>
-        {bottomNavigationItems.map((item) => {
-          const focused = activeRoute === item.mobileRoute;
+        {bottomNavigationItems.filter((item) => item.mobileRoute !== 'feed').map((item) => {
+          const mobileRoute = item.mobileRoute ?? item.id;
+          const focused = activeRoute === mobileRoute;
           const label = translateLabel(item.label);
 
           return (
@@ -52,12 +53,12 @@ export function BottomNavBar({
               accessibilityRole="button"
               accessibilityState={focused ? { selected: true } : {}}
               accessibilityLabel={label}
-              onPress={() => onTabPress(item.mobileRoute)}
+              onPress={() => onTabPress(mobileRoute)}
               className={cn(
                 'min-h-[3.75rem] flex-1 items-center justify-center gap-0.5 rounded-xl px-1 py-1.5',
                 focused && 'border-t-[3px] border-brand-700 bg-app-surface-muted dark:border-brand-400 dark:bg-zinc-800',
               )}>
-              <TabIcon routeName={item.mobileRoute} focused={focused} />
+              <TabIcon routeName={mobileRoute} focused={focused} />
               <Text
                 numberOfLines={1}
                 className={cn(

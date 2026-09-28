@@ -14,7 +14,8 @@ export default function TabLayout() {
         headerShown: false,
         tabBarStyle: { display: 'none' },
       }}>
-      {bottomNavigationItems.map((item) => (
+      {/* L'onglet Fil arrive avec le cadre (phase 1) */}
+      {bottomNavigationItems.filter((item) => item.mobileRoute !== 'feed').map((item) => (
         <Tabs.Screen
           key={item.mobileRoute}
           name={item.mobileRoute}
@@ -27,6 +28,7 @@ export default function TabLayout() {
       {/* Onglets accessibles via header / drawer Plus */}
       <Tabs.Screen name="messages" options={{ href: null }} />
       <Tabs.Screen name="notifications" options={{ href: null }} />
+      <Tabs.Screen name="parcels" options={{ href: null }} />
     </Tabs>
   );
 }
