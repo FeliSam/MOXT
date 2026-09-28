@@ -158,6 +158,8 @@ export function buildFeedItems(src: {
   }
   for (const p of src.posts) {
     if (!p?.id || (p.status && p.status !== 'published')) continue;
+    // Post lié à une fiche catalogue : le web ne l'affiche pas comme onglet « Posts ».
+    if (p.sourceId && String(p.sourceType || '').trim()) continue;
     items.push({
       id: `post:${p.id}`,
       kind: 'post',

@@ -42,7 +42,16 @@ export default function TabLayout() {
       <Tabs.Screen name="transfers" options={{ title: labelFor('transfers') }} />
       <Tabs.Screen name="marketplace" options={{ title: labelFor('marketplace') }} />
       {/* Fil plein écran comme le web : ni en-tête ni barre du bas. */}
-      <Tabs.Screen name="feed" options={{ title: labelFor('feed'), headerShown: false }} />
+      <Tabs.Screen
+        name="feed"
+        options={{
+          title: labelFor('feed'),
+          headerShown: false,
+          header: () => null,
+          sceneStyle: { backgroundColor: '#000' },
+          headerStatusBarHeight: 0,
+        }}
+      />
       <Tabs.Screen name="moxt" options={{ title: t('nav.more') }} />
 
       {/* Accessibles via l'en-tête (colis, cloche, messagerie) */}

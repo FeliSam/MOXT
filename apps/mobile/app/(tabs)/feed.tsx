@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Image, Platform, Pressable, ScrollView, Share, View, useWindowDimensions, type ViewToken } from 'react-native';
+import { FlatList, Image, Pressable, ScrollView, Share, View, useWindowDimensions, type ViewToken } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,6 +32,8 @@ import { buildFeedItems, FEED_TYPE_FILTERS, type FeedItem, type FeedKind } from 
 import { AppText } from '@/components/ui/AppText';
 import { VerifiedIcon } from '@/components/ui/VerifiedIcon';
 import { brand } from '@/theme/palette';
+import { supabase } from '@/services/supabase';
+import { applyFeedPlaybackDefaults, getVideoFeedMuted, setVideoFeedMuted, subscribeFeedMuted } from '@/services/feedAudio';
 import { shareVideo, toggleEngagementLike, type EngagementKind } from '@/store/engagement';
 import { recordVideoView } from '@/store/feed';
 import { useAppDispatch, useAppSelector } from '@/store/store';
@@ -346,9 +348,24 @@ export default function FeedTab() {
   const [activeIndex, setActiveIndex] = useState(0);
   // videoFeedAudio du web : son activé par défaut ; les navigateurs bloquent l'autoplay avec son,
   // donc sur Expo web on démarre en muet jusqu'au premier geste (policyMuted du web).
-  const [mutedPref, setMutedPref] = useState(false);
-  const [policyMuted, setPolicyMuted] = useState(Platform.OS === 'web');
+  const [mutedPref, setMutedPref] = useState(getVideoFeedMuted);
+  const [policyMuted, setPolicyMuted] = useState(false);
   const muted = mutedPref || policyMuted;
+
+  useEffect(() => subscribeFeedMuted(() => setMutedPref(getVideoFeedMuted())), []);
+
+  useEffect(() => {
+    if (!supabase) return;
+    void supabase
+      .from('app_feed_playback')
+      .select('config')
+      .eq('id', 1)
+      .maybeSingle()
+      .then(
+        ({ data }) => applyFeedPlaybackDefaults((data as { config?: { soundOnByDefault?: boolean } } | null)?.config),
+        () => undefined,
+      );
+  }, []);
 
   const all = useMemo(
     () =>
@@ -416,7 +433,7 @@ export default function FeedTab() {
             muted={muted}
             onToggleMute={() => {
               setPolicyMuted(false);
-              setMutedPref(!muted);
+              setVideoFeedMuted(!muted, true);
             }}
             chromeTop={chromeTop}
             bottomInset={insets.bottom}

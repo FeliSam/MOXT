@@ -30,6 +30,8 @@ export function FeedVideoPlayer({
   const player = useVideoPlayer(videoUrl, (p) => {
     p.loop = true;
     p.muted = muted;
+    p.volume = muted ? 0 : 1;
+    p.audioMixingMode = 'doNotMix';
   });
   const { isPlaying } = useEvent(player, 'playingChange', { isPlaying: player.playing });
   const { status } = useEvent(player, 'statusChange', { status: player.status });
@@ -42,6 +44,8 @@ export function FeedVideoPlayer({
 
   useEffect(() => {
     player.muted = muted;
+    player.volume = muted ? 0 : 1;
+    player.audioMixingMode = 'doNotMix';
   }, [player, muted]);
 
   useEffect(() => {
