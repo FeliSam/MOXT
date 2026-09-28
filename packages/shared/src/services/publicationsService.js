@@ -66,3 +66,34 @@ export async function fetchActiveListings(client, { limit = LISTINGS_PUBLIC_LIMI
   if (result.error) throw result.error
   return (result.data || []).filter((row) => isActiveListing(row))
 }
+
+/** Tables et statuts publics lus pour une page entreprise (mêmes requêtes que l’aperçu entreprise du web). */
+const BUSINESS_TABLES = [
+  ['listings', 'listings', ['active']],
+  ['parcels', 'parcels', ['active', 'full']],
+  ['jobs', 'jobs', ['active']],
+  ['events', 'events', ['published']],
+  ['videos', 'videos', ['active']],
+]
+
+/**
+ * Publications visibles d’une entreprise (business_id), comme fetchGuestBusinessPreview du web.
+ * Les posts du fil ne sont pas rattachés à une entreprise : liste vide, comme sur le web.
+ */
+export async function fetchBusinessPublications(client, businessId) {
+  if (!client || !businessId) return { publications: emptyPublications(), errors: [] }
+  const results = await Promise.all(
+    BUSINESS_TABLES.map(([, table, statuses]) => {
+      const query = client.from(table).select('*').eq('business_id', businessId)
+      return statuses.length === 1 ? query.eq('status', statuses[0]) : query.in('status', statuses)
+    }),
+  )
+  const publications = emptyPublications()
+  const errors = []
+  BUSINESS_TABLES.forEach(([key, table], index) => {
+    const result = results[index]
+    if (result?.error) errors.push({ table, message: result.error.message })
+    publications[key] = rowsOrEmpty(result).map(entityFromRemoteRow).filter(Boolean)
+  })
+  return { publications, errors }
+}

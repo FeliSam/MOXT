@@ -6,7 +6,7 @@ import {
   subscribeToNotifications,
 } from './notificationsService.js'
 import { businessFromRemoteRow, fetchBusinesses, findOwnedBusiness } from './businessesService.js'
-import { fetchUserPublications, summarizeUserPublications } from './publicationsService.js'
+import { fetchBusinessPublications, fetchUserPublications, summarizeUserPublications } from './publicationsService.js'
 import { fetchActiveStatuses, fetchFeedPosts, groupStatusesByAuthor } from './feedService.js'
 import { buildInboxRows, fetchInbox } from './inboxService.js'
 import { fetchPublisherSubscriptions, selectUserSubscriptionList } from './subscriptionsService.js'
@@ -95,6 +95,23 @@ describe('publicationsService', () => {
     const summary = summarizeUserPublications(publications)
     expect(summary.archiveCounts).toEqual({ active: 3, archived: 2 })
     expect(summary.activeTypeCounts.other).toBe(1)
+  })
+})
+
+describe('fetchBusinessPublications', () => {
+  it('mêmes tables et statuts publics que l’aperçu entreprise du web', async () => {
+    const client = createFakeClient({
+      listings: [{ id: 'l1', business_id: 'B1', status: 'active', title: 'Lot' }],
+      videos: [{ id: 'v1', business_id: 'B1', status: 'active' }],
+    })
+    const { publications, errors } = await fetchBusinessPublications(client, 'B1')
+    expect(errors).toEqual([])
+    expect(client.calls.map((call) => call.table)).toEqual(['listings', 'parcels', 'jobs', 'events', 'videos'])
+    expect(opsOf(client, 'parcels')[0]).toEqual([['select', '*'], ['eq', 'business_id', 'B1'], ['in', 'status', ['active', 'full']]])
+    expect(opsOf(client, 'events')[0][2]).toEqual(['eq', 'status', 'published'])
+    expect(publications.listings[0].title).toBe('Lot')
+    expect(publications.videos).toHaveLength(1)
+    expect(publications.posts).toEqual([])
   })
 })
 

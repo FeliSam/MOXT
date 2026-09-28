@@ -108,7 +108,11 @@ export async function syncReview(client, review) {
   return row.id
 }
 
-/** Avis visibles d'un profil ou d'une entreprise, avec ceux des publications liées. */
+/**
+ * Avis visibles d'un profil ou d'une entreprise, avec ceux des publications liées.
+ * @param {*} client
+ * @param {{ profileTargetType: string, profileTargetId: string, publicationIds?: Record<string, string[]>, ownerProfileId?: string | null }} scope
+ */
 export async function fetchReviewsForTargetScope(
   client,
   { profileTargetType, profileTargetId, publicationIds = {}, ownerProfileId = null },
