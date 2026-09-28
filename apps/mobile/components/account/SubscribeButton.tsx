@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal, Pressable, View } from 'react-native';
+import { Modal, Pressable, View, type StyleProp, type ViewStyle } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bell, BellOff, Check, Star, UserCheck, UserPlus, VolumeX } from 'lucide-react-native';
@@ -147,12 +147,21 @@ export function SubscribeButton({
   publisherName = '',
   size = 'sm',
   className = '',
+  style,
+  showIcon = true,
+  subscribeLabel = "S'abonner",
+  subscribedLabel = 'Abonné',
 }: {
   publisherType: PublisherType;
   publisherId: string;
   publisherName?: string;
   size?: 'sm' | 'md';
   className?: string;
+  style?: StyleProp<ViewStyle>;
+  /** Comme le web : la fiche entreprise affiche « Suivre / Abonné » sans icône. */
+  showIcon?: boolean;
+  subscribeLabel?: string;
+  subscribedLabel?: string;
 }) {
   const { colors, isDark } = useTheme();
   const { user, subscription, isSubscribed, subscribe, unsubscribe } = usePublisherSubscription(publisherType, publisherId, publisherName);
@@ -161,17 +170,18 @@ export function SubscribeButton({
 
   const height = size === 'sm' ? 36 : 44;
   const radius = size === 'sm' ? 11.2 : 12;
-  const textClass = size === 'sm' ? 'text-sm' : 'text-base';
+  // Web : Button md = min-h-11, rounded-xl, text-sm font-semibold.
+  const textClass = size === 'sm' ? 'text-sm' : 'text-sm font-semibold';
 
   if (!isSubscribed) {
     return (
       <Pressable
-        accessibilityLabel="S'abonner"
+        accessibilityLabel={subscribeLabel}
         onPress={() => subscribe('all')}
         className={`flex-row items-center justify-center gap-2 border border-app-border-md bg-app-surface ${className}`}
-        style={{ minHeight: height, borderRadius: radius, paddingHorizontal: 14 }}>
-        <UserPlus size={14} color={colors.text} strokeWidth={2} />
-        <AppText className={`${textClass} text-app-text`}>S&apos;abonner</AppText>
+        style={[{ minHeight: height, borderRadius: radius, paddingHorizontal: 14 }, style]}>
+        {showIcon ? <UserPlus size={14} color={colors.text} strokeWidth={2} /> : null}
+        <AppText className={`${textClass} text-app-text`}>{subscribeLabel}</AppText>
       </Pressable>
     );
   }
@@ -179,7 +189,7 @@ export function SubscribeButton({
   const pref = (subscription?.notifyPref as NotifyPref) || 'all';
   const PrefIcon = PREFS.find((p) => p.id === pref)?.Icon || Bell;
   return (
-    <View className={`flex-row items-center gap-1.5 ${className}`}>
+    <View className={`flex-row items-center gap-1.5 ${className}`} style={style}>
       <View
         accessibilityState={{ selected: true }}
         className="flex-1 flex-row items-center justify-center gap-2"
@@ -192,9 +202,9 @@ export function SubscribeButton({
           // brand-950 n'existe pas dans la palette web : dark:bg-brand-950/40 n'est pas généré, le fond reste brand-50.
           backgroundColor: brand[50],
         }}>
-        <UserCheck size={14} color={isDark ? brand[200] : brand[800]} strokeWidth={2} />
+        {showIcon ? <UserCheck size={14} color={isDark ? brand[200] : brand[800]} strokeWidth={2} /> : null}
         <AppText className={textClass} style={{ color: isDark ? brand[200] : brand[800] }}>
-          Abonné
+          {subscribedLabel}
         </AppText>
       </View>
       <Pressable
