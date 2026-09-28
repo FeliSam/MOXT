@@ -8,6 +8,7 @@ import { createOrganization, loadOrganizations, Organization, setCurrentOrg } fr
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, radii, shadows, spacing, typography } from '@/theme/colors';
+import { BackHeader } from '@/components/chrome/BackHeader';
 
 export default function OrganizationsScreen() {
   const dispatch = useAppDispatch();
@@ -51,10 +52,7 @@ export default function OrganizationsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.headerWrap}>
-        <Pressable style={styles.backRow} onPress={() => router.back()}>
-          <Text style={[styles.backArrow, { color: colors.primary }]}>←</Text>
-          <Text style={[styles.backLabel, { color: colors.primary }]}>Retour</Text>
-        </Pressable>
+        <BackHeader inline title="Organisations" />
       </View>
       <PageHeader
         eyebrow="Espace collaboratif"

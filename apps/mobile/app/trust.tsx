@@ -10,6 +10,7 @@ import { brand, radii, shadows, spacing, typography } from '@/theme/colors';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SectionHeading } from '@/components/ui/SectionHeading';
+import { BackHeader } from '@/components/chrome/BackHeader';
 
 const LEVEL_CONFIG: Record<TrustLevel, { icon: string; label: string; color: string }> = {
   new: { icon: '🌱', label: 'Nouveau', color: '#94a3b8' },
@@ -45,10 +46,7 @@ export default function TrustScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Pressable style={styles.backRow} onPress={() => router.back()}>
-          <Text style={[styles.backArrow, { color: colors.primary }]}>←</Text>
-          <Text style={[styles.backLabel, { color: colors.primary }]}>Retour</Text>
-        </Pressable>
+        <BackHeader inline title="Score de confiance" />
 
         <PageHeader eyebrow="RÉPUTATION" title="Score de confiance" />
 

@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 
 import { markAllAsRead, markAsRead } from '@/store/notifications';
 import { useAppDispatch, useAppSelector } from '@/store/store';
+import { BackHeader } from '@/components/chrome/BackHeader';
 
 const TYPE_ICONS: Record<string, string> = {
   transfer: '💸',
@@ -21,10 +22,7 @@ export default function NotificationsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Pressable style={styles.backRow} onPress={() => router.back()}>
-          <Text style={styles.backArrow}>←</Text>
-          <Text style={styles.backLabel}>Retour</Text>
-        </Pressable>
+        <BackHeader inline title="Notifications" />
         <View style={styles.headerTop}>
           <Text style={styles.title}>Notifications</Text>
           {unreadCount > 0 ? (

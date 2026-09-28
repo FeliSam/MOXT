@@ -8,7 +8,6 @@ import { DashboardOverviewSection } from '@/components/dashboard/DashboardOvervi
 import { DashboardQuickActionsSection } from '@/components/dashboard/DashboardQuickActionsSection';
 import { DashboardSearchSection } from '@/components/dashboard/DashboardSearchSection';
 import { DashboardServiceSection } from '@/components/dashboard/DashboardServiceSection';
-import { MobileDashboardHeader } from '@/components/layout/MobileDashboardHeader';
 import { AppScreen } from '@/components/ui/Card';
 import { tw } from '@/constants/dashboardTailwind';
 import { useLanguage } from '@/providers/LanguageProvider';
@@ -95,8 +94,7 @@ export default function DashboardHomeScreen() {
   }
 
   return (
-    <AppScreen edges={['top']}>
-      <MobileDashboardHeader eyebrow="MOXT" title="Accueil" />
+    <AppScreen edges={[]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerClassName={cnScroll()}>
@@ -157,7 +155,7 @@ export default function DashboardHomeScreen() {
 }
 
 function cnScroll() {
-  return `${tw.page} pb-32 pt-0`;
+  return `${tw.page} pb-32 pt-3`;
 }
 
 function cnSpecial(extra: string) {

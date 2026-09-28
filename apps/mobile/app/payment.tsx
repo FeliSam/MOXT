@@ -19,6 +19,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { BackHeader } from '@/components/chrome/BackHeader';
 
 type Step = 'method' | 'details' | 'processing' | 'done';
 
@@ -99,10 +100,7 @@ export default function PaymentScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Pressable style={styles.backRow} onPress={() => router.back()}>
-          <Text style={[styles.backArrow, { color: colors.primary }]}>←</Text>
-          <Text style={[styles.backLabel, { color: colors.primary }]}>Retour</Text>
-        </Pressable>
+        <BackHeader inline title="Paiement" />
         <PageHeader eyebrow="TRANSACTION" title="Paiement" />
 
         {/* Amount summary */}

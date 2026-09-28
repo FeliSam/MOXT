@@ -14,6 +14,7 @@ import { logout } from '@/store/auth';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { supabase } from '@/services/supabase';
 import { useTheme } from '@/theme/ThemeContext';
+import { BackHeader } from '@/components/chrome/BackHeader';
 
 export default function SettingsScreen() {
   const { language, setLanguage, translateLabel } = useLanguage();
@@ -90,12 +91,7 @@ export default function SettingsScreen() {
   return (
     <AppScreen edges={['top', 'bottom']}>
       <ScrollView contentContainerClassName="p-5 gap-4 pb-10">
-        <Pressable className="flex-row items-center gap-2 mb-1" onPress={() => router.back()}>
-          <Text className="text-xl text-brand-700 dark:text-brand-400">←</Text>
-          <Text className="text-base font-semibold text-brand-700 dark:text-brand-400">
-            {translateLabel('Retour')}
-          </Text>
-        </Pressable>
+        <BackHeader inline title="Paramètres" />
 
         <PageHeader
           eyebrow="Compte"

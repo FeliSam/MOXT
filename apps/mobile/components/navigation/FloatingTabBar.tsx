@@ -1,10 +1,15 @@
 import type { BottomTabBarProps } from 'expo-router/build/react-navigation/bottom-tabs';
 
 import { BottomNavBar } from '@/components/navigation/BottomNavBar';
+import { useAppSelector } from '@/store/store';
 
-/** Barre flottante — miroir de moxt-react BottomNavigation (dans le Tabs navigator) */
+/** Barre flottante — miroir de moxt-react BottomNavigation (dans le navigateur Tabs). */
 export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
+  const authenticated = useAppSelector((s) => s.auth.status === 'authenticated');
   const activeRoute = state.routes[state.index]?.name ?? 'index';
+
+  // Mode invité : le web affiche la mise en page publique, sans barre du bas.
+  if (!authenticated) return null;
 
   return (
     <BottomNavBar

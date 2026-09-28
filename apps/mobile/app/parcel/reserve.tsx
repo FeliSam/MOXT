@@ -19,6 +19,7 @@ import { brand, radii, shadows, spacing, typography } from '@/theme/colors';
 import { supabase } from '@/services/supabase';
 import { loadCoreData } from '@/store/data';
 import { useAppDispatch, useAppSelector } from '@/store/store';
+import { BackHeader } from '@/components/chrome/BackHeader';
 
 export default function ReserveParcelScreen() {
   const colors = useThemeColors();
@@ -67,10 +68,7 @@ export default function ReserveParcelScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: spacing.xl, gap: spacing.lg }}>
-          <Pressable style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.xs }} onPress={() => router.back()}>
-            <Text style={{ fontSize: 20, color: colors.primary }}>←</Text>
-            <Text style={{ fontSize: 16, color: colors.primary, fontWeight: '600' }}>Retour</Text>
-          </Pressable>
+          <BackHeader inline title="Réserver un colis" />
 
           <Text style={{ ...typography.title, color: colors.text }}>Réserver un colis</Text>
 

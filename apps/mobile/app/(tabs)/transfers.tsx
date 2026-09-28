@@ -120,7 +120,7 @@ export default function TransfersScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={[]}>
       <FlatList
         contentContainerStyle={styles.listContent}
         data={visibleTransfers}

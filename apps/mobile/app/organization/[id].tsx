@@ -8,6 +8,7 @@ import { inviteMember, loadOrgMembers, OrgMember, OrgRole, removeMember } from '
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, radii, shadows, spacing, typography } from '@/theme/colors';
+import { BackHeader } from '@/components/chrome/BackHeader';
 
 const ROLE_LABELS: Record<OrgRole, string> = {
   owner: 'Propriétaire',
@@ -70,10 +71,7 @@ export default function OrganizationDetailScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.headerWrap}>
-        <Pressable style={styles.backRow} onPress={() => router.back()}>
-          <Text style={[styles.backArrow, { color: colors.primary }]}>←</Text>
-          <Text style={[styles.backLabel, { color: colors.primary }]}>Retour</Text>
-        </Pressable>
+        <BackHeader inline title="Organisation" />
       </View>
       <PageHeader
         eyebrow="Organisation"

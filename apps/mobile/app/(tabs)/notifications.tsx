@@ -23,7 +23,7 @@ export default function NotificationsTabScreen() {
   const unreadCount = items.filter((n) => !n.read).length;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={[]}>
       <View style={styles.header}>
         <View style={styles.dotRow}>
           <View style={[styles.dot, { backgroundColor: brand[700] }]} />

@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { BackHeader } from '@/components/chrome/BackHeader';
 
 type Tone = 'brand' | 'success' | 'warning' | 'danger' | 'info' | 'neutral';
 
@@ -41,10 +42,7 @@ export default function SupportScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
-      <Pressable style={styles.backRow} onPress={() => router.back()}>
-        <Text style={[styles.backArrow, { color: colors.primary }]}>←</Text>
-        <Text style={[styles.backLabel, { color: colors.primary }]}>Retour</Text>
-      </Pressable>
+      <BackHeader inline title="Support" />
 
       <PageHeader eyebrow="AIDE" title="Support" />
 

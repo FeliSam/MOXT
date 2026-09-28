@@ -1,8 +1,9 @@
 import { ScrollView, View } from 'react-native';
 
+import { AppHeader } from '@/components/chrome/AppHeader';
 import { FeatherIcon } from '@/components/chrome/icons';
 import { DsBadge, DsButton, DsCard, DsInput, DsPageHeader } from '@/components/ds';
-import { AppScreen } from '@/components/ui/Card';
+import { AppBottomTabBar, BOTTOM_NAV_PADDING } from '@/components/navigation/BottomNavBar';
 import { AppText } from '@/components/ui/AppText';
 import { useTheme } from '@/theme/ThemeContext';
 
@@ -18,8 +19,9 @@ function CardTitle({ children }: { children: string }) {
 export default function DesignSystemScreen() {
   const { isDark } = useTheme();
   return (
-    <AppScreen edges={['top']}>
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 28 }}>
+    <View style={{ flex: 1 }}>
+      <AppHeader pathname="/design-system" />
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: BOTTOM_NAV_PADDING, gap: 28 }}>
         <DsPageHeader eyebrow="Fondations UI" title="Design system MOXT" />
         <View style={{ gap: 20 }}>
           <DsCard>
@@ -70,6 +72,7 @@ export default function DesignSystemScreen() {
           </DsCard>
         </View>
       </ScrollView>
-    </AppScreen>
+      <AppBottomTabBar activeRoute="" />
+    </View>
   );
 }
