@@ -10,6 +10,7 @@ import {
   RailBadge,
 } from '@/components/marketplace/MarketplaceListingCard';
 import { AppText } from '@/components/ui/AppText';
+import { VideoFramePoster } from '@/components/video/FeedVideoPlayer';
 import type { FeedVideo } from '@/store/feed';
 import type { ListingItem } from '@/store/marketplace';
 import { useShadows, useThemeColors } from '@/theme/ThemeContext';
@@ -137,7 +138,8 @@ function formatDuration(ms: number) {
 
 /**
  * Affiche de la vidéo : le web capture l'image à 5 s (captureVideoFrameAtSeconds).
- * Sur Expo web on fait pareil avec un <video> figé à 5 s ; sur natif, la miniature stockée.
+ * Sur Expo web on fait pareil avec un <video> figé à 5 s ; sur natif, la miniature stockée,
+ * ou à défaut la frame à 5 s via expo-video.
  */
 function VideoPoster({ video, width, height }: { video: FeedVideo; width: number; height: number }) {
   const src = String(video.videoUrl || '');
@@ -153,6 +155,7 @@ function VideoPoster({ video, width, height }: { video: FeedVideo; width: number
     });
   }
   if (thumb) return <Image source={{ uri: thumb }} style={{ width, height }} resizeMode="cover" />;
+  if (src) return <VideoFramePoster videoUrl={src} width={width} height={height} />;
   return (
     <View className="flex-1 items-center justify-center">
       <Play size={36} color="rgba(255,255,255,0.8)" strokeWidth={2} />

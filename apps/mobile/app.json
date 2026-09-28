@@ -61,7 +61,8 @@
           "organization": "moxt",
           "project": "moxt-mobile"
         }
-      ]
+      ],
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": false

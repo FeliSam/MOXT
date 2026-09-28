@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { FlatList, Image, Pressable, ScrollView, Share, View, useWindowDimensions, type ViewToken } from 'react-native';
+import { FlatList, Image, Platform, Pressable, ScrollView, Share, View, useWindowDimensions, type ViewToken } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -253,7 +253,11 @@ export default function FeedTab() {
   const initialType = FEED_TYPE_FILTERS.some((f) => f.id === params.type) ? (params.type as FeedKind) : 'all';
   const [type, setType] = useState<'all' | FeedKind>(initialType);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [muted, setMuted] = useState(true);
+  // videoFeedAudio du web : son activé par défaut ; les navigateurs bloquent l'autoplay avec son,
+  // donc sur Expo web on démarre en muet jusqu'au premier geste (policyMuted du web).
+  const [mutedPref, setMutedPref] = useState(false);
+  const [policyMuted, setPolicyMuted] = useState(Platform.OS === 'web');
+  const muted = mutedPref || policyMuted;
 
   const all = useMemo(
     () =>
@@ -304,7 +308,10 @@ export default function FeedTab() {
             height={height}
             active={index === activeIndex}
             muted={muted}
-            onToggleMute={() => setMuted((m) => !m)}
+            onToggleMute={() => {
+              setPolicyMuted(false);
+              setMutedPref(!muted);
+            }}
             chromeTop={chromeTop}
             bottomInset={insets.bottom}
           />
