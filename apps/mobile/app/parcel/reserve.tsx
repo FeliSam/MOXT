@@ -17,9 +17,12 @@ import { Input } from '@/components/ui/Input';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, radii, shadows, spacing, typography } from '@/theme/colors';
 import { requestParcelReservation } from '@moxt/shared/services/contentWrites.js';
+import { openContactConversation } from '@moxt/shared/services/contactService.js';
+import { createAuthorNotification } from '@moxt/shared/services/authorNotifications.js';
 
 import { supabase } from '@/services/supabase';
 import { loadCoreData } from '@/store/data';
+import { mapConversationRow, receiveRemoteConversation, sendMessage } from '@/store/messages';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { BackHeader } from '@/components/chrome/BackHeader';
 
@@ -45,15 +48,52 @@ export default function ReserveParcelScreen() {
     setLoading(true);
     try {
       const name = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
+      const kg = Number(weight);
       await requestParcelReservation(supabase, {
         parcelId,
         userId: user.id,
         requesterName: name,
         ownerId: parcel?.ownerId || null,
         businessId: parcel?.businessId || null,
-        kg: Number(weight),
-        note: description.trim(),
+        kg,
       });
+      const ownerId = parcel?.ownerId;
+      if (ownerId && ownerId !== user.id) {
+        const route = `${parcel?.origin || '—'} → ${parcel?.destination || '—'}`;
+        const chatMessage = [route, `${kg} kg`, description.trim() || null].filter(Boolean).join('\n');
+        await createAuthorNotification(supabase, {
+          id: `NTF-${Date.now().toString(36).toUpperCase()}`,
+          userId: ownerId,
+          title: 'Nouvelle demande de colis',
+          message: `${name || 'Un membre'} demande ${kg} kg.`,
+          type: 'parcel',
+          link: `/parcels/${parcelId}`,
+          priority: 'high',
+        }).catch(() => undefined);
+        const result = await openContactConversation(supabase, {
+          createdBy: user.id,
+          ownerId,
+          senderName: name,
+          relatedType: 'parcel',
+          relatedId: parcelId,
+          relatedPath: `/parcels/${parcelId}`,
+          relatedSnapshot: {
+            type: 'parcel',
+            id: parcelId,
+            title: route,
+            path: `/parcels/${parcelId}`,
+          },
+        });
+        dispatch(receiveRemoteConversation(mapConversationRow(result.conversation as unknown as Record<string, unknown>)));
+        await dispatch(sendMessage({
+          conversationId: result.id,
+          senderId: user.id,
+          senderName: name || 'Membre',
+          text: chatMessage,
+        }));
+        router.replace(`/messages/${result.id}` as never);
+        return;
+      }
       await dispatch(loadCoreData());
       Alert.alert('Réservation envoyée', 'Le voyageur sera notifié de votre demande.', [
         { text: 'OK', onPress: () => router.back() },
