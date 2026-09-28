@@ -63,7 +63,7 @@ export function AppHeader({ pathname }: { pathname: string }) {
           transparent
           size={HEADER.avatar}
           accessibilityLabel={t('settings.profileSecurity.openProfile')}
-          onPress={() => router.push('/profile/edit' as never)}>
+          onPress={() => router.push('/profile' as never)}>
           <UserAvatar user={user} size={HEADER.avatar} />
         </HeaderActionButton>
         <View style={{ flex: 1, minWidth: 0 }}>
