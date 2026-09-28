@@ -71,3 +71,13 @@ export async function markAllNotificationsRead(client, userId) {
     .eq('user_id', userId)
   if (error) throw error
 }
+
+/** Même écriture que le web (communications/archiveNotification). */
+export async function archiveNotification(client, { id, userId }) {
+  const { error } = await client
+    .from('notifications')
+    .update({ archived: true, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('user_id', userId)
+  if (error) throw error
+}
