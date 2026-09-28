@@ -14,12 +14,30 @@ import {
 import { mergeUnreadBy } from '@moxt/shared/utils/mergeUnreadBy.js';
 import { supabase } from '../services/supabase';
 
+export type MessageAttachment = {
+  kind?: string;
+  name?: string;
+  size?: number;
+  type?: string;
+  url?: string | null;
+  urls?: string[];
+  fromStatus?: boolean;
+  reactionEmoji?: string;
+};
+
 export type Message = {
   id: string;
   senderId: string;
   senderName: string;
   text: string;
   createdAt: string;
+  attachment?: MessageAttachment | null;
+  readBy?: string[];
+  deliveredTo?: string[];
+  replyToId?: string | null;
+  relatedContextId?: string | null;
+  editedAt?: string | null;
+  pending?: boolean;
 };
 
 export type RelatedSnapshot = {
@@ -157,7 +175,7 @@ function defaultRelatedPath(relatedType?: string, relatedId?: string) {
   const builders: Record<string, (id: string) => string> = {
     listing: (id) => `/listing/${id}`,
     job: (id) => `/jobs/${id}`,
-    parcel: (id) => `/(tabs)/parcels`,
+    parcel: (id) => `/parcel/${id}`,
     event: (id) => `/events/${id}`,
     business: (id) => `/organization/${id}`,
   };
@@ -205,14 +223,60 @@ function normalizeRelatedContexts(conversation: Partial<Conversation>): RelatedC
   ];
 }
 
-function mapMessageRow(row: Record<string, unknown>): Message {
+function asIdList(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map(String).filter(Boolean);
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed.map(String).filter(Boolean) : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+function asAttachment(value: unknown): MessageAttachment | null {
+  if (!value) return null;
+  if (typeof value === 'string') {
+    try {
+      return asAttachment(JSON.parse(value));
+    } catch {
+      return null;
+    }
+  }
+  if (typeof value === 'object') return value as MessageAttachment;
+  return null;
+}
+
+/** Ligne `messages` → message, mêmes champs que normalizeMessage du web. */
+export function mapMessageRow(row: Record<string, unknown>): Message {
   return {
     id: String(row.id),
-    senderId: String(row.sender_id),
-    senderName: String(row.sender_name || ''),
+    senderId: String(row.sender_id ?? row.senderId ?? ''),
+    senderName: String(row.sender_name ?? row.senderName ?? ''),
     text: String(row.text || ''),
-    createdAt: String(row.created_at),
+    createdAt: String(row.created_at ?? row.createdAt ?? ''),
+    attachment: asAttachment(row.attachment),
+    readBy: asIdList(row.read_by ?? row.readBy),
+    deliveredTo: asIdList(row.delivered_to ?? row.deliveredTo),
+    replyToId: (row.reply_to_id ?? row.replyToId ?? null) as string | null,
+    relatedContextId: (row.related_context_id ?? row.relatedContextId ?? null) as string | null,
+    editedAt: (row.edited_at ?? row.editedAt ?? null) as string | null,
   };
+}
+
+/** Même marquage local que communicationSlice.markConversationRead. */
+export function stampMessagesRead(messages: Message[], readerId: string): Message[] {
+  const reader = String(readerId);
+  return messages.map((message) => {
+    if (String(message.senderId) === reader) return message;
+    const deliveredTo = [...(message.deliveredTo || [])];
+    const readBy = [...(message.readBy || [])];
+    if (!deliveredTo.map(String).includes(reader)) deliveredTo.push(reader);
+    if (!readBy.map(String).includes(reader)) readBy.push(reader);
+    return { ...message, deliveredTo, readBy };
+  });
 }
 
 function normalizeConversation(conversation: Conversation): Conversation {
@@ -462,11 +526,13 @@ export const sendMessage = createAsyncThunk(
       senderId,
       senderName,
       text,
+      attachment = null,
     }: {
       conversationId: string;
       senderId: string;
       senderName: string;
       text: string;
+      attachment?: MessageAttachment | null;
     },
     { getState },
   ) => {
@@ -478,6 +544,9 @@ export const sendMessage = createAsyncThunk(
       senderName,
       text,
       createdAt: new Date().toISOString(),
+      attachment,
+      readBy: [senderId],
+      deliveredTo: [],
     };
 
     const unreadBy = { ...(conversation?.unreadBy || {}) };
@@ -496,7 +565,9 @@ export const sendMessage = createAsyncThunk(
           sender_id: senderId,
           sender_name: senderName,
           text: message.text,
+          attachment: message.attachment ?? null,
           read_by: [senderId],
+          delivered_to: [],
           created_at: message.createdAt,
         },
         { onConflict: 'id' },
@@ -539,6 +610,15 @@ const messagesSlice = createSlice({
           conv.unreadBy![participantId] = (conv.unreadBy![participantId] || 0) + 1;
         });
       bumpConversationToTop(state, conv.id);
+    },
+    patchMessage(
+      state,
+      action: PayloadAction<{ conversationId: string; message: Message }>,
+    ) {
+      const conv = state.conversations.find((item) => item.id === action.payload.conversationId);
+      const current = conv?.messages.find((item) => item.id === action.payload.message.id);
+      if (!current) return;
+      Object.assign(current, action.payload.message);
     },
     receiveRemoteConversation(state, action: PayloadAction<Conversation>) {
       const conversation = normalizeConversation(action.payload);
@@ -644,6 +724,7 @@ const messagesSlice = createSlice({
         if (!conv) return;
         conv.unreadBy = { ...(conv.unreadBy || {}), ...(action.payload.unreadBy || {}) };
         conv.unreadBy[action.payload.userId] = 0;
+        conv.messages = stampMessagesRead(conv.messages, action.payload.userId);
       })
       .addCase(sendMessage.fulfilled, (state, action) => {
         const conv = state.conversations.find((c) => c.id === action.payload.conversationId);
@@ -663,6 +744,7 @@ const messagesSlice = createSlice({
 export const {
   createLocalConversation,
   receiveMessage,
+  patchMessage,
   receiveRemoteConversation,
   syncRemoteConversation,
 } = messagesSlice.actions;
