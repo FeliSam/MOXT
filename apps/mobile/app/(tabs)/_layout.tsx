@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 
 import { AppHeader } from '@/components/chrome/AppHeader';
+import { PublishMenuProvider } from '@/components/chrome/PublishMenuSheet';
 import { GuestHeader } from '@/components/chrome/GuestHeader';
 import { FloatingTabBar } from '@/components/navigation/FloatingTabBar';
 import { TAB_ROUTE_PATHS } from '@/constants/routeTitles';
@@ -27,6 +28,7 @@ export default function TabLayout() {
   };
 
   return (
+    <PublishMenuProvider>
     <Tabs
       initialRouteName="index"
       tabBar={(props) => <FloatingTabBar {...props} />}
@@ -39,7 +41,8 @@ export default function TabLayout() {
       <Tabs.Screen name="index" options={{ title: labelFor('index') }} />
       <Tabs.Screen name="transfers" options={{ title: labelFor('transfers') }} />
       <Tabs.Screen name="marketplace" options={{ title: labelFor('marketplace') }} />
-      <Tabs.Screen name="feed" options={{ title: labelFor('feed') }} />
+      {/* Fil plein écran comme le web : ni en-tête ni barre du bas. */}
+      <Tabs.Screen name="feed" options={{ title: labelFor('feed'), headerShown: false }} />
       <Tabs.Screen name="moxt" options={{ title: t('nav.more') }} />
 
       {/* Accessibles via l'en-tête (colis, cloche, messagerie) */}
@@ -47,5 +50,6 @@ export default function TabLayout() {
       <Tabs.Screen name="notifications" options={{ href: null }} />
       <Tabs.Screen name="messages" options={{ href: null, headerShown: false }} />
     </Tabs>
+    </PublishMenuProvider>
   );
 }

@@ -72,7 +72,6 @@ const STACK_HEADER_TITLES: Record<string, string> = {
   'listing/create': 'Publier une annonce',
   'jobs/index': 'Emplois',
   'jobs/[id]': "Offre d'emploi",
-  'messages/index': 'Messagerie',
   'profile/edit': 'Mon profil',
   admin: 'Admin',
   'admin/stats': 'Statistiques',
