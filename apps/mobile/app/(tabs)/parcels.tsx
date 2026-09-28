@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -110,6 +110,7 @@ export default function ParcelsScreen() {
   const [query, setQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [tab, setTab] = useState<'active' | 'archived'>('active');
+  const [showMine, setShowMine] = useState(false);
 
   const today = new Date().toISOString().slice(0, 10);
   const preferredCountry = user?.originCountry || user?.country || 'RU';
@@ -126,14 +127,21 @@ export default function ParcelsScreen() {
 
   const visibleParcels = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    const source = tab === 'active' ? browse.active : browse.archived;
+    const source = (tab === 'active' ? browse.active : browse.archived).filter((parcel) =>
+      showMine ? parcel.ownerId === user?.id : true,
+    );
     if (!normalizedQuery) return source;
     return source.filter((parcel) => {
       const haystack =
         `${parcel.origin || ''} ${parcel.destination || ''} ${parcel.ownerName || ''}`.toLowerCase();
       return haystack.includes(normalizedQuery);
     });
-  }, [browse, query, tab]);
+  }, [browse, query, showMine, tab, user?.id]);
+
+  // Même écran que le web quand le catalogue actif est vide : ouvrir Archives.
+  useEffect(() => {
+    if (browse.active.length === 0 && browse.archived.length > 0) setTab('archived');
+  }, [browse.active.length, browse.archived.length]);
 
   const activeCount = browse.active.length;
   const archivedCount = browse.archived.length;
@@ -170,8 +178,8 @@ export default function ParcelsScreen() {
         <View style={styles.headerBtnRow}>
           <Pressable
             style={[styles.headerBtn, { backgroundColor: colors.surfaceMuted }]}
-            onPress={() => setTab('active')}>
-            <Text style={[styles.headerBtnText, { color: brand[700] }]}>Tous les colis</Text>
+            onPress={() => setShowMine((value) => !value)}>
+            <Text style={[styles.headerBtnText, { color: brand[700] }]}>{showMine ? 'Mes colis' : 'Tous les colis'}</Text>
           </Pressable>
           <Pressable
             style={[styles.headerBtn, { backgroundColor: brand[700] }]}

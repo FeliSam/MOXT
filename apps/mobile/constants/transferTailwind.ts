@@ -26,13 +26,13 @@ export const twTransfer = {
 
   partnerHeader: 'flex-row items-center justify-between gap-3 border-b border-app-border pb-4 dark:border-zinc-800',
   partnerCard: 'w-[9.25rem] shrink-0 flex-col items-center gap-2 rounded-2xl border-2 p-4',
-  partnerCardActive: 'border-brand-500 bg-brand-100 shadow-md dark:border-brand-400 dark:bg-brand-950/40',
+  partnerCardActive: 'border-emerald-500 bg-emerald-50 shadow-md dark:border-emerald-400 dark:bg-emerald-950/40',
   partnerCardIdle: 'border-app-border dark:border-zinc-700',
   partnerAvatar: 'h-12 w-12 items-center justify-center rounded-2xl',
   partnerName: 'text-center text-xs font-black leading-tight text-app-text dark:text-zinc-50',
   partnerRating: 'text-[10px] font-bold text-amber-600',
   partnerTag: 'rounded-full px-2 py-0.5 text-[10px] font-bold',
-  partnerSelected: 'text-[10px] font-bold text-brand-700 dark:text-brand-400',
+  partnerSelected: 'text-[10px] font-bold text-emerald-700 dark:text-emerald-300',
 
   simGradient: 'p-5',
   simEyebrow: 'text-xs font-bold uppercase tracking-widest text-white/80',

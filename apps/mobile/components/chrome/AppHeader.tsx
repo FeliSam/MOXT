@@ -47,7 +47,12 @@ export function AppHeader({ pathname }: { pathname: string }) {
   const flags = useAppSelector((s) => s.platform.flags);
   const openPublish = usePublishMenu();
   const actions = getMobileHeaderActions(pathname, { canFeed: flags.feed, canNews: flags.news, canParcels: flags.parcels });
-  const title = translateLabel(ROUTE_TITLES[pathname] ?? 'MOXT');
+  const matchedPath =
+    (ROUTE_TITLES[pathname] && pathname) ||
+    Object.keys(ROUTE_TITLES)
+      .sort((a, b) => b.length - a.length)
+      .find((key) => pathname === key || pathname.startsWith(`${key}/`));
+  const title = translateLabel((matchedPath && ROUTE_TITLES[matchedPath]) || 'MOXT');
 
   return (
     <View

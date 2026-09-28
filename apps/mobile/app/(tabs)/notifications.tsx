@@ -19,9 +19,9 @@ import { useTheme } from '@/theme/ThemeContext';
 import { isMessageNotification, mobileNotificationRoute } from '@/utils/notificationRoutes';
 
 const PRIORITY = {
-  high: { label: 'Urgent', icon: Zap, bg: '#fff1f2', bgDark: 'rgba(136,19,55,0.25)', fg: '#be123c' },
-  normal: { label: 'Standard', icon: Star, bg: '#f0fdfa', bgDark: 'rgba(6,78,59,0.35)', fg: '#0f766e' },
-  low: { label: 'Faible', icon: Bell, bg: '#f1f5f9', bgDark: 'rgba(51,65,85,0.55)', fg: '#475569' },
+  high: { label: 'Urgent', icon: Zap, border: '#fda4af', fg: '#be123c' },
+  normal: { label: 'Standard', icon: Star, border: '#99f6e4', fg: '#0f766e' },
+  low: { label: 'Faible', icon: Bell, border: '#cbd5e1', fg: '#475569' },
 } as const;
 
 function priorityOf(item: NotificationItem) {
@@ -69,7 +69,7 @@ export default function NotificationsTabScreen() {
             className="border border-app-border bg-app-surface"
             style={{ minHeight: 36, borderRadius: 12, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Check size={14} color={colors.text} />
-            <AppText className="text-xs font-bold text-app-text">Tout marquer lu</AppText>
+            <AppText className="text-xs font-bold text-app-text">Tout lire</AppText>
           </Pressable>
         ) : null}
       </View>
@@ -94,7 +94,8 @@ export default function NotificationsTabScreen() {
                 borderRadius: 18,
                 padding: 14,
                 gap: 8,
-                backgroundColor: item.read ? colors.surface : isDark ? style.bgDark : style.bg,
+                backgroundColor: colors.surface,
+                borderColor: item.read ? colors.border : style.border,
               }}>
               <View style={{ flexDirection: 'row', gap: 12 }}>
                 <View style={{ width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: isDark ? 'rgba(0,0,0,0.25)' : '#ffffff' }}>
@@ -103,11 +104,18 @@ export default function NotificationsTabScreen() {
                 <View style={{ flex: 1, gap: 4 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
                     <AppText className="flex-1 text-sm font-black text-app-text">{item.title}</AppText>
-                    {!item.read ? (
+                    <View style={{ flexDirection: 'row', gap: 4 }}>
+                      {!item.read ? (
+                        <AppText className="text-[10px] font-black uppercase" style={{ color: '#b45309' }}>
+                          Nouvelle
+                        </AppText>
+                      ) : (
+                        <AppText className="text-[10px] font-black uppercase text-app-text-muted">Lue</AppText>
+                      )}
                       <AppText className="text-[10px] font-black uppercase" style={{ color: style.fg }}>
                         {style.label}
                       </AppText>
-                    ) : null}
+                    </View>
                   </View>
                   <AppText className="text-sm leading-5 text-app-text-muted">{item.message}</AppText>
                   {item.createdAt ? (
@@ -121,6 +129,14 @@ export default function NotificationsTabScreen() {
                         <AppText className="text-xs font-bold" style={{ color: isDark ? '#020617' : '#fff' }}>
                           {isMessageNotification(item) ? 'Ouvrir la conversation' : 'Ouvrir'}
                         </AppText>
+                      </Pressable>
+                    ) : null}
+                    {!item.read ? (
+                      <Pressable
+                        onPress={() => dispatch(markAsRead(item.id))}
+                        className="border border-app-border"
+                        style={{ minHeight: 32, borderRadius: 10, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center' }}>
+                        <AppText className="text-xs font-bold text-app-text">Marquer lue</AppText>
                       </Pressable>
                     ) : null}
                     {userId ? (

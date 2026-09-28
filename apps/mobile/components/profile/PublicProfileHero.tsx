@@ -91,7 +91,7 @@ function EditCoverPill({ label, onPress }: { label: string; onPress: () => void 
           boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)',
         }}>
         <ImageIcon size={14} color="#ffffff" strokeWidth={2} />
-        <AppText className={`${WEB_BUTTON_TEXT} text-white`} style={{ flexShrink: 1, textAlign: 'center' }}>
+        <AppText className={`${WEB_BUTTON_TEXT} text-white`} style={{ textAlign: 'center', maxWidth: 108 }}>
           {label}
         </AppText>
       </Pressable>

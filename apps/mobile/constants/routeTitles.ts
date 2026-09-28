@@ -26,6 +26,20 @@ export const ROUTE_TITLES: Record<string, string> = {
   '/profile': 'Mon profil',
   '/publications/mine': 'Mes publications',
   '/businesses/detail': 'Fiche entreprise',
+  '/p2p': 'Échanges P2P',
+  '/p2p/publish': 'Proposer une offre',
+  '/settings': 'Paramètres',
+  '/verification': 'Vérification',
+  '/kyc': 'Vérification',
+  '/publish/parcel': 'Publier un voyage',
+  '/publish/job': 'Publier un job',
+  '/publish/event': 'Publier un événement',
+  '/publish/video': 'Publier une vidéo',
+  '/publish/post': 'Fil d’actualité',
+  '/publish/status': 'Statut',
+  '/listing/create': 'Publier une annonce',
+  '/publications/edit': 'Modifier',
+  '/messages/moxt-assistant': 'Moxti',
 };
 
 export function titleForTabRoute(routeName: string): string {

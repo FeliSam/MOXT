@@ -1,10 +1,24 @@
 import type { ReactNode } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, TextInput, View } from 'react-native';
 
-import { BackHeader } from '@/components/chrome/BackHeader';
+import { AppChrome } from '@/components/chrome/AppChrome';
 import { AppText } from '@/components/ui/AppText';
 import { WEB_BUTTON_TEXT } from '@/components/ui/webButtonText';
 import { useTheme } from '@/theme/ThemeContext';
+
+export function StepBar({ steps, index }: { steps: string[]; index: number }) {
+  const { colors } = useTheme();
+  return (
+    <View style={{ flexDirection: 'row', gap: 6 }}>
+      {steps.map((label, stepIndex) => (
+        <View key={label} style={{ flex: 1, gap: 4 }}>
+          <View style={{ height: 4, borderRadius: 99, backgroundColor: stepIndex <= index ? colors.accent : colors.border }} />
+          <AppText className="text-[10px] font-bold text-app-text-muted">{label}</AppText>
+        </View>
+      ))}
+    </View>
+  );
+}
 
 export function Field({
   label,
@@ -52,23 +66,30 @@ export function Field({
 export function PublishForm({
   title,
   subtitle,
+  pathname = '/publish/post',
   children,
   onSubmit,
   submitLabel = 'Publier',
   busy = false,
+  hideSubmit = false,
 }: {
   title: string;
   subtitle?: string;
+  pathname?: string;
   children: ReactNode;
-  onSubmit: () => void;
+  onSubmit?: () => void;
   submitLabel?: string;
   busy?: boolean;
+  hideSubmit?: boolean;
 }) {
   const { colors, isDark } = useTheme();
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 48 }}>
-      <BackHeader inline title={title} subtitle={subtitle} />
+    <AppChrome pathname={pathname}>
+    <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 128 }}>
+      <AppText className="text-2xl font-black text-app-text">{title}</AppText>
+      {subtitle ? <AppText className="text-sm text-app-text-muted">{subtitle}</AppText> : null}
       {children}
+      {hideSubmit ? null : (
       <Pressable
         accessibilityRole="button"
         disabled={busy}
@@ -76,6 +97,8 @@ export function PublishForm({
         style={{ minHeight: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent, opacity: busy ? 0.7 : 1 }}>
         {busy ? <ActivityIndicator color={isDark ? '#020617' : '#fff'} /> : <AppText className={WEB_BUTTON_TEXT} style={{ color: isDark ? '#020617' : '#ffffff' }}>{submitLabel}</AppText>}
       </Pressable>
+      )}
     </ScrollView>
+    </AppChrome>
   );
 }

@@ -50,30 +50,30 @@ export function TransferWizardStep1({
             return (
               <Pressable
                 key={dir}
-                className={cn(
-                  twTransfer.directionCard,
-                  active ? twTransfer.directionCardActive : twTransfer.directionCardIdle,
-                )}
+                className={cn(twTransfer.directionCard, !active && twTransfer.directionCardIdle)}
+                style={
+                  active
+                    ? { borderColor: '#FCD116', backgroundColor: '#fffbeb' }
+                    : undefined
+                }
                 onPress={() => onDirectionChange(dir)}>
                 <View className="flex-row flex-wrap items-center gap-2">
                   <Text className={twTransfer.directionFlags}>
                     {cardInfo.fromFlag} {cardInfo.from}
                   </Text>
-                  <Text className={active ? 'text-brand-700' : 'text-app-text-muted'}>→</Text>
+                  <Text style={{ color: active ? '#92400e' : '#6b7280' }}>→</Text>
                   <Text className={twTransfer.directionFlags}>
                     {cardInfo.toFlag} {cardInfo.to}
                   </Text>
                 </View>
                 <Text
-                  className={cn(
-                    twTransfer.directionSub,
-                    active ? 'text-brand-700 dark:text-brand-400' : 'text-app-text-muted',
-                  )}>
+                  style={{ color: active ? '#92400e' : undefined }}
+                  className={cn(twTransfer.directionSub, !active && 'text-app-text-muted dark:text-zinc-300')}>
                   {cardInfo.sub}
                 </Text>
                 {active ? (
-                  <View className={cn(twTransfer.selectedPill, 'bg-brand-700 dark:bg-brand-400')}>
-                    <Text className={twTransfer.selectedPillText}>✓ Sélectionné</Text>
+                  <View className={twTransfer.selectedPill} style={{ backgroundColor: '#FCD116' }}>
+                    <Text className="text-[10px] font-bold" style={{ color: '#1c1917' }}>✓ Sélectionné</Text>
                   </View>
                 ) : null}
               </Pressable>

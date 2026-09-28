@@ -4,10 +4,10 @@ export const DIRECTIONS = {
 } as const;
 
 export const WIZARD_STEPS = [
-  { key: 'amount', label: 'Amount', icon: '⚙️' },
+  { key: 'amount', label: 'Montant', icon: '⚙️' },
   { key: 'sender', label: 'Expéditeur', icon: '👤' },
   { key: 'recipient', label: 'Destinataire', icon: '👤' },
-  { key: 'confirm', label: 'Confirm', icon: '🛡️' },
+  { key: 'confirm', label: 'Confirmer', icon: '🛡️' },
 ];
 
 export const PAYMENT_METHODS_RU = [

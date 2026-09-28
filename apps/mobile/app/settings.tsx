@@ -8,7 +8,7 @@ import { updateAccountPreferences } from '@moxt/shared/services/accountWrites.js
 import { DEFAULT_NOTIFICATION_PREFERENCES } from '@moxt/shared/utils/notificationUtils.js';
 
 import { Button } from '@/components/ui/Button';
-import { AppScreen, Card } from '@/components/ui/Card';
+import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { cn } from '@/lib/cn';
 import { useLanguage } from '@/providers/LanguageProvider';
@@ -17,7 +17,7 @@ import { logout } from '@/store/auth';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { supabase } from '@/services/supabase';
 import { useTheme } from '@/theme/ThemeContext';
-import { BackHeader } from '@/components/chrome/BackHeader';
+import { AppChrome } from '@/components/chrome/AppChrome';
 
 export default function SettingsScreen() {
   const { language, setLanguage, translateLabel } = useLanguage();
@@ -105,9 +105,8 @@ export default function SettingsScreen() {
   }
 
   return (
-    <AppScreen edges={['top', 'bottom']}>
-      <ScrollView contentContainerClassName="p-5 gap-4 pb-10">
-        <BackHeader inline title="Paramètres" />
+    <AppChrome pathname="/settings">
+      <ScrollView contentContainerClassName="p-5 gap-4 pb-32">
 
         <PageHeader
           eyebrow="Compte"
@@ -123,22 +122,26 @@ export default function SettingsScreen() {
             {theme === 'system' ? 'système' : theme === 'dark' ? 'sombre' : 'clair'}
             {theme === 'system' ? ` (actif : ${isDark ? 'sombre' : 'clair'})` : ''}.
           </Text>
-          <View className="mt-4 flex-row flex-wrap gap-2">
+          <View className="mt-4 flex-row rounded-2xl bg-app-surface-muted p-1">
             {(
               [
                 { value: 'light' as const, label: 'Clair' },
                 { value: 'dark' as const, label: 'Sombre' },
                 { value: 'system' as const, label: 'Système' },
               ] as const
-            ).map((option) => (
-              <Button
-                key={option.value}
-                variant={theme === option.value ? 'primary' : 'secondary'}
-                className="self-start"
-                onPress={() => setTheme(option.value)}>
-                {option.label}
-              </Button>
-            ))}
+            ).map((option) => {
+              const active = theme === option.value;
+              return (
+                <Pressable
+                  key={option.value}
+                  onPress={() => setTheme(option.value)}
+                  className={cn('flex-1 items-center rounded-xl py-2.5', active && 'bg-white dark:bg-zinc-800')}>
+                  <Text className={cn('text-sm font-bold', active ? 'text-brand-700 dark:text-brand-300' : 'text-app-text-muted')}>
+                    {option.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
         </Card>
 
@@ -146,36 +149,30 @@ export default function SettingsScreen() {
           <Text className="text-base font-extrabold text-app-text dark:text-zinc-50 mb-2">
             {translateLabel('Langue')}
           </Text>
-          <View className="gap-2">
+          <View className="flex-row flex-wrap gap-2">
             {SUPPORTED_LANGUAGES.map((lang: string) => {
-              const info = (LANGUAGE_LABELS as Record<string, { flag?: string; label?: string }>)[lang];
+              const info = (LANGUAGE_LABELS as Record<string, { flag?: string; label?: string; code?: string }>)[lang];
               const isActive = lang === language;
               return (
                 <Pressable
                   key={lang}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: isActive }}
                   className={cn(
-                    'flex-row items-center border rounded-xl p-3.5 gap-3',
+                    'min-w-[30%] flex-1 items-center rounded-2xl border px-2 py-2.5',
                     isActive
-                      ? 'border-brand-700 dark:border-brand-400 bg-brand-50 dark:bg-brand-950/30'
+                      ? 'border-brand-700 bg-brand-50 dark:border-brand-400 dark:bg-brand-950/30'
                       : 'border-app-border dark:border-zinc-700',
                   )}
                   onPress={() => {
-              setLanguage(lang);
-              void persistPreferences({ language: lang });
-            }}>
-                  <Text className="text-2xl">{info?.flag}</Text>
-                  <Text
-                    className={cn(
-                      'text-base font-semibold flex-1',
-                      isActive
-                        ? 'text-brand-700 dark:text-brand-400'
-                        : 'text-app-text dark:text-zinc-50',
-                    )}>
-                    {info?.label || lang}
+                    setLanguage(lang);
+                    void persistPreferences({ language: lang });
+                  }}>
+                  <Text className="text-xl">{info?.flag}</Text>
+                  <Text className={cn('text-[11px] font-black', isActive ? 'text-brand-700 dark:text-brand-300' : 'text-app-text')}>
+                    {lang.toUpperCase()}
                   </Text>
-                  {isActive ? (
-                    <Text className="text-lg font-black text-brand-700 dark:text-brand-400">✓</Text>
-                  ) : null}
+                  <Text className="text-center text-[11px] text-app-text-muted">{info?.label || lang}</Text>
                 </Pressable>
               );
             })}
@@ -313,6 +310,6 @@ export default function SettingsScreen() {
           </Button>
         </Card>
       </ScrollView>
-    </AppScreen>
+    </AppChrome>
   );
 }

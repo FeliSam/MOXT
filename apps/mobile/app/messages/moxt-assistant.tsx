@@ -157,7 +157,7 @@ export default function MoxtAssistantScreen() {
                 style={{ minHeight: 56, flexBasis: '47%', flexGrow: 1, flexDirection: 'row', alignItems: 'flex-start', gap: 6, borderRadius: 16, paddingLeft: 12, paddingRight: 6, paddingVertical: 10, boxShadow: CHIP_SHADOW }}>
                 <Zap size={14} color={brand[500]} strokeWidth={2} style={{ marginTop: 5 }} />
                 {/* Rendu web observé : 16 px, graisse moyenne (la règle mobile du web agrandit ces puces). */}
-                <AppText className="text-base font-medium text-app-text" style={{ flex: 1, minWidth: 0, lineHeight: 24 }}>
+                <AppText className="text-xs font-bold text-app-text" style={{ flex: 1, minWidth: 0, lineHeight: 16 }}>
                   {suggestion}
                 </AppText>
               </Pressable>
