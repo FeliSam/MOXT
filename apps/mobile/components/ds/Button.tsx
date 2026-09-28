@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, View, type ViewStyle } from 'react-native';
 
 import { FeatherIcon, type FeatherName } from '@/components/chrome/icons';
@@ -82,6 +82,8 @@ export function DsButton({
   const s = SIZE[size];
   const color = textColor(variant, isDark, colors);
   const isDisabled = disabled || loading;
+  // Style statique (pas de fonction) : NativeWind web ignore un style-fonction combiné à className.
+  const [pressed, setPressed] = useState(false);
 
   return (
     <Pressable
@@ -90,8 +92,10 @@ export function DsButton({
       accessibilityState={{ disabled: isDisabled, busy: loading }}
       disabled={isDisabled}
       onPress={onPress}
+      onPressIn={() => setPressed(true)}
+      onPressOut={() => setPressed(false)}
       className={cn('flex-row items-center justify-center', CONTAINER[variant], className)}
-      style={({ pressed }) => [
+      style={[
         {
           minHeight: s.minHeight,
           gap: s.gap,

@@ -189,7 +189,17 @@ export default function LoginScreen() {
             </View>
           ) : null}
 
-          <View style={{ marginTop: 16, gap: 16 }}>
+          {/* .auth-form-panel : panneau bordé autour des champs (comme le web) */}
+          <View
+            style={{
+              marginTop: 16,
+              gap: 16,
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: withAlphaColor(colors.accent, isDark ? 0.35 : 0.28),
+              backgroundColor: colors.surface,
+              padding: 16,
+            }}>
             {mode === 'phone-password' ? (
               <DsInput
                 testID="login-phone"
@@ -231,13 +241,13 @@ export default function LoginScreen() {
               iconRight={<PasswordEye visible={showPassword} onToggle={() => setShowPassword((v) => !v)} />}
             />
 
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-              <Pressable accessibilityRole="button" onPress={showHelp} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <FeatherIcon name="help-circle" size={14} color={colors.accent} />
-                <AppText className="text-xs font-extrabold text-app-accent">{t('auth.login.needHelp')}</AppText>
+            <View style={{ alignItems: 'flex-start', gap: 8 }}>
+              <Pressable accessibilityRole="button" onPress={showHelp} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                <FeatherIcon name="help-circle" size={15} color={colors.accent} />
+                <AppText className="text-sm font-extrabold text-app-accent">{t('auth.login.needHelp')}</AppText>
               </Pressable>
               <Pressable accessibilityRole="link">
-                <AppText className="text-xs font-extrabold text-app-accent">{t('auth.login.forgot')}</AppText>
+                <AppText className="text-sm font-extrabold text-app-accent">{t('auth.login.forgot')}</AppText>
               </Pressable>
             </View>
 
@@ -247,7 +257,7 @@ export default function LoginScreen() {
               </View>
             ) : null}
 
-            <DsButton loading={isLoading} onPress={submit} style={{ width: '100%' }}>
+            <DsButton size="lg" loading={isLoading} onPress={submit} style={{ width: '100%' }}>
               {isLoading ? t('auth.login.submitting') : t('auth.login.submit')}
             </DsButton>
           </View>
