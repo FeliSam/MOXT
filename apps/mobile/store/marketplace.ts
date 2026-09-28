@@ -2,6 +2,8 @@ import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 import { supabase } from '../services/supabase';
 import { fetchActiveListings } from '@moxt/shared/services/publicationsService.js';
+import { toggleLikeList } from '@moxt/shared/services/engagementService.js';
+import { commentAdded, commentRemoved, likeToggled, type EngagementComment } from './engagementActions';
 
 export type ListingItem = {
   id: string;
@@ -25,6 +27,8 @@ export type ListingItem = {
   condition?: string;
   createdAt?: string;
   expiresAt?: string;
+  likes?: string[];
+  comments?: EngagementComment[];
 };
 
 type MarketplaceState = {
@@ -49,6 +53,19 @@ export const loadListings = createAsyncThunk(
   },
 );
 
+function asArray(value: unknown): any[] {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 function mapRow(row: any): ListingItem {
   return {
     id: row.id,
@@ -64,12 +81,16 @@ function mapRow(row: any): ListingItem {
     address: row.address || row.payload?.address || '',
     images: row.images || row.payload?.images || [],
     ownerId: row.owner_id,
+    businessId: row.business_id || row.payload?.businessId || undefined,
     sellerName: row.seller_name || row.payload?.sellerName || '',
     contact: row.payload?.contact || '',
     whatsapp: row.payload?.whatsapp || '',
     condition: row.payload?.condition || '',
     createdAt: row.created_at,
     expiresAt: row.expires_at,
+    // Colonnes likes / comments (miroir dans payload), écrites par les RPC moxt_listing_*.
+    likes: asArray(row.likes ?? row.payload?.likes),
+    comments: asArray(row.comments ?? row.payload?.comments).filter((c: unknown) => c && typeof c === 'object'),
   };
 }
 
@@ -94,6 +115,21 @@ const marketplaceSlice = createSlice({
       .addCase(loadListings.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Erreur chargement marketplace';
+      })
+      .addCase(likeToggled, (state, action) => {
+        if (action.payload.kind !== 'listing') return;
+        const item = state.items.find((l) => l.id === action.payload.entityId);
+        if (item) item.likes = toggleLikeList(item.likes, action.payload.userId);
+      })
+      .addCase(commentAdded, (state, action) => {
+        if (action.payload.kind !== 'listing') return;
+        const item = state.items.find((l) => l.id === action.payload.entityId);
+        if (item) item.comments = [...(item.comments || []), action.payload.comment];
+      })
+      .addCase(commentRemoved, (state, action) => {
+        if (action.payload.kind !== 'listing') return;
+        const item = state.items.find((l) => l.id === action.payload.entityId);
+        if (item) item.comments = (item.comments || []).filter((c) => c.id !== action.payload.commentId);
       });
   },
 });

@@ -1,12 +1,13 @@
 import { useEffect, useMemo } from 'react';
 import { Image, Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
-import { Building2, MapPin, Star, UserPlus } from 'lucide-react-native';
+import { Building2, MapPin, Star } from 'lucide-react-native';
 
 import { businessActivityLabel } from '@moxt/shared/config/businessActivityLabels.js';
 import { statusMeta } from '@moxt/shared/config/statuses.js';
 import { isReviewVisible } from '@moxt/shared/utils/reviewUtils.js';
 
+import { SubscribeButton } from '@/components/account/SubscribeButton';
 import { WebBadge, type BadgeTone } from '@/components/dashboard/webUi';
 import { AppText } from '@/components/ui/AppText';
 import { VerifiedIcon } from '@/components/ui/VerifiedIcon';
@@ -113,12 +114,7 @@ function BusinessCard({ business, userId, rating }: { business: Business; userId
       </Pressable>
       {userId && userId !== business.ownerId ? (
         <View className="border-t border-app-border pt-2">
-          <Pressable
-            onPress={() => router.push(`/organization/${business.id}` as never)}
-            className="min-h-9 flex-row items-center justify-center gap-2 rounded-xl border border-app-border-md bg-app-surface">
-            <UserPlus size={14} color={colors.text} strokeWidth={2} />
-            <AppText className="text-sm text-app-text">S&apos;abonner</AppText>
-          </Pressable>
+          <SubscribeButton publisherType="business" publisherId={business.id} publisherName={business.name} size="sm" className="w-full" />
         </View>
       ) : null}
     </View>

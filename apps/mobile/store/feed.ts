@@ -7,6 +7,8 @@ import {
   groupStatusesByAuthor,
 } from '@moxt/shared/services/feedService.js';
 import { supabase } from '../services/supabase';
+import { commentAdded, commentRemoved, likeToggled, videoShareIncremented, type EngagementKind } from './engagementActions';
+import { toggleLikeList } from '@moxt/shared/services/engagementService.js';
 
 export type FeedPost = {
   id: string;
@@ -80,6 +82,12 @@ export const loadFeed = createAsyncThunk('feed/load', async (userId: string) => 
   };
 });
 
+function findEntity(state: FeedState, kind: EngagementKind, id: string): Record<string, unknown> | undefined {
+  if (kind === 'video') return state.videos.find((item) => item.id === id);
+  if (kind === 'post') return state.posts.find((item) => item.id === id);
+  return undefined;
+}
+
 const feedSlice = createSlice({
   name: 'feed',
   initialState,
@@ -97,6 +105,24 @@ const feedSlice = createSlice({
       })
       .addCase(loadFeed.rejected, (state) => {
         state.status = 'error';
+      })
+      .addCase(likeToggled, (state, action) => {
+        const entity = findEntity(state, action.payload.kind, action.payload.entityId);
+        if (entity) entity.likes = toggleLikeList(entity.likes, action.payload.userId);
+      })
+      .addCase(commentAdded, (state, action) => {
+        const entity = findEntity(state, action.payload.kind, action.payload.entityId);
+        if (entity) entity.comments = [...(Array.isArray(entity.comments) ? entity.comments : []), action.payload.comment];
+      })
+      .addCase(commentRemoved, (state, action) => {
+        const entity = findEntity(state, action.payload.kind, action.payload.entityId);
+        if (entity && Array.isArray(entity.comments)) {
+          entity.comments = entity.comments.filter((item: { id?: string }) => item?.id !== action.payload.commentId);
+        }
+      })
+      .addCase(videoShareIncremented, (state, action) => {
+        const video = state.videos.find((item) => item.id === action.payload.videoId);
+        if (video) video.shareCount = (Number(video.shareCount) || 0) + 1;
       });
   },
 });

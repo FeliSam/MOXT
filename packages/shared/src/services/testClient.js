@@ -9,7 +9,7 @@ export function createFakeClient(tables = {}, { rpc = {}, errors = {} } = {}) {
     const call = { table, ops: [] }
     calls.push(call)
     const chain = {}
-    for (const op of ['select', 'eq', 'or', 'in', 'gt', 'order', 'limit', 'contains', 'filter', 'update']) {
+    for (const op of ['select', 'eq', 'or', 'in', 'gt', 'order', 'limit', 'contains', 'filter', 'update', 'upsert', 'delete']) {
       chain[op] = (...args) => {
         call.ops.push([op, ...args])
         return chain

@@ -23,6 +23,8 @@ export type FeedItem = {
   image: string;
   videoUrl: string;
   stats: { views: number; likes: number; comments: number; shares: number };
+  /** L'utilisateur connecté a aimé (vidéos, annonces, posts). */
+  liked?: boolean;
   isTrending?: boolean;
   route: string;
 };
@@ -60,6 +62,7 @@ function userPublisher(id: string, name: string, avatarUrl = '', verified = fals
 }
 
 const count = (v: unknown) => (Array.isArray(v) ? v.length : Number(v) || 0);
+const likedBy = (likes: unknown, userId?: string) => Boolean(userId && Array.isArray(likes) && likes.map(String).includes(userId));
 
 /** Engagement du web (feedRankUtils.feedEngagement). */
 export function feedEngagement(item: FeedItem) {
@@ -99,6 +102,7 @@ export function buildFeedItems(src: {
       image: v.thumbnailUrl || '',
       videoUrl: v.videoUrl || '',
       stats: { views: Number(v.viewCount) || 0, likes: count(v.likes), comments: count(v.comments), shares: Number(v.shareCount) || 0 },
+      liked: likedBy(v.likes, src.userId),
       route: '/(tabs)/feed',
     });
   }
@@ -115,7 +119,8 @@ export function buildFeedItems(src: {
       caption: [price, l.city].filter(Boolean).join(' · '),
       image: (l.images || [])[0] || '',
       videoUrl: '',
-      stats: { views: Number(l.views) || 0, likes: count(l.likes), comments: 0, shares: 0 },
+      stats: { views: Number(l.views) || 0, likes: count(l.likes), comments: count(l.comments), shares: 0 },
+      liked: likedBy(l.likes, src.userId),
       route: `/listing/${l.id}`,
     });
   }
@@ -164,6 +169,7 @@ export function buildFeedItems(src: {
       image: p.imageUrl || (p.images || [])[0] || '',
       videoUrl: '',
       stats: { views: 0, likes: count(p.likes), comments: count(p.comments), shares: 0 },
+      liked: likedBy(p.likes, src.userId),
       route: '/(tabs)/feed',
     });
   }

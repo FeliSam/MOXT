@@ -1,16 +1,21 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { FlatList, Image, Platform, Pressable, ScrollView, Share, View, useWindowDimensions, type ViewToken } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ArrowLeft,
+  Briefcase,
+  Calendar,
+  ExternalLink,
   Eye,
   Heart,
   House,
   MessageCircle,
   MoreHorizontal,
+  Package,
   Plus,
+  Repeat,
   Share2,
   TrendingUp,
   UserPlus,
@@ -18,21 +23,40 @@ import {
   VolumeX,
 } from 'lucide-react-native';
 
+import { usePublisherSubscription } from '@/components/account/SubscribeButton';
 import { usePublishMenu } from '@/components/chrome/PublishMenuSheet';
+import { FeedCommentsSheet } from '@/components/feed/FeedCommentsSheet';
 import { FeedMedia } from '@/components/feed/FeedMedia';
 import { buildFeedItems, FEED_TYPE_FILTERS, type FeedItem, type FeedKind } from '@/components/feed/feedItems';
 import { AppText } from '@/components/ui/AppText';
 import { VerifiedIcon } from '@/components/ui/VerifiedIcon';
 import { brand } from '@/theme/palette';
-import { useAppSelector } from '@/store/store';
+import { shareVideo, toggleEngagementLike, type EngagementKind } from '@/store/engagement';
+import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
 
 const TEXT_SHADOW = { textShadowColor: 'rgba(0,0,0,0.95)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 };
 
 /** FEED_ACTION_ICON_WRAP_CLASS : size-10, bg-black/62, ring-1 white/35. */
-function RailButton({ label, onPress, count, children }: { label: string; onPress?: () => void; count?: number; children: React.ReactNode }) {
+function RailButton({
+  label,
+  onPress,
+  count,
+  pressed,
+  children,
+}: {
+  label: string;
+  onPress?: () => void;
+  count?: number;
+  pressed?: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <Pressable accessibilityLabel={label} onPress={onPress} style={{ alignItems: 'center', justifyContent: 'center' }}>
+    <Pressable
+      accessibilityLabel={label}
+      accessibilityState={pressed === undefined ? undefined : { selected: pressed }}
+      onPress={onPress}
+      style={{ alignItems: 'center', justifyContent: 'center' }}>
       <View
         style={{
           width: 40,
@@ -70,6 +94,32 @@ function RailButton({ label, onPress, count, children }: { label: string; onPres
   );
 }
 
+/** Rail du web (railKeysForKind) : j'aime + commentaires pour vidéos, posts et annonces ; « ouvrir » sinon. */
+const SOCIAL_KINDS: EngagementKind[] = ['video', 'post', 'listing'];
+const OPEN_ICON: Partial<Record<FeedKind, typeof ExternalLink>> = { parcel: Package, job: Briefcase, event: Calendar, p2p: Repeat };
+const OPEN_LABEL: Partial<Record<FeedKind, string>> = {
+  parcel: 'Voir le colis',
+  job: 'Voir le job',
+  event: 'Voir l’événement',
+  p2p: 'Voir l’offre',
+};
+
+/**
+ * Garde l'ordre des slides déjà vues quand les données changent (un j'aime ne doit pas
+ * reclasser le Fil sous le doigt) ; les nouveaux éléments s'ajoutent à la fin.
+ */
+function useStableOrder(items: FeedItem[]) {
+  const orderRef = useRef<string[]>([]);
+  return useMemo(() => {
+    const byId = new Map(items.map((item) => [item.id, item]));
+    const kept = orderRef.current.filter((id) => byId.has(id));
+    const keptSet = new Set(kept);
+    const next = [...kept, ...items.filter((item) => !keptSet.has(item.id)).map((item) => item.id)];
+    orderRef.current = next;
+    return next.map((id) => byId.get(id) as FeedItem);
+  }, [items]);
+}
+
 function FeedSlide({
   item,
   height,
@@ -90,7 +140,33 @@ function FeedSlide({
   const colors = useThemeColors();
   const userId = useAppSelector((s) => s.auth.user?.id);
   const isOwner = Boolean(userId && (item.publisher.ownerId === userId || (item.publisher.type === 'user' && item.publisher.id === userId)));
+  const dispatch = useAppDispatch();
   const icon = { size: 19.7, color: '#ffffff', strokeWidth: 2 } as const;
+  const iconSm = { size: 18.4, color: '#ffffff', strokeWidth: 2 } as const;
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const social = SOCIAL_KINDS.includes(item.kind as EngagementKind) ? (item.kind as EngagementKind) : null;
+  const { isSubscribed, subscribe } = usePublisherSubscription(item.publisher.type, item.publisher.id, item.publisher.name);
+  const OpenIcon = OPEN_ICON[item.kind] || ExternalLink;
+
+  function requireUser() {
+    if (userId) return userId;
+    router.push('/login' as never);
+    return null;
+  }
+
+  function onLike() {
+    const uid = requireUser();
+    if (!uid || !social) return;
+    dispatch(toggleEngagementLike({ kind: social, entityId: item.entityId, userId: uid })).catch(() => undefined);
+  }
+
+  function onShare() {
+    Share.share({ message: `${item.title} — MOXT` })
+      .then((result) => {
+        if (item.kind === 'video' && result.action === Share.sharedAction) dispatch(shareVideo(item.entityId)).catch(() => undefined);
+      })
+      .catch(() => undefined);
+  }
 
   return (
     <View style={{ height, width: '100%', backgroundColor: '#000', overflow: 'hidden' }}>
@@ -161,10 +237,10 @@ function FeedSlide({
             </AppText>
             {item.publisher.verified ? <VerifiedIcon size={14} color="#34d399" /> : null}
           </View>
-          {!isOwner && item.publisher.id ? (
+          {!isOwner && item.publisher.id && !isSubscribed ? (
             <Pressable
               accessibilityLabel="S'abonner"
-              onPress={() => item.publisher.type === 'business' && router.push(`/organization/${item.publisher.id}` as never)}
+              onPress={() => requireUser() && subscribe('all')}
               style={{ width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent, boxShadow: '0 2px 10px rgba(0,0,0,0.35)' }}>
               <UserPlus size={14} color="#fff" strokeWidth={2} />
             </Pressable>
@@ -192,20 +268,25 @@ function FeedSlide({
 
       {/* FEED_ACTION_RAIL_CLASS : bas droite, gap-3, pilule « Accueil » en dernier. */}
       <View style={{ position: 'absolute', right: 12, bottom: bottomInset + 12, alignItems: 'flex-end', gap: 12, zIndex: 30 }}>
-        <RailButton label="J’aime" count={item.stats.likes}>
-          <Heart {...icon} />
-        </RailButton>
-        <RailButton label="Commenter" count={item.stats.comments}>
-          <MessageCircle {...icon} />
-        </RailButton>
-        <RailButton
-          label="Partager"
-          count={item.stats.shares}
-          onPress={() => Share.share({ message: `${item.title} — MOXT` }).catch(() => undefined)}>
-          <Share2 {...icon} />
+        {social ? (
+          <>
+            <RailButton label="J’aime" count={item.stats.likes} pressed={Boolean(item.liked)} onPress={onLike}>
+              <Heart {...icon} color={item.liked ? '#ef4444' : '#ffffff'} fill={item.liked ? '#ef4444' : 'none'} />
+            </RailButton>
+            <RailButton label="Commenter" count={item.stats.comments} onPress={() => setCommentsOpen(true)}>
+              <MessageCircle {...icon} />
+            </RailButton>
+          </>
+        ) : (
+          <RailButton label={OPEN_LABEL[item.kind] || 'Ouvrir la fiche'} onPress={() => router.push(item.route as never)}>
+            <OpenIcon {...icon} />
+          </RailButton>
+        )}
+        <RailButton label="Partager" count={item.kind === 'video' ? item.stats.shares : undefined} onPress={onShare}>
+          <Share2 {...iconSm} />
         </RailButton>
         <RailButton label="Plus d’options">
-          <MoreHorizontal {...icon} />
+          <MoreHorizontal {...iconSm} />
         </RailButton>
         <Pressable
           accessibilityLabel="Accueil"
@@ -229,6 +310,9 @@ function FeedSlide({
           <AppText className="text-[11px] font-black text-black">Accueil</AppText>
         </Pressable>
       </View>
+      {social && commentsOpen ? (
+        <FeedCommentsSheet kind={social} entityId={item.entityId} open={commentsOpen} onClose={() => setCommentsOpen(false)} />
+      ) : null}
     </View>
   );
 }
@@ -280,7 +364,8 @@ export default function FeedTab() {
   }, [all]);
   const filters = FEED_TYPE_FILTERS.filter((f) => f.id === 'all' || (counts[f.id as FeedKind] || 0) > 0);
   const showFilters = all.length > 0 && filters.length > 2;
-  const items = type === 'all' ? all : all.filter((i) => i.kind === type);
+  const ordered = useStableOrder(all);
+  const items = type === 'all' ? ordered : ordered.filter((i) => i.kind === type);
 
   const onViewable = useCallback(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     const first = viewableItems.find((v) => v.isViewable);

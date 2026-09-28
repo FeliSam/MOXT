@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import {
   fetchBusinessById,
@@ -46,6 +46,7 @@ export type PublisherSubscription = {
   publisherPath?: string;
   notifyPref?: string;
   createdAt?: string;
+  updatedAt?: string;
 };
 
 export type Review = {
@@ -146,7 +147,23 @@ function indexBusinesses(state: AccountState, items: Business[]) {
 const accountSlice = createSlice({
   name: 'account',
   initialState,
-  reducers: {},
+  reducers: {
+    /** Ajout / mise à jour optimiste d'un abonnement (web accountSlice.upsertPublisherSubscription). */
+    subscriptionUpserted(state, action: PayloadAction<PublisherSubscription>) {
+      const sub = action.payload;
+      const index = state.subscriptions.findIndex(
+        (item) => item.userId === sub.userId && item.publisherType === sub.publisherType && item.publisherId === sub.publisherId,
+      );
+      if (index >= 0) state.subscriptions[index] = sub;
+      else state.subscriptions.unshift(sub);
+    },
+    subscriptionRemoved(state, action: PayloadAction<{ userId: string; publisherType: string; publisherId: string }>) {
+      const { userId, publisherType, publisherId } = action.payload;
+      state.subscriptions = state.subscriptions.filter(
+        (item) => !(item.userId === userId && item.publisherType === publisherType && item.publisherId === publisherId),
+      );
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(loadBusinesses.pending, (state) => {
@@ -201,6 +218,7 @@ const accountSlice = createSlice({
   },
 });
 
+export const { subscriptionUpserted, subscriptionRemoved } = accountSlice.actions;
 export const accountReducer = accountSlice.reducer;
 
 /** Mes abonnements (web selectUserSubscriptions). */
@@ -215,4 +233,19 @@ export function selectMySubscriptions(
 export function selectOwnedBusinesses(businesses: Business[], userId?: string | null): Business[] {
   if (!userId) return [];
   return businesses.filter((item) => item.ownerId === userId && !item.deletedByUserAt);
+}
+
+/** Abonnement de l'utilisateur à un éditeur (web selectPublisherSubscription). */
+export function findPublisherSubscription(
+  subscriptions: PublisherSubscription[],
+  userId: string | null | undefined,
+  publisherType: string,
+  publisherId: string | null | undefined,
+): PublisherSubscription | null {
+  if (!userId || !publisherId) return null;
+  return (
+    subscriptions.find(
+      (item) => item.userId === userId && item.publisherType === publisherType && item.publisherId === publisherId,
+    ) || null
+  );
 }
