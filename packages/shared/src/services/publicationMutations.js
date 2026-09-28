@@ -60,6 +60,12 @@ const EDIT_COLUMNS = {
   amount: 'amount',
   rate: 'rate',
   status: 'status',
+  origin: 'origin',
+  destination: 'destination',
+  pricePerKg: 'price_per_kg',
+  capacityKg: 'capacity_kg',
+  sector: 'sector',
+  location: 'location',
 }
 
 /** Champs éditables d'une fiche (colonnes réelles, pas le payload entier). */

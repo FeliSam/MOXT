@@ -17,6 +17,7 @@ export const AUTHOR_NOTICE_COPY = {
   subscriptionBody: "{name} s'est abonné à vos publications.",
 }
 
+/** @param {string} [postId] @returns {string} */
 export function newsPostPath(postId) {
   return postId ? `/news/${encodeURIComponent(postId)}` : '/news'
 }
@@ -29,7 +30,7 @@ function createNoticeId() {
 
 /**
  * Construit la notification (ou null si destinataire absent ou identique à l'acteur).
- * @param {'like'|'comment'|'subscription'} kind
+ * @param {{ kind: 'like'|'comment'|'subscription', recipientId?: string|null, actorId?: string, actorName?: string, text?: string, link?: string|null, copy?: typeof AUTHOR_NOTICE_COPY }} input
  */
 export function buildAuthorNotice({
   kind,

@@ -16,6 +16,7 @@ export const MOXTI_PAGE_CANDIDATES = [
   { id: 'settings', label: 'Paramètres', path: '/settings' },
 ]
 
+/** @param {{ role?: string, text?: string }[]} [history] */
 export function recentAssistantHistory(history = []) {
   return history
     .filter((entry) => entry?.text)
@@ -27,6 +28,8 @@ export function recentAssistantHistory(history = []) {
 }
 
 /**
+ * @param {any} client
+ * @param {{ question?: string, history?: { role?: string, text?: string }[], language?: string, candidates?: any[], context?: any, draft?: any }} [input]
  * @returns {Promise<{ text: string, actions: {label: string, path: string}[], suggestions: string[], provider: string }>}
  */
 export async function askMoxti(client, { question, history = [], language = 'fr', candidates, context, draft } = {}) {
