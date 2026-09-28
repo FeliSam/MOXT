@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { router } from 'expo-router';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import { LANGUAGE_LABELS, SUPPORTED_LANGUAGES } from '@moxt/shared';
+import { updateAccountPreferences } from '@moxt/shared/services/accountWrites.js';
 import { DEFAULT_NOTIFICATION_PREFERENCES } from '@moxt/shared/utils/notificationUtils.js';
 
 import { Button } from '@/components/ui/Button';
@@ -24,7 +27,10 @@ export default function SettingsScreen() {
 
   const [pushEnabled, setPushEnabled] = useState(true);
   const [emailEnabled, setEmailEnabled] = useState(false);
+  const [subscriberEnabled, setSubscriberEnabled] = useState(true);
+  const [visibility, setVisibility] = useState<'public' | 'contacts' | 'private'>('private');
   const [preferences, setPreferences] = useState(DEFAULT_NOTIFICATION_PREFERENCES);
+  const transfers = useAppSelector((state) => state.transfers.items);
 
   useEffect(() => {
     if (!user?.id || !supabase) return;
@@ -39,30 +45,40 @@ export default function SettingsScreen() {
         setPreferences(prefs);
         setPushEnabled(prefs.pushNotifications !== false);
         setEmailEnabled(Boolean(prefs.emailNotifications));
+        setSubscriberEnabled(prefs.notifNewSubscribers !== false);
+        const vis = prefs.activityVisibility;
+        setVisibility(vis === 'public' || vis === 'contacts' || vis === 'private' ? vis : 'private');
       } catch {
         // ignore profile preference load errors
       }
     })();
   }, [user?.id]);
 
-  async function persistPreferences(overrides: {
-    pushNotifications?: boolean;
-    emailNotifications?: boolean;
-  } = {}) {
+  async function persistPreferences(patch: Record<string, unknown>) {
     if (!user?.id || !supabase) return;
-    const next = {
-      ...preferences,
-      pushNotifications: overrides.pushNotifications ?? pushEnabled,
-      emailNotifications: overrides.emailNotifications ?? emailEnabled,
-    };
+    const next = await updateAccountPreferences(supabase, user.id, patch, preferences);
     setPreferences(next);
-    await supabase
-      .from('profiles')
-      .update({
-        preferences: next,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', user.id);
+    setPushEnabled(next.pushNotifications !== false);
+    setEmailEnabled(Boolean(next.emailNotifications));
+    setSubscriberEnabled(next.notifNewSubscribers !== false);
+    const vis = next.activityVisibility;
+    if (vis === 'public' || vis === 'contacts' || vis === 'private') setVisibility(vis);
+  }
+
+  async function exportOwnData() {
+    if (!user) return;
+    const data = {
+      profile: user,
+      preferences,
+      transfers: transfers.filter((item) => !item.userId || item.userId === user.id),
+    };
+    const path = `${FileSystem.cacheDirectory || ''}moxt-donnees.json`;
+    await FileSystem.writeAsStringAsync(path, JSON.stringify(data, null, 2));
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(path, { mimeType: 'application/json', dialogTitle: 'Exporter mes données' });
+    } else {
+      Alert.alert('Export prêt', 'Le fichier a été préparé sur cet appareil.');
+    }
   }
 
   function confirmDelete() {
@@ -143,7 +159,10 @@ export default function SettingsScreen() {
                       ? 'border-brand-700 dark:border-brand-400 bg-brand-50 dark:bg-brand-950/30'
                       : 'border-app-border dark:border-zinc-700',
                   )}
-                  onPress={() => setLanguage(lang)}>
+                  onPress={() => {
+              setLanguage(lang);
+              void persistPreferences({ language: lang });
+            }}>
                   <Text className="text-2xl">{info?.flag}</Text>
                   <Text
                     className={cn(
@@ -157,6 +176,42 @@ export default function SettingsScreen() {
                   {isActive ? (
                     <Text className="text-lg font-black text-brand-700 dark:text-brand-400">✓</Text>
                   ) : null}
+                </Pressable>
+              );
+            })}
+          </View>
+          <Text className="mt-4 text-xs font-black uppercase tracking-wide text-app-text-muted">Visibilité de l’activité</Text>
+          <Text className="mt-1 text-xs leading-5 text-app-text-faint">
+            Contrôle qui peut voir vos publications publiques sur votre page membre.
+          </Text>
+          <View className="mt-2 gap-2">
+            {(
+              [
+                { value: 'public' as const, label: 'Publique', hint: 'Toute la communauté MOXT' },
+                { value: 'contacts' as const, label: 'Mes contacts', hint: 'Vos interlocuteurs en messagerie' },
+                { value: 'private' as const, label: 'Privée', hint: 'Vous seul' },
+              ]
+            ).map((option) => {
+              const active = visibility === option.value;
+              return (
+                <Pressable
+                  key={option.value}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: active }}
+                  onPress={() => {
+                    setVisibility(option.value);
+                    void persistPreferences({ activityVisibility: option.value });
+                  }}
+                  className={cn(
+                    'rounded-2xl border p-3',
+                    active
+                      ? 'border-brand-700 dark:border-brand-400 bg-brand-50 dark:bg-brand-950/30'
+                      : 'border-app-border dark:border-zinc-700',
+                  )}>
+                  <Text className={cn('text-sm font-extrabold', active ? 'text-brand-700 dark:text-brand-400' : 'text-app-text')}>
+                    {option.label}
+                  </Text>
+                  <Text className="text-xs text-app-text-muted mt-0.5">{option.hint}</Text>
                 </Pressable>
               );
             })}
@@ -186,6 +241,20 @@ export default function SettingsScreen() {
           </View>
           <View className="flex-row items-center gap-3 mt-3">
             <View className="flex-1">
+              <Text className="text-sm font-extrabold text-app-text dark:text-zinc-50">Nouveaux abonnés</Text>
+              <Text className="text-xs text-app-text-muted dark:text-zinc-400 mt-0.5">Quand un membre s'abonne à vos publications</Text>
+            </View>
+            <Switch
+              value={subscriberEnabled}
+              onValueChange={(value) => {
+                setSubscriberEnabled(value);
+                void persistPreferences({ notifNewSubscribers: value });
+              }}
+              trackColor={{ true: '#0b8975' }}
+            />
+          </View>
+          <View className="flex-row items-center gap-3 mt-3">
+            <View className="flex-1">
               <Text className="text-sm font-extrabold text-app-text dark:text-zinc-50">Notifications e-mail</Text>
               <Text className="text-xs text-app-text-muted dark:text-zinc-400 mt-0.5">Résumés et alertes par e-mail</Text>
             </View>
@@ -200,6 +269,16 @@ export default function SettingsScreen() {
           </View>
         </Card>
 
+        <Card>
+          <Text className="text-base font-extrabold text-app-text dark:text-zinc-50 mb-2">Mes données</Text>
+          <Text className="text-sm leading-5 text-app-text-muted dark:text-zinc-400">
+            Exportez uniquement les informations rattachées à votre compte.
+          </Text>
+          <Button variant="secondary" className="mt-4 self-start" onPress={() => void exportOwnData()}>
+            Exporter mes données
+          </Button>
+        </Card>
+
         {/* ── Profil et sécurité ── */}
         <Card>
           <Text className="text-base font-extrabold text-app-text dark:text-zinc-50 mb-2">Profil et sécurité</Text>
@@ -207,7 +286,10 @@ export default function SettingsScreen() {
             Gérez vos coordonnées et votre niveau de vérification.
           </Text>
           <Button variant="secondary" className="mt-4 self-start" onPress={() => router.push('/profile/edit' as any)}>
-            Ouvrir mon profil  →
+            Ouvrir mon profil
+          </Button>
+          <Button variant="secondary" className="mt-3 self-start" onPress={() => router.push('/kyc' as any)}>
+            Vérification d’identité
           </Button>
         </Card>
 
@@ -221,7 +303,7 @@ export default function SettingsScreen() {
         <Card className="border-red-200 dark:border-red-900">
           <Text className="text-base font-extrabold text-red-700 dark:text-red-300 mb-2">Zone sensible</Text>
           <Text className="text-sm leading-5 text-app-text-muted dark:text-zinc-400">
-            La demande est seulement enregistrée localement et reste réversible.
+            Demandez la suppression de votre compte. Vous disposez de 24 h pour annuler avant la suspension automatique.
           </Text>
           <Button variant="danger" className="mt-4" onPress={confirmDelete}>
             🗑  Demander la suppression

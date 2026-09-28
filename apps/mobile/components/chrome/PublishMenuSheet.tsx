@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
-import { Alert, Modal, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Modal, Pressable, ScrollView, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -29,7 +29,6 @@ const TEXT = {
   title: 'Publier',
   subtitle: 'Choisissez le type de contenu à créer.',
   close: 'Fermer',
-  soon: 'Bientôt disponible dans l’application mobile.',
 };
 
 type Option = {
@@ -37,8 +36,8 @@ type Option = {
   label: string;
   hint: string;
   icon: LucideIcon;
-  /** Route Expo quand l'écran existe déjà ; sinon message « bientôt ». */
-  route?: string;
+  /** Même destination que le menu web (FeedPublishMenu). */
+  route: string;
   /** Dégradé bg-gradient-to-br from-X/15 to-Y/10 (clair) et /20→/10 (sombre), couleur d'icône. */
   from: string;
   to: string;
@@ -57,21 +56,21 @@ const rgba = (hex: string, a: number) => {
 const OPTIONS: Option[] = [
   { id: 'transfer', label: 'Transfert', hint: 'Envoyer de l’argent rapidement', icon: Repeat, route: '/(tabs)/transfers',
     from: rgba('#14b8a6', 0.15), to: rgba('#34d399', 0.1), fromDark: rgba('#14b8a6', 0.25), toDark: rgba('#34d399', 0.1), fg: '#0f766e', fgDark: '#ccfbf1' },
-  { id: 'p2p', label: 'P2P', hint: 'Créer une offre d’échange', icon: Users,
+  { id: 'p2p', label: 'P2P', hint: 'Créer une offre d’échange', icon: Users, route: '/p2p/publish',
     from: rgba('#06b6d4', 0.15), to: rgba('#60a5fa', 0.1), fromDark: rgba('#06b6d4', 0.2), toDark: rgba('#60a5fa', 0.1), fg: '#0e7490', fgDark: '#cffafe' },
-  { id: 'video', label: 'Vidéo', hint: 'Clip vertical pour le fil', icon: Video,
+  { id: 'video', label: 'Vidéo', hint: 'Clip vertical pour le fil', icon: Video, route: '/publish/video',
     from: rgba('#f43f5e', 0.15), to: rgba('#fb923c', 0.1), fromDark: rgba('#f43f5e', 0.2), toDark: rgba('#fb923c', 0.1), fg: '#be123c', fgDark: '#fecdd3' },
-  { id: 'post', label: 'Fil d’actualité', hint: 'Texte et photos pour la communauté', icon: PenLine,
+  { id: 'post', label: 'Fil d’actualité', hint: 'Texte et photos pour la communauté', icon: PenLine, route: '/publish/post',
     from: rgba('#0ea5e9', 0.15), to: rgba('#22d3ee', 0.1), fromDark: rgba('#0ea5e9', 0.2), toDark: rgba('#22d3ee', 0.1), fg: '#0369a1', fgDark: '#bae6fd' },
-  { id: 'status', label: 'Statut', hint: 'Moment éphémère 24 h', icon: Sparkles,
+  { id: 'status', label: 'Statut', hint: 'Moment éphémère 24 h', icon: Sparkles, route: '/publish/status',
     from: rgba('#8b5cf6', 0.15), to: rgba('#e879f9', 0.1), fromDark: rgba('#8b5cf6', 0.2), toDark: rgba('#e879f9', 0.1), fg: '#6d28d9', fgDark: '#ddd6fe' },
   { id: 'listing', label: 'Annonce', hint: 'Mettre un article en vente', icon: ShoppingBag, route: '/listing/create',
     from: rgba('#10b981', 0.15), to: rgba('#2dd4bf', 0.1), fromDark: rgba('#10b981', 0.2), toDark: rgba('#2dd4bf', 0.1), fg: '#047857', fgDark: '#a7f3d0' },
-  { id: 'parcel', label: 'Colis', hint: 'Trajet ou capacité de transport', icon: Box,
+  { id: 'parcel', label: 'Colis', hint: 'Trajet ou capacité de transport', icon: Box, route: '/publish/parcel',
     from: rgba('#f59e0b', 0.15), to: rgba('#facc15', 0.1), fromDark: rgba('#f59e0b', 0.2), toDark: rgba('#facc15', 0.1), fg: '#92400e', fgDark: '#fde68a' },
-  { id: 'job', label: 'Job', hint: 'Publier une offre d’emploi', icon: Briefcase,
+  { id: 'job', label: 'Job', hint: 'Publier une offre d’emploi', icon: Briefcase, route: '/publish/job',
     from: rgba('#94a3b8', 0.2), to: rgba('#d4d4d8', 0.1), fromDark: rgba('#94a3b8', 0.25), toDark: rgba('#d4d4d8', 0.1), fg: '#334155', fgDark: '#f1f5f9' },
-  { id: 'event', label: 'Événement', hint: 'Organiser une rencontre', icon: Calendar,
+  { id: 'event', label: 'Événement', hint: 'Organiser une rencontre', icon: Calendar, route: '/publish/event',
     from: rgba('#6366f1', 0.15), to: rgba('#60a5fa', 0.1), fromDark: rgba('#6366f1', 0.2), toDark: rgba('#60a5fa', 0.1), fg: '#4338ca', fgDark: '#c7d2fe' },
 ];
 
@@ -87,15 +86,6 @@ const PublishMenuContext = createContext<() => void>(() => undefined);
 
 export function usePublishMenu() {
   return useContext(PublishMenuContext);
-}
-
-function showSoon(label: string) {
-  if (Platform.OS === 'web') {
-    // eslint-disable-next-line no-alert
-    globalThis.alert?.(`${label} — ${TEXT.soon}`);
-    return;
-  }
-  Alert.alert(label, TEXT.soon);
 }
 
 /** Feuille « Publier » identique au web (FeedPublishMenu), ouverte par le bouton + de l'en-tête. */
@@ -124,8 +114,7 @@ function PublishMenuSheet({ visible, onClose }: { visible: boolean; onClose: () 
   function choose(option: Option) {
     onClose();
     setTimeout(() => {
-      if (option.route) router.push(option.route as never);
-      else showSoon(option.label);
+      router.push(option.route as never);
     }, 180);
   }
 

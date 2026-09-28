@@ -175,7 +175,7 @@ export default function ParcelsScreen() {
           </Pressable>
           <Pressable
             style={[styles.headerBtn, { backgroundColor: brand[700] }]}
-            onPress={() => router.push('/parcel/reserve' as any)}>
+            onPress={() => router.push('/publish/parcel' as any)}>
             <Text style={[styles.headerBtnText, { color: '#fff' }]}>+ Publier un voyage</Text>
           </Pressable>
         </View>

@@ -24,11 +24,21 @@ import { ListCard } from '@/components/ui/ListCard';
 import { BOTTOM_NAV_PADDING } from '@/components/navigation/BottomNavBar';
 import { TRANSFER_STATUS_LABELS } from '@/constants/transfers';
 import { useLanguage } from '@/providers/LanguageProvider';
+import { loadDashboardData } from '@/store/dashboard';
 import { loadCoreData } from '@/store/data';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import type { TransferItem } from '@/store/transfers';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, radii, spacing } from '@/theme/colors';
+
+const P2P_STATUS: Record<string, string> = {
+  created: 'En attente du vendeur',
+  seller_accepted: 'À payer',
+  waiting_payment: 'Paiement envoyé',
+  completed: 'Terminé',
+  cancelled: 'Annulé',
+  disputed: 'Litige',
+};
 
 function TransferHistoryCard({ transfer }: { transfer: TransferItem }) {
   const colors = useThemeColors();
@@ -80,14 +90,40 @@ function TransferHistoryCard({ transfer }: { transfer: TransferItem }) {
   );
 }
 
+function P2POrderCard({ order }: { order: Record<string, unknown> }) {
+  const colors = useThemeColors();
+  const user = useAppSelector((state) => state.auth.user);
+  const status = String(order.status || 'created');
+  const counterpart =
+    order.buyerId === user?.id ? String(order.sellerName || 'Vendeur') : String(order.buyerName || 'Acheteur');
+  const amount = Number(order.amount || 0);
+  const from = String(order.fromCurrency || '');
+  const to = String(order.toCurrency || '');
+
+  return (
+    <ListCard className="relative" onPress={() => router.push(`/p2p/orders/${order.id}` as never)}>
+      <View style={[styles.statusBadge, { backgroundColor: '#e0f2fe' }]}>
+        <Text style={[styles.statusText, { color: '#0369a1' }]}>{P2P_STATUS[status] || status}</Text>
+      </View>
+      <Text style={[styles.ref, { color: colors.text }]}>{String(order.id)}</Text>
+      <Text style={[styles.subtitle, { color: colors.textMuted }]}>Avec {counterpart}</Text>
+      <Text style={[styles.totalAmount, { color: colors.text, marginTop: 8 }]}>
+        {amount ? `${amount} ${from}${to ? ` → ${to}` : ''}` : 'P2P'}
+      </Text>
+    </ListCard>
+  );
+}
+
 export default function TransfersScreen() {
   const dispatch = useAppDispatch();
   const colors = useThemeColors();
   const { translateLabel } = useLanguage();
   const user = useAppSelector((state) => state.auth.user);
   const items = useAppSelector((state) => state.transfers.items);
+  const p2pOrders = useAppSelector((state) => state.dashboard.p2pOrders);
   const authStatus = useAppSelector((state) => state.auth.status);
   const [query, setQuery] = useState('');
+  const [tab, setTab] = useState<'transfers' | 'p2p'>('transfers');
   const [refreshing, setRefreshing] = useState(false);
   const [calculatorOpen, setCalculatorOpen] = useState(false);
 
@@ -105,11 +141,24 @@ export default function TransfersScreen() {
     });
   }, [items, query, user?.id]);
 
+  const myP2pOrders = useMemo(() => {
+    if (!user?.id) return [];
+    const normalizedQuery = query.trim().toLowerCase();
+    return (p2pOrders as Record<string, unknown>[])
+      .filter((order) => order.buyerId === user.id || order.sellerId === user.id)
+      .filter((order) => {
+        if (!normalizedQuery) return true;
+        const haystack = `${order.id || ''} ${order.sellerName || ''} ${order.buyerName || ''} ${order.fromCurrency || ''} ${order.toCurrency || ''}`.toLowerCase();
+        return haystack.includes(normalizedQuery);
+      })
+      .sort((a, b) => new Date(String(b.createdAt || 0)).getTime() - new Date(String(a.createdAt || 0)).getTime());
+  }, [p2pOrders, query, user?.id]);
+
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await dispatch(loadCoreData());
+    await Promise.all([dispatch(loadCoreData()), user?.id ? dispatch(loadDashboardData(user.id)) : Promise.resolve()]);
     setRefreshing(false);
-  }, [dispatch]);
+  }, [dispatch, user?.id]);
 
   if (authStatus === 'loading') {
     return (
@@ -123,7 +172,7 @@ export default function TransfersScreen() {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={[]}>
       <FlatList
         contentContainerStyle={styles.listContent}
-        data={visibleTransfers}
+        data={(tab === 'transfers' ? visibleTransfers : myP2pOrders) as { id: string }[]}
         keyExtractor={(item) => item.id}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={brand[700]} />
@@ -140,11 +189,36 @@ export default function TransfersScreen() {
               ]}
             />
 
+            <View style={styles.tabs}>
+              {(
+                [
+                  { key: 'transfers' as const, label: 'Transfert', count: visibleTransfers.length },
+                  { key: 'p2p' as const, label: 'Échanges P2P', count: myP2pOrders.length },
+                ]
+              ).map((item) => {
+                const active = tab === item.key;
+                return (
+                  <Pressable
+                    key={item.key}
+                    onPress={() => setTab(item.key)}
+                    style={[styles.tab, { backgroundColor: active ? brand[700] : colors.surfaceMuted }]}>
+                    <Text style={{ color: active ? '#fff' : colors.text, fontWeight: '800', fontSize: 13 }}>
+                      {item.label} · {item.count}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
             <View style={styles.sectionHead}>
               <View>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>Historique</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  {tab === 'transfers' ? 'Historique' : 'Échanges P2P'}
+                </Text>
                 <Text style={[styles.sectionSub, { color: colors.textMuted }]}>
-                  {visibleTransfers.length} opération(s)
+                  {tab === 'transfers'
+                    ? `${visibleTransfers.length} opération(s)`
+                    : `${myP2pOrders.length} échange(s) P2P`}
                 </Text>
               </View>
             </View>
@@ -152,7 +226,7 @@ export default function TransfersScreen() {
             <View style={[styles.searchBar, { backgroundColor: colors.inputBg }]}>
               <Text>🔍</Text>
               <TextInput
-                placeholder="Référence, destinataire ou opération..."
+                placeholder={tab === 'transfers' ? 'Référence, destinataire ou opération...' : 'Référence, contrepartie ou devise…'}
                 placeholderTextColor={colors.textFaint}
                 style={[styles.searchInput, { color: colors.text }]}
                 value={query}
@@ -163,20 +237,35 @@ export default function TransfersScreen() {
               </Pressable>
             </View>
             <Text style={[styles.searchHint, { color: colors.textFaint }]}>
-              Recherche dynamique · {visibleTransfers.length} résultat(s)
+              Recherche dynamique · {(tab === 'transfers' ? visibleTransfers : myP2pOrders).length} résultat(s)
             </Text>
           </>
         }
-        renderItem={({ item }) => <TransferHistoryCard transfer={item} />}
+        renderItem={({ item }) =>
+          tab === 'transfers' ? (
+            <TransferHistoryCard transfer={item as TransferItem} />
+          ) : (
+            <P2POrderCard order={item as Record<string, unknown>} />
+          )
+        }
         ListEmptyComponent={
           <View style={styles.empty}>
             <View style={[styles.emptyIcon, { backgroundColor: brand[50] }]}>
-              <Text style={{ fontSize: 32 }}>💸</Text>
+              <Text style={{ fontSize: 32 }}>{tab === 'transfers' ? '💸' : '🤝'}</Text>
             </View>
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>Aucun transfert</Text>
-            <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-              Créez votre première opération.
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>
+              {tab === 'transfers' ? 'Aucun transfert' : 'Aucun échange P2P'}
             </Text>
+            <Text style={[styles.emptyText, { color: colors.textMuted }]}>
+              {tab === 'transfers'
+                ? 'Créez votre première opération.'
+                : 'Vos commandes P2P apparaîtront ici après acceptation d’une offre.'}
+            </Text>
+            {tab === 'p2p' ? (
+              <Pressable onPress={() => router.push('/p2p' as never)} style={[styles.headerLink, { backgroundColor: brand[700] }]}>
+                <Text style={{ color: '#fff', fontWeight: '800' }}>Voir les offres P2P</Text>
+              </Pressable>
+            ) : null}
           </View>
         }
       />
@@ -191,6 +280,9 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   listContent: { padding: spacing.lg, paddingBottom: BOTTOM_NAV_PADDING, gap: spacing.md },
 
+  tabs: { flexDirection: 'row', gap: 8, marginBottom: spacing.md },
+  tab: { flex: 1, minHeight: 40, borderRadius: 999, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
+  headerLink: { marginTop: 8, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12 },
   sectionHead: { marginBottom: spacing.sm },
   sectionTitle: { fontSize: 18, fontWeight: '900' },
   sectionSub: { fontSize: 13, marginTop: 2 },
