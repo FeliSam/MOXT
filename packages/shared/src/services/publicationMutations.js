@@ -66,15 +66,46 @@ const EDIT_COLUMNS = {
   capacityKg: 'capacity_kg',
   sector: 'sector',
   location: 'location',
+  images: 'images',
+  imageUrl: 'image_url',
+  category: 'category',
+  venue: 'venue',
+  format: 'format',
+  startAt: 'start_at',
+  onlineLink: 'online_link',
+  capacity: 'capacity',
+  organizerName: 'organizer_name',
+  departureDate: 'departure_date',
+  acceptedTypes: 'accepted_types',
+  proofStatus: 'proof_status',
+  travelProofUrl: 'travel_proof_url',
+  fromCurrency: 'from_currency',
+  toCurrency: 'to_currency',
+  contact: 'contact',
 }
 
-/** Champs éditables d'une fiche (colonnes réelles, pas le payload entier). */
+/** Photos de job : uniquement dans payload (jobRemote.PAYLOAD_ONLY_FIELDS). */
+const SKIP_COLUMN = {
+  job: new Set(['images', 'imageUrl']),
+}
+
+const PAYLOAD_TYPES = new Set(['listing', 'parcel', 'job', 'event', 'other'])
+
+/** Champs éditables d'une fiche (colonnes réelles + payload JSON quand la table en a un). */
 export async function updatePublicationFields(client, type, id, fields, now = new Date()) {
   if (!client) throw new Error('Client Supabase indisponible')
+  const skip = SKIP_COLUMN[type] || new Set()
   const patch = {}
-  for (const [key, column] of Object.entries(EDIT_COLUMNS)) {
-    if (fields[key] !== undefined) patch[column] = fields[key]
+  const hasPayload = PAYLOAD_TYPES.has(type)
+  const payload = hasPayload && fields.payload && typeof fields.payload === 'object' ? { ...fields.payload } : null
+  for (const [key, value] of Object.entries(fields)) {
+    if (key === 'payload' || value === undefined) continue
+    if (payload) payload[key] = value
+    const column = EDIT_COLUMNS[key]
+    if (!column || skip.has(key)) continue
+    patch[column] = value
   }
+  if (payload) patch.payload = payload
   if (!Object.keys(patch).length) return
   patch.updated_at = now.toISOString()
   await settle(client.from(tableFor(type)).update(patch).eq('id', id))

@@ -70,7 +70,6 @@ export default function RootLayout() {
 const STACK_HEADER_TITLES: Record<string, string> = {
   'parcel/[id]': 'Détail colis',
   'listing/[id]': 'Détail annonce',
-  'listing/create': 'Publier une annonce',
   'jobs/index': 'Emplois',
   'jobs/[id]': "Offre d'emploi",
   'profile/edit': 'Mon profil',

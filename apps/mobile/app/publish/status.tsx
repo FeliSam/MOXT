@@ -4,16 +4,19 @@ import { router } from 'expo-router';
 
 import { createStatus } from '@moxt/shared/services/contentWrites.js';
 
-import { Field, PublishForm } from '@/components/publish/PublishForm';
+import { Field, PublishForm, StepBar } from '@/components/publish/PublishForm';
 import { AppText } from '@/components/ui/AppText';
 import { pickLibraryFile, uploadLikeWeb } from '@/services/mediaUpload';
 import { supabase } from '@/services/supabase';
 import { useAppSelector } from '@/store/store';
 import { showNotice } from '@/utils/notice';
 
+const STEPS = ['Contenu', 'Confirmation'];
+
 /** Statut éphémère (StatusComposer : légende ou photo, 7 jours). */
 export default function PublishStatusScreen() {
   const user = useAppSelector((state) => state.auth.user);
+  const [step, setStep] = useState(0);
   const [caption, setCaption] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
@@ -31,6 +34,10 @@ export default function PublishStatusScreen() {
 
   async function publish() {
     if (!user || !supabase) return;
+    if (!caption.trim() && !images.length) {
+      showNotice('Statut', 'Légende ou photo requise.');
+      return;
+    }
     setBusy(true);
     try {
       await createStatus(supabase, {
@@ -49,11 +56,29 @@ export default function PublishStatusScreen() {
   }
 
   return (
-    <PublishForm title="Statut" subtitle="Visible 7 jours, comme sur le web" busy={busy} onSubmit={() => void publish()}>
-      <Field label="Légende" value={caption} onChangeText={setCaption} multiline />
-      <Pressable onPress={() => void addPhoto()}>
-        <AppText className="text-sm font-bold text-app-accent">Ajouter une photo ({images.length}/4)</AppText>
-      </Pressable>
+    <PublishForm
+      pathname="/publish/status"
+      title="Statut"
+      subtitle={STEPS[step]}
+      busy={busy}
+      submitLabel={step < 1 ? 'Continuer' : 'Publier'}
+      onSubmit={() => (step < 1 ? setStep(1) : void publish())}>
+      <StepBar steps={STEPS} index={step} />
+      {step > 0 ? (
+        <Pressable onPress={() => setStep(0)}>
+          <AppText className="text-sm font-bold text-app-accent">Retour</AppText>
+        </Pressable>
+      ) : null}
+      {step === 0 ? (
+        <>
+          <Field label="Légende" value={caption} onChangeText={setCaption} multiline />
+          <Pressable onPress={() => void addPhoto()}>
+            <AppText className="text-sm font-bold text-app-accent">Ajouter une photo ({images.length}/4)</AppText>
+          </Pressable>
+        </>
+      ) : (
+        <AppText className="text-sm text-app-text">{caption.trim() || 'Sans légende'} · {images.length} photo(s) · 7 jours</AppText>
+      )}
     </PublishForm>
   );
 }

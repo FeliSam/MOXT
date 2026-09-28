@@ -1,23 +1,54 @@
 import { useState } from 'react';
+import { Pressable } from 'react-native';
 import { router } from 'expo-router';
 
 import { createEvent } from '@moxt/shared/services/contentWrites.js';
 
-import { Field, PublishForm } from '@/components/publish/PublishForm';
+import { Field, PublishForm, StepBar } from '@/components/publish/PublishForm';
+import { AppText } from '@/components/ui/AppText';
 import { supabase } from '@/services/supabase';
 import { useAppSelector } from '@/store/store';
 import { showNotice } from '@/utils/notice';
 
-/** Événement (titre, catégorie, date, description ≥ 20, ville). */
+const STEPS = ['Bases', 'Programme', 'Lieu', 'Confirmation'];
+const CATEGORIES = [
+  { value: 'networking', label: 'Réseau' },
+  { value: 'training', label: 'Formation' },
+  { value: 'culture', label: 'Culture' },
+  { value: 'business', label: 'Business' },
+  { value: 'community', label: 'Communauté' },
+];
+const FORMATS = [
+  { value: 'in_person', label: 'Sur place' },
+  { value: 'online', label: 'En ligne' },
+  { value: 'hybrid', label: 'Hybride' },
+];
+
+/** PublishEventPage : bases, programme, lieu, confirmation. */
 export default function PublishEventScreen() {
   const user = useAppSelector((state) => state.auth.user);
+  const [step, setStep] = useState(0);
   const [title, setTitle] = useState('');
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState('community');
+  const [format, setFormat] = useState('in_person');
   const [startAt, setStartAt] = useState('');
-  const [city, setCity] = useState('');
   const [description, setDescription] = useState('');
+  const [program, setProgram] = useState('');
+  const [city, setCity] = useState(user?.city || '');
   const [venue, setVenue] = useState('');
+  const [onlineLink, setOnlineLink] = useState('');
   const [busy, setBusy] = useState(false);
+
+  function canLeave() {
+    if (step === 0) return Boolean(title.trim() && category && startAt.trim());
+    if (step === 1) return description.trim().length >= 20;
+    if (step === 2) {
+      if (!city.trim()) return false;
+      if (format === 'online') return Boolean(onlineLink.trim());
+      return Boolean(venue.trim());
+    }
+    return true;
+  }
 
   async function publish() {
     if (!user || !supabase) return;
@@ -27,12 +58,14 @@ export default function PublishEventScreen() {
         ownerId: user.id,
         organizerName: `${user.firstName} ${user.lastName}`.trim(),
         title: title.trim(),
-        category: category.trim(),
+        category,
+        format,
         startAt,
         city: city.trim(),
         description: description.trim(),
+        program: program.trim(),
         venue: venue.trim(),
-        format: 'in_person',
+        onlineLink: onlineLink.trim(),
       });
       router.replace('/(tabs)/feed?type=event' as never);
     } catch (error) {
@@ -43,13 +76,65 @@ export default function PublishEventScreen() {
   }
 
   return (
-    <PublishForm title="Publier un événement" subtitle="Rencontre visible dans le fil" busy={busy} onSubmit={() => void publish()}>
-      <Field label="Titre" value={title} onChangeText={setTitle} />
-      <Field label="Catégorie" value={category} onChangeText={setCategory} />
-      <Field label="Début (AAAA-MM-JJTHH:MM)" value={startAt} onChangeText={setStartAt} placeholder="2026-10-12T18:00" />
-      <Field label="Ville" value={city} onChangeText={setCity} />
-      <Field label="Lieu" value={venue} onChangeText={setVenue} />
-      <Field label="Description (20 caractères minimum)" value={description} onChangeText={setDescription} multiline />
+    <PublishForm
+      pathname="/publish/event"
+      title="Publier un événement"
+      subtitle={STEPS[step]}
+      busy={busy}
+      submitLabel={step < 3 ? 'Continuer' : 'Publier'}
+      onSubmit={() => {
+        if (step < 3) {
+          if (!canLeave()) {
+            showNotice('Événement', step === 1 ? 'La description doit faire au moins 20 caractères.' : 'Complétez cette étape.');
+            return;
+          }
+          setStep(step + 1);
+          return;
+        }
+        void publish();
+      }}>
+      <StepBar steps={STEPS} index={step} />
+      {step > 0 ? (
+        <Pressable onPress={() => setStep(step - 1)}>
+          <AppText className="text-sm font-bold text-app-accent">Retour</AppText>
+        </Pressable>
+      ) : null}
+      {step === 0 ? (
+        <>
+          <Field label="Titre" value={title} onChangeText={setTitle} />
+          <AppText className="text-xs font-bold uppercase text-app-text-muted">Catégorie</AppText>
+          {CATEGORIES.map((item) => (
+            <Pressable key={item.value} onPress={() => setCategory(item.value)}>
+              <AppText className={category === item.value ? 'text-sm font-black text-app-accent' : 'text-sm font-bold text-app-text'}>{item.label}</AppText>
+            </Pressable>
+          ))}
+          <AppText className="text-xs font-bold uppercase text-app-text-muted">Format</AppText>
+          {FORMATS.map((item) => (
+            <Pressable key={item.value} onPress={() => setFormat(item.value)}>
+              <AppText className={format === item.value ? 'text-sm font-black text-app-accent' : 'text-sm font-bold text-app-text'}>{item.label}</AppText>
+            </Pressable>
+          ))}
+          <Field label="Début (AAAA-MM-JJTHH:MM)" value={startAt} onChangeText={setStartAt} placeholder="2026-10-12T18:00" />
+        </>
+      ) : null}
+      {step === 1 ? (
+        <>
+          <Field label="Description (20 caractères minimum)" value={description} onChangeText={setDescription} multiline />
+          <Field label="Programme" value={program} onChangeText={setProgram} multiline />
+        </>
+      ) : null}
+      {step === 2 ? (
+        <>
+          <Field label="Ville" value={city} onChangeText={setCity} />
+          {format !== 'online' ? <Field label="Lieu" value={venue} onChangeText={setVenue} /> : null}
+          {format !== 'in_person' ? <Field label="Lien en ligne" value={onlineLink} onChangeText={setOnlineLink} /> : null}
+        </>
+      ) : null}
+      {step === 3 ? (
+        <AppText className="text-sm text-app-text">
+          {title} · {city || 'Ville'} · {FORMATS.find((item) => item.value === format)?.label}
+        </AppText>
+      ) : null}
     </PublishForm>
   );
 }

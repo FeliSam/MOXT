@@ -9,17 +9,18 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
 import { formatCurrency } from '@moxt/shared/utils/formatters.js';
 
+import { AppChrome } from '@/components/chrome/AppChrome';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { ImagePickerButton } from '@/components/ImagePickerButton';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, radii, shadows, spacing, typography } from '@/theme/colors';
+import { uploadLikeWeb } from '@/services/mediaUpload';
 import { supabase } from '@/services/supabase';
 import { loadListings } from '@/store/marketplace';
 import { useAppDispatch, useAppSelector } from '@/store/store';
@@ -74,6 +75,16 @@ export default function CreateListingScreen() {
     try {
       const now = new Date().toISOString();
       const listingId = `ANN-${Date.now().toString(36).toUpperCase()}`;
+      let imageUrl = imageUri;
+      if (imageUri && user?.id && !imageUri.startsWith('http')) {
+        const uploaded = await uploadLikeWeb(
+          'listings',
+          `${user.id}/listings/${listingId}.jpg`,
+          { uri: imageUri, name: 'photo.jpg', type: 'image/jpeg' },
+          'public',
+        );
+        imageUrl = uploaded.url;
+      }
       const { error } = await supabase.from('listings').insert({
         id: listingId,
         title: title.trim(),
@@ -84,7 +95,7 @@ export default function CreateListingScreen() {
         currency: 'RUB',
         country: 'RU',
         city: city.trim(),
-        images: imageUri ? [imageUri] : [],
+        images: imageUrl ? [imageUrl] : [],
         owner_id: user?.id,
         seller_name: `${user?.firstName} ${user?.lastName}`,
         payload: {
@@ -117,8 +128,8 @@ export default function CreateListingScreen() {
   const typeLabel = LISTING_TYPES.find((t) => t.key === type)?.label || type;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <AppChrome pathname="/listing/create">
+      <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.background }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: spacing.xl, gap: spacing.lg }}>
           {/* Progress */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -243,6 +254,6 @@ export default function CreateListingScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </AppChrome>
   );
 }

@@ -73,6 +73,24 @@ export async function uploadLikeWeb(bucket: string, path: string, file: UploadFi
   return { url: data.publicUrl, path };
 }
 
+/** Photo ou PDF, comme l’input web `accept="image/*,.pdf"`. */
+export async function pickImageOrPdf(): Promise<UploadFile | null> {
+  const DocumentPicker = await import('expo-document-picker');
+  const result = await DocumentPicker.getDocumentAsync({
+    type: ['image/*', 'application/pdf'],
+    copyToCacheDirectory: true,
+    multiple: false,
+  });
+  if (result.canceled || !result.assets?.[0]) return null;
+  const asset = result.assets[0];
+  return {
+    uri: asset.uri,
+    name: asset.name || 'document',
+    type: asset.mimeType || (asset.name?.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg'),
+    size: asset.size,
+  };
+}
+
 export async function pickLibraryFile(kind: 'images' | 'videos'): Promise<UploadFile | null> {
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!permission.granted) throw new Error('Autorisez l’accès à la galerie pour joindre un fichier.');

@@ -3,7 +3,10 @@ import { router } from 'expo-router';
 
 import { createJob } from '@moxt/shared/services/contentWrites.js';
 
-import { Field, PublishForm } from '@/components/publish/PublishForm';
+import { Pressable } from 'react-native';
+
+import { Field, PublishForm, StepBar } from '@/components/publish/PublishForm';
+import { AppText } from '@/components/ui/AppText';
 import { supabase } from '@/services/supabase';
 import { useAppSelector } from '@/store/store';
 import { showNotice } from '@/utils/notice';
@@ -17,6 +20,8 @@ export default function PublishJobScreen() {
   const [salary, setSalary] = useState('');
   const [location, setLocation] = useState('');
   const [busy, setBusy] = useState(false);
+  const [step, setStep] = useState(0);
+  const steps = ['Offre', 'Détails', 'Lieu', 'Confirmation'];
 
   async function publish() {
     if (!user || !supabase) return;
@@ -39,12 +44,29 @@ export default function PublishJobScreen() {
   }
 
   return (
-    <PublishForm title="Publier un job" subtitle="Offre visible dans les emplois MOXT" busy={busy} onSubmit={() => void publish()}>
-      <Field label="Titre" value={title} onChangeText={setTitle} />
-      <Field label="Secteur" value={sector} onChangeText={setSector} />
-      <Field label="Lieu" value={location} onChangeText={setLocation} />
-      <Field label="Salaire" value={salary} onChangeText={setSalary} />
-      <Field label="Description (30 caractères minimum)" value={description} onChangeText={setDescription} multiline />
+    <PublishForm
+      pathname="/publish/job"
+      title="Publier un job"
+      subtitle={steps[step]}
+      busy={busy}
+      submitLabel={step < 3 ? 'Continuer' : 'Publier'}
+      onSubmit={() => (step < 3 ? setStep(step + 1) : void publish())}>
+      <StepBar steps={steps} index={step} />
+      {step > 0 ? <Pressable onPress={() => setStep(step - 1)}><AppText className="text-sm font-bold text-app-accent">Retour</AppText></Pressable> : null}
+      {step === 0 ? (
+        <>
+          <Field label="Titre" value={title} onChangeText={setTitle} />
+          <Field label="Secteur" value={sector} onChangeText={setSector} />
+        </>
+      ) : null}
+      {step === 1 ? (
+        <>
+          <Field label="Description (30 caractères minimum)" value={description} onChangeText={setDescription} multiline />
+          <Field label="Salaire" value={salary} onChangeText={setSalary} />
+        </>
+      ) : null}
+      {step === 2 ? <Field label="Lieu" value={location} onChangeText={setLocation} /> : null}
+      {step === 3 ? <AppText className="text-sm text-app-text">{title} · {location || 'Lieu à préciser'}</AppText> : null}
     </PublishForm>
   );
 }

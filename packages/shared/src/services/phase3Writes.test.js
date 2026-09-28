@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createFakeClient } from './testClient.js'
-import { archiveStatus, deletePublication, republishStatus, setPublicationStatus } from './publicationMutations.js'
+import { archiveStatus, deletePublication, republishStatus, setPublicationStatus, updatePublicationFields } from './publicationMutations.js'
 import { incrementEntityView } from './viewsService.js'
 import { buildAuthorNotice, createAuthorNotification, newsPostPath } from './authorNotifications.js'
 import { askMoxti, recentAssistantHistory } from './assistantService.js'
@@ -8,6 +8,7 @@ import { buildBusinessContactSnapshot, openContactConversation, participantKey }
 import { buildPersonalDocumentPath, personalDocumentRow, submitVerificationRequest, updateAccountPreferences } from './accountWrites.js'
 import { buildPost, createParcel, createP2POffer, parcelRequestRow, STAR_GIFT_AMOUNTS } from './contentWrites.js'
 import { archiveNotification } from './notificationsService.js'
+import { advanceP2pOrder, withP2pProof } from './p2pOrderWrites.js'
 
 const me = '11111111-1111-4111-8111-111111111111'
 const owner = '22222222-2222-4222-8222-222222222222'
@@ -26,6 +27,23 @@ describe('publicationMutations', () => {
     expect(client.calls[0].ops[0][1]).toEqual({ status: 'archived' })
     expect(client.calls[1].ops[0][1].updated_at).toBe('2026-09-01T00:00:00.000Z')
     expect(client.calls[2].ops[0][0]).toBe('delete')
+  })
+
+  it('enregistre les photos et fusionne le payload', async () => {
+    const client = createFakeClient()
+    await updatePublicationFields(
+      client,
+      'listing',
+      'L1',
+      { title: 'Lampe', images: ['https://cdn.example/a.jpg'], payload: { city: 'Moscou' } },
+      new Date('2026-09-02T00:00:00Z'),
+    )
+    const patch = client.calls[0].ops[0][1]
+    expect(patch.title).toBe('Lampe')
+    expect(patch.images).toEqual(['https://cdn.example/a.jpg'])
+    expect(patch.payload.images).toEqual(['https://cdn.example/a.jpg'])
+    expect(patch.payload.city).toBe('Moscou')
+    expect(patch.updated_at).toBe('2026-09-02T00:00:00.000Z')
   })
 })
 
@@ -171,6 +189,19 @@ describe('contentWrites', () => {
     expect(request.kg).toBe(2)
     expect(buildPost({ authorId: me, message: 'Salut' }).status).toBe('published')
     expect(STAR_GIFT_AMOUNTS).toEqual([5, 10, 25, 50])
+  })
+})
+
+describe('p2pOrderWrites', () => {
+  it('suit les mêmes étapes que le web', () => {
+    const created = { status: 'created', sellerId: 'seller', proofs: [], timeline: [] }
+    const accepted = advanceP2pOrder(created, 'seller_accepted', null, new Date('2026-09-01T00:00:00Z'))
+    expect(accepted.status).toBe('seller_accepted')
+    expect(accepted.paymentDueAt).toBeTruthy()
+    const waiting = advanceP2pOrder(accepted, 'waiting_payment')
+    expect(() => advanceP2pOrder(waiting, 'completed')).toThrow(/preuve/)
+    const proved = withP2pProof(waiting, { userId: 'seller', name: 'recu.jpg' })
+    expect(advanceP2pOrder(proved, 'completed').status).toBe('completed')
   })
 })
 

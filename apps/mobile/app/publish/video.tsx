@@ -62,7 +62,7 @@ export default function PublishVideoScreen() {
   }
 
   return (
-    <PublishForm title="Publier une vidéo" subtitle="Clip vertical pour le fil" busy={busy} onSubmit={() => void publish()}>
+    <PublishForm pathname="/publish/video" title="Publier une vidéo" subtitle="Clip vertical pour le fil" busy={busy} onSubmit={() => void publish()}>
       {!business ? (
         <AppText className="text-sm text-app-text-muted">Une entreprise est nécessaire pour publier une vidéo, comme sur le web.</AppText>
       ) : (
