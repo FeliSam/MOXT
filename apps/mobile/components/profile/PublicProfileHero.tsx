@@ -4,6 +4,7 @@ import { Image } from 'expo-image';
 import { Briefcase, Image as ImageIcon, Star, User } from 'lucide-react-native';
 
 import { AppText } from '@/components/ui/AppText';
+import { WEB_BUTTON_TEXT } from '@/components/ui/webButtonText';
 import { VerifiedIcon } from '@/components/ui/VerifiedIcon';
 import { avatarDisplayUrl } from '@/utils/avatarDisplayUrl';
 import { useTheme } from '@/theme/ThemeContext';
@@ -50,7 +51,7 @@ export function StarRatingRow({
           />
         ))}
       </View>
-      <AppText className="text-sm font-semibold" style={{ color: '#d97706' }}>
+      <AppText className={onPress ? WEB_BUTTON_TEXT : 'text-sm font-semibold'} style={{ color: '#d97706' }}>
         {formatRatingAverage(average)} · {count} {reviewsLabel}
       </AppText>
     </>
@@ -90,7 +91,7 @@ function EditCoverPill({ label, onPress }: { label: string; onPress: () => void 
           boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)',
         }}>
         <ImageIcon size={14} color="#ffffff" strokeWidth={2} />
-        <AppText className="text-xs font-bold text-white" style={{ flexShrink: 1, textAlign: 'center' }}>
+        <AppText className={`${WEB_BUTTON_TEXT} text-white`} style={{ flexShrink: 1, textAlign: 'center' }}>
           {label}
         </AppText>
       </Pressable>

@@ -33,6 +33,7 @@ import { PublicProfileHero } from '@/components/profile/PublicProfileHero';
 import { PublicProfileTabs } from '@/components/profile/PublicProfileTabs';
 import { SubscriptionsPanel } from '@/components/profile/SubscriptionsPanel';
 import { AppText } from '@/components/ui/AppText';
+import { WEB_BUTTON_TEXT } from '@/components/ui/webButtonText';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { supabase } from '@/services/supabase';
 import { loadSubscriptions, selectMySubscriptions } from '@/store/account';
@@ -197,7 +198,7 @@ export default function MyPublicationsScreen() {
               className="flex-row items-center justify-center border border-app-border-md bg-app-surface"
               style={{ minHeight: 44, borderRadius: 12, paddingHorizontal: 20, gap: 8, width: '48.5%' }}>
               <Eye size={18} color={colors.text} strokeWidth={2} />
-              <AppText className="text-sm font-semibold text-app-text">{t('publications.mine.publicView') || 'Vue publique'}</AppText>
+              <AppText className={`${WEB_BUTTON_TEXT} text-app-text`}>{t('publications.mine.publicView') || 'Vue publique'}</AppText>
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -215,7 +216,7 @@ export default function MyPublicationsScreen() {
                 boxShadow: isDark ? '0 4px 14px rgba(199,125,179,0.22)' : '0 4px 14px rgba(107,45,92,0.28)',
               }}>
               <Plus size={18} color={isDark ? '#020617' : '#ffffff'} strokeWidth={2} />
-              <AppText className="text-sm font-semibold" style={{ color: isDark ? '#020617' : '#ffffff' }}>
+              <AppText className={WEB_BUTTON_TEXT} style={{ color: isDark ? '#020617' : '#ffffff' }}>
                 {publishLabel}
               </AppText>
             </Pressable>

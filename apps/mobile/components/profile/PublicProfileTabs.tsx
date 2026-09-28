@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { AppText } from '@/components/ui/AppText';
+import { WEB_BUTTON_TEXT } from '@/components/ui/webButtonText';
 import { useTheme } from '@/theme/ThemeContext';
 
 import { useBrandScale, type ProfileKind } from './identity';
@@ -44,7 +45,7 @@ export function PublicProfileTabs({
               accessibilityState={{ selected: isActive }}
               onPress={() => onChange(tab.key)}
               style={{ paddingBottom: 12, flexDirection: 'row', alignItems: 'baseline' }}>
-              <AppText className="text-sm font-bold" style={{ color: isActive ? (isDark ? scale[300] : scale[700]) : colors.textMuted }}>
+              <AppText className={WEB_BUTTON_TEXT} style={{ color: isActive ? (isDark ? scale[300] : scale[700]) : colors.textMuted }}>
                 {tab.label}
               </AppText>
               {tab.count !== undefined && tab.count > 0 ? (

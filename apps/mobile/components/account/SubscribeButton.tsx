@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bell, BellOff, Check, Star, UserCheck, UserPlus, VolumeX } from 'lucide-react-native';
 
 import { AppText } from '@/components/ui/AppText';
+import { WEB_BUTTON_TEXT } from '@/components/ui/webButtonText';
 import { findPublisherSubscription } from '@/store/account';
 import { subscribeToPublisher, unsubscribeFromPublisher } from '@/store/engagement';
 import { useAppDispatch, useAppSelector } from '@/store/store';
@@ -170,8 +171,8 @@ export function SubscribeButton({
 
   const height = size === 'sm' ? 36 : 44;
   const radius = size === 'sm' ? 11.2 : 12;
-  // Web : Button md = min-h-11, rounded-xl, text-sm font-semibold.
-  const textClass = size === 'sm' ? 'text-sm' : 'text-sm font-semibold';
+  // Web : Button md = min-h-11, rounded-xl ; libellé rendu en police héritée (voir webButtonText).
+  const textClass = size === 'sm' ? 'text-sm' : WEB_BUTTON_TEXT;
 
   if (!isSubscribed) {
     return (

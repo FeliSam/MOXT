@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import type { LucideIcon } from 'lucide-react-native';
 
 import { AppText } from '@/components/ui/AppText';
+import { WEB_BUTTON_TEXT } from '@/components/ui/webButtonText';
 import { useShadows, useTheme } from '@/theme/ThemeContext';
 
 import type { BrandScale } from './identity';
@@ -40,7 +41,7 @@ export function UnderlineTabs({ tabs, active, onChange, scale }: { tabs: Catalog
             accessibilityState={{ selected: isActive }}
             onPress={() => onChange(tab.key)}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingBottom: 12 }}>
-            <AppText className="text-sm font-bold" style={{ color: isActive ? colors.text : colors.textMuted }}>
+            <AppText className={WEB_BUTTON_TEXT} style={{ color: isActive ? colors.text : colors.textMuted }}>
               {tab.label}
             </AppText>
             {tab.count !== undefined ? (

@@ -25,6 +25,7 @@ import { PublicProfileHero } from '@/components/profile/PublicProfileHero';
 import { PublicProfileTabs, type ProfileTab } from '@/components/profile/PublicProfileTabs';
 import { ReviewsSection, type Review, type ReviewPublication } from '@/components/reviews/ReviewsSection';
 import { AppText } from '@/components/ui/AppText';
+import { WEB_BUTTON_TEXT } from '@/components/ui/webButtonText';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ExpandableText } from '@/components/ui/ExpandableText';
 import { useLanguage } from '@/providers/LanguageProvider';
@@ -325,9 +326,9 @@ export default function BusinessProfileScreen() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   backgroundColor: accent,
-                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                  boxShadow: '0 4px 14px rgba(8,112,95,0.25)',
                 }}>
-                <AppText className="text-sm font-semibold" style={{ color: isDark ? '#020617' : '#ffffff' }}>
+                <AppText className={WEB_BUTTON_TEXT} style={{ color: isDark ? '#020617' : '#ffffff' }}>
                   Contacter
                 </AppText>
               </Pressable>
@@ -337,7 +338,7 @@ export default function BusinessProfileScreen() {
               accessibilityRole="button"
               onPress={() => router.push('/publications/mine?scope=business' as never)}
               style={{ width: '100%', minHeight: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: accent }}>
-              <AppText className="text-sm font-semibold" style={{ color: isDark ? '#020617' : '#ffffff' }}>
+              <AppText className={WEB_BUTTON_TEXT} style={{ color: isDark ? '#020617' : '#ffffff' }}>
                 Gérer mes publications
               </AppText>
             </Pressable>

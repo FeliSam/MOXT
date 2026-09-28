@@ -36,6 +36,7 @@ import { DsAlert } from '@/components/ds/Alert';
 import { AvatarBadge } from '@/components/profile/AvatarBadge';
 import { ProfilePageShell } from '@/components/profile/ProfilePageShell';
 import { AppText } from '@/components/ui/AppText';
+import { WEB_BUTTON_TEXT } from '@/components/ui/webButtonText';
 import { VerifiedIcon } from '@/components/ui/VerifiedIcon';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { supabase } from '@/services/supabase';
@@ -208,7 +209,7 @@ export default function ProfileScreen() {
               className="flex-row items-center border border-app-border-md bg-app-surface"
               style={{ minHeight: 44, borderRadius: 12, paddingHorizontal: 20, gap: 8 }}>
               <QrCode size={18} color={colors.text} strokeWidth={1.8} />
-              <AppText className="text-sm font-semibold text-app-text">{t('share.share')}</AppText>
+              <AppText className={`${WEB_BUTTON_TEXT} text-app-text`}>{t('share.share')}</AppText>
             </Pressable>
           </View>
 
