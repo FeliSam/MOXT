@@ -55,6 +55,13 @@ describe('notifications slice (serveur)', () => {
     expect(store.getState().notifications.items[0].read).toBe(true);
   });
 
+  it('module Stars désactivé par défaut : notifications « stars » ignorées (règle web)', () => {
+    const store = createStore();
+    expect(store.getState().notifications.starsEnabled).toBe(false);
+    store.dispatch(notificationUpserted(notif({ id: 's', type: 'stars' })));
+    expect(store.getState().notifications.items).toHaveLength(0);
+  });
+
   it('badge cloche = non lues visibles (règles web)', () => {
     const store = createStore();
     store.dispatch(notificationUpserted(notif({ id: 'a' })));

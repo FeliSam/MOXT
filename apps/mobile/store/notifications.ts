@@ -10,6 +10,10 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
 } from '@moxt/shared/services/notificationsService.js';
+import {
+  fetchAppModuleFlags,
+  isStarsModuleEnabled,
+} from '@moxt/shared/services/moduleFlagsService.js';
 import { supabase } from '../services/supabase';
 
 /** Même forme que les notifications web (table `notifications`). */
@@ -31,6 +35,8 @@ type NotificationsState = {
   status: 'idle' | 'loading' | 'ready' | 'error';
   error: string | null;
   pushToken: string | null;
+  /** Module Stars (app_module_flags) : off → notifications « stars » masquées comme le web. */
+  starsEnabled: boolean;
 };
 
 const initialState: NotificationsState = {
@@ -38,14 +44,20 @@ const initialState: NotificationsState = {
   status: 'idle',
   error: null,
   pushToken: null,
+  starsEnabled: false,
 };
 
 /** Chargement serveur (mêmes requête et filtres que le web). */
 export const loadNotifications = createAsyncThunk(
   'notifications/load',
-  async (userId: string): Promise<NotificationItem[]> => {
-    if (!supabase) return [];
-    return (await fetchNotifications(supabase, userId)) as NotificationItem[];
+  async (userId: string): Promise<{ items: NotificationItem[]; starsEnabled: boolean }> => {
+    if (!supabase) return { items: [], starsEnabled: false };
+    // Même règle que le web (loadAllData) : type « stars » visible seulement si le module est actif.
+    const starsEnabled = await fetchAppModuleFlags(supabase)
+      .then((result: { flags: Record<string, boolean> }) => isStarsModuleEnabled(result.flags))
+      .catch(() => false);
+    const items = (await fetchNotifications(supabase, userId, { starsEnabled })) as NotificationItem[];
+    return { items, starsEnabled };
   },
 );
 
@@ -73,6 +85,7 @@ const notificationsSlice = createSlice({
     /** Temps réel (INSERT / UPDATE sur `notifications`). */
     notificationUpserted(state, action: PayloadAction<NotificationItem>) {
       if (action.payload.type === 'message') return;
+      if (action.payload.type === 'stars' && !state.starsEnabled) return;
       state.items = upsertNotification(state.items, action.payload) as NotificationItem[];
     },
     clearAll(state) {
@@ -87,7 +100,8 @@ const notificationsSlice = createSlice({
         state.error = null;
       })
       .addCase(loadNotifications.fulfilled, (state, action) => {
-        state.items = action.payload;
+        state.items = action.payload.items;
+        state.starsEnabled = action.payload.starsEnabled;
         state.status = 'ready';
       })
       .addCase(loadNotifications.rejected, (state, action) => {
