@@ -12,6 +12,7 @@ import { AppText } from '@/components/ui/AppText';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { askMoxti } from '@moxt/shared/services/assistantService.js';
 
+import { pickImageOrPdf } from '@/services/mediaUpload';
 import { supabase } from '@/services/supabase';
 import { useAppSelector } from '@/store/store';
 import { brand, withAlphaColor } from '@/theme/palette';
@@ -122,7 +123,7 @@ export default function MoxtAssistantScreen() {
         <View style={{ flexDirection: 'row', gap: HEADER.gap }}>
           <HeaderActionButton
             accessibilityLabel={t('messages.assistant.contactAdminAria')}
-            onPress={() => showNotice(t('messages.assistant.name'), "Le contact d'un administrateur depuis Moxti se fait sur moxtapp.ru pour l'instant.")}>
+            onPress={() => router.push('/support/create' as never)}>
             <Headphones size={HEADER.icon} color={colors.text} strokeWidth={HEADER.iconStroke} opacity={HEADER.iconOpacity} />
           </HeaderActionButton>
           <HeaderActionButton accessibilityLabel={t('messages.assistant.clearHistoryAria')} onPress={clearHistory}>
@@ -200,7 +201,14 @@ export default function MoxtAssistantScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('messages.assistant.addDocAria')}
-            onPress={() => showNotice(t('messages.assistant.name'), "L'ajout de documents à Moxti se fait sur moxtapp.ru pour l'instant.")}
+            onPress={() => {
+              void pickImageOrPdf()
+                .then((file) => {
+                  if (!file) return;
+                  setQuestion((current) => `${current}${current ? ' ' : ''}[${file.name}]`.trim());
+                })
+                .catch((error) => showNotice(t('messages.assistant.name'), error instanceof Error ? error.message : 'Fichier impossible.'));
+            }}
             style={{ width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
             <Paperclip size={18} color={colors.accent} strokeWidth={2} />
           </Pressable>

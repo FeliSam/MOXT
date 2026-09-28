@@ -40,6 +40,11 @@ export const ROUTE_TITLES: Record<string, string> = {
   '/listing/create': 'Publier une annonce',
   '/publications/edit': 'Modifier',
   '/messages/moxt-assistant': 'Moxti',
+  '/events': 'Événement',
+  '/news': 'Publication',
+  '/status': 'Statut',
+  '/videos': 'Vidéo',
+  '/users': 'Profil',
 };
 
 export function titleForTabRoute(routeName: string): string {

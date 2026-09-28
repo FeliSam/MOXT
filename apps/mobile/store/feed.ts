@@ -42,6 +42,7 @@ export type StatusItem = {
   authorAvatarUrl?: string | null;
   businessId?: string | null;
   images: string[];
+  caption?: string;
   viewedBy: string[];
   createdAt?: string;
   expiresAt?: string;

@@ -1,3 +1,5 @@
+import { resolveNativePath } from '@/utils/nativePath';
+
 export type ReadReceipt = 'read' | 'delivered' | 'sent' | null;
 
 type Readable = {
@@ -79,7 +81,7 @@ export function peerActivityLabel(updatedAt: string | null | undefined, t: (key:
 
 /** Chemins web des fiches liées → routes Expo. */
 export function mobileContentPath(path: string) {
-  return path
+  return resolveNativePath(path) || path
     .replace(/^\/parcels\/([^/?#]+)/, '/parcel/$1')
     .replace(/^\/listings\/([^/?#]+)/, '/listing/$1');
 }

@@ -7,7 +7,7 @@ export const VIDEOS_LIMIT = 50
 export const STATUSES_LIMIT = 60
 
 export const STATUS_COLUMNS =
-  'id, author_id, author_name, author_avatar_url, business_id, images, viewed_by, created_at, expires_at, is_official'
+  'id, author_id, author_name, author_avatar_url, business_id, images, caption, viewed_by, created_at, expires_at, is_official'
 
 /** Même requête que le web (loadAllData) : publiées + les miennes, triées par partage puis date. */
 export async function fetchFeedPosts(client, userId, { isStaff = false } = {}) {

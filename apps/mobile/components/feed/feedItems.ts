@@ -103,7 +103,7 @@ export function buildFeedItems(src: {
       videoUrl: v.videoUrl || '',
       stats: { views: Number(v.viewCount) || 0, likes: count(v.likes), comments: count(v.comments), shares: Number(v.shareCount) || 0 },
       liked: likedBy(v.likes, src.userId),
-      route: '/(tabs)/feed',
+      route: `/(tabs)/feed?type=video&item=${encodeURIComponent(`video:${v.id}`)}`,
     });
   }
   for (const l of src.listings) {
@@ -153,7 +153,7 @@ export function buildFeedItems(src: {
       image: e.coverUrl || e.imageUrl || (e.images || [])[0] || '',
       videoUrl: '',
       stats: { views: 0, likes: count(e.likes), comments: count(e.comments), shares: 0 },
-      route: '/search',
+      route: `/events/${e.id}`,
     });
   }
   for (const p of src.posts) {
@@ -172,7 +172,7 @@ export function buildFeedItems(src: {
       videoUrl: '',
       stats: { views: 0, likes: count(p.likes), comments: count(p.comments), shares: 0 },
       liked: likedBy(p.likes, src.userId),
-      route: '/(tabs)/feed',
+      route: `/news/${p.id}`,
     });
   }
   for (const o of src.p2pOffers) {
@@ -188,7 +188,7 @@ export function buildFeedItems(src: {
       image: '',
       videoUrl: '',
       stats: { views: 0, likes: 0, comments: 0, shares: 0 },
-      route: '/search',
+      route: `/p2p/${o.id}`,
     });
   }
 

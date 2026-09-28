@@ -342,7 +342,7 @@ export default function FeedTab() {
   const events = useAppSelector((s) => s.dashboard.events);
   const p2pOffers = useAppSelector((s) => s.dashboard.p2pOffers);
   const businesses = useAppSelector((s) => s.account.businesses);
-  const params = useLocalSearchParams<{ type?: string }>();
+  const params = useLocalSearchParams<{ type?: string; item?: string }>();
   const initialType = FEED_TYPE_FILTERS.some((f) => f.id === params.type) ? (params.type as FeedKind) : 'all';
   const [type, setType] = useState<'all' | FeedKind>(initialType);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -391,6 +391,17 @@ export default function FeedTab() {
   const ordered = useStableOrder(all);
   const items = type === 'all' ? ordered : ordered.filter((i) => i.kind === type);
   const viewed = useRef(new Set<string>());
+  const listRef = useRef<FlatList<FeedItem>>(null);
+  const focusedItem = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!params.item || !items.length || focusedItem.current === params.item) return;
+    const index = items.findIndex((item) => item.id === params.item);
+    if (index < 0) return;
+    focusedItem.current = params.item;
+    setActiveIndex(index);
+    requestAnimationFrame(() => listRef.current?.scrollToIndex({ index, animated: false }));
+  }, [items, params.item]);
 
   // Même déclencheur que VideoFeedSlide : slide active, pas l'auteur, une fois, après 350 ms.
   useEffect(() => {
@@ -415,6 +426,7 @@ export default function FeedTab() {
   return (
     <View style={{ flex: 1, backgroundColor: '#000' }} testID="feed-screen">
       <FlatList
+        ref={listRef}
         data={items}
         keyExtractor={(item) => item.id}
         pagingEnabled

@@ -67,7 +67,9 @@ function publicationRoute(type: PublicationType, item: PublicationItem) {
   if (type === 'listing') return `/listing/${item.id}`;
   if (type === 'job') return `/jobs/${item.id}`;
   if (type === 'parcel') return `/parcel/${item.id}`;
-  if (type === 'video') return `/(tabs)/feed?type=video`;
+  if (type === 'video') return `/(tabs)/feed?type=video&item=${encodeURIComponent(`video:${item.id}`)}`;
+  if (type === 'event') return `/events/${item.id}`;
+  if (type === 'post') return `/news/${item.id}`;
   return null;
 }
 
@@ -325,7 +327,7 @@ export default function MyPublicationsScreen() {
                 <MyPublicationCard
                   type="video"
                   item={video}
-                  onOpen={() => router.push('/(tabs)/feed?type=video' as never)}
+                  onOpen={() => router.push(`/(tabs)/feed?type=video&item=${encodeURIComponent(`video:${video.id}`)}` as never)}
                   onEdit={() => router.push(`/publications/edit?type=video&id=${video.id}` as never)}
                   onArchive={() => changeStatus('video', video, archiveStatus())}
                   onDelete={() => removePublication('video', video)}

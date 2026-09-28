@@ -3,7 +3,6 @@ import {
   FlatList,
   Image,
   Keyboard,
-  Linking,
   Modal,
   Platform,
   Pressable,
@@ -34,6 +33,7 @@ import {
 } from '@/store/messages';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useTheme } from '@/theme/ThemeContext';
+import { openLink } from '@/utils/appLinks';
 import { showNotice } from '@/utils/notice';
 import {
   attachmentImageSrcs,
@@ -483,7 +483,7 @@ function Bubble({
             <Pressable
               onPress={() => {
                 const href = message.attachment?.url;
-                if (href) void Linking.openURL(href);
+                if (href) openLink(href);
               }}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: message.text ? 6 : 0 }}>
               <Paperclip size={14} color={mine ? '#fff' : colors.accent} />

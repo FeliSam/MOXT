@@ -18,6 +18,12 @@ const PUBLIC_ROUTE_PATTERNS: RegExp[] = [
   /^\/users\/[^/]+\/publications$/, // /users/:userId/publications
   /^\/parcel\/[^/]+$/, // /parcels/:parcelId
   /^\/jobs\/[^/]+$/, // /jobs/:jobId
+  /^\/events\/[^/]+$/,
+  /^\/news\/[^/]+$/,
+  /^\/videos\/[^/]+$/,
+  /^\/p2p\/(?!publish$)[^/]+$/,
+  /^\/status\/[^/]+$/,
+  /^\/users\/[^/]+$/,
 ];
 
 export function isPublicPath(pathname: string) {

@@ -42,7 +42,7 @@ export function P2POfferCard({
     <Pressable
       accessibilityRole="link"
       accessibilityLabel={title}
-      onPress={() => router.push('/search' as never)}
+      onPress={() => router.push(`/p2p/${offer.id}` as never)}
       className="min-w-0 overflow-hidden rounded-2xl border border-app-border bg-app-surface"
       style={[shadows.card, { flex: 1 }]}>
       <LinearGradient

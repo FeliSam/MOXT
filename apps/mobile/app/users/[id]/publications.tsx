@@ -17,7 +17,9 @@ function openRoute(type: PublicationType, item: PublicationItem) {
   if (type === 'listing') router.push(`/listing/${item.id}` as never);
   else if (type === 'parcel') router.push(`/parcel/${item.id}` as never);
   else if (type === 'job') router.push(`/jobs/${item.id}` as never);
-  else if (type === 'video') router.push('/(tabs)/feed?type=video' as never);
+  else if (type === 'event') router.push(`/events/${item.id}` as never);
+  else if (type === 'post') router.push(`/news/${item.id}` as never);
+  else if (type === 'video') router.push(`/(tabs)/feed?type=video&item=${encodeURIComponent(`video:${item.id}`)}` as never);
 }
 
 /** Vue publique d'un membre (web /users/:id/publications) : publications actives, sans gestion. */

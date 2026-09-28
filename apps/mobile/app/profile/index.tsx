@@ -42,6 +42,7 @@ import { useLanguage } from '@/providers/LanguageProvider';
 import { supabase } from '@/services/supabase';
 import { logout } from '@/store/auth';
 import { useAppDispatch, useAppSelector } from '@/store/store';
+import { openLink } from '@/utils/appLinks';
 import { avatarDisplayUrl } from '@/utils/avatarDisplayUrl';
 import { showNotice } from '@/utils/notice';
 import { brand } from '@/theme/palette';
@@ -75,11 +76,11 @@ const SECTIONS: { id: string; titleKey: string; links: LinkItem[] }[] = [
     id: 'documents',
     titleKey: 'profile.sections.documents',
     links: [
-      { labelKey: 'profile.links.documents', icon: FileText, route: null },
-      { labelKey: 'profile.links.receipts', icon: FileText, route: null },
+      { labelKey: 'profile.links.documents', icon: FileText, route: '/kyc' },
+      { labelKey: 'profile.links.receipts', icon: FileText, route: '/wallet' },
       { labelKey: 'profile.links.disputes', icon: AlertTriangle, route: '/disputes' },
       { labelKey: 'profile.links.support', icon: HelpCircle, route: '/support' },
-      { labelKey: 'profile.links.legal', icon: FileText, route: null },
+      { labelKey: 'profile.links.legal', icon: FileText, route: 'https://moxtapp.ru/legal/mentions' },
       { labelKey: 'profile.links.localData', icon: Database, route: '/export' },
     ],
   },
@@ -93,8 +94,15 @@ const ROLE_KEYS: Record<string, string> = {
 };
 
 function go(route: string | null, label: string) {
-  if (route) router.push(route as never);
-  else showNotice(label, 'Cette page est disponible sur le site MOXT pour le moment.');
+  if (!route) {
+    showNotice(label, 'Cette page arrive bientôt dans l’application.');
+    return;
+  }
+  if (/^https?:/i.test(route)) {
+    openLink(route);
+    return;
+  }
+  router.push(route as never);
 }
 
 /** profileCompletionPercent du web. */
@@ -294,7 +302,7 @@ export default function ProfileScreen() {
         </View>
         <View style={{ flexDirection: 'row' }}>
           <Pressable
-            onPress={() => showNotice(t('publications.user.tabs.reviews'), 'La page publique des avis est disponible sur le site MOXT pour le moment.')}
+            onPress={() => router.push('/ratings' as never)}
             className="flex-row items-center border border-app-border-md bg-app-surface"
             style={{ minHeight: 44, borderRadius: 12, paddingHorizontal: 20, gap: 8 }}>
             <Star size={16} color={colors.text} strokeWidth={2} />

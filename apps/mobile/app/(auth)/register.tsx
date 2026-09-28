@@ -13,6 +13,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
+import { openLink } from '@/utils/appLinks';
+
 import { useLanguage } from '@/providers/LanguageProvider';
 import { clearAuthError, register } from '@/store/auth';
 import { stashSignupCredentials } from '@/store/pendingSignupCredentials';
@@ -381,7 +383,15 @@ export default function RegisterScreen() {
           {acceptTerms && <Text style={styles.checkmark}>✓</Text>}
         </View>
         <Text style={[styles.termsText, { color: colors.textSecondary }]}>
-          J'accepte les conditions d'utilisation et la politique de confidentialité.
+          J'accepte les{' '}
+          <Text style={{ color: brand[700], fontWeight: '700' }} onPress={() => openLink('https://moxtapp.ru/legal/mentions')}>
+            conditions d'utilisation
+          </Text>
+          {' '}et la{' '}
+          <Text style={{ color: brand[700], fontWeight: '700' }} onPress={() => openLink('https://moxtapp.ru/legal/privacy')}>
+            politique de confidentialité
+          </Text>
+          .
         </Text>
       </Pressable>
 

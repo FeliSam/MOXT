@@ -85,7 +85,7 @@ export function AppHeader({ pathname }: { pathname: string }) {
           </HeaderActionButton>
         ) : null}
         {actions.showNews ? (
-          <HeaderActionButton accessibilityLabel={t('nav.news')} onPress={() => router.push('/search' as never)}>
+          <HeaderActionButton accessibilityLabel={t('nav.news')} onPress={() => router.push('/(tabs)/feed?type=post' as never)}>
             <HeaderIcon icon={Newspaper} />
           </HeaderActionButton>
         ) : null}
