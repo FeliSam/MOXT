@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
+import { loadReviews, loadVerification } from '@/store/account';
 import { computeTrustScore, TrustLevel } from '@/store/trustScore';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
@@ -25,7 +26,17 @@ export default function TrustScreen() {
   const colors = useThemeColors();
   const { score, level, factors } = useAppSelector((state) => state.trustScore);
   const transfers = useAppSelector((state) => state.transfers.items);
-  const ratings = useAppSelector((state) => state.ratings);
+  // Avis : table `reviews` (web) ; vérification : `verification_requests` (web).
+  const reviewsAverage = useAppSelector((state) => state.account.reviewsAverage);
+  const reviewsCount = useAppSelector((state) => state.account.reviewsReceived.length);
+  const kycVerified = useAppSelector((state) => state.account.verification.verified);
+  const userId = useAppSelector((state) => state.auth.user?.id);
+
+  useEffect(() => {
+    if (!userId) return;
+    dispatch(loadReviews(userId));
+    dispatch(loadVerification(userId));
+  }, [dispatch, userId]);
   const badges = useAppSelector((state) => state.badges.earned);
 
   useEffect(() => {
@@ -33,13 +44,13 @@ export default function TrustScreen() {
     dispatch(computeTrustScore({
       transferCount: transfers.length,
       completedTransfers,
-      ratingsAvg: ratings.averageScore,
-      ratingsCount: ratings.received.length,
-      kycVerified: false,
+      ratingsAvg: reviewsAverage,
+      ratingsCount: reviewsCount,
+      kycVerified,
       accountAgeDays: 30,
       badgesEarned: badges.length,
     }));
-  }, [dispatch, transfers, ratings, badges]);
+  }, [dispatch, transfers, reviewsAverage, reviewsCount, kycVerified, badges]);
 
   const cfg = LEVEL_CONFIG[level];
 

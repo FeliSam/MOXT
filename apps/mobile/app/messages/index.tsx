@@ -1,11 +1,11 @@
-import { useEffect } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo } from 'react';
+import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
 import { PageHeader } from '@/components/ui';
 import { useLanguage } from '@/providers/LanguageProvider';
-import { loadConversations, Conversation } from '@/store/messages';
+import { getConversationPeer, loadConversations, Conversation, selectInboxList } from '@/store/messages';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, radii, shadows, spacing, typography } from '@/theme/colors';
@@ -28,7 +28,13 @@ function ConversationCard({
     empty: t('messages.noMessageYet'),
   });
   const previewAt = getMobileConversationPreviewAt(conversation);
-  const initials = conversation.title
+  const fallbackLabel = t('messages.userFallback');
+  const peer = getConversationPeer(
+    conversation,
+    currentUserId,
+    fallbackLabel && fallbackLabel !== 'messages.userFallback' ? fallbackLabel : 'Utilisateur',
+  );
+  const initials = peer.name
     .split(' ')
     .slice(0, 2)
     .map((w) => w[0]?.toUpperCase())
@@ -42,12 +48,16 @@ function ConversationCard({
         shadows.card,
       ]}
       onPress={() => router.push(`/messages/${conversation.id}` as any)}>
-      <View style={styles.avatar}>
-        <Text style={styles.avatarText}>{initials || '💬'}</Text>
-      </View>
+      {peer.avatarUrl ? (
+        <Image source={{ uri: peer.avatarUrl }} style={styles.avatar} />
+      ) : (
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>{initials || '💬'}</Text>
+        </View>
+      )}
       <View style={styles.cardBody}>
         <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>
-          {conversation.title}
+          {peer.name}
         </Text>
         <Text style={[styles.lastMsg, { color: colors.textMuted }]} numberOfLines={1}>
           {preview}
@@ -68,7 +78,12 @@ export default function MessagesListScreen() {
   const colors = useThemeColors();
   const { t } = useLanguage();
   const user = useAppSelector((state) => state.auth.user);
-  const conversations = useAppSelector((state) => state.messages.conversations);
+  const allConversations = useAppSelector((state) => state.messages.conversations);
+  // Même liste que le web (non archivées, non vides, épinglées puis récentes).
+  const conversations = useMemo(
+    () => selectInboxList(allConversations, user?.id),
+    [allConversations, user?.id],
+  );
   const loading = useAppSelector((state) => state.messages.loading);
 
   useEffect(() => {

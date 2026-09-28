@@ -18,6 +18,8 @@ import { ListCard } from '@/components/ui/ListCard';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, radii, spacing } from '@/theme/colors';
+import { splitBrowseParcels } from '@moxt/shared/domain/parcelRules.js';
+
 import { loadCoreData } from '@/store/data';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import type { ParcelItem } from '@/store/parcels';
@@ -28,11 +30,7 @@ const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
   reserved: { label: 'RÉSERVÉ', color: '#6d28d9', bg: '#ede9fe' },
 };
 
-function isArchived(parcel: ParcelItem, today: string) {
-  return parcel.status === 'completed' || (parcel.departureDate && parcel.departureDate < today);
-}
-
-function ParcelCard({ parcel }: { parcel: ParcelItem }) {
+function ParcelCard({ parcel, archived = false }: { parcel: ParcelItem; archived?: boolean }) {
   const colors = useThemeColors();
   const isCompany = Boolean((parcel as any).ownerType === 'business' || (parcel as any).businessId);
   const kg = parcel.remainingKg ?? parcel.capacityKg ?? 0;
@@ -47,6 +45,12 @@ function ParcelCard({ parcel }: { parcel: ParcelItem }) {
       </View>
 
       <View style={styles.cardContent}>
+        {/* Web : badge « Archivé » sur l'onglet Archives */}
+        {archived ? (
+          <Text testID="parcel-archived-badge" style={[styles.archivedBadge, { color: colors.textMuted, borderColor: colors.border }]}>
+            Archivé
+          </Text>
+        ) : null}
         {/* Owner */}
         <Text style={[styles.parcelOwner, { color: colors.text }]} numberOfLines={1}>
           {parcel.ownerName || parcel.id}
@@ -110,34 +114,29 @@ export default function ParcelsScreen() {
   const today = new Date().toISOString().slice(0, 10);
   const preferredCountry = user?.originCountry || user?.country || 'RU';
 
+  // Onglets identiques à la page Colis web (règles partagées) : actifs = pays + statut actif,
+  // archives = tous les trajets archivés du catalogue (50 derniers, même fenêtre que le web).
+  const browse = useMemo(
+    () => splitBrowseParcels(items, { countryCode: preferredCountry, today }) as {
+      active: ParcelItem[];
+      archived: ParcelItem[];
+    },
+    [items, preferredCountry, today],
+  );
+
   const visibleParcels = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    return items.filter((parcel) => {
-      const archived = isArchived(parcel, today);
-      if (tab === 'active' ? archived : !archived) return false;
-      const from = parcel.fromCountry || parcel.originCountry;
-      const to = parcel.toCountry || parcel.destinationCountry;
-      const matchesCountry = !preferredCountry || from === preferredCountry || to === preferredCountry;
-      if (!matchesCountry) return false;
-      if (!normalizedQuery) return true;
+    const source = tab === 'active' ? browse.active : browse.archived;
+    if (!normalizedQuery) return source;
+    return source.filter((parcel) => {
       const haystack =
         `${parcel.origin || ''} ${parcel.destination || ''} ${parcel.ownerName || ''}`.toLowerCase();
       return haystack.includes(normalizedQuery);
     });
-  }, [items, preferredCountry, query, tab, today]);
+  }, [browse, query, tab]);
 
-  const { activeCount, archivedCount } = useMemo(() => {
-    let a = 0;
-    let arch = 0;
-    for (const parcel of items) {
-      const from = parcel.fromCountry || parcel.originCountry;
-      const to = parcel.toCountry || parcel.destinationCountry;
-      if (preferredCountry && from !== preferredCountry && to !== preferredCountry) continue;
-      if (isArchived(parcel, today)) arch += 1;
-      else a += 1;
-    }
-    return { activeCount: a, archivedCount: arch };
-  }, [items, preferredCountry, today]);
+  const activeCount = browse.active.length;
+  const archivedCount = browse.archived.length;
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -227,7 +226,7 @@ export default function ParcelsScreen() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={brand[700]} />
         }
-        renderItem={({ item }) => <ParcelCard parcel={item} />}
+        renderItem={({ item }) => <ParcelCard parcel={item} archived={tab === 'archived'} />}
         ListEmptyComponent={
           <View style={styles.empty}>
             <View style={[styles.emptyIcon, { backgroundColor: brand[50] }]}>
@@ -247,6 +246,16 @@ export default function ParcelsScreen() {
 }
 
 const styles = StyleSheet.create({
+  archivedBadge: {
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    fontSize: 11,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
   safeArea: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 

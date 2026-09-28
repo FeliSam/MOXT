@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 import { supabase } from '../services/supabase';
+import { fetchActiveListings } from '@moxt/shared/services/publicationsService.js';
 
 export type ListingItem = {
   id: string;
@@ -42,14 +43,9 @@ export const loadListings = createAsyncThunk(
   'marketplace/loadListings',
   async () => {
     if (!supabase) throw new Error('Supabase non configuré.');
-    const { data, error } = await supabase
-      .from('listings')
-      .select('*')
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .limit(100);
-    if (error) throw new Error(error.message);
-    return (data || []).map(mapRow);
+    // Même fenêtre que le web (500 plus récentes), puis règle partagée isActiveListing.
+    const rows = await fetchActiveListings(supabase);
+    return rows.map(mapRow);
   },
 );
 

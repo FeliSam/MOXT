@@ -1,7 +1,10 @@
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
-import { addNotification } from '@/store/notifications';
+import { subscribeToNotifications } from '@moxt/shared/services/notificationsService.js';
+
+import { notificationUpserted, type NotificationItem } from '@/store/notifications';
 import {
+  mapConversationRow,
   receiveMessage,
   receiveRemoteConversation,
   syncRemoteConversation,
@@ -13,6 +16,7 @@ type Dispatch = (action: any) => void;
 type GetState = () => { messages: { conversations: { id: string }[] } };
 
 let channels: RealtimeChannel[] = [];
+let notificationsUnsubscribe: (() => void) | null = null;
 
 function mapMessageRow(row: Record<string, unknown>): Message {
   return {
@@ -24,37 +28,8 @@ function mapMessageRow(row: Record<string, unknown>): Message {
   };
 }
 
-function parseIdList(value: unknown): string[] {
-  if (Array.isArray(value)) return value.map(String);
-  if (typeof value === 'string') {
-    try {
-      const parsed = JSON.parse(value);
-      return Array.isArray(parsed) ? parsed.map(String) : value ? [value] : [];
-    } catch {
-      return value ? [value] : [];
-    }
-  }
-  return [];
-}
-
 function mapConversationPayload(row: Record<string, unknown>) {
-  return {
-    id: String(row.id),
-    title: String(row.title || 'Conversation'),
-    participantIds: parseIdList(row.participant_ids),
-    relatedType: row.related_type as string | undefined,
-    relatedId: row.related_id as string | undefined,
-    relatedPath: row.related_path as string | undefined,
-    relatedSnapshot: (row.related_snapshot as any) || null,
-    relatedContexts: (row.related_contexts as any[]) || [],
-    messages: [],
-    messagesLoaded: false,
-    messagesLoading: false,
-    unreadBy: (row.unread_by as Record<string, number>) || {},
-    messageCount: Number(row.message_count) || 0,
-    createdAt: String(row.created_at),
-    updatedAt: String(row.updated_at),
-  };
+  return mapConversationRow(row);
 }
 
 async function ensureConversation(
@@ -89,58 +64,23 @@ async function ingestRemoteMessage(
     return;
   }
 
+  // Comme le web : pas de notification locale pour un message (la messagerie a son propre badge).
   dispatch(receiveMessage({ conversationId, message }));
-  dispatch(
-    addNotification({
-      title: 'Nouveau message',
-      body: `${message.senderName}: ${message.text.slice(0, 60)}`,
-      type: 'message',
-      relatedId: conversationId,
-    }),
-  );
 }
 
 export function subscribeRealtime(userId: string, dispatch: Dispatch, getState: GetState) {
   unsubscribeRealtime();
   if (!supabase) return;
 
-  const transfersChannel = supabase
-    .channel(`mobile-transfers-${userId}`)
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'transfers', filter: `user_id=eq.${userId}` },
-      (payload) => {
-        const row = payload.new as Record<string, any> | undefined;
-        dispatch(
-          addNotification({
-            title: 'Transfert mis à jour',
-            body: `Le transfert ${row?.id || ''} a changé de statut.`,
-            type: 'transfer',
-            relatedId: row?.id,
-          }),
-        );
-      },
-    )
-    .subscribe();
-
-  const parcelsChannel = supabase
-    .channel(`mobile-parcels-${userId}`)
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'parcels', filter: `owner_id=eq.${userId}` },
-      (payload) => {
-        const row = payload.new as Record<string, any> | undefined;
-        dispatch(
-          addNotification({
-            title: 'Colis mis à jour',
-            body: `Votre colis ${row?.id || ''} a été modifié.`,
-            type: 'parcel',
-            relatedId: row?.id,
-          }),
-        );
-      },
-    )
-    .subscribe();
+  // Notifications serveur (INSERT / UPDATE filtrés sur user_id), comme realtimeService web.
+  // Les notifications locales inventées (transferts, colis, annonces) sont supprimées :
+  // le serveur crée déjà les vraies lignes `notifications`.
+  notificationsUnsubscribe = subscribeToNotifications(
+    supabase,
+    userId,
+    (item: NotificationItem) => dispatch(notificationUpserted(item)),
+    { channelName: `mobile-notifications-${userId}` },
+  );
 
   const messagesChannel = supabase
     .channel(`mobile-messages-${userId}`)
@@ -174,24 +114,7 @@ export function subscribeRealtime(userId: string, dispatch: Dispatch, getState: 
     )
     .subscribe();
 
-  const listingsChannel = supabase
-    .channel(`mobile-listings-${userId}`)
-    .on(
-      'postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'listings' },
-      () => {
-        dispatch(
-          addNotification({
-            title: 'Nouvelle annonce',
-            body: "Une nouvelle annonce vient d'être publiée.",
-            type: 'marketplace',
-          }),
-        );
-      },
-    )
-    .subscribe();
-
-  channels = [transfersChannel, parcelsChannel, messagesChannel, listingsChannel];
+  channels = [messagesChannel];
 }
 
 export function unsubscribeRealtime() {
@@ -201,4 +124,6 @@ export function unsubscribeRealtime() {
     } catch {}
   });
   channels = [];
+  notificationsUnsubscribe?.();
+  notificationsUnsubscribe = null;
 }

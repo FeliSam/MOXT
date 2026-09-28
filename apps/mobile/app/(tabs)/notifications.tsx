@@ -1,7 +1,14 @@
+import { useEffect } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { markAllAsRead, markAsRead } from '@/store/notifications';
+import {
+  loadNotifications,
+  markAllAsRead,
+  markAsRead,
+  selectUnreadNotificationCount,
+  selectVisibleNotifications,
+} from '@/store/notifications';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, radii, shadows, spacing } from '@/theme/colors';
@@ -19,8 +26,14 @@ export default function NotificationsTabScreen() {
   const dispatch = useAppDispatch();
   const { translateLabel } = useLanguage();
   const colors = useThemeColors();
-  const items = useAppSelector((state) => state.notifications.items);
-  const unreadCount = items.filter((n) => !n.read).length;
+  const userId = useAppSelector((state) => state.auth.user?.id);
+  const items = useAppSelector(selectVisibleNotifications);
+  const unreadCount = useAppSelector(selectUnreadNotificationCount);
+  const loading = useAppSelector((state) => state.notifications.status === 'loading');
+
+  useEffect(() => {
+    if (userId) dispatch(loadNotifications(userId));
+  }, [dispatch, userId]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={[]}>
@@ -36,7 +49,7 @@ export default function NotificationsTabScreen() {
           {unreadCount > 0 && (
             <Pressable
               style={[styles.markAllBtn, { backgroundColor: brand[50], borderColor: brand[200] }]}
-              onPress={() => dispatch(markAllAsRead())}>
+              onPress={() => userId && dispatch(markAllAsRead(userId))}>
               <Text style={[styles.markAllText, { color: brand[700] }]}>Tout marquer lu</Text>
             </Pressable>
           )}
@@ -50,6 +63,8 @@ export default function NotificationsTabScreen() {
         data={items}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
+        refreshing={loading}
+        onRefresh={() => userId && dispatch(loadNotifications(userId))}
         renderItem={({ item }) => (
           <Pressable
             style={[
@@ -68,10 +83,10 @@ export default function NotificationsTabScreen() {
             <View style={styles.notifBody}>
               <Text style={[styles.notifTitle, { color: colors.text }]}>{item.title}</Text>
               <Text style={[styles.notifText, { color: colors.textMuted }]} numberOfLines={2}>
-                {item.body}
+                {item.message}
               </Text>
               <Text style={[styles.notifDate, { color: colors.textFaint }]}>
-                {new Date(item.createdAt).toLocaleDateString('fr-FR', {
+                {new Date(item.createdAt || 0).toLocaleDateString('fr-FR', {
                   day: '2-digit',
                   month: 'short',
                   year: 'numeric',

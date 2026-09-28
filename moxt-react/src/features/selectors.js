@@ -2,6 +2,7 @@ import { createSelector } from '@reduxjs/toolkit'
 import { selectActiveBusinessForOwner } from './businesses/businessVisibility'
 import { normalizeConversation } from './communications/communicationSlice'
 import { isAvailableBrowseParcel } from './parcels/parcelUtils'
+import { selectVisibleNotificationList } from '@moxt/shared/domain/notificationRules.js'
 
 export const selectCurrentUser = (state) => state.auth.user
 export const selectBusinesses = (state) => state.businesses.items
@@ -14,14 +15,8 @@ export const selectOwnBusiness = createSelector(
 export const selectVisibleNotifications = createSelector(
   [(state) => state.communications.notifications, selectCurrentUser],
   (notifications, user) =>
-    notifications
-      .filter(
-        (item) =>
-          String(item.userId) === String(user?.id) &&
-          item.type !== 'message' &&
-          !item.archived,
-      )
-      .sort((left, right) => new Date(right.createdAt || 0) - new Date(left.createdAt || 0)),
+    // Règles partagées web + mobile (badge cloche, liste visible).
+    selectVisibleNotificationList(notifications, user?.id),
 )
 
 export const selectUnreadNotificationCount = createSelector(

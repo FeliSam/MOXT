@@ -1,138 +1,134 @@
-import { useEffect, useState } from 'react';
-import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo } from 'react';
+import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
-import { Button, Card, Input, PageHeader } from '@/components/ui';
-import { createOrganization, loadOrganizations, Organization, setCurrentOrg } from '@/store/organizations';
+import { businessActivityLabel } from '@moxt/shared/config/businessActivityLabels.js';
+
+import { PageHeader } from '@/components/ui';
+import { BackHeader } from '@/components/chrome/BackHeader';
+import {
+  Business,
+  loadBusinesses,
+  loadBusinessesByIds,
+  loadSubscriptions,
+  selectMySubscriptions,
+  selectOwnedBusinesses,
+} from '@/store/account';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, radii, shadows, spacing, typography } from '@/theme/colors';
-import { BackHeader } from '@/components/chrome/BackHeader';
 
-export default function OrganizationsScreen() {
+/**
+ * Entreprises (table `businesses`, comme le web) : mon entreprise + entreprises suivies
+ * (`publisher_subscriptions` de type business). Remplace les anciennes « organisations »
+ * mobiles (tables organizations / org_members absentes côté web).
+ */
+function BusinessCard({ business, subtitle }: { business: Business; subtitle?: string }) {
+  const colors = useThemeColors();
+  const initials = String(business.name || '')
+    .split(' ')
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase())
+    .join('');
+  const place = [business.city, business.country].filter(Boolean).join(', ');
+  return (
+    <Pressable
+      testID={`business-card-${business.id}`}
+      style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }, shadows.card]}
+      onPress={() => router.push(`/organization/${business.id}` as any)}>
+      {business.logoUrl ? (
+        <Image source={{ uri: String(business.logoUrl) }} style={styles.avatar} />
+      ) : (
+        <View style={[styles.avatar, { backgroundColor: brand[700] }]}>
+          <Text style={styles.avatarText}>{initials || '🏢'}</Text>
+        </View>
+      )}
+      <View style={styles.body}>
+        <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
+          {business.name || 'Entreprise'}
+        </Text>
+        <Text style={[styles.meta, { color: colors.textMuted }]} numberOfLines={1}>
+          {[subtitle, businessActivityLabel(business.primaryActivity), place].filter(Boolean).join(' · ') || '—'}
+        </Text>
+      </View>
+      <Text style={[styles.chevron, { color: colors.textFaint }]}>›</Text>
+    </Pressable>
+  );
+}
+
+export default function BusinessesScreen() {
   const dispatch = useAppDispatch();
   const colors = useThemeColors();
   const userId = useAppSelector((state) => state.auth.user?.id);
-  const { orgs, loading } = useAppSelector((state) => state.organizations);
-  const [showCreate, setShowCreate] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [newDesc, setNewDesc] = useState('');
+  const businesses = useAppSelector((state) => state.account.businesses);
+  const businessById = useAppSelector((state) => state.account.businessById);
+  const subscriptions = useAppSelector((state) => state.account.subscriptions);
+  const loading = useAppSelector(
+    (state) => Boolean(state.account.loading.businesses || state.account.loading.subscriptions),
+  );
 
+  const refresh = () => {
+    if (!userId) return;
+    dispatch(loadBusinesses(userId));
+    dispatch(loadSubscriptions());
+  };
+
+  useEffect(refresh, [dispatch, userId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const owned = useMemo(() => selectOwnedBusinesses(businesses, userId), [businesses, userId]);
+  const followed = useMemo(
+    () =>
+      selectMySubscriptions(subscriptions, userId).filter((item) => item.publisherType === 'business'),
+    [subscriptions, userId],
+  );
+
+  const missingIds = useMemo(
+    () => followed.map((item) => item.publisherId).filter((id) => !businessById[id]),
+    [followed, businessById],
+  );
   useEffect(() => {
-    if (userId) dispatch(loadOrganizations(userId));
-  }, [dispatch, userId]);
-
-  const handleCreate = async () => {
-    if (!newName.trim() || !userId) return;
-    try {
-      await dispatch(
-        createOrganization({ userId, name: newName.trim(), description: newDesc.trim() || undefined }),
-      ).unwrap();
-      setShowCreate(false);
-      setNewName('');
-      setNewDesc('');
-    } catch (e: any) {
-      Alert.alert('Erreur', e.message);
-    }
-  };
-
-  const handleSelect = (org: Organization) => {
-    dispatch(setCurrentOrg(org));
-    router.push(`/organization/${org.id}` as any);
-  };
-
-  const ROLE_LABELS: Record<string, string> = {
-    owner: 'Propriétaire',
-    admin: 'Admin',
-    member: 'Membre',
-    viewer: 'Lecteur',
-  };
+    if (missingIds.length) dispatch(loadBusinessesByIds(missingIds));
+  }, [dispatch, missingIds.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.headerWrap}>
-        <BackHeader inline title="Organisations" />
+        <BackHeader inline title="Entreprises" />
       </View>
-      <PageHeader
-        eyebrow="Espace collaboratif"
-        title="Organisations"
-        actions={
-          <Button
-            variant={showCreate ? 'secondary' : 'primary'}
-            size="sm"
-            onPress={() => setShowCreate(!showCreate)}>
-            {showCreate ? '✕ Annuler' : '+ Créer'}
-          </Button>
-        }
-      />
-
-      {showCreate && (
-        <Card style={styles.createCard}>
-          <Input
-            label="Nom de l'organisation"
-            placeholder="Ex. MOXT Corp"
-            value={newName}
-            onChangeText={setNewName}
-          />
-          <Input
-            label="Description (optionnel)"
-            placeholder="Décrivez votre organisation..."
-            value={newDesc}
-            onChangeText={setNewDesc}
-          />
-          <Button variant="primary" onPress={handleCreate}>
-            Créer
-          </Button>
-        </Card>
-      )}
-
-      <FlatList
-        data={orgs}
-        keyExtractor={(item) => item.id}
+      <ScrollView
         contentContainerStyle={styles.list}
-        refreshing={loading}
-        onRefresh={() => {
-          if (userId) dispatch(loadOrganizations(userId));
-        }}
-        renderItem={({ item }) => {
-          const initials = item.name
-            .split(' ')
-            .slice(0, 2)
-            .map((w) => w[0]?.toUpperCase())
-            .join('');
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} />}>
+        <PageHeader
+          eyebrow="Entreprises"
+          title="Mon entreprise"
+          description={`${owned.length} entreprise(s) · ${followed.length} suivie(s)`}
+        />
+        {owned.length ? (
+          owned.map((business) => <BusinessCard key={business.id} business={business} subtitle="Propriétaire" />)
+        ) : (
+          <Text style={[styles.emptyText, { color: colors.textMuted }]}>
+            Aucune entreprise à votre nom.
+          </Text>
+        )}
 
-          return (
-            <Pressable
-              style={[
-                styles.orgCard,
-                { backgroundColor: colors.surface, borderColor: colors.border },
-                shadows.card,
-              ]}
-              onPress={() => handleSelect(item)}>
-              <View style={styles.orgAvatar}>
-                <Text style={styles.orgAvatarText}>{initials || '🏢'}</Text>
-              </View>
-              <View style={styles.orgBody}>
-                <Text style={[styles.orgName, { color: colors.text }]}>{item.name}</Text>
-                <Text style={[styles.orgMeta, { color: colors.textMuted }]}>
-                  {item.memberCount} membre{item.memberCount > 1 ? 's' : ''} •{' '}
-                  {ROLE_LABELS[item.myRole] || item.myRole}
-                </Text>
-              </View>
-              <Text style={{ color: colors.primary, fontSize: 18 }}>→</Text>
-            </Pressable>
-          );
-        }}
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text style={{ fontSize: 40 }}>🏢</Text>
-            <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-              Aucune organisation. Créez-en une pour collaborer !
-            </Text>
-          </View>
-        }
-      />
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>
+          Entreprises suivies
+          <Text style={{ color: colors.textFaint }}>  ·  {followed.length}</Text>
+        </Text>
+        {followed.length ? (
+          followed.map((sub) => {
+            const business =
+              businessById[sub.publisherId] ||
+              ({ id: sub.publisherId, ownerId: '', name: sub.publisherName || 'Entreprise' } as Business);
+            return <BusinessCard key={sub.id} business={business} />;
+          })
+        ) : (
+          <Text style={[styles.emptyText, { color: colors.textMuted }]}>
+            Vous ne suivez aucune entreprise.
+          </Text>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -140,31 +136,21 @@ export default function OrganizationsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   headerWrap: { paddingHorizontal: spacing.xl, paddingTop: spacing.md },
-  backRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.xs },
-  backArrow: { fontSize: 20 },
-  backLabel: { fontSize: 16, fontWeight: '600' },
-  createCard: { marginHorizontal: spacing.xl, marginBottom: spacing.lg, gap: spacing.sm },
-  list: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xl, gap: spacing.sm },
-  orgCard: {
+  list: { padding: spacing.xl, gap: spacing.md },
+  sectionTitle: { fontSize: 16, fontWeight: '900', marginTop: spacing.lg },
+  card: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: radii.lg,
-    padding: spacing.lg,
+    padding: 14,
     gap: spacing.md,
     borderWidth: 1,
   },
-  orgAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: brand[700],
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  orgAvatarText: { color: '#fff', fontSize: 15, fontWeight: '800' },
-  orgBody: { flex: 1, gap: 2 },
-  orgName: { ...typography.label, fontSize: 16 },
-  orgMeta: { ...typography.caption },
-  empty: { paddingVertical: 40, alignItems: 'center', gap: spacing.sm },
-  emptyText: { ...typography.body, textAlign: 'center', paddingHorizontal: spacing['3xl'] },
+  avatar: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { color: '#fff', fontWeight: '800', fontSize: 16 },
+  body: { flex: 1, gap: 2 },
+  name: { ...typography.label, fontSize: 15 },
+  meta: { ...typography.caption },
+  chevron: { fontSize: 22 },
+  emptyText: { ...typography.body },
 });

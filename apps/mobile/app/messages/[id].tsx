@@ -15,6 +15,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Button } from '@/components/ui';
 import {
   buildConversationTimeline,
+  getConversationPeer,
   loadConversationMessages,
   markConversationRead,
   sendMessage,
@@ -102,7 +103,7 @@ export default function ChatScreen() {
           <Text style={[styles.backArrow, { color: colors.primary }]}>←</Text>
         </Pressable>
         <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
-          {conversation.title}
+          {getConversationPeer(conversation, user?.id).name}
         </Text>
       </View>
 

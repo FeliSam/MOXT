@@ -7,6 +7,7 @@ import { AppText } from '@/components/ui/AppText';
 import { getMobileHeaderActions, ROUTE_TITLES } from '@/constants/routeTitles';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { selectUnreadMessageCount } from '@/store/messages';
+import { selectUnreadNotificationCount } from '@/store/notifications';
 import { useAppSelector } from '@/store/store';
 import { useTheme } from '@/theme/ThemeContext';
 
@@ -34,7 +35,8 @@ export function AppHeader({ pathname }: { pathname: string }) {
   const insets = useSafeAreaInsets();
   const { t, translateLabel } = useLanguage();
   const user = useAppSelector((s) => s.auth.user);
-  const unreadNotifications = useAppSelector((s) => s.notifications.items.filter((n) => !n.read).length);
+  // Badge cloche : compteur serveur (mêmes règles que le web), tenu à jour en temps réel.
+  const unreadNotifications = useAppSelector(selectUnreadNotificationCount);
   const unreadMessages = useAppSelector((s) => selectUnreadMessageCount(s.messages.conversations, user?.id));
   const availableParcels = useAppSelector((s) => {
     const today = new Date().toISOString().slice(0, 10);

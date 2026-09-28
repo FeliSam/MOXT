@@ -1,16 +1,16 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 
+import { accountReducer } from './account';
 import { authReducer } from './auth';
 import { badgesReducer } from './badges';
 import { disputesReducer } from './disputes';
 import { favoritesReducer } from './favorites';
+import { feedReducer } from './feed';
 import { marketplaceReducer } from './marketplace';
 import { messagesReducer } from './messages';
 import { notificationsReducer } from './notifications';
-import { organizationsReducer } from './organizations';
 import { parcelsReducer } from './parcels';
-import { ratingsReducer } from './ratings';
 import { referralReducer } from './referral';
 import { supportReducer } from './support';
 import { transfersReducer } from './transfers';
@@ -26,12 +26,12 @@ export const store = configureStore({
     messages: messagesReducer,
     notifications: notificationsReducer,
     badges: badgesReducer,
-    ratings: ratingsReducer,
     favorites: favoritesReducer,
+    feed: feedReducer,
     referral: referralReducer,
     wallet: walletReducer,
     trustScore: trustScoreReducer,
-    organizations: organizationsReducer,
+    account: accountReducer,
     disputes: disputesReducer,
     support: supportReducer,
   },

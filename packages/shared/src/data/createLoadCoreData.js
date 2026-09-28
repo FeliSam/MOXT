@@ -1,6 +1,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit'
 
 import { fromRows } from '../utils/remoteRowMapper.js'
+import { PARCELS_PUBLIC_LIMIT, USER_ROWS_LIMIT } from '../services/parcelsService.js'
 
 function assertLoaded(result, label) {
   if (result.error) {
@@ -22,8 +23,9 @@ export function createLoadCoreData({ supabase, setTransfers, setParcels }) {
         .select('*')
         .or(`user_id.eq.${uid},business_owner_id.eq.${uid}`)
         .order('created_at', { ascending: false }),
-      supabase.from('parcels').select('*').order('created_at', { ascending: false }),
-      supabase.from('parcel_requests').select('*').eq('user_id', uid),
+      // Même fenêtre que le web : les onglets Colis (actifs / archives) comptent sur ces trajets.
+      supabase.from('parcels').select('*').order('created_at', { ascending: false }).limit(PARCELS_PUBLIC_LIMIT),
+      supabase.from('parcel_requests').select('*').eq('user_id', uid).limit(USER_ROWS_LIMIT),
     ])
 
     assertLoaded(transfersRes, 'des transferts')

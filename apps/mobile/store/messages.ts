@@ -1,6 +1,16 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-import { fetchUserConversations } from '@moxt/shared/utils/fetchUserConversations.js';
+import {
+  conversationFromRemoteRow,
+  mergeParticipantProfiles,
+  resolveConversationPeer,
+  selectInboxConversations,
+} from '@moxt/shared/domain/conversationRules.js';
+import {
+  fetchInbox,
+  INBOX_LIMIT,
+  markConversationRead as markConversationReadRemote,
+} from '@moxt/shared/services/inboxService.js';
 import { mergeUnreadBy } from '@moxt/shared/utils/mergeUnreadBy.js';
 import { supabase } from '../services/supabase';
 
@@ -33,10 +43,25 @@ export type RelatedContext = {
   introducedBy?: string | null;
 };
 
+export type ParticipantProfile = {
+  firstName?: string;
+  lastName?: string;
+  name?: string;
+  avatarUrl?: string | null;
+  status?: string;
+  verified?: boolean;
+  lastActiveAt?: string | null;
+};
+
 export type Conversation = {
   id: string;
   title: string;
   participantIds: string[];
+  participantProfiles?: Record<string, ParticipantProfile>;
+  archivedBy?: string[];
+  pinnedBy?: string[];
+  mutedBy?: string[];
+  blockedBy?: string[];
   relatedType?: string;
   relatedId?: string;
   relatedPath?: string;
@@ -134,7 +159,7 @@ function defaultRelatedPath(relatedType?: string, relatedId?: string) {
     job: (id) => `/jobs/${id}`,
     parcel: (id) => `/(tabs)/parcels`,
     event: (id) => `/events/${id}`,
-    business: (id) => `/organization`,
+    business: (id) => `/organization/${id}`,
   };
   return builders[relatedType || '']?.(relatedId) || null;
 }
@@ -205,30 +230,25 @@ function normalizeConversation(conversation: Conversation): Conversation {
     relatedContexts: normalizeRelatedContexts(base),
   };
 }
-function mapConversationRow(row: Record<string, unknown>): Conversation {
-  const relatedSnapshot = (row.related_snapshot as Conversation['relatedSnapshot']) || null;
-  const relatedContexts = (row.related_contexts as RelatedContext[]) || [];
-  const base = {
-    id: String(row.id),
-    title: String(row.title || 'Conversation'),
-    participantIds: parseIdList(row.participant_ids),
-    relatedType: row.related_type as string | undefined,
-    relatedId: row.related_id as string | undefined,
-    relatedPath: row.related_path as string | undefined,
-    relatedSnapshot,
-    relatedContexts,
+/** Ligne `conversations` → Conversation (normalisation partagée avec le web). */
+export function mapConversationRow(row: Record<string, unknown>): Conversation {
+  const base = conversationFromRemoteRow(row) as unknown as Conversation;
+  return normalizeConversation({
+    ...base,
+    title: base.title || 'Conversation',
+    relatedType: base.relatedType || undefined,
+    relatedId: base.relatedId || undefined,
+    relatedPath: base.relatedPath || undefined,
+    relatedSnapshot: (row.related_snapshot ?? row.relatedSnapshot ?? null) as Conversation['relatedSnapshot'],
+    relatedContexts: ((row.related_contexts ?? row.relatedContexts) as RelatedContext[]) || [],
     messages: [],
     messagesLoaded: false,
     messagesLoading: false,
-    unreadBy: parseRecord(row.unread_by),
-    messageCount: Number(row.message_count) || 0,
-    lastMessageText: row.last_message_text ? String(row.last_message_text) : undefined,
-    lastMessageSenderId: row.last_message_sender_id ? String(row.last_message_sender_id) : undefined,
-    lastMessageAt: row.last_message_at ? String(row.last_message_at) : null,
-    createdAt: String(row.created_at),
-    updatedAt: String(row.updated_at),
-  };
-  return normalizeConversation(base);
+    lastMessageText: base.lastMessageText || undefined,
+    lastMessageSenderId: base.lastMessageSenderId || undefined,
+    createdAt: String(base.createdAt || ''),
+    updatedAt: String(base.updatedAt || base.createdAt || ''),
+  });
 }
 
 function preservedLocalMessages(conversation: Conversation) {
@@ -254,6 +274,10 @@ function mergeLoadedConversations(
       messagesLoading: local.messagesLoading ?? false,
       unreadBy: mergeUnreadBy(remote.unreadBy, local.unreadBy),
       messageCount: Math.max(remote.messageCount || 0, local.messageCount || 0),
+      participantProfiles: mergeParticipantProfiles(
+        local.participantProfiles,
+        remote.participantProfiles,
+      ),
     });
   }
   return [...byId.values()].sort(
@@ -299,25 +323,45 @@ export function selectUnreadMessageCount(
     .reduce((total, conversation) => total + (conversation.unreadBy?.[userId] || 0), 0);
 }
 
+/**
+ * Conversations du compte comme le web : RPC list_my_conversations (80), profils des
+ * interlocuteurs complétés depuis `profiles`. Pas de dédoublonnage par participants.
+ */
 export const loadConversations = createAsyncThunk(
   'messages/loadConversations',
   async (userId: string) => {
     if (!supabase) return [];
-    const { data, error } = await fetchUserConversations(supabase, userId, { limit: 100 });
-    if (error) throw new Error(error.message);
-
-    const byKey = new Map<string, Conversation>();
-    for (const row of data || []) {
-      const conversation = mapConversationRow(row);
-      const key = participantKey(conversation.participantIds);
-      const existing = byKey.get(key);
-      if (!existing || new Date(conversation.updatedAt) > new Date(existing.updatedAt)) {
-        byKey.set(key, conversation);
-      }
-    }
-    return [...byKey.values()];
+    const { conversations, error } = await fetchInbox(supabase, userId, { limit: INBOX_LIMIT });
+    if (error && !conversations.length) throw new Error(error.message);
+    return (conversations as Record<string, unknown>[]).map((row) => mapConversationRow(row));
   },
 );
+
+/** Lignes de la liste messagerie (filtre, tri et interlocuteur identiques au web). */
+export function selectInboxList(
+  conversations: Conversation[],
+  userId?: string | null,
+  options: { showArchived?: boolean } = {},
+): Conversation[] {
+  if (!userId) return [];
+  return selectInboxConversations(conversations, userId, options) as Conversation[];
+}
+
+export type ConversationPeer = {
+  id: string | null;
+  name: string;
+  avatarUrl: string | null;
+  verified: boolean;
+  lastActiveAt: string | null;
+};
+
+export function getConversationPeer(
+  conversation: Conversation,
+  userId?: string | null,
+  fallbackName = 'Utilisateur',
+): ConversationPeer {
+  return resolveConversationPeer(conversation, userId, fallbackName) as ConversationPeer;
+}
 
 export const loadConversationMessages = createAsyncThunk(
   'messages/loadConversationMessages',
@@ -387,6 +431,9 @@ export const markConversationRead = createAsyncThunk(
   'messages/markConversationRead',
   async ({ conversationId, userId }: { conversationId: string; userId: string }) => {
     if (!supabase) return { conversationId, userId };
+    // Même écriture que le web : RPC moxt_mark_conversation_read.
+    const rpc = await markConversationReadRemote(supabase, conversationId);
+    if (!rpc.error) return { conversationId, userId };
     const { data, error } = await supabase
       .from('conversations')
       .select('unread_by')
@@ -545,6 +592,10 @@ const messagesSlice = createSlice({
         messagesLoading: existing.messagesLoading,
         unreadBy: mergeUnreadBy(incoming.unreadBy, existing.unreadBy),
         messageCount: Math.max(existing.messageCount || 0, incoming.messageCount || 0),
+        participantProfiles: mergeParticipantProfiles(
+          existing.participantProfiles,
+          incoming.participantProfiles,
+        ),
       };
       bumpConversationToTop(state, incoming.id);
     },

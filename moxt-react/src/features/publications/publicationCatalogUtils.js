@@ -7,8 +7,38 @@ import {
   FiRepeat,
   FiShoppingBag,
 } from 'react-icons/fi'
-import { isActiveListing, isArchivedListing } from '../marketplace/listingCatalogUtils'
-import { isActiveVideo, isArchivedVideo } from '../videos/videoUtils'
+import {
+  collectBusinessPublicationsFromCatalogs,
+  collectUserPublicationsFromCatalogs,
+  emptyPublications,
+  publicationArchiveCounts,
+  publicationTotalCount,
+  publicationTotalViews,
+} from '@moxt/shared/domain/publicationRules.js'
+
+// Règles « Mes publications » : source unique partagée web + mobile.
+export {
+  filterPublicationsByScope,
+  filterPublicationsByTabs,
+  isActiveEvent,
+  isActiveJob,
+  isActiveP2POffer,
+  isActiveParcel,
+  isActivePost,
+  isActiveVideo,
+  isArchivedEvent,
+  isArchivedJob,
+  isArchivedP2POffer,
+  isArchivedParcel,
+  isArchivedPost,
+  isArchivedVideo,
+  preferredPublicationArchiveTab,
+  publicationArchiveCounts,
+  publicationTotalCount,
+  publicationTotalViews,
+  publicationTypeCounts,
+  visiblePublicationCount,
+} from '@moxt/shared/domain/publicationRules.js'
 
 export const PUBLICATION_TYPE_TABS = [
   { id: 'listing', label: 'Annonces', icon: FiShoppingBag, color: 'from-cyan-500 to-blue-600' },
@@ -30,119 +60,26 @@ export function visiblePublicationTypeTabs(tabs, typeCounts) {
 export const archivedPublicationCardClass =
   'bg-[var(--app-surface-muted)]/75 ring-1 ring-[var(--app-border)]/70'
 
-const todayIso = () => new Date().toISOString().slice(0, 10)
-
-export function isActiveParcel(parcel) {
-  if (!parcel) return false
-  if (parcel.status !== 'active') return false
-  if (parcel.departureDate && parcel.departureDate < todayIso()) return false
-  return true
-}
-
-export function isArchivedParcel(parcel) {
-  if (!parcel) return false
-  return !isActiveParcel(parcel)
-}
-
-export function isActiveJob(job) {
-  return job?.status === 'active'
-}
-
-export function isArchivedJob(job) {
-  return job ? !isActiveJob(job) : false
-}
-
-export function isActiveEvent(event) {
-  return event?.status === 'published'
-}
-
-export function isArchivedEvent(event) {
-  return event ? !isActiveEvent(event) : false
-}
-
-export function isActivePost(post) {
-  return post?.status === 'published'
-}
-
-export function isArchivedPost(post) {
-  return post ? !isActivePost(post) : false
-}
-
-export function isActiveP2POffer(offer) {
-  return offer?.status === 'active'
-}
-
-export function isArchivedP2POffer(offer) {
-  return offer ? !isActiveP2POffer(offer) : false
-}
-
-export { isActiveVideo, isArchivedVideo }
-
-function isBusinessPublication(item) {
-  return Boolean(item?.businessId)
-}
-
-function emptyPublications() {
-  return { listings: [], parcels: [], jobs: [], events: [], videos: [], posts: [], others: [] }
-}
-
-export function filterPublicationsByScope(publications, scope = 'personal') {
-  const pick = (items) =>
-    scope === 'business'
-      ? items.filter(isBusinessPublication)
-      : items.filter((item) => !isBusinessPublication(item))
-
+function catalogsFromState(state) {
   return {
-    listings: pick(publications.listings),
-    parcels: pick(publications.parcels),
-    jobs: pick(publications.jobs),
-    events: pick(publications.events),
-    // Vidéos toujours business-scoped
-    videos: scope === 'business' ? publications.videos || [] : [],
-    posts:
-      scope === 'business' ? [] : publications.posts.filter((item) => !isBusinessPublication(item)),
-    others: pick(publications.others),
+    listings: state.marketplace?.items || [],
+    parcels: state.parcels?.items || [],
+    jobs: state.jobs?.items || [],
+    events: state.events?.items || [],
+    videos: state.videos?.items || [],
+    posts: state.posts?.items || [],
+    others: state.p2p?.offers || [],
   }
 }
 
 export function collectBusinessPublications(state, businessId) {
   if (!businessId) return emptyPublications()
-  const match = (item) => item?.businessId === businessId
-  return {
-    listings: (state.marketplace?.items || []).filter(match),
-    parcels: (state.parcels?.items || []).filter(match),
-    jobs: (state.jobs?.items || []).filter(match),
-    events: (state.events?.items || []).filter(match),
-    videos: (state.videos?.items || []).filter(match),
-    posts: [],
-    others: (state.p2p?.offers || []).filter(match),
-  }
+  return collectBusinessPublicationsFromCatalogs(catalogsFromState(state), businessId)
 }
 
 export function collectUserPublications(state, userId) {
   if (!userId) return emptyPublications()
-
-  const listings = (state.marketplace?.items || []).filter((item) => item.ownerId === userId)
-  const parcels = (state.parcels?.items || []).filter((item) => item.ownerId === userId)
-  const jobs = (state.jobs?.items || []).filter((item) => item.ownerId === userId)
-  const events = (state.events?.items || []).filter((item) => item.ownerId === userId)
-  const videos = (state.videos?.items || []).filter((item) => item.ownerId === userId)
-  const posts = (state.posts?.items || []).filter((item) => item.authorId === userId)
-  const others = (state.p2p?.offers || []).filter((item) => item.ownerId === userId)
-
-  return { listings, parcels, jobs, events, videos, posts, others }
-}
-
-export function publicationTotalCount(publications) {
-  return (
-    publications.listings.length +
-    publications.parcels.length +
-    publications.jobs.length +
-    publications.events.length +
-    (publications.videos?.length || 0) +
-    publications.posts.length +
-    publications.others.length
-  )
+  return collectUserPublicationsFromCatalogs(catalogsFromState(state), userId)
 }
 
 export function buildUserPublicationProfile(userId, publications, options = {}) {
@@ -181,166 +118,4 @@ export function buildBusinessPublicationProfile(business, publications) {
     totalViews: publicationTotalViews(publications),
     totalCount: publicationTotalCount(publications),
   }
-}
-
-function isPendingReview(item) {
-  return item?.status === 'pending_review'
-}
-
-function filterByArchive(items, isActiveFn, isArchivedFn, archiveTab, includePending = false) {
-  return items.filter((item) => {
-    if (archiveTab === 'active') {
-      return isActiveFn(item) || (includePending && isPendingReview(item))
-    }
-    if (includePending && isPendingReview(item)) return false
-    return isArchivedFn(item)
-  })
-}
-
-export function filterPublicationsByTabs(
-  publications,
-  { archiveTab, typeTab, includePending = false },
-) {
-  const map = {
-    listing: filterByArchive(
-      publications.listings,
-      isActiveListing,
-      isArchivedListing,
-      archiveTab,
-      includePending,
-    ),
-    parcel: filterByArchive(
-      publications.parcels,
-      isActiveParcel,
-      isArchivedParcel,
-      archiveTab,
-      includePending,
-    ),
-    job: filterByArchive(publications.jobs, isActiveJob, isArchivedJob, archiveTab, includePending),
-    event: filterByArchive(
-      publications.events,
-      isActiveEvent,
-      isArchivedEvent,
-      archiveTab,
-      includePending,
-    ),
-    video: filterByArchive(
-      publications.videos || [],
-      isActiveVideo,
-      isArchivedVideo,
-      archiveTab,
-      includePending,
-    ),
-    post: filterByArchive(
-      publications.posts,
-      isActivePost,
-      isArchivedPost,
-      archiveTab,
-      includePending,
-    ),
-    other: filterByArchive(
-      publications.others,
-      isActiveP2POffer,
-      isArchivedP2POffer,
-      archiveTab,
-      includePending,
-    ),
-  }
-
-  if (typeTab === 'all') {
-    return map
-  }
-
-  return {
-    listing: typeTab === 'listing' ? map.listing : [],
-    parcel: typeTab === 'parcel' ? map.parcel : [],
-    job: typeTab === 'job' ? map.job : [],
-    event: typeTab === 'event' ? map.event : [],
-    video: typeTab === 'video' ? map.video : [],
-    post: typeTab === 'post' ? map.post : [],
-    other: typeTab === 'other' ? map.other : [],
-  }
-}
-
-export function publicationTypeCounts(publications, archiveTab, { includePending = false } = {}) {
-  const filtered = filterPublicationsByTabs(publications, {
-    archiveTab,
-    typeTab: 'all',
-    includePending,
-  })
-  return {
-    listing: filtered.listing.length,
-    parcel: filtered.parcel.length,
-    job: filtered.job.length,
-    event: filtered.event.length,
-    video: filtered.video.length,
-    post: filtered.post.length,
-    other: filtered.other.length,
-  }
-}
-
-export function publicationArchiveCounts(
-  publications,
-  { includePending = false, typeTab = 'all' } = {},
-) {
-  const active = filterPublicationsByTabs(publications, {
-    archiveTab: 'active',
-    typeTab,
-    includePending,
-  })
-  const archived = filterPublicationsByTabs(publications, {
-    archiveTab: 'archived',
-    typeTab,
-    includePending,
-  })
-  const countAll = (bucket) =>
-    bucket.listing.length +
-    bucket.parcel.length +
-    bucket.job.length +
-    bucket.event.length +
-    bucket.video.length +
-    bucket.post.length +
-    bucket.other.length
-  return {
-    active: countAll(active),
-    archived: countAll(archived),
-  }
-}
-
-/**
- * S’il n’y a plus d’actifs mais des archives, on affiche les archives.
- * L’inverse : onglet archives vide → revenir aux actives.
- */
-export function preferredPublicationArchiveTab(
-  publications,
-  requestedTab = 'active',
-  { includePending = false } = {},
-) {
-  const counts = publicationArchiveCounts(publications, { includePending, typeTab: 'all' })
-  if (requestedTab === 'archived' && counts.archived === 0) return 'active'
-  if (requestedTab !== 'archived' && counts.active === 0 && counts.archived > 0) {
-    return 'archived'
-  }
-  return requestedTab === 'archived' ? 'archived' : 'active'
-}
-
-export function publicationTotalViews(publications) {
-  const listingViews = publications.listings.reduce((sum, item) => sum + (Number(item.views) || 0), 0)
-  const videoViews = (publications.videos || []).reduce(
-    (sum, item) => sum + (Number(item.viewCount) || 0),
-    0,
-  )
-  return listingViews + videoViews
-}
-
-export function visiblePublicationCount(visible) {
-  return (
-    visible.listing.length +
-    visible.parcel.length +
-    visible.job.length +
-    visible.event.length +
-    (visible.video?.length || 0) +
-    visible.post.length +
-    visible.other.length
-  )
 }

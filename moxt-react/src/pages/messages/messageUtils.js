@@ -3,6 +3,20 @@ import { messagesText } from '../../features/communications/messagesI18n'
 import { getConversationPeer } from '../../features/communications/conversationDisplay'
 import { resolveConversationPreviewMessage } from '@moxt/shared/utils/conversationPreview.js'
 import { resolveNewsFeedLink } from '../../features/posts/postFeedUtils'
+import {
+  conversationMessageCount,
+  isEmptyConversation,
+  isMessageFromUser,
+} from '@moxt/shared/domain/conversationRules.js'
+
+// Règles de liste messagerie : source unique partagée web + mobile.
+export {
+  conversationMessageCount,
+  countUnreadMessages,
+  isEmptyConversation,
+  isMessageFromUser,
+  shouldShowConversationInList,
+} from '@moxt/shared/domain/conversationRules.js'
 
 export function messageSearchHaystack(message) {
   if (!message) return ''
@@ -80,38 +94,6 @@ export function conversationPreview(conversation, userId, t) {
   return messagesText(t, 'messages.startConversation')
 }
 
-export function conversationMessageCount(conversation, userId) {
-  const visible = (conversation.messages || []).filter(
-    (message) => !message.deletedBy?.includes(userId),
-  )
-  return Math.max(visible.length, conversation.messageCount || 0)
-}
-
-/** Conversation ouverte via Contacter sans aucun message envoyé. */
-export function isEmptyConversation(conversation, userId) {
-  if (!conversation) return true
-  if (conversationMessageCount(conversation, userId) > 0) return false
-  if (conversation.lastMessageAt || conversation.last_message_at) return false
-  if (String(conversation.lastMessageText || conversation.last_message_text || '').trim()) {
-    return false
-  }
-  return true
-}
-
-/**
- * Masque les chats sans message (clic Contacter sans envoi),
- * sauf la conversation active encore ouverte.
- */
-export function shouldShowConversationInList(conversation, userId, activeId = null) {
-  if (!conversation) return false
-  if (activeId && conversation.id === activeId) return true
-  return !isEmptyConversation(conversation, userId)
-}
-
-export function countUnreadMessages(conversations, userId) {
-  return conversations.reduce((total, item) => total + (item.unreadBy?.[userId] || 0), 0)
-}
-
 export function countConversationsForFilter(conversations, filter, userId, showArchived) {
   return conversations.filter((item) => {
     const archived = item.archivedBy?.includes(userId)
@@ -161,11 +143,6 @@ export function resolveNotificationTarget(notification, conversations = []) {
 
 export function isMessageNotification(notification) {
   return notification.type === 'message' || notification.link?.startsWith('/messages')
-}
-
-export function isMessageFromUser(message, userId) {
-  if (!message || !userId) return false
-  return String(message.senderId ?? message.sender_id) === String(userId)
 }
 
 export function messageHasReactions(message) {
