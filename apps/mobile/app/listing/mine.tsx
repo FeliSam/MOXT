@@ -249,7 +249,11 @@ export default function MyPublicationsScreen() {
         ))}
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.typeTabs}>
+      <ScrollView
+        horizontal
+        style={styles.typeTabsScroll}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.typeTabs}>
         {visibleTypeTabs.map((tabId) => (
           <Pressable
             key={tabId}
@@ -310,7 +314,9 @@ const styles = StyleSheet.create({
   backLabel: { ...typography.label },
   tabs: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, marginBottom: spacing.sm },
   tab: { flex: 1, borderWidth: 1, borderRadius: radii.lg, paddingVertical: spacing.sm, alignItems: 'center' },
-  typeTabs: { gap: spacing.sm, paddingHorizontal: spacing.lg, marginBottom: spacing.md },
+  // Sans flexGrow: 0, la barre horizontale s'étire en hauteur sur le web.
+  typeTabsScroll: { flexGrow: 0 },
+  typeTabs: { gap: spacing.sm, paddingHorizontal: spacing.lg, marginBottom: spacing.md, alignItems: 'center' },
   typeTab: { borderWidth: 1, borderRadius: radii.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   list: { padding: spacing.lg, gap: spacing.md },
   card: {
