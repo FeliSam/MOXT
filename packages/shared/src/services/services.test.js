@@ -8,6 +8,7 @@ import {
 import { businessFromRemoteRow, fetchBusinesses, findOwnedBusiness } from './businessesService.js'
 import {
   fetchBusinessPublications,
+  fetchCatalogUserPublications,
   fetchPublicUserPublications,
   fetchUserPublications,
   summarizeUserPublications,
@@ -102,6 +103,40 @@ describe('publicationsService', () => {
     expect(summary.activeTypeCounts.other).toBe(1)
   })
 
+  it('profil public authentifié : fenêtres du catalogue web, posts vides si la requête échoue', async () => {
+    const client = createFakeClient(
+      {
+        listings: [
+          { id: 'l1', owner_id: me, status: 'sold' },
+          { id: 'l2', owner_id: other, status: 'active' },
+        ],
+        parcels: [{ id: 'p1', owner_id: me, status: 'completed' }],
+        posts: [{ id: 'po', author_id: me, status: 'published' }],
+        p2p_offers: [{ id: 'o1', owner_id: me, status: 'active' }],
+      },
+      { errors: { posts: 'invalid input syntax for type uuid' } },
+    )
+    const { publications, errors } = await fetchCatalogUserPublications(client, me, { viewerId: 'not-a-uuid' })
+    expect(errors.map((item) => item.table)).toEqual(['posts'])
+    expect(publications.posts).toEqual([])
+    expect(publications.listings.map((item) => item.id)).toEqual(['l1'])
+    expect(publications.parcels.map((item) => item.id)).toEqual(['p1'])
+    expect(publications.others.map((item) => item.id)).toEqual(['o1'])
+    expect(opsOf(client, 'listings')[0]).toEqual([
+      ['select', '*'],
+      ['order', 'created_at', { ascending: false }],
+      ['limit', 500],
+    ])
+    expect(opsOf(client, 'parcels')[0][2]).toEqual(['limit', 50])
+    expect(opsOf(client, 'posts')[0]).toEqual([
+      ['select', '*'],
+      ['or', 'status.eq.published,author_id.eq.not-a-uuid'],
+      ['order', 'last_shared_at', { ascending: false, nullsFirst: false }],
+      ['order', 'created_at', { ascending: false }],
+      ['limit', 40],
+    ])
+  })
+
   it('profil public : mêmes statuts que l’aperçu web, sans offres P2P', async () => {
     const client = createFakeClient({
       listings: [{ id: 'l1', owner_id: me, status: 'active' }],
@@ -126,7 +161,7 @@ describe('publicationsService', () => {
 })
 
 describe('fetchPublicFeedCatalog', () => {
-  it('charge les tables publiques du fil, dont posts et offres P2P actives', async () => {
+  it('charge les tables du fil invité web, posts compris, sans offres P2P', async () => {
     const client = createFakeClient({
       posts: [{ id: 'po', status: 'published', message: 'Bonjour', images: ['https://cdn.example/a.jpg'] }],
       p2p_offers: [{ id: 'o1', status: 'active' }],
@@ -138,9 +173,9 @@ describe('fetchPublicFeedCatalog', () => {
       ['limit', 80],
       ['eq', 'status', 'published'],
     ])
-    expect(opsOf(client, 'p2p_offers')[0][3]).toEqual(['eq', 'status', 'active'])
+    expect(client.calls.some((call) => call.table === 'p2p_offers')).toBe(false)
     expect(catalog.posts[0].images).toEqual(['https://cdn.example/a.jpg'])
-    expect(catalog.p2pOffers.map((item) => item.id)).toEqual(['o1'])
+    expect(catalog.p2pOffers).toEqual([])
     expect(catalog.listings).toEqual([])
   })
 })

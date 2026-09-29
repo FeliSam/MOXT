@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, useWindowDimensions, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Building2 } from 'lucide-react-native';
 
@@ -8,14 +8,16 @@ import {
   filterPublicationsByScope,
   filterPublicationsByTabs,
   isActiveVideo,
-  preferredPublicationArchiveTab,
+  publicProfileArchiveRequest,
   publicationArchiveCounts,
   publicationTotalCount,
   publicationTypeCounts,
   visiblePublicationCount,
 } from '@moxt/shared/domain/publicationRules.js';
 import { fetchBusinesses } from '@moxt/shared/services/businessesService.js';
-import { fetchBusinessPublications, fetchPublicUserPublications } from '@moxt/shared/services/publicationsService.js';
+import { fetchBusinessPublications, fetchCatalogUserPublications } from '@moxt/shared/services/publicationsService.js';
+import { MarketplaceListingCard } from '@/components/marketplace/MarketplaceListingCard';
+import type { ListingItem } from '@/store/marketplace';
 import { fetchPublicProfile } from '@moxt/shared/services/profileService.js';
 import { fetchReviewsForTargetScope } from '@moxt/shared/services/reviewsService.js';
 import { openContactConversation } from '@moxt/shared/services/contactService.js';
@@ -91,8 +93,10 @@ export default function PublicPublicationsScreen() {
   const [scope, setScope] = useState<'personal' | 'business'>('personal');
   const [reviews, setReviews] = useState<Review[]>([]);
   const [mainTab, setMainTab] = useState('publications');
-  const [archiveTab, setArchiveTab] = useState<'active' | 'archived'>('active');
+  const [archiveOverride, setArchiveOverride] = useState<'active' | 'archived' | null>(null);
   const [typeTab, setTypeTab] = useState('listing');
+  const { width: windowWidth } = useWindowDimensions();
+  const cardWidth = Math.max(140, Math.floor((windowWidth - 32 - 12) / 2));
 
   useEffect(() => {
     if (!supabase || !id) return undefined;
@@ -103,7 +107,7 @@ export default function PublicPublicationsScreen() {
         if (!cancelled) setProfile(next);
       })
       .catch(() => undefined);
-    fetchPublicUserPublications(client, id)
+    fetchCatalogUserPublications(client, id, { viewerId: me?.id })
       .then((result) => {
         if (!cancelled) setPersonalPubs(filterPublicationsByScope(result.publications, 'personal'));
       })
@@ -122,9 +126,10 @@ export default function PublicPublicationsScreen() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, me?.id]);
 
   const publications = scope === 'business' ? businessPubs : personalPubs;
+  const preferredArchive = (archiveOverride ?? publicProfileArchiveRequest(publications)) as 'active' | 'archived';
 
   useEffect(() => {
     if (!supabase || !id) return undefined;
@@ -151,7 +156,6 @@ export default function PublicPublicationsScreen() {
   }, [business?.id, id, publications, scope]);
 
   const archiveCounts = useMemo(() => publicationArchiveCounts(publications), [publications]);
-  const preferredArchive = preferredPublicationArchiveTab(publications, archiveTab) as 'active' | 'archived';
   const typeCounts = useMemo(() => publicationTypeCounts(publications, preferredArchive), [preferredArchive, publications]);
   const typeTabs = TYPE_ORDER.filter((key) => (scope === 'business' ? key !== 'post' : true) && (typeCounts[key] || 0) > 0).map((key) => ({
     key,
@@ -325,7 +329,7 @@ export default function PublicPublicationsScreen() {
           <UnderlineTabs
             scale={scale}
             active={preferredArchive}
-            onChange={(key) => setArchiveTab(key as 'active' | 'archived')}
+            onChange={(key) => setArchiveOverride(key as 'active' | 'archived')}
             tabs={[
               { key: 'active', label: 'Actives', count: archiveCounts.active, alwaysShow: true },
               { key: 'archived', label: 'Archives', count: archiveCounts.archived, alwaysShow: archiveCounts.archived > 0 },
@@ -343,8 +347,20 @@ export default function PublicPublicationsScreen() {
           {visiblePublicationCount(visible) ? (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
               {TYPE_ORDER.flatMap((type) => (visible[type] || []).map((item: PublicationItem) => (
-                <View key={`${type}-${item.id}`} style={{ width: '48%' }}>
-                  <MyPublicationCard type={type} item={item} readonly onOpen={() => openRoute(type, item)} />
+                <View key={`${type}-${item.id}`} style={{ width: cardWidth }}>
+                  {type === 'listing' ? (
+                    <MarketplaceListingCard
+                      listing={{
+                        ...(item as ListingItem),
+                        title: String(item.title || ''),
+                        images: Array.isArray(item.images) ? item.images.filter((src): src is string => typeof src === 'string') : [],
+                      }}
+                      width={cardWidth}
+                      height={Math.round(cardWidth * 1.55)}
+                    />
+                  ) : (
+                    <MyPublicationCard type={type} item={item} readonly onOpen={() => openRoute(type, item)} />
+                  )}
                 </View>
               )))}
             </View>

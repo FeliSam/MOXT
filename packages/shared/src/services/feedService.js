@@ -22,7 +22,7 @@ export async function fetchFeedPosts(client, userId, { isStaff = false } = {}) {
   return rowsOrThrow(result, 'Publications').map(entityFromRemoteRow).filter(Boolean).map(withPostImages)
 }
 
-/** Même fenêtre que l’aperçu invité du fil web (guestFeedService), plus les offres P2P actives. */
+/** Même fenêtre que l’aperçu invité du fil web (guestFeedService) : pas d’offres P2P. */
 export const PUBLIC_FEED_LIMIT = 80
 
 const PUBLIC_FEED_TABLES = [
@@ -33,13 +33,11 @@ const PUBLIC_FEED_TABLES = [
   ['posts', 'posts', ['published']],
   ['videos', 'videos', ['active']],
   ['businesses', 'businesses', ['verified', 'approved', 'active']],
-  ['p2pOffers', 'p2p_offers', ['active']],
 ]
 
 /**
- * Catalogue public du Fil. Le web authentifié le charge via la synchro catalogue ;
- * l’invité charge les mêmes tables (sans P2P). On inclut les offres actives pour que
- * la pastille P2P suive la règle « visible s’il y a des éléments ».
+ * Catalogue public du Fil, mêmes tables que fetchGuestFeedCatalog du web.
+ * La pastille P2P n’apparaît que si ce catalogue contient des offres ; l’invité web n’en charge pas.
  */
 export async function fetchPublicFeedCatalog(client, { limit = PUBLIC_FEED_LIMIT } = {}) {
   const empty = {

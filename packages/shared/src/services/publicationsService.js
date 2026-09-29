@@ -1,6 +1,7 @@
 import { entityFromRemoteRow, rowsOrEmpty } from './rowUtils.js'
 import { fromRow } from '../utils/remoteRowMapper.js'
 import {
+  collectUserPublicationsFromCatalogs,
   emptyPublications,
   filterPublicationsByScope,
   isActiveListing,
@@ -81,6 +82,51 @@ const PUBLIC_USER_TABLES = [
   ['videos', 'videos', 'owner_id', ['active']],
   ['posts', 'posts', 'author_id', ['published']],
 ]
+
+/**
+ * Catalogue du profil public authentifié, mêmes fenêtres que loadAllData du web
+ * (annonces 500, autres tables 50, posts 40), puis sélection par propriétaire.
+ * Pas de filtre de statut sur les fenêtres : les archives du catalogue comptent.
+ * La requête posts est celle du web (auteur = visiteur connecté). Si elle échoue
+ * (visiteur e2e hors UUID, colonne absente), les posts restent vides, comme le
+ * setPosts du web sur une réponse en erreur.
+ */
+export async function fetchCatalogUserPublications(client, userId, { viewerId } = {}) {
+  if (!client || !userId) return { publications: emptyPublications(), errors: [] }
+  const windows = [
+    ['listings', 'listings', LISTINGS_PUBLIC_LIMIT],
+    ['parcels', 'parcels', 50],
+    ['jobs', 'jobs', 50],
+    ['events', 'events', 50],
+    ['videos', 'videos', 50],
+    ['others', 'p2p_offers', 50],
+  ]
+  const windowResults = await Promise.all(
+    windows.map(([, table, limit]) =>
+      client.from(table).select('*').order('created_at', { ascending: false }).limit(limit),
+    ),
+  )
+  const postsResult = viewerId
+    ? await client
+        .from('posts')
+        .select('*')
+        .or(`status.eq.published,author_id.eq.${viewerId}`)
+        .order('last_shared_at', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false })
+        .limit(40)
+    : await client.from('posts').select('*').eq('status', 'published').order('created_at', { ascending: false }).limit(40)
+
+  const catalogs = emptyPublications()
+  const errors = []
+  windows.forEach(([key, table], index) => {
+    const result = windowResults[index]
+    if (result?.error) errors.push({ table, message: result.error.message })
+    catalogs[key] = rowsOrEmpty(result).map(entityFromRemoteRow).filter(Boolean)
+  })
+  if (postsResult?.error) errors.push({ table: 'posts', message: postsResult.error.message })
+  catalogs.posts = rowsOrEmpty(postsResult).map(entityFromRemoteRow).filter(Boolean)
+  return { publications: collectUserPublicationsFromCatalogs(catalogs, userId), errors }
+}
 
 export async function fetchPublicUserPublications(client, userId) {
   if (!client || !userId) return { publications: emptyPublications(), errors: [] }
