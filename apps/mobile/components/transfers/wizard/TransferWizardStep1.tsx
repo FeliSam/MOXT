@@ -13,6 +13,7 @@ import {
   directionInfo,
 } from '@/constants/transfers';
 import { cn } from '@/lib/cn';
+import { useTheme } from '@/theme/ThemeContext';
 
 type Exchanger = (typeof FALLBACK_EXCHANGERS)[number];
 
@@ -33,6 +34,7 @@ export function TransferWizardStep1({
   setExchangerId: (id: string) => void;
   originCountry: string;
 }) {
+  const { isDark } = useTheme();
   const exchanger = FALLBACK_EXCHANGERS.find((e) => e.id === exchangerId)!;
   const numAmount = Number(amount) || 0;
   const calc = calculateTransfer(numAmount, direction, exchanger.feePercent);
@@ -47,27 +49,28 @@ export function TransferWizardStep1({
           {[DIRECTIONS.BJ_TO_RU, DIRECTIONS.RU_TO_BJ].map((dir) => {
             const cardInfo = directionInfo(dir, originCountry);
             const active = direction === dir;
+            const activeInk = isDark ? '#fde68a' : '#78350f';
             return (
               <Pressable
                 key={dir}
                 className={cn(twTransfer.directionCard, !active && twTransfer.directionCardIdle)}
                 style={
                   active
-                    ? { borderColor: '#FCD116', backgroundColor: '#fffbeb' }
+                    ? { borderColor: '#FCD116', backgroundColor: isDark ? '#422006' : '#fffbeb' }
                     : undefined
                 }
                 onPress={() => onDirectionChange(dir)}>
                 <View className="flex-row flex-wrap items-center gap-2">
-                  <Text className={twTransfer.directionFlags}>
+                  <Text style={active ? { color: activeInk, fontSize: 18, fontWeight: '900' } : undefined} className={active ? undefined : twTransfer.directionFlags}>
                     {cardInfo.fromFlag} {cardInfo.from}
                   </Text>
-                  <Text style={{ color: active ? '#92400e' : '#6b7280' }}>→</Text>
-                  <Text className={twTransfer.directionFlags}>
+                  <Text style={{ color: active ? activeInk : '#6b7280' }}>→</Text>
+                  <Text style={active ? { color: activeInk, fontSize: 18, fontWeight: '900' } : undefined} className={active ? undefined : twTransfer.directionFlags}>
                     {cardInfo.toFlag} {cardInfo.to}
                   </Text>
                 </View>
                 <Text
-                  style={{ color: active ? '#92400e' : undefined }}
+                  style={{ color: active ? activeInk : undefined }}
                   className={cn(twTransfer.directionSub, !active && 'text-app-text-muted dark:text-zinc-300')}>
                   {cardInfo.sub}
                 </Text>

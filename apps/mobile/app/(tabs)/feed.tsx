@@ -381,13 +381,8 @@ export default function FeedTab() {
       }),
     [videos, listings, parcels, events, posts, p2pOffers, businesses, userId],
   );
-  const counts = useMemo(() => {
-    const c: Partial<Record<FeedKind, number>> = {};
-    for (const item of all) c[item.kind] = (c[item.kind] || 0) + 1;
-    return c;
-  }, [all]);
-  const filters = FEED_TYPE_FILTERS.filter((f) => f.id === 'all' || (counts[f.id as FeedKind] || 0) > 0);
-  const showFilters = all.length > 0 && filters.length > 2;
+  const filters = FEED_TYPE_FILTERS.filter((f) => f.id === 'all' || f.id === 'video' || f.id === 'listing' || f.id === 'event');
+  const showFilters = true;
   const ordered = useStableOrder(all);
   const items = type === 'all' ? ordered : ordered.filter((i) => i.kind === type);
   const viewed = useRef(new Set<string>());

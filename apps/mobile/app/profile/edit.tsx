@@ -1,6 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Image, Modal, Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
+import { Flag, Image as ImageIcon, Mail, MapPin, Smile, User } from 'lucide-react-native';
+import type { LucideIcon } from 'lucide-react-native';
 
 import { updateAccountPreferences } from '@moxt/shared/services/accountWrites.js';
 
@@ -30,11 +32,14 @@ const COUNTRIES = [
 
 const CITIES = ['Moscou', 'Saint-Pétersbourg', 'Kazan', 'Novossibirsk', 'Ekaterinbourg', 'Krasnodar', 'Rostov-sur-le-Don'];
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Section({ title, icon: Icon, children }: { title: string; icon?: LucideIcon; children: ReactNode }) {
   const colors = useThemeColors();
   return (
     <View style={{ borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 16, gap: 12 }}>
-      <AppText className="text-sm font-black text-app-text">{title}</AppText>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        {Icon ? <Icon size={16} color={colors.text} /> : null}
+        <AppText className="text-sm font-black text-app-text">{title}</AppText>
+      </View>
       {children}
     </View>
   );
@@ -56,6 +61,8 @@ export default function EditProfileScreen() {
   const [preferences, setPreferences] = useState<Record<string, unknown>>({});
   const [coverOpen, setCoverOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [cityOpen, setCityOpen] = useState(false);
+  const [avatarOpen, setAvatarOpen] = useState(false);
 
   const canEditOrigin = user?.role === 'admin' || user?.role === 'superadmin';
   const coverStyle = resolveCoverStyleId({
@@ -139,8 +146,9 @@ export default function EditProfileScreen() {
         <AppText className="font-bold" style={{ color: colors.primary }}>← Retour</AppText>
       </Pressable>
 
-      <Section title="Photo">
-        <ImagePickerButton label="Photo de profil" currentUri={avatarUrl || null} onImageSelected={setAvatarUrl} />
+      <Section title="Photo" icon={ImageIcon}>
+        <ImagePickerButton label="Choisir une photo" currentUri={avatarUrl || null} onImageSelected={setAvatarUrl} />
+        <Button variant="secondary" onPress={() => setAvatarOpen(true)}>Modifier l’avatar</Button>
         <AppText className="text-center text-base font-black text-app-text">{`${firstName} ${lastName}`.trim()}</AppText>
         <AppText className="text-center text-xs text-app-text-muted">{user.email}</AppText>
         {avatarUrl ? (
@@ -150,7 +158,7 @@ export default function EditProfileScreen() {
         ) : null}
       </Section>
 
-      <Section title="Style de couverture">
+      <Section title="Bannière Moxt" icon={ImageIcon}>
         <AppText className="text-xs text-app-text-muted">La bannière s’affiche sur votre profil public.</AppText>
         <View style={{ height: 96, borderRadius: 14, overflow: 'hidden' }}>
           <MoxtCoverBanner styleId={coverStyle || defaultCoverStyleForPersonal(typeof preferences.gender === 'string' ? preferences.gender : null)} />
@@ -158,31 +166,24 @@ export default function EditProfileScreen() {
         <Button variant="secondary" onPress={() => setCoverOpen(true)}>Choisir une bannière</Button>
       </Section>
 
-      <Section title="Compte">
-        <AppText className="text-xs font-bold text-app-text-muted">E-mail</AppText>
-        <AppText className="text-sm text-app-text">{user.email || 'Non renseigné'}</AppText>
-        <AppText className="text-xs text-app-text-muted">L’adresse e-mail se modifie depuis la vérification du compte.</AppText>
-      </Section>
-
-      <Section title="Identité">
+      <Section title="Identité" icon={User}>
         <Input label="Prénom" value={firstName} onChangeText={setFirstName} />
         <Input label="Nom" value={lastName} onChangeText={setLastName} />
       </Section>
 
-      <Section title="Résidence en Russie">
+      <Section title="Résidence en Russie" icon={MapPin}>
         <Input label="Pays de résidence" value="Russie" editable={false} />
-        <Input label="Ville" value={city} onChangeText={setCity} placeholder="Moscou" />
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {CITIES.map((item) => (
-            <Pressable key={item} onPress={() => setCity(item)} style={{ borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: city === item ? colors.accentSoft : colors.surfaceMuted }}>
-              <AppText className="text-xs font-bold text-app-text">{item}</AppText>
-            </Pressable>
-          ))}
-        </View>
+        <AppText className="text-xs text-app-text-muted">Fixé lors de l’inscription.</AppText>
+        <AppText className="text-[13px] font-bold text-app-text-muted">Ville en Russie</AppText>
+        <Pressable
+          onPress={() => setCityOpen(true)}
+          style={{ minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 14, justifyContent: 'center' }}>
+          <AppText className="text-base font-bold text-app-text">{city || 'Choisir une ville'}</AppText>
+        </Pressable>
         <Input label="Téléphone en Russie" value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="+7XXXXXXXXXX" />
       </Section>
 
-      <Section title="Pays d’origine">
+      <Section title="Pays d’origine" icon={Flag}>
         {canEditOrigin ? (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {COUNTRIES.map((item) => (
@@ -197,10 +198,64 @@ export default function EditProfileScreen() {
         <Input label={`Téléphone ${originLabel}`} value={secondaryPhone} onChangeText={setSecondaryPhone} keyboardType="phone-pad" />
       </Section>
 
+      <Section title="E-mail" icon={Mail}>
+        <AppText className="text-sm font-bold text-app-text">{user.email || 'Non renseigné'}</AppText>
+        <AppText className="text-xs text-app-text-muted">Modifiable dans le formulaire avec validation par code OTP.</AppText>
+        <Button variant="secondary" onPress={() => router.push('/kyc' as never)}>Vérifier l’e-mail</Button>
+      </Section>
+
       <Button variant="primary" size="lg" onPress={() => void handleSave()} loading={saving || status === 'loading'}>
         Enregistrer
       </Button>
       {saving ? <ActivityIndicator color={colors.primary} /> : null}
+
+      <Modal visible={cityOpen} transparent animationType="fade" onRequestClose={() => setCityOpen(false)}>
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' }} onPress={() => setCityOpen(false)}>
+          <Pressable onPress={() => undefined} style={{ borderTopLeftRadius: 20, borderTopRightRadius: 20, backgroundColor: colors.surface, padding: 16, gap: 8 }}>
+            <AppText className="text-base font-black text-app-text">Ville en Russie</AppText>
+            {CITIES.map((item) => (
+              <Pressable
+                key={item}
+                onPress={() => {
+                  setCity(item);
+                  setCityOpen(false);
+                }}
+                style={{ minHeight: 44, justifyContent: 'center', borderRadius: 12, paddingHorizontal: 12, backgroundColor: city === item ? colors.accentSoft : colors.surfaceMuted }}>
+                <AppText className="font-bold text-app-text">{item}</AppText>
+              </Pressable>
+            ))}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal visible={avatarOpen} transparent animationType="fade" onRequestClose={() => setAvatarOpen(false)}>
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' }} onPress={() => setAvatarOpen(false)}>
+          <Pressable onPress={() => undefined} style={{ borderTopLeftRadius: 20, borderTopRightRadius: 20, backgroundColor: colors.surface, padding: 16, gap: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Smile size={16} color={colors.text} />
+              <AppText className="text-base font-black text-app-text">Modifier l’avatar</AppText>
+            </View>
+            <AppText className="text-xs text-app-text-muted">Choisissez un avatar illustré. Il remplace la photo de profil.</AppText>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+              {['Feliciano', 'Amina', 'Ivan', 'Nina', 'Samuel', 'Moxt'].map((seed) => {
+                const uri = `https://api.dicebear.com/9.x/lorelei/png?seed=${encodeURIComponent(seed)}`;
+                const selected = avatarUrl === uri;
+                return (
+                  <Pressable
+                    key={seed}
+                    onPress={() => {
+                      setAvatarUrl(uri);
+                      setAvatarOpen(false);
+                    }}
+                    style={{ width: 72, height: 72, borderRadius: 16, overflow: 'hidden', borderWidth: selected ? 2 : 1, borderColor: selected ? colors.accent : colors.border, backgroundColor: colors.surfaceMuted }}>
+                    <Image source={{ uri }} style={{ width: 72, height: 72 }} />
+                  </Pressable>
+                );
+              })}
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <CoverStyleSheet
         visible={coverOpen}

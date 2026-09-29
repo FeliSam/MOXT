@@ -17,6 +17,7 @@ export const ROUTE_TITLES: Record<string, string> = {
   '/dashboard': 'Accueil',
   '/transfers': 'Nouveau transfert',
   '/transfers/history': 'Historique',
+  '/transfers/detail': 'Détail du transfert',
   '/receipts': 'Reçus',
   '/marketplace': 'Marketplace',
   '/feed': 'Fil d’actualité',

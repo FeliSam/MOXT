@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Image, Pressable, ScrollView, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Image, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Heart } from 'lucide-react-native';
 
@@ -19,6 +19,10 @@ export default function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const dispatch = useAppDispatch();
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
+  const imageWidth = Math.max(280, width - 32);
+  const galleryRef = useRef<ScrollView>(null);
+  const [imageIndex, setImageIndex] = useState(0);
   const user = useAppSelector((state) => state.auth.user);
   const cached = useAppSelector((state) => state.feed.posts.find((item) => item.id === id));
   const [remote, setRemote] = useState<Record<string, unknown> | null>(null);
@@ -88,9 +92,52 @@ export default function PostDetailScreen() {
         </Pressable>
         {post.title ? <AppText className="text-xl font-black text-app-text">{String(post.title)}</AppText> : null}
         {text ? <AppText className="text-base text-app-text" style={{ lineHeight: 24 }}>{text}</AppText> : null}
-        {images.map((src) => (
-          <Image key={src} source={{ uri: src }} style={{ width: '100%', height: 240, borderRadius: 16 }} resizeMode="cover" />
-        ))}
+        {images.length ? (
+          <View style={{ height: 280 }}>
+            <ScrollView
+              ref={galleryRef}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={(event) => {
+                const next = Math.round(event.nativeEvent.contentOffset.x / imageWidth);
+                setImageIndex(Math.min(images.length - 1, Math.max(0, next)));
+              }}>
+              {images.map((src) => (
+                <Image key={src} source={{ uri: src }} style={{ width: imageWidth, height: 280, borderRadius: 16 }} resizeMode="cover" />
+              ))}
+            </ScrollView>
+            {images.length > 1 ? (
+              <>
+                {imageIndex > 0 ? (
+                  <Pressable
+                    onPress={() => {
+                      const next = imageIndex - 1;
+                      galleryRef.current?.scrollTo({ x: next * imageWidth, animated: true });
+                      setImageIndex(next);
+                    }}
+                    style={{ position: 'absolute', left: 8, top: 120, width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.92)' }}>
+                    <AppText className="text-lg font-black">‹</AppText>
+                  </Pressable>
+                ) : null}
+                {imageIndex < images.length - 1 ? (
+                  <Pressable
+                    onPress={() => {
+                      const next = imageIndex + 1;
+                      galleryRef.current?.scrollTo({ x: next * imageWidth, animated: true });
+                      setImageIndex(next);
+                    }}
+                    style={{ position: 'absolute', right: 8, top: 120, width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.92)' }}>
+                    <AppText className="text-lg font-black">›</AppText>
+                  </Pressable>
+                ) : null}
+                <View style={{ position: 'absolute', right: 12, bottom: 12, borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.55)', paddingHorizontal: 8, paddingVertical: 4 }}>
+                  <AppText className="text-xs font-bold" style={{ color: '#fff' }}>{imageIndex + 1}/{images.length}</AppText>
+                </View>
+              </>
+            ) : null}
+          </View>
+        ) : null}
         <Pressable
           onPress={() => {
             if (!user?.id) {

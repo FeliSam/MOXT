@@ -137,17 +137,64 @@ export function firstUnreadMessageIndex(
   return -1;
 }
 
-export function isImageAttachment(attachment?: { kind?: string; type?: string; url?: string | null; urls?: string[] } | null) {
-  if (!attachment || attachment.kind === 'contact') return false;
-  if (Array.isArray(attachment.urls) && attachment.urls.length > 0) return true;
-  if (attachment.type?.startsWith('image/')) return true;
-  return /\.(jpe?g|png|gif|webp|avif)(\?|#|$)/i.test(attachment.url || '');
+function coerceUrlList(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => {
+      if (typeof item === 'string') return item.trim() ? [item.trim()] : [];
+      if (item && typeof item === 'object') {
+        const record = item as Record<string, unknown>;
+        return coerceUrlList(record.url || record.uri || record.src || record.imageUrl);
+      }
+      return [];
+    });
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+    if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+      try {
+        return coerceUrlList(JSON.parse(trimmed));
+      } catch {
+        return [trimmed];
+      }
+    }
+    return [trimmed];
+  }
+  return [];
 }
 
-export function attachmentImageSrcs(attachment?: { url?: string | null; urls?: string[] } | null) {
+/** Chemin Storage ou URL absolue → URL affichable. */
+export function messageMediaUrl(src: string) {
+  const value = src.trim();
+  if (!value) return '';
+  if (/^(https?:|data:)/i.test(value)) return value;
+  const base = process.env.EXPO_PUBLIC_SUPABASE_URL?.replace(/\/$/, '');
+  if (!base) return value;
+  const path = value.replace(/^\/+/, '');
+  if (path.startsWith('storage/')) return `${base}/${path}`;
+  return `${base}/storage/v1/object/public/${path}`;
+}
+
+export function isImageAttachment(attachment?: { kind?: string; type?: string; url?: string | null; urls?: string[]; localUrl?: string | null; fromStatus?: boolean } | null) {
+  if (!attachment || attachment.kind === 'contact' || attachment.kind === 'video') return false;
+  if (attachment.type?.startsWith('video/') || attachment.type?.startsWith('application/')) return false;
+  const srcs = attachmentImageSrcs(attachment);
+  if (!srcs.length) return false;
+  if (attachment.fromStatus || attachment.kind === 'image' || attachment.type?.startsWith('image/')) return true;
+  if (Array.isArray(attachment.urls) && attachment.urls.length > 0) return true;
+  return srcs.some((src) => /\.(jpe?g|png|gif|webp|avif|bmp|svg)(\?|#|$)/i.test(src));
+}
+
+export function attachmentImageSrcs(attachment?: { url?: string | null; urls?: unknown; localUrl?: string | null; imageUrl?: string | null; images?: unknown; pages?: unknown } | null) {
   if (!attachment) return [];
-  if (Array.isArray(attachment.urls) && attachment.urls.length > 0) {
-    return attachment.urls.filter(Boolean).slice(0, 4);
-  }
-  return attachment.url ? [attachment.url] : [];
+  const record = attachment as Record<string, unknown>;
+  const found = [
+    ...coerceUrlList(record.urls),
+    ...coerceUrlList(record.images),
+    ...coerceUrlList(record.pages),
+    ...coerceUrlList(record.url),
+    ...coerceUrlList(record.localUrl),
+    ...coerceUrlList(record.imageUrl),
+  ];
+  return [...new Set(found.map(messageMediaUrl).filter(Boolean))].slice(0, 4);
 }

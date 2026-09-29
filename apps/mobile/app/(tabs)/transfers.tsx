@@ -179,35 +179,16 @@ export default function TransfersScreen() {
         }
         ListHeaderComponent={
           <>
-            <TransferPageHeader
-              eyebrow="Historique"
-              title={translateLabel('Transferts')}
-              description="Estimez, créez et suivez vos transferts entre le Bénin et la Russie."
-              actions={[
-                { label: 'Calculatrice', onPress: () => setCalculatorOpen(true) },
-                { label: 'Nouveau transfert', onPress: () => router.push('/transfer/wizard' as any), primary: true },
-              ]}
-            />
-
-            <View style={styles.tabs}>
-              {(
-                [
-                  { key: 'transfers' as const, label: 'Transfert', count: visibleTransfers.length },
-                  { key: 'p2p' as const, label: 'Échanges P2P', count: myP2pOrders.length },
-                ]
-              ).map((item) => {
-                const active = tab === item.key;
-                return (
-                  <Pressable
-                    key={item.key}
-                    onPress={() => setTab(item.key)}
-                    style={[styles.tab, { backgroundColor: active ? brand[700] : colors.surfaceMuted }]}>
-                    <Text style={{ color: active ? '#fff' : colors.text, fontWeight: '800', fontSize: 13 }}>
-                      {item.label} · {item.count}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+            <View style={[styles.headerCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <TransferPageHeader
+                eyebrow="Historique"
+                title={translateLabel('Transferts')}
+                description="Estimez, créez et suivez vos transferts entre le Bénin et la Russie."
+                actions={[
+                  { label: 'Calculatrice', onPress: () => setCalculatorOpen(true) },
+                  { label: 'Nouveau transfert', onPress: () => router.push('/transfer/wizard' as any), primary: true },
+                ]}
+              />
             </View>
 
             <View style={styles.sectionHead}>
@@ -239,6 +220,30 @@ export default function TransfersScreen() {
             <Text style={[styles.searchHint, { color: colors.textFaint }]}>
               Recherche dynamique · {(tab === 'transfers' ? visibleTransfers : myP2pOrders).length} résultat(s)
             </Text>
+
+            <View style={[styles.tabs, { backgroundColor: colors.surfaceMuted, borderColor: colors.border }]}>
+              {(
+                [
+                  { key: 'transfers' as const, label: 'Transfert', count: visibleTransfers.length },
+                  { key: 'p2p' as const, label: 'Échanges P2P', count: myP2pOrders.length },
+                ]
+              ).map((item) => {
+                const active = tab === item.key;
+                return (
+                  <Pressable
+                    key={item.key}
+                    onPress={() => setTab(item.key)}
+                    style={[styles.tab, active ? { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border } : null]}>
+                    <Text style={{ color: active ? colors.text : colors.textMuted, fontWeight: '900', fontSize: 13 }}>
+                      {item.label}
+                    </Text>
+                    <View style={[styles.tabCount, { backgroundColor: active ? brand[700] : colors.surface }]}>
+                      <Text style={{ color: active ? '#fff' : colors.textFaint, fontSize: 10, fontWeight: '900' }}>{item.count}</Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
           </>
         }
         renderItem={({ item }) =>
@@ -280,8 +285,10 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   listContent: { padding: spacing.lg, paddingBottom: BOTTOM_NAV_PADDING, gap: spacing.md },
 
-  tabs: { flexDirection: 'row', gap: 8, marginBottom: spacing.md },
-  tab: { flex: 1, minHeight: 40, borderRadius: 999, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
+  headerCard: { borderRadius: radii.lg, borderWidth: 1, padding: spacing.md, marginBottom: spacing.sm },
+  tabs: { flexDirection: 'row', gap: 4, marginBottom: spacing.md, borderRadius: radii.lg, borderWidth: 1, padding: 4 },
+  tab: { flex: 1, minHeight: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6, paddingHorizontal: 8 },
+  tabCount: { borderRadius: 999, minWidth: 18, paddingHorizontal: 6, paddingVertical: 2, alignItems: 'center' },
   headerLink: { marginTop: 8, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12 },
   sectionHead: { marginBottom: spacing.sm },
   sectionTitle: { fontSize: 18, fontWeight: '900' },

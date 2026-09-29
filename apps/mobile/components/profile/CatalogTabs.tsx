@@ -60,11 +60,11 @@ export function UnderlineTabs({ tabs, active, onChange, scale }: { tabs: Catalog
 }
 
 /** CatalogArchiveTabs variant="chips" : tuiles 82×86 icône en dégradé + libellé (compteur). */
-export function ChipTabs({ tabs, active, onChange, scale }: { tabs: CatalogTab[]; active: string; onChange: (key: string) => void; scale: BrandScale }) {
+export function ChipTabs({ tabs, active, onChange, scale, pinActive = true }: { tabs: CatalogTab[]; active: string; onChange: (key: string) => void; scale: BrandScale; pinActive?: boolean }) {
   const { colors, isDark } = useTheme();
   const shadows = useShadows();
   const shown = visibleTabs(tabs);
-  useKeepActiveVisible(shown, active, onChange);
+  useKeepActiveVisible(pinActive ? shown : [], active, onChange);
   if (!shown.length) return null;
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -4 }} contentContainerStyle={{ gap: 8, paddingHorizontal: 4, paddingBottom: 4, paddingTop: 1 }}>

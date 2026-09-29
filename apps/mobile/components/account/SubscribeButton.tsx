@@ -10,6 +10,7 @@ import { findPublisherSubscription } from '@/store/account';
 import { subscribeToPublisher, unsubscribeFromPublisher } from '@/store/engagement';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { brand, withAlphaColor } from '@/theme/palette';
+import type { BrandScale } from '@/components/profile/identity';
 import { useShadows, useTheme, useThemeCssVars } from '@/theme/ThemeContext';
 
 export type NotifyPref = 'all' | 'important' | 'muted';
@@ -152,6 +153,7 @@ export function SubscribeButton({
   showIcon = true,
   subscribeLabel = "S'abonner",
   subscribedLabel = 'Abonné',
+  accentScale,
 }: {
   publisherType: PublisherType;
   publisherId: string;
@@ -163,8 +165,11 @@ export function SubscribeButton({
   showIcon?: boolean;
   subscribeLabel?: string;
   subscribedLabel?: string;
+  /** Échelle du profil (prune pour un particulier). */
+  accentScale?: BrandScale;
 }) {
   const { colors, isDark } = useTheme();
+  const scale = accentScale || brand;
   const { user, subscription, isSubscribed, subscribe, unsubscribe } = usePublisherSubscription(publisherType, publisherId, publisherName);
   const [menuOpen, setMenuOpen] = useState(false);
   if (!user?.id || (publisherType === 'user' && user.id === publisherId)) return null;
@@ -199,12 +204,11 @@ export function SubscribeButton({
           borderRadius: radius,
           paddingHorizontal: 14,
           borderWidth: 1,
-          borderColor: isDark ? brand[800] : brand[200],
-          // brand-950 n'existe pas dans la palette web : dark:bg-brand-950/40 n'est pas généré, le fond reste brand-50.
-          backgroundColor: brand[50],
+          borderColor: isDark ? scale[800] : scale[200],
+          backgroundColor: isDark ? `${scale[900]}66` : scale[50],
         }}>
-        {showIcon ? <UserCheck size={14} color={isDark ? brand[200] : brand[800]} strokeWidth={2} /> : null}
-        <AppText className={textClass} style={{ color: isDark ? brand[200] : brand[800] }}>
+        {showIcon ? <UserCheck size={14} color={isDark ? scale[200] : scale[800]} strokeWidth={2} /> : null}
+        <AppText className={textClass} style={{ color: isDark ? scale[200] : scale[800] }}>
           {subscribedLabel}
         </AppText>
       </View>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, Share, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { FileText } from 'lucide-react-native';
 
 import { fromRow } from '@moxt/shared/utils/remoteRowMapper.js';
 import { formatMoney, formatTransferDate } from '@moxt/shared/utils/transfers.js';
@@ -25,7 +26,9 @@ type Receipt = {
   relatedId?: string;
 };
 
-/** Détail d’un reçu (web /receipts/:receiptId). */
+type TimelineEvent = { status?: string; at?: string; label?: string };
+
+/** Détail d’un reçu : icône, badge et chronologie Traitement, comme le web. */
 export default function ReceiptDetailScreen() {
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const id = routeParam(params.id);
@@ -62,24 +65,14 @@ export default function ReceiptDetailScreen() {
     };
   }, [id, user?.id]);
 
-  const transfer = receipt?.relatedId ? transfers.find((item) => transferMatches(item as never, String(receipt.relatedId))) : null;
-  const statusLabel = transfer
-    ? TRANSFER_STATUS_LABELS[String((transfer as { status?: string }).status || '')]?.label || String((transfer as { status?: string }).status || '')
-    : receipt?.status || 'non défini';
-
-  function share() {
-    if (!receipt) return;
-    const text = [
-      'MOXT — REÇU',
-      `Référence: ${receipt.id}`,
-      `Objet: ${receipt.title || ''}`,
-      `Montant: ${formatMoney(receipt.amount, receipt.currency)}`,
-      `Statut: ${statusLabel}`,
-      `Créé le: ${receipt.createdAt ? formatTransferDate(receipt.createdAt) : ''}`,
-      'Conservez ce document comme justificatif de votre opération.',
-    ].join('\n');
-    void Share.share({ message: text });
-  }
+  const transfer = receipt?.relatedId
+    ? transfers.find((item) => transferMatches(item as never, String(receipt.relatedId)))
+    : null;
+  const statusKey = String((transfer as { status?: string } | null)?.status || receipt?.status || '');
+  const statusLabel = TRANSFER_STATUS_LABELS[statusKey]?.label || statusKey || 'non défini';
+  const timeline = Array.isArray((transfer as { timeline?: TimelineEvent[] } | null)?.timeline)
+    ? ((transfer as { timeline?: TimelineEvent[] }).timeline as TimelineEvent[])
+    : [];
 
   if (!receipt) {
     return (
@@ -108,28 +101,42 @@ export default function ReceiptDetailScreen() {
         <Pressable onPress={() => router.back()}>
           <AppText className="font-bold" style={{ color: colors.accent }}>← Retour</AppText>
         </Pressable>
-        <AppText className="text-xs font-black uppercase text-app-text-muted">Finances</AppText>
         <AppText className="text-2xl font-black text-app-text">{receipt.title || 'Reçu'}</AppText>
         <AppText className="text-sm text-app-text-muted">
           {formatMoney(receipt.amount, receipt.currency)} · {receipt.createdAt ? formatTransferDate(receipt.createdAt) : ''}
         </AppText>
         <View style={{ borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 16, gap: 10 }}>
-          <AppText className="text-xs font-bold" style={{ color: colors.accent }}>Reçu</AppText>
-          {fields.map(([label, value]) => (
-            <View key={label} style={{ borderRadius: 14, backgroundColor: colors.surfaceMuted, padding: 12 }}>
-              <AppText className="text-xs text-app-text-muted">{label}</AppText>
-              <AppText className="mt-1 font-bold text-app-text">{value}</AppText>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+            <View style={{ width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentSoft }}>
+              <FileText size={22} color={colors.accent} />
             </View>
-          ))}
-          {transfer ? (
-            <Pressable onPress={() => router.push(`/transfer/${(transfer as { id: string }).id}` as never)}>
-              <AppText className="font-bold" style={{ color: colors.accent }}>Voir le transfert</AppText>
-            </Pressable>
+            <View style={{ borderRadius: 999, backgroundColor: colors.accentSoft, paddingHorizontal: 8, paddingVertical: 3 }}>
+              <AppText className="text-[10px] font-black" style={{ color: colors.accent }}>REÇU</AppText>
+            </View>
+          </View>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {fields.map(([label, value]) => (
+              <View key={label} style={{ width: '48%', borderRadius: 14, backgroundColor: colors.surfaceMuted, padding: 12 }}>
+                <AppText className="text-xs text-app-text-muted">{label}</AppText>
+                <AppText className="mt-1 font-bold text-app-text">{value}</AppText>
+              </View>
+            ))}
+          </View>
+          {timeline.length ? (
+            <View style={{ marginTop: 8, borderRadius: 16, backgroundColor: colors.surfaceMuted, padding: 14, gap: 8 }}>
+              <AppText className="text-sm font-black text-app-text">Traitement</AppText>
+              {timeline.map((event, index) => {
+                const label = event.label || TRANSFER_STATUS_LABELS[String(event.status || '')]?.label || event.status || 'Étape';
+                return (
+                  <View key={`${event.status}-${event.at}-${index}`} style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
+                    <AppText className="flex-1 text-xs font-bold text-app-text">{label}</AppText>
+                    <AppText className="text-xs text-app-text-muted">{event.at ? formatTransferDate(event.at) : ''}</AppText>
+                  </View>
+                );
+              })}
+            </View>
           ) : null}
         </View>
-        <Pressable onPress={share} style={{ minHeight: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent }}>
-          <AppText className="font-bold" style={{ color: '#fff' }}>Partager</AppText>
-        </Pressable>
       </ScrollView>
     </AppChrome>
   );

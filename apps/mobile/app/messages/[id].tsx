@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Check, ExternalLink, FileText, Paperclip, Plus, Send, X } from 'lucide-react-native';
+import { Check, ExternalLink, FileText, MoreVertical, Paperclip, Plus, Search, Send, X } from 'lucide-react-native';
 
 import { HeaderActionButton, HeaderChip } from '@/components/chrome/HeaderChrome';
 import { HEADER, headerPaddingTop } from '@/components/chrome/headerTokens';
@@ -72,6 +72,9 @@ export default function ChatScreen() {
   const [text, setText] = useState('');
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [threadQuery, setThreadQuery] = useState('');
+  const [optionsOpen, setOptionsOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [online, setOnline] = useState(false);
   const [keyboardOpen, setKeyboardOpen] = useState(false);
@@ -135,7 +138,14 @@ export default function ChatScreen() {
     });
   }, [peer?.id]);
 
-  const timeline = conversation ? buildConversationTimeline(conversation) : [];
+  const timeline = (conversation ? buildConversationTimeline(conversation) : []).filter((item) => {
+    const query = threadQuery.trim().toLowerCase();
+    if (!query) return true;
+    if (item.kind === 'related') return `${item.preview.title} ${item.preview.subtitle || ''}`.toLowerCase().includes(query);
+    const message = item.message;
+    const images = attachmentImageSrcs(message.attachment);
+    return `${message.text} ${message.attachment?.name || ''} ${images.join(' ')}`.toLowerCase().includes(query);
+  });
   const firstUnread = useMemo(() => {
     if (!conversation || !user?.id) return -1;
     return firstUnreadMessageIndex(conversation.messages, user.id, initialUnread.current || 0);
@@ -255,7 +265,33 @@ export default function ChatScreen() {
             </View>
           </View>
         </HeaderChip>
+        <HeaderActionButton accessibilityLabel={searchOpen ? t('messages.closeSearchInThread') : t('messages.searchInThread')} onPress={() => setSearchOpen((open) => !open)}>
+          <Search size={HEADER.icon} color={colors.text} strokeWidth={HEADER.iconStroke} />
+        </HeaderActionButton>
+        <HeaderActionButton accessibilityLabel={t('messages.conversationOptionsAria')} onPress={() => setOptionsOpen(true)}>
+          <MoreVertical size={HEADER.icon} color={colors.text} strokeWidth={HEADER.iconStroke} />
+        </HeaderActionButton>
       </View>
+      {searchOpen ? (
+        <View style={{ paddingHorizontal: 12, paddingBottom: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 12, backgroundColor: colors.surface, paddingHorizontal: 12, minHeight: 40 }}>
+            <Search size={16} color={colors.textMuted} />
+            <TextInput
+              autoFocus
+              value={threadQuery}
+              onChangeText={setThreadQuery}
+              placeholder={t('messages.searchInConversation')}
+              placeholderTextColor={colors.textFaint}
+              style={{ flex: 1, color: colors.text, fontSize: 14, paddingVertical: 8 }}
+            />
+            {threadQuery ? (
+              <Pressable accessibilityLabel={t('messages.clearSearch')} onPress={() => setThreadQuery('')}>
+                <X size={16} color={colors.textMuted} />
+              </Pressable>
+            ) : null}
+          </View>
+        </View>
+      ) : null}
 
       <FlatList
         ref={listRef}
@@ -384,6 +420,18 @@ export default function ChatScreen() {
         ) : null}
       </View>
 
+      <Modal visible={optionsOpen} transparent animationType="fade" onRequestClose={() => setOptionsOpen(false)}>
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(2,6,23,0.45)', justifyContent: 'flex-end' }} onPress={() => setOptionsOpen(false)}>
+          <View style={{ borderTopLeftRadius: 20, borderTopRightRadius: 20, backgroundColor: colors.surface, padding: 16, gap: 8 }}>
+            {['Épingler', 'Sourdine', 'Archiver', 'Bloquer'].map((label) => (
+              <Pressable key={label} onPress={() => setOptionsOpen(false)} style={{ minHeight: 44, justifyContent: 'center' }}>
+                <AppText className="text-base font-bold text-app-text">{label}</AppText>
+              </Pressable>
+            ))}
+          </View>
+        </Pressable>
+      </Modal>
+
       <Modal visible={Boolean(preview)} transparent animationType="fade" onRequestClose={() => setPreview(null)}>
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(2,6,23,0.88)', alignItems: 'center', justifyContent: 'center' }} onPress={() => setPreview(null)}>
           {preview ? <Image source={{ uri: preview }} style={{ width: '92%', height: '70%' }} resizeMode="contain" /> : null}
@@ -463,7 +511,10 @@ function Bubble({
   t: (key: string, vars?: Record<string, string | number>) => string;
   onOpenImage: (uri: string) => void;
 }) {
-  const images = isImageAttachment(message.attachment) ? attachmentImageSrcs(message.attachment) : [];
+  const images = attachmentImageSrcs(message.attachment);
+  const showImages = isImageAttachment(message.attachment) && images.length > 0;
+  const fromStatus = Boolean(message.attachment?.fromStatus);
+  const reaction = message.attachment?.reactionEmoji;
   const receipt = messageReadStatus(message, userId);
   const receiptLabel =
     receipt === 'read' ? t('messages.statusRead') : receipt === 'delivered' ? t('messages.statusDelivered') : receipt === 'sent' ? t('messages.statusSent') : '';
@@ -483,18 +534,33 @@ function Bubble({
         <View
           style={{
             ...radius,
-            paddingHorizontal: images.length ? 6 : 12,
-            paddingVertical: images.length ? 6 : 8,
+            paddingHorizontal: showImages ? 6 : 12,
+            paddingVertical: showImages ? 6 : 8,
             backgroundColor: mine ? colors.accent : colors.accentSoft,
             borderWidth: mine ? 0 : 1,
             borderColor: colors.border,
           }}>
-          {images.map((uri) => (
-            <Pressable key={uri} onPress={() => onOpenImage(uri)}>
-              <Image source={{ uri }} style={{ width: 220, height: 160, borderRadius: 12, marginBottom: message.text ? 6 : 0 }} resizeMode="cover" />
-            </Pressable>
-          ))}
-          {message.attachment && !images.length ? (
+          {showImages ? (
+            <View>
+              {images.map((uri) => (
+                <Pressable key={uri} onPress={() => onOpenImage(uri)}>
+                  <Image source={{ uri }} style={{ width: 220, height: 160, borderRadius: 12, backgroundColor: '#0f172a', marginBottom: message.text ? 6 : 0 }} resizeMode="cover" />
+                </Pressable>
+              ))}
+              {fromStatus ? (
+                <View style={{ position: 'absolute', left: 8, top: 8, borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.55)', paddingHorizontal: 8, paddingVertical: 3 }}>
+                  <AppText className="text-[10px] font-black" style={{ color: '#fff' }}>Statut</AppText>
+                </View>
+              ) : null}
+              {reaction ? (
+                <AppText className="absolute text-2xl" style={{ right: 8, bottom: 8 }}>{reaction}</AppText>
+              ) : null}
+            </View>
+          ) : null}
+          {fromStatus && !showImages ? (
+            <AppText className="text-sm font-bold" style={{ color: mine ? '#fff' : colors.text }}>{message.text || 'Statut'}</AppText>
+          ) : null}
+          {message.attachment && !showImages && !fromStatus ? (
             <Pressable
               onPress={() => {
                 const href = message.attachment?.url;
@@ -505,7 +571,7 @@ function Bubble({
               <AppText className="text-xs font-bold" style={{ color: mine ? '#fff' : colors.text }}>{message.attachment.name || 'Fichier'}</AppText>
             </Pressable>
           ) : null}
-          {message.text ? (
+          {message.text && !(fromStatus && !showImages) ? (
             <AppText className="text-[15px]" style={{ lineHeight: 22, color: mine ? '#fff' : colors.text }}>{message.text}</AppText>
           ) : null}
         </View>

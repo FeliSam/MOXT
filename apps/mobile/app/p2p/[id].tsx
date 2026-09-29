@@ -152,16 +152,28 @@ export default function P2PDetailScreen() {
         </AppText>
         <AppText className="text-sm text-app-text-muted">Offre publiée par {offer.ownerName || 'un membre'}</AppText>
 
+        <View style={{ flexDirection: 'row', gap: 10, borderRadius: 16, borderWidth: 1, borderColor: isDark ? '#155e75' : '#a5f3fc', backgroundColor: isDark ? '#083344' : '#ecfeff', padding: 12 }}>
+          <AppText className="text-base">🛡️</AppText>
+          <AppText className="flex-1 text-sm" style={{ color: isDark ? '#cffafe' : '#083344', lineHeight: 20 }}>
+            MOXT ne détient pas vos fonds. Suivez les étapes, gardez vos preuves et ne payez qu’aux coordonnées affichées dans la commande.
+          </AppText>
+        </View>
+
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {[
-            ['Équivalent', received ? formatCurrency(received, offer.toCurrency, 'fr-FR') : '—'],
-            ['Méthode', String(offer.method || '—')],
-            ['Statut', offer.status === 'active' ? 'Active' : offer.status === 'archived' ? 'Archivée' : String(offer.status || '—')],
-            ['Proposé par', String(offer.ownerName || '—')],
-          ].map(([label, value]) => (
-            <View key={label} style={{ width: '48%', borderRadius: 14, backgroundColor: colors.surfaceMuted, padding: 12 }}>
-              <AppText className="text-xs text-app-text-muted">{label}</AppText>
-              <AppText className="mt-1 font-black text-app-text">{value}</AppText>
+            ['🔁', 'Équivalent', received ? formatCurrency(received, offer.toCurrency, 'fr-FR') : '—'],
+            ['💳', 'Méthode', String(offer.method || '—')],
+            ['🕐', 'Statut', offer.status === 'active' ? 'Active' : offer.status === 'archived' ? 'Archivée' : String(offer.status || '—')],
+            ['👤', 'Proposé par', String(offer.ownerName || '—')],
+          ].map(([icon, label, value]) => (
+            <View key={label} style={{ width: '48%', borderRadius: 14, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, padding: 12, flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+              <View style={{ width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentSoft }}>
+                <AppText>{icon}</AppText>
+              </View>
+              <View style={{ flex: 1 }}>
+                <AppText className="font-black text-app-text" numberOfLines={2}>{value}</AppText>
+                <AppText className="text-xs text-app-text-muted">{label}</AppText>
+              </View>
             </View>
           ))}
         </View>
@@ -216,13 +228,22 @@ export default function P2PDetailScreen() {
 
         <View style={card}>
           <AppText className="font-black text-app-text">Détails de l’échange</AppText>
-          <Row label="Montant disponible" value={formatCurrency(offer.amount, offer.fromCurrency, 'fr-FR')} />
-          <Row label="Devise demandée" value={String(offer.toCurrency || '')} />
-          <Row label="Taux proposé" value={String(offer.rate ?? '')} />
-          <Row label="Frais" value={formatCurrency(fee, offer.fromCurrency, 'fr-FR')} />
-          <Row label="Méthode" value={String(offer.method || '')} />
-          <Row label="Profil" value={offer.businessId ? 'Entreprise' : 'Particulier'} />
-          <Row label="Référence" value={offer.id} />
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {[
+              ['Montant disponible', formatCurrency(offer.amount, offer.fromCurrency, 'fr-FR')],
+              ['Devise demandée', String(offer.toCurrency || '')],
+              ['Taux proposé', String(offer.rate ?? '')],
+              ['Frais', formatCurrency(fee, offer.fromCurrency, 'fr-FR')],
+              ['Méthode', String(offer.method || '')],
+              ['Profil', offer.businessId ? 'Entreprise' : 'Particulier'],
+              ['Référence', offer.id],
+            ].map(([label, value]) => (
+              <View key={label} style={{ width: '48%', borderRadius: 14, backgroundColor: colors.surfaceMuted, padding: 12 }}>
+                <AppText className="text-[10px] font-black uppercase text-app-text-muted">{label}</AppText>
+                <AppText className="mt-1 font-bold text-app-text">{value || '—'}</AppText>
+              </View>
+            ))}
+          </View>
         </View>
 
         <View style={card}>

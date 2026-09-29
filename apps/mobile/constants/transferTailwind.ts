@@ -87,7 +87,7 @@ export const twTransfer = {
   detailCard: 'rounded-2xl bg-white p-5 shadow-sm dark:bg-zinc-900',
   detailCardTitle: 'text-lg font-black text-app-text dark:text-zinc-50',
   detailMetricGrid: 'flex-row flex-wrap gap-3',
-  detailMetric: 'min-w-[45%] flex-1 rounded-2xl bg-white p-4 shadow-sm dark:bg-zinc-900',
+  detailMetric: 'w-[48%] rounded-2xl bg-white p-4 shadow-sm dark:bg-zinc-900',
   detailMetricLabel: 'text-xs text-app-text-muted dark:text-zinc-400',
   detailMetricValue: 'mt-1 text-base font-black text-app-text dark:text-zinc-50',
 

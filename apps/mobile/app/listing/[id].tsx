@@ -15,10 +15,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { formatCurrency } from '@moxt/shared/utils/formatters.js';
 
+import { listingCategoryLabel, listingTypeLabel } from '@/components/marketplace/listingMeta';
 import { Badge, StatusBadge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { DetailMetrics, TrustPanel } from '@/components/ui/DetailBlocks';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, radii, shadows, spacing, typography } from '@/theme/colors';
 import { loadListingById } from '@/store/marketplace';
@@ -28,17 +28,6 @@ import { idFromPath, routeParam } from '@/utils/routeParam';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const IMAGE_WIDTH = SCREEN_WIDTH - 40;
 const IMAGE_HEIGHT = 260;
-
-const TYPE_LABELS: Record<string, string> = {
-  product: 'Produit',
-  service: 'Service',
-  rental: 'Location',
-  vehicle: 'Véhicule',
-  digital: 'Numérique',
-  real_estate: 'Immobilier',
-  food: 'Alimentation',
-  other: 'Autre',
-};
 
 const CONDITION_LABELS: Record<string, string> = {
   new: 'Neuf',
@@ -54,6 +43,7 @@ export default function ListingDetailScreen() {
   const id = routeParam(params.id) || pathnameId;
   const dispatch = useAppDispatch();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [detailTab, setDetailTab] = useState<'description' | 'details'>('description');
   const [pending, setPending] = useState(true);
   const scrollRef = useRef<ScrollView>(null);
   const fetched = useRef(false);
@@ -91,7 +81,7 @@ export default function ListingDetailScreen() {
     );
   }
 
-  const typeLabel = TYPE_LABELS[listing.type || ''] || listing.type || '';
+  const typeLabel = listingTypeLabel(listing.type);
   const conditionLabel = CONDITION_LABELS[listing.condition || ''] || '';
   const images = listing.images || [];
 
@@ -106,23 +96,14 @@ export default function ListingDetailScreen() {
     setActiveImageIndex(index);
   };
 
+  const categoryLabel = listingCategoryLabel(listing.type, listing.category) || typeLabel;
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      {/* Fixed back button header */}
-      <View style={{
-        paddingHorizontal: spacing.xl,
-        paddingVertical: spacing.md,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border,
-        backgroundColor: colors.background,
-      }}>
-        <Pressable style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }} onPress={() => router.back()}>
-          <Text style={{ fontSize: 22, color: colors.primary, fontWeight: '700' }}>←</Text>
-          <Text style={{ fontSize: 16, color: colors.primary, fontWeight: '700' }}>Marketplace</Text>
-        </Pressable>
-      </View>
-
       <ScrollView contentContainerStyle={{ padding: spacing.xl, gap: spacing.lg }}>
+        <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
+          Marketplace / {categoryLabel} / <Text style={{ color: colors.text, fontWeight: '800' }}>{listing.title}</Text>
+        </Text>
         {/* Images Carousel */}
         {images.length > 0 ? (
           <View style={{ width: IMAGE_WIDTH, height: IMAGE_HEIGHT + 30, alignSelf: 'center' }}>
@@ -175,6 +156,26 @@ export default function ListingDetailScreen() {
               </>
             )}
 
+            {images.length > 1 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingTop: 10 }}>
+                {images.map((uri, idx) => (
+                  <Pressable
+                    key={`thumb-${idx}`}
+                    onPress={() => goToImage(idx)}
+                    style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: 10,
+                      overflow: 'hidden',
+                      borderWidth: idx === activeImageIndex ? 2 : 1,
+                      borderColor: idx === activeImageIndex ? colors.primary : colors.border,
+                    }}>
+                    <Image source={{ uri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                  </Pressable>
+                ))}
+              </ScrollView>
+            ) : null}
+
             {images.length > 1 && (
               <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 10 }}>
                 {images.map((_, idx) => (
@@ -224,38 +225,44 @@ export default function ListingDetailScreen() {
           </View>
         </Card>
 
-        {/* Web : DetailMetrics — prix, état, localisation, statut */}
-        <DetailMetrics
-          items={[
-            { emoji: '💰', label: 'Prix', value: listing.price ? formatCurrency(listing.price, listing.currency || 'RUB') : 'Sur devis' },
-            { emoji: '✨', label: 'État', value: conditionLabel || '—' },
-            { emoji: '📍', label: 'Localisation', value: listing.city || '—' },
-            { emoji: '🏷️', label: 'Catégorie', value: listing.category || typeLabel || '—' },
-          ]}
-        />
-
-        {/* Web : "À propos de cette annonce" */}
-        {listing.description ? (
-          <Card>
-            <View style={{ gap: spacing.sm }}>
-              <Text style={{ ...typography.sectionTitle, color: colors.text }}>À propos de cette annonce</Text>
-              <Text style={{ ...typography.body, color: colors.textSecondary, lineHeight: 22 }}>
-                {listing.description}
-              </Text>
-            </View>
-          </Card>
-        ) : null}
-
-        {/* Web : panneau "Acheter avec prudence" */}
-        <TrustPanel
-          title="Acheter avec prudence"
-          items={[
-            'Rencontrez le vendeur dans un lieu public.',
-            'Vérifiez l’article avant de payer.',
-            'Ne versez jamais d’acompte sans garantie.',
-            'Utilisez la messagerie MOXT pour tracer vos échanges.',
-          ]}
-        />
+        <Card>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {([
+              ['description', 'Description'],
+              ['details', 'Caractéristiques'],
+            ] as const).map(([key, label]) => {
+              const active = detailTab === key;
+              return (
+                <Pressable key={key} onPress={() => setDetailTab(key)} style={{ flex: 1, minHeight: 40, alignItems: 'center', justifyContent: 'center', borderBottomWidth: 2, borderBottomColor: active ? colors.primary : 'transparent' }}>
+                  <Text style={{ fontWeight: '800', color: active ? colors.text : colors.textMuted }}>{label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <View style={{ marginTop: 16, gap: 8 }}>
+            {detailTab === 'description' ? (
+              <>
+                <Text style={{ ...typography.sectionTitle, color: colors.text }}>À propos</Text>
+                <Text style={{ ...typography.body, color: colors.textSecondary, lineHeight: 22 }}>
+                  {listing.description || 'Aucune description.'}
+                </Text>
+              </>
+            ) : (
+              [
+                ['Prix', listing.price ? formatCurrency(listing.price, listing.currency || 'RUB') : 'Sur devis'],
+                ['État', conditionLabel || '—'],
+                ['Localisation', [listing.city, listing.address].filter(Boolean).join(', ') || '—'],
+                ['Catégorie', categoryLabel || '—'],
+                ['Type', typeLabel || '—'],
+              ].map(([label, value]) => (
+                <View key={label} style={{ borderRadius: 12, backgroundColor: colors.surfaceMuted, padding: 12 }}>
+                  <Text style={{ fontSize: 10, fontWeight: '900', letterSpacing: 0.6, color: colors.textFaint }}>{label.toUpperCase()}</Text>
+                  <Text style={{ marginTop: 4, fontWeight: '700', color: colors.text }}>{value}</Text>
+                </View>
+              ))
+            )}
+          </View>
+        </Card>
 
         {/* Seller */}
         <Card>

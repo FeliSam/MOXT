@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Building2 } from 'lucide-react-native';
@@ -34,7 +34,7 @@ import { PublicProfileHero } from '@/components/profile/PublicProfileHero';
 import { PublicProfileTabs } from '@/components/profile/PublicProfileTabs';
 import { ChipTabs, UnderlineTabs } from '@/components/profile/CatalogTabs';
 import { defaultCoverStyleForPersonal } from '@/components/profile/coverStyles';
-import { useBrandScale } from '@/components/profile/identity';
+import { prune, useBrandScale, useScopeColors } from '@/components/profile/identity';
 import { AppText } from '@/components/ui/AppText';
 import { supabase } from '@/services/supabase';
 import { mapConversationRow, receiveRemoteConversation } from '@/store/messages';
@@ -81,6 +81,7 @@ export default function PublicPublicationsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const dispatch = useAppDispatch();
   const { colors } = useTheme();
+  const personal = useScopeColors('personal');
   const scale = useBrandScale('personal');
   const me = useAppSelector((state) => state.auth.user);
   const [profile, setProfile] = useState<Awaited<ReturnType<typeof fetchPublicProfile>>>(null);
@@ -91,7 +92,8 @@ export default function PublicPublicationsScreen() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [mainTab, setMainTab] = useState('publications');
   const [archiveTab, setArchiveTab] = useState<'active' | 'archived'>('active');
-  const [typeTab, setTypeTab] = useState('listing');
+  const [typeTab, setTypeTab] = useState('post');
+  const typePicked = useRef(false);
 
   useEffect(() => {
     if (!supabase || !id) return undefined;
@@ -159,6 +161,15 @@ export default function PublicPublicationsScreen() {
     icon: PUBLICATION_TYPES[key].icon,
     colors: PUBLICATION_TYPES[key].chip,
   }));
+  useEffect(() => {
+    if (typePicked.current || !typeTabs.length) return;
+    if (typeTabs.some((tab) => tab.key === 'post')) {
+      if (typeTab !== 'post') setTypeTab('post');
+      return;
+    }
+    if (!typeTabs.some((tab) => tab.key === typeTab)) setTypeTab(typeTabs[0].key);
+  }, [typeTab, typeTabs]);
+
   const visible = useMemo(
     () => filterPublicationsByTabs(publications, { archiveTab: preferredArchive, typeTab }),
     [preferredArchive, publications, typeTab],
@@ -236,7 +247,7 @@ export default function PublicPublicationsScreen() {
               subtitle="Profil MOXT"
               verified={Boolean(profile?.verified)}
               city={profile?.city || undefined}
-              accent={colors.accent}
+              accent={personal.accent}
             />
           ) : null
         }
@@ -252,11 +263,12 @@ export default function PublicPublicationsScreen() {
                   showIcon={false}
                   subscribeLabel="Suivre"
                   subscribedLabel="Suivi"
+                  accentScale={prune}
                 />
               </View>
               <Pressable
                 onPress={() => void contact()}
-                style={{ flex: 1, minHeight: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent }}>
+                style={{ flex: 1, minHeight: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: personal.accent }}>
                 <AppText className="font-bold" style={{ color: '#fff' }}>Contacter</AppText>
               </Pressable>
             </View>
@@ -324,7 +336,18 @@ export default function PublicPublicationsScreen() {
               { key: 'archived', label: 'Archives', count: archiveCounts.archived, alwaysShow: archiveCounts.archived > 0 },
             ]}
           />
-          {typeTabs.length ? <ChipTabs scale={scale} tabs={typeTabs} active={typeTab} onChange={setTypeTab} /> : null}
+          {typeTabs.length ? (
+            <ChipTabs
+              scale={scale}
+              tabs={typeTabs}
+              active={typeTab}
+              pinActive={false}
+              onChange={(key) => {
+                typePicked.current = true;
+                setTypeTab(key);
+              }}
+            />
+          ) : null}
           {visiblePublicationCount(visible) ? (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
               {TYPE_ORDER.flatMap((type) => (visible[type] || []).map((item: PublicationItem) => (

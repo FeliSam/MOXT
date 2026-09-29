@@ -12,7 +12,6 @@ import {
 } from '@moxt/shared/utils/transfers.js';
 
 import { ImagePickerButton } from '@/components/ImagePickerButton';
-import { BackHeader } from '@/components/chrome/BackHeader';
 import { AppScreen } from '@/components/ui/Card';
 import { PROGRESS_STEPS, TRANSFER_STATUS_LABELS } from '@/constants/transfers';
 import { twTransfer } from '@/constants/transferTailwind';
@@ -57,6 +56,7 @@ export default function TransferDetailScreen() {
   const [proofUri, setProofUri] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(justCreated);
   const [loading, setLoading] = useState(!transfer);
+  const [detailTab, setDetailTab] = useState<'suivi' | 'paiement' | 'details'>('suivi');
 
   useEffect(() => {
     if (!justCreated) return undefined;
@@ -128,25 +128,8 @@ export default function TransferDetailScreen() {
 
   return (
     <AppScreen edges={[]}>
-      <BackHeader title="Détail du transfert" />
       <ScrollView contentContainerClassName="gap-5 px-4 pb-32 pt-2" showsVerticalScrollIndicator={false}>
-        {/* Summary header */}
-        <View className={twTransfer.detailCard}>
-          <Text className="text-[10px] font-black uppercase tracking-widest text-brand-700 dark:text-brand-400">
-            {t.id}
-          </Text>
-          <Text className="mt-1 text-2xl font-black text-app-text dark:text-zinc-50">Détails du transfert</Text>
-          <Text className="mt-1 text-sm text-app-text-muted dark:text-zinc-400">
-            {directionLabel(t.direction || '')} · créé le{' '}
-            {t.createdAt || t.created_at ? formatTransferDate(t.createdAt || t.created_at) : '—'}
-          </Text>
-          <Pressable className={cn(twTransfer.navBack, 'mt-4 self-start px-4')} onPress={() => router.back()}>
-            <Text className={twTransfer.navBackText}>← Retour</Text>
-          </Pressable>
-        </View>
-
-        {/* Metrics 2x2 */}
-        <View className={twTransfer.detailMetricGrid}>
+        <View className="flex-row flex-wrap justify-between gap-y-3">
           {[
             { emoji: '🔁', label: 'Direction', value: directionLabel(t.direction || '') },
             { emoji: '🕐', label: 'Création', value: t.createdAt || t.created_at ? formatTransferDate(t.createdAt || t.created_at) : '—' },
@@ -155,13 +138,12 @@ export default function TransferDetailScreen() {
           ].map((m) => (
             <View key={m.label} className={twTransfer.detailMetric}>
               <Text className="text-lg">{m.emoji}</Text>
-              <Text className={twTransfer.detailMetricValue}>{m.value}</Text>
+              <Text className={twTransfer.detailMetricValue} numberOfLines={2}>{m.value}</Text>
               <Text className={twTransfer.detailMetricLabel}>{m.label}</Text>
             </View>
           ))}
         </View>
 
-        {/* Hero gradient */}
         <View className={twTransfer.detailHero}>
           <LinearGradient
             colors={['#0f766e', '#08705f', '#2563eb']}
@@ -169,23 +151,17 @@ export default function TransferDetailScreen() {
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             className="p-5"
-            style={{ borderRadius: 16 }}>
-            <View className={twTransfer.detailHeroBadge} style={{ backgroundColor: st.bg }}>
+            style={{ borderRadius: 16, minHeight: 220 }}>
+            <View className="mb-4 self-start rounded-full px-2.5 py-1" style={{ backgroundColor: st.bg }}>
               <Text className={twTransfer.detailHeroBadgeText} style={{ color: st.color }}>
                 {st.label}
               </Text>
             </View>
-            <View className="mt-2 flex-row items-center gap-3">
-              <View className="flex-1">
-                <Text className={twTransfer.detailHeroLabel}>ENVOYÉ</Text>
-                <Text className={twTransfer.detailHeroValue}>{formatMoney(amountSent, currFrom)}</Text>
-              </View>
-              <Text className="text-xl text-white/40">⇄</Text>
-              <View className="flex-1">
-                <Text className={twTransfer.detailHeroLabel}>REÇU (ESTIMÉ)</Text>
-                <Text className={twTransfer.detailHeroValue}>{formatMoney(amountReceived, currTo)}</Text>
-              </View>
-            </View>
+            <Text className={twTransfer.detailHeroLabel}>ENVOYÉ</Text>
+            <Text className={twTransfer.detailHeroValue}>{formatMoney(amountSent, currFrom)}</Text>
+            <Text className="my-3 text-center text-xl text-white/40">↓</Text>
+            <Text className={twTransfer.detailHeroLabel}>REÇU (ESTIMÉ)</Text>
+            <Text className={twTransfer.detailHeroValue}>{formatMoney(amountReceived, currTo)}</Text>
             {t.exchanger?.name ? (
               <View className={twTransfer.detailHeroPartner}>
                 <Text className={twTransfer.detailHeroPartnerText}>Traité par {t.exchanger.name}</Text>
@@ -197,6 +173,28 @@ export default function TransferDetailScreen() {
           </LinearGradient>
         </View>
 
+        <View className="flex-row gap-1 rounded-2xl border border-app-border bg-app-surface-muted/60 p-1 dark:border-zinc-700">
+          {([
+            ['suivi', 'Suivi'],
+            ['paiement', 'Paiement'],
+            ['details', 'Détails'],
+          ] as const).map(([key, label]) => {
+            const active = detailTab === key;
+            return (
+              <Pressable
+                key={key}
+                onPress={() => setDetailTab(key)}
+                className={cn('min-h-11 flex-1 items-center justify-center rounded-xl px-2', active && 'bg-white shadow-sm dark:bg-zinc-800')}>
+                <Text className={cn('text-sm font-black', active ? 'text-app-text dark:text-zinc-50' : 'text-app-text-muted dark:text-zinc-400')}>
+                  {label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {detailTab === 'suivi' ? (
+          <>
         {/* Progression */}
         <View className={twTransfer.detailCard}>
           <View className="flex-row items-center gap-2">
@@ -264,8 +262,10 @@ export default function TransferDetailScreen() {
             <Text className={twTransfer.nextDesc}>{nextStep.description}</Text>
           </View>
         ) : null}
+          </>
+        ) : null}
 
-        {/* Financial summary */}
+        {detailTab === 'paiement' ? (
         <View className={twTransfer.detailCard}>
           <View className="mb-4 flex-row items-center gap-3">
             <View className="h-9 w-9 items-center justify-center rounded-xl bg-brand-100 dark:bg-brand-950/45">
@@ -294,7 +294,10 @@ export default function TransferDetailScreen() {
             ))}
           </View>
         </View>
+        ) : null}
 
+        {detailTab === 'details' ? (
+        <>
         {/* Participants */}
         <View className={twTransfer.detailCard}>
           <View className="mb-4 flex-row items-center gap-3">
@@ -399,6 +402,8 @@ export default function TransferDetailScreen() {
             </View>
           ))}
         </View>
+        </>
+        ) : null}
       </ScrollView>
 
       {showToast ? (

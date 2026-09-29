@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
+import { ChevronRight, FileText } from 'lucide-react-native';
 
 import { fromRows } from '@moxt/shared/utils/remoteRowMapper.js';
 import { formatMoney, formatTransferDate } from '@moxt/shared/utils/transfers.js';
@@ -21,7 +22,7 @@ type Receipt = {
   status?: string;
 };
 
-/** Liste des reçus (web /receipts). */
+/** Liste des reçus (web /receipts) : icône document + badge REÇU. */
 export default function ReceiptsScreen() {
   const { colors } = useTheme();
   const user = useAppSelector((state) => state.auth.user);
@@ -58,22 +59,32 @@ export default function ReceiptsScreen() {
   return (
     <AppChrome pathname="/receipts">
       <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 128 }}>
-        <AppText className="text-xs font-black uppercase text-app-text-muted">Finances</AppText>
-        <AppText className="text-2xl font-black text-app-text">Reçus</AppText>
-        <AppText className="text-sm text-app-text-muted">Justificatifs de vos opérations enregistrées sur MOXT.</AppText>
         {receipts.length ? receipts.map((receipt) => (
           <Pressable
             key={receipt.id}
             onPress={() => router.push(`/receipts/${receipt.id}` as never)}
-            style={{ borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 16, gap: 6 }}>
-            <AppText className="text-xs font-bold" style={{ color: colors.accent }}>Reçu</AppText>
+            style={{ borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 16, gap: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+              <View style={{ width: 40, height: 40, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentSoft }}>
+                <FileText size={18} color={colors.accent} />
+              </View>
+              <View style={{ borderRadius: 999, backgroundColor: colors.accentSoft, paddingHorizontal: 8, paddingVertical: 3 }}>
+                <AppText className="text-[10px] font-black" style={{ color: colors.accent }}>REÇU</AppText>
+              </View>
+            </View>
             <AppText className="text-base font-black text-app-text">{receipt.title || 'Opération'}</AppText>
-            <AppText className="text-sm font-bold text-app-text">{formatMoney(receipt.amount, receipt.currency)}</AppText>
-            <AppText className="text-xs text-app-text-muted">{receipt.createdAt ? formatTransferDate(receipt.createdAt) : ''}</AppText>
-            <AppText className="text-sm font-bold" style={{ color: colors.accent }}>Voir le détail</AppText>
+            <AppText className="text-sm text-app-text-muted">
+              <AppText className="text-sm font-bold text-app-text">{formatMoney(receipt.amount, receipt.currency)}</AppText>
+              {receipt.createdAt ? ` · ${formatTransferDate(receipt.createdAt)}` : ''}
+            </AppText>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8 }}>
+              <AppText className="text-sm font-bold" style={{ color: colors.accent }}>Voir le détail</AppText>
+              <ChevronRight size={16} color={colors.accent} />
+            </View>
           </Pressable>
         )) : (
-          <View style={{ borderRadius: 18, borderWidth: 1, borderColor: colors.border, padding: 20 }}>
+          <View style={{ borderRadius: 18, borderWidth: 1, borderColor: colors.border, padding: 20, alignItems: 'center', gap: 8 }}>
+            <FileText size={22} color={colors.textMuted} />
             <AppText className="font-black text-app-text">{ready ? 'Aucun reçu enregistré' : 'Chargement…'}</AppText>
           </View>
         )}
