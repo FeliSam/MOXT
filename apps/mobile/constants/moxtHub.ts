@@ -6,22 +6,22 @@ import type { FeatherName } from '@/components/chrome/icons';
  * Page Moxt (menu « Plus ») — portage de moxt-react :
  * features/dashboard/dashboardConfig.js (coreServices, quickActions) et
  * features/moxt/moxtHubConfig.js (groupes secondaires, liens admin).
- * Images 3D : moxt-react/public/assets/services/3d (mêmes fichiers que le web).
+ * Images 3D locales (copies des fichiers web) : Metro ne doit pas indexer tout moxt-react.
  */
 const img = {
-  transfer: require('../../../moxt-react/public/assets/services/3d/service-transfer.png'),
-  marketplace: require('../../../moxt-react/public/assets/services/3d/service-marketplace.png'),
-  parcel: require('../../../moxt-react/public/assets/services/3d/service-parcel.png'),
-  job: require('../../../moxt-react/public/assets/services/3d/service-job.png'),
-  p2p: require('../../../moxt-react/public/assets/services/3d/service-p2p.png'),
-  exchangers: require('../../../moxt-react/public/assets/services/3d/service-exchangers.png'),
-  businesses: require('../../../moxt-react/public/assets/services/3d/service-businesses.png'),
-  events: require('../../../moxt-react/public/assets/services/3d/service-events.png'),
-  news: require('../../../moxt-react/public/assets/services/3d/service-news.png'),
-  quickMarketplace: require('../../../moxt-react/public/assets/services/3d/quick-marketplace.png'),
-  quickParcel: require('../../../moxt-react/public/assets/services/3d/quick-parcel.png'),
-  quickJob: require('../../../moxt-react/public/assets/services/3d/quick-job.png'),
-  quickEvent: require('../../../moxt-react/public/assets/services/3d/quick-event.png'),
+  transfer: require('../assets/services/3d/service-transfer.png'),
+  marketplace: require('../assets/services/3d/service-marketplace.png'),
+  parcel: require('../assets/services/3d/service-parcel.png'),
+  job: require('../assets/services/3d/service-job.png'),
+  p2p: require('../assets/services/3d/service-p2p.png'),
+  exchangers: require('../assets/services/3d/service-exchangers.png'),
+  businesses: require('../assets/services/3d/service-businesses.png'),
+  events: require('../assets/services/3d/service-events.png'),
+  news: require('../assets/services/3d/service-news.png'),
+  quickMarketplace: require('../assets/services/3d/quick-marketplace.png'),
+  quickParcel: require('../assets/services/3d/quick-parcel.png'),
+  quickJob: require('../assets/services/3d/quick-job.png'),
+  quickEvent: require('../assets/services/3d/quick-event.png'),
 } satisfies Record<string, ImageSourcePropType>;
 
 export type BentoSize = 'hero' | 'featured' | 'medium' | 'compact';

@@ -157,6 +157,10 @@ const accountSlice = createSlice({
       if (index >= 0) state.subscriptions[index] = sub;
       else state.subscriptions.unshift(sub);
     },
+    publicBusinessesReceived(state, action: PayloadAction<Business[]>) {
+      state.businesses = action.payload;
+      indexBusinesses(state, action.payload);
+    },
     subscriptionRemoved(state, action: PayloadAction<{ userId: string; publisherType: string; publisherId: string }>) {
       const { userId, publisherType, publisherId } = action.payload;
       state.subscriptions = state.subscriptions.filter(
@@ -218,7 +222,7 @@ const accountSlice = createSlice({
   },
 });
 
-export const { subscriptionUpserted, subscriptionRemoved } = accountSlice.actions;
+export const { publicBusinessesReceived, subscriptionUpserted, subscriptionRemoved } = accountSlice.actions;
 export const accountReducer = accountSlice.reducer;
 
 /** Mes abonnements (web selectUserSubscriptions). */

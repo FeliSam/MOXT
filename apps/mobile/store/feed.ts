@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import {
   fetchActiveStatuses,
@@ -99,7 +99,13 @@ function findEntity(state: FeedState, kind: EngagementKind, id: string): Record<
 const feedSlice = createSlice({
   name: 'feed',
   initialState,
-  reducers: {},
+  reducers: {
+    publicFeedReceived(state, action: PayloadAction<{ posts: FeedPost[]; videos: FeedVideo[] }>) {
+      state.posts = action.payload.posts;
+      state.videos = action.payload.videos;
+      state.status = 'ready';
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(loadFeed.pending, (state) => {
@@ -140,6 +146,7 @@ const feedSlice = createSlice({
   },
 });
 
+export const { publicFeedReceived } = feedSlice.actions;
 export const feedReducer = feedSlice.reducer;
 
 export function selectStatusGroups(statuses: StatusItem[], userId?: string | null): StatusGroup[] {

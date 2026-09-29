@@ -17,6 +17,7 @@ import {
   Trash2,
   type LucideIcon,
 } from 'lucide-react-native';
+import { collectPostImages } from '@moxt/shared/domain/postMedia.js';
 import { formatCurrency } from '@moxt/shared/utils/formatters.js';
 import { statusMeta } from '@moxt/shared/config/statuses.js';
 import { p2pReceivedFromOffered } from '@moxt/shared/domain/p2pRules.js';
@@ -43,6 +44,13 @@ export const PUBLICATION_TYPES: Record<PublicationType, { label: string; icon: L
 
 const ACTIVE_STATUSES = new Set(['active', 'published', 'pending_review', 'pending', 'full']);
 
+function firstImage(item: PublicationItem) {
+  if (Array.isArray(item.images) && item.images[0]) return String(item.images[0]);
+  if (typeof item.imageUrl === 'string' && item.imageUrl) return item.imageUrl;
+  if (typeof item.coverUrl === 'string' && item.coverUrl) return item.coverUrl;
+  return '';
+}
+
 function money(amount: unknown, currency?: string) {
   return formatCurrency(amount, currency, 'fr-FR') as string;
 }
@@ -67,13 +75,13 @@ export function publicationCardContent(type: PublicationType, item: PublicationI
     case 'parcel':
       return { title: `${item.origin || '?'} → ${item.destination || '?'}`, subtitle: item.departureDate ? String(item.departureDate).slice(0, 10) : '', meta: [], cover: '' };
     case 'job':
-      return { title: item.title || 'Sans titre', subtitle: item.salary || '', meta: [item.businessName].filter(Boolean) as string[], cover: '' };
+      return { title: item.title || 'Sans titre', subtitle: item.salary || '', meta: [item.businessName].filter(Boolean) as string[], cover: firstImage(item) };
     case 'event':
-      return { title: item.title || 'Sans titre', subtitle: item.city || '', meta: [], cover: item.coverUrl || item.imageUrl || '' };
+      return { title: item.title || 'Sans titre', subtitle: item.city || '', meta: [], cover: firstImage(item) };
     case 'video':
-      return { title: item.title || 'Sans titre', subtitle: item.caption || '', meta: [item.businessName].filter(Boolean) as string[], cover: item.thumbnailUrl || '' };
+      return { title: item.title || 'Sans titre', subtitle: item.caption || '', meta: [item.businessName].filter(Boolean) as string[], cover: item.thumbnailUrl || firstImage(item) };
     case 'post':
-      return { title: String(item.message || item.text || item.content || 'Sans titre').slice(0, 80), subtitle: item.sourceType && item.sourceType !== 'free' ? item.sourceType : '', meta: [], cover: '' };
+      return { title: String(item.message || item.text || item.content || 'Sans titre').slice(0, 80), subtitle: item.sourceType && item.sourceType !== 'free' ? item.sourceType : '', meta: [], cover: collectPostImages(item)[0] || '' };
     default:
       return {
         title: item.title || 'Sans titre',

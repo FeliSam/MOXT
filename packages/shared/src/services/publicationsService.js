@@ -67,6 +67,39 @@ export async function fetchActiveListings(client, { limit = LISTINGS_PUBLIC_LIMI
   return (result.data || []).filter((row) => isActiveListing(row))
 }
 
+/**
+ * Publications visibles d’un profil public, mêmes filtres que fetchGuestUserPreview du web :
+ * statuts publics seulement, et aucune offre P2P (`others` reste vide).
+ * Le compteur « Mes publications » (fetchUserPublications) reste plus large : toutes les
+ * statuts, y compris les brouillons et les offres.
+ */
+const PUBLIC_USER_TABLES = [
+  ['listings', 'listings', 'owner_id', ['active']],
+  ['parcels', 'parcels', 'owner_id', ['active', 'full']],
+  ['jobs', 'jobs', 'owner_id', ['active']],
+  ['events', 'events', 'owner_id', ['published']],
+  ['videos', 'videos', 'owner_id', ['active']],
+  ['posts', 'posts', 'author_id', ['published']],
+]
+
+export async function fetchPublicUserPublications(client, userId) {
+  if (!client || !userId) return { publications: emptyPublications(), errors: [] }
+  const results = await Promise.all(
+    PUBLIC_USER_TABLES.map(([, table, column, statuses]) => {
+      const query = client.from(table).select('*').eq(column, userId)
+      return statuses.length === 1 ? query.eq('status', statuses[0]) : query.in('status', statuses)
+    }),
+  )
+  const publications = emptyPublications()
+  const errors = []
+  PUBLIC_USER_TABLES.forEach(([key, table], index) => {
+    const result = results[index]
+    if (result?.error) errors.push({ table, message: result.error.message })
+    publications[key] = rowsOrEmpty(result).map(entityFromRemoteRow).filter(Boolean)
+  })
+  return { publications, errors }
+}
+
 /** Tables et statuts publics lus pour une page entreprise (mêmes requêtes que l’aperçu entreprise du web). */
 const BUSINESS_TABLES = [
   ['listings', 'listings', ['active']],

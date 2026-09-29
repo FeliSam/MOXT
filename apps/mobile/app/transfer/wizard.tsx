@@ -32,12 +32,15 @@ export default function TransferWizardScreen() {
 
   const initialDirection = (user as any)?.country === 'RU' ? DIRECTIONS.RU_TO_BJ : DIRECTIONS.BJ_TO_RU;
 
+  // Le web (NewTransferPage) est déjà un assistant en 4 étapes. L’accord
+  // « assistants multi-étapes » portait sur l’édition et la publication, pas
+  // sur un formulaire unique : on garde donc le même découpage que le web.
   const [step, setStep] = useState(1);
   const [calculatorOpen, setCalculatorOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const [direction, setDirection] = useState<(typeof DIRECTIONS)[keyof typeof DIRECTIONS]>(initialDirection);
-  const [amount, setAmount] = useState((user as any)?.country === 'RU' ? '5000' : '');
+  const [amount, setAmount] = useState('');
   const [exchangerId, setExchangerId] = useState(FALLBACK_EXCHANGERS[0].id);
 
   const [senderFirstName, setSenderFirstName] = useState(user?.firstName || '');
@@ -59,7 +62,7 @@ export default function TransferWizardScreen() {
   const goNext = () => {
     if (step === 1) {
       if (numAmount < calc.minimumRequired) {
-        Alert.alert('Montant invalide', `Minimum : ${formatCurrency(calc.minimumRequired, calc.currencyFrom)}`);
+        Alert.alert('Montant invalide', `Minimum : ${formatCurrency(calc.minimumRequired, calc.currencyFrom, 'fr-FR')}`);
         return;
       }
       if (!exchangerId) {

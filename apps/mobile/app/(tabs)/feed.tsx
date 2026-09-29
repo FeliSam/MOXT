@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Image, Pressable, ScrollView, Share, View, useWindowDimensions, type ViewToken } from 'react-native';
+import { FlatList, Image, Platform, Pressable, ScrollView, Share, View, useWindowDimensions, type ViewToken } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,6 +32,7 @@ import { buildFeedItems, FEED_TYPE_FILTERS, type FeedItem, type FeedKind } from 
 import { AppText } from '@/components/ui/AppText';
 import { VerifiedIcon } from '@/components/ui/VerifiedIcon';
 import { brand } from '@/theme/palette';
+import { hydratePublicFeed } from '@/services/publicFeed';
 import { supabase } from '@/services/supabase';
 import { applyFeedPlaybackDefaults, getVideoFeedMuted, setVideoFeedMuted, subscribeFeedMuted } from '@/services/feedAudio';
 import { shareVideo, toggleEngagementLike, type EngagementKind } from '@/store/engagement';
@@ -39,7 +40,10 @@ import { recordVideoView } from '@/store/feed';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
 
-const TEXT_SHADOW = { textShadowColor: 'rgba(0,0,0,0.95)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 };
+const TEXT_SHADOW =
+  Platform.OS === 'web'
+    ? { textShadow: '0px 1px 2px rgba(0,0,0,0.95)' }
+    : { textShadowColor: 'rgba(0,0,0,0.95)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 };
 
 /** FEED_ACTION_ICON_WRAP_CLASS : size-10, bg-black/62, ring-1 white/35. */
 function RailButton({
@@ -174,7 +178,7 @@ function FeedSlide({
   }
 
   return (
-    <View style={{ height, width: '100%', backgroundColor: '#000', overflow: 'hidden' }}>
+    <View testID="feed-slide" style={{ height, width: '100%', backgroundColor: '#000', overflow: 'hidden' }}>
       {item.image || item.videoUrl ? (
         <FeedMedia image={item.image} videoUrl={item.videoUrl} active={active} muted={muted} />
       ) : (
@@ -340,7 +344,9 @@ export default function FeedTab() {
   const listings = useAppSelector((s) => s.marketplace.items);
   const parcels = useAppSelector((s) => s.parcels.items);
   const events = useAppSelector((s) => s.dashboard.events);
+  const jobs = useAppSelector((s) => s.dashboard.jobs);
   const p2pOffers = useAppSelector((s) => s.dashboard.p2pOffers);
+  const feedStatus = useAppSelector((s) => s.feed.status);
   const businesses = useAppSelector((s) => s.account.businesses);
   const params = useLocalSearchParams<{ type?: string; item?: string }>();
   const initialType = FEED_TYPE_FILTERS.some((f) => f.id === params.type) ? (params.type as FeedKind) : 'all';
@@ -353,6 +359,10 @@ export default function FeedTab() {
   const muted = mutedPref || policyMuted;
 
   useEffect(() => subscribeFeedMuted(() => setMutedPref(getVideoFeedMuted())), []);
+
+  useEffect(() => {
+    dispatch(hydratePublicFeed());
+  }, [dispatch]);
 
   useEffect(() => {
     if (!supabase) return;
@@ -374,15 +384,24 @@ export default function FeedTab() {
         listings: listings as never[],
         parcels: parcels as never[],
         events: events as never[],
+        jobs: jobs as never[],
         posts: posts as never[],
         p2pOffers: p2pOffers as never[],
         businesses: businesses as never[],
         userId,
       }),
-    [videos, listings, parcels, events, posts, p2pOffers, businesses, userId],
+    [videos, listings, parcels, events, jobs, posts, p2pOffers, businesses, userId],
   );
-  const filters = FEED_TYPE_FILTERS.filter((f) => f.id === 'all' || f.id === 'video' || f.id === 'listing' || f.id === 'event');
-  const showFilters = true;
+  const typeCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const item of all) counts[item.kind] = (counts[item.kind] || 0) + 1;
+    return counts;
+  }, [all]);
+  const filters = FEED_TYPE_FILTERS.filter((f) => f.id === 'all' || (typeCounts[f.id] || 0) > 0);
+  const showFilters = all.length > 0 && filters.length > 2;
+  useEffect(() => {
+    if (type !== 'all' && !filters.some((filter) => filter.id === type)) setType('all');
+  }, [filters, type]);
   const ordered = useStableOrder(all);
   const items = type === 'all' ? ordered : ordered.filter((i) => i.kind === type);
   const viewed = useRef(new Set<string>());
@@ -447,6 +466,11 @@ export default function FeedTab() {
           />
         )}
       />
+      {items.length === 0 ? (
+        <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: '42%', alignItems: 'center' }}>
+          <AppText className="text-base font-black text-white">{feedStatus === 'ready' ? 'Aucune publication' : 'Chargement…'}</AppText>
+        </View>
+      ) : null}
 
       {/* FeedTypeChips : retour, pastilles, bouton + blanc. */}
       <View

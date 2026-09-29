@@ -22,6 +22,22 @@ import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, radii, shadows, spacing, typography } from '@/theme/colors';
 import { asStringList } from '@/utils/stringList';
 
+/** publish.parcel.types du web (fr). */
+const PARCEL_TYPE_LABELS: Record<string, string> = {
+  clothes: 'Vêtements',
+  food: 'Alimentaire',
+  electronics: 'Électronique',
+  documents: 'Documents',
+  cosmetics: 'Cosmétiques',
+  gifts: 'Cadeaux',
+  medicine: 'Médicaments',
+};
+
+function parcelTypeLabels(value: unknown) {
+  const labels = asStringList(value).map((slug) => PARCEL_TYPE_LABELS[slug] || slug);
+  return labels.length ? labels.join(', ') : null;
+}
+
 export default function ParcelDetailScreen() {
   const colors = useThemeColors();
   const dispatch = useAppDispatch();
@@ -137,9 +153,7 @@ export default function ParcelDetailScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 40, gap: spacing.lg }}>
         <PageHeader
-          eyebrow={parcel.id}
           title={`${parcel.origin || '?'} vers ${parcel.destination || '?'}`}
-          description={parcel.ownerName ? `Voyageur : ${parcel.ownerName}` : undefined}
           actions={
             <Button variant="secondary" onPress={() => router.back()}>← Retour</Button>
           }
@@ -251,8 +265,8 @@ export default function ParcelDetailScreen() {
                 { label: 'Kg restants', value: parcel.remainingKg != null ? `${parcel.remainingKg} kg` : null },
                 { label: 'Max / article', value: parcel.maxWeightPerItem != null ? `${parcel.maxWeightPerItem} kg` : null },
                 { label: 'Date limite de dépôt', value: parcel.depositDeadline ? formatShortDate(parcel.depositDeadline) : null },
-                { label: 'Types acceptés', value: asStringList(parcel.acceptedTypes).join(', ') || null },
-                { label: 'Types refusés', value: asStringList(parcel.rejectedTypes).join(', ') || null },
+                { label: 'Types acceptés', value: parcelTypeLabels(parcel.acceptedTypes) },
+                { label: 'Types refusés', value: parcelTypeLabels(parcel.rejectedTypes) },
                 { label: 'Conditions', value: parcel.conditions },
               ]}
             />

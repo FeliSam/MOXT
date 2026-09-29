@@ -103,6 +103,15 @@ const dashboardSlice = createSlice({
   name: 'dashboard',
   initialState,
   reducers: {
+    receivePublicCatalog(
+      state,
+      action: { payload: { p2pOffers: P2POffer[]; events: DashboardEvent[]; jobs: Record<string, unknown>[] } },
+    ) {
+      state.p2pOffers = action.payload.p2pOffers;
+      state.events = action.payload.events;
+      state.jobs = action.payload.jobs;
+      state.status = 'ready';
+    },
     upsertP2POffer(state, action: { payload: P2POffer }) {
       const index = state.p2pOffers.findIndex((item) => item.id === action.payload.id);
       if (index >= 0) state.p2pOffers[index] = { ...state.p2pOffers[index], ...action.payload };
@@ -128,4 +137,4 @@ const dashboardSlice = createSlice({
 });
 
 export const dashboardReducer = dashboardSlice.reducer;
-export const { upsertP2POffer } = dashboardSlice.actions;
+export const { receivePublicCatalog, upsertP2POffer } = dashboardSlice.actions;

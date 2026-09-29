@@ -12,9 +12,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
+import { formatCurrency } from '@moxt/shared/utils/formatters.js';
 import {
   directionLabel,
-  formatMoney,
   formatTransferDate,
 } from '@moxt/shared/utils/transfers.js';
 
@@ -30,6 +30,11 @@ import { useAppDispatch, useAppSelector } from '@/store/store';
 import type { TransferItem } from '@/store/transfers';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, radii, spacing } from '@/theme/colors';
+
+/** Même format que le web en français : espace de milliers et virgule (`15 450,00`). */
+function formatTransferMoney(amount: unknown, currency?: string) {
+  return String(formatCurrency(amount, currency, 'fr-FR') ?? '').replace(/[\u202f\u00a0]/g, ' ');
+}
 
 const P2P_STATUS: Record<string, string> = {
   created: 'En attente du vendeur',
@@ -72,16 +77,16 @@ function TransferHistoryCard({ transfer }: { transfer: TransferItem }) {
 
       <View style={styles.amountBlock}>
         <Text style={[styles.totalAmount, { color: colors.text }]}>
-          {formatMoney(totalToPay, currFrom)}
+          {formatTransferMoney(totalToPay, currFrom)}
         </Text>
         <Text style={[styles.amountLine, { color: colors.textMuted }]}>
-          Envoyé: {formatMoney(transfer.amountSent, currFrom)}
+          Envoyé: {formatTransferMoney(transfer.amountSent, currFrom)}
         </Text>
         <Text style={[styles.amountLine, { color: colors.textMuted }]}>
-          Frais: {formatMoney(transfer.fee, currFrom)}
+          Frais: {formatTransferMoney(transfer.fee, currFrom)}
         </Text>
         <Text style={[styles.amountLine, { color: colors.textMuted }]}>
-          Reçu: {transfer.receivedAmount ? formatMoney(transfer.receivedAmount, transfer.currencyTo) : '—'}
+          Reçu: {transfer.receivedAmount ? formatTransferMoney(transfer.receivedAmount, transfer.currencyTo) : '—'}
         </Text>
       </View>
 
@@ -138,7 +143,12 @@ export default function TransfersScreen() {
         transfer.id.toLowerCase().includes(normalizedQuery) ||
         recipientName.includes(normalizedQuery)
       );
-    });
+    })
+      .sort(
+        (a, b) =>
+          new Date(String(b.createdAt || (b as { updatedAt?: string }).updatedAt || 0)).getTime() -
+          new Date(String(a.createdAt || (a as { updatedAt?: string }).updatedAt || 0)).getTime(),
+      );
   }, [items, query, user?.id]);
 
   const myP2pOrders = useMemo(() => {

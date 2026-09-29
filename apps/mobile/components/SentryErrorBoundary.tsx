@@ -1,4 +1,3 @@
-import * as Sentry from '@sentry/react-native';
 import { Component, ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 

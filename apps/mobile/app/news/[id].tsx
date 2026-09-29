@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { Image, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
+import { Image, Pressable, ScrollView, Share, View, useWindowDimensions } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Heart } from 'lucide-react-native';
+import { Heart, MessageCircle, Share2 } from 'lucide-react-native';
 
 import { collectPostImages, withPostImages } from '@moxt/shared/domain/postMedia.js';
 import { entityFromRemoteRow } from '@moxt/shared/services/rowUtils.js';
@@ -23,6 +23,7 @@ export default function PostDetailScreen() {
   const imageWidth = Math.max(280, width - 32);
   const galleryRef = useRef<ScrollView>(null);
   const [imageIndex, setImageIndex] = useState(0);
+  const [expanded, setExpanded] = useState(false);
   const user = useAppSelector((state) => state.auth.user);
   const cached = useAppSelector((state) => state.feed.posts.find((item) => item.id === id));
   const [remote, setRemote] = useState<Record<string, unknown> | null>(null);
@@ -90,8 +91,20 @@ export default function PostDetailScreen() {
             {when ? <AppText className="text-xs text-app-text-muted">{when}</AppText> : null}
           </View>
         </Pressable>
+        {text ? (
+          <View>
+            <AppText className="text-sm text-app-text" style={{ lineHeight: 22 }} numberOfLines={expanded ? undefined : 6}>
+              {text}
+            </AppText>
+            {text.length > 220 ? (
+              <Pressable onPress={() => setExpanded((value) => !value)} style={{ marginTop: 4 }}>
+                <AppText className="text-xs font-semibold" style={{ color: colors.accent }}>{expanded ? 'Voir moins' : 'Voir plus'}</AppText>
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
         {images.length ? (
-          <View style={{ height: 280 }}>
+          <View style={{ height: Math.round(imageWidth * 57 / 50), borderRadius: 16, overflow: 'hidden' }}>
             <ScrollView
               ref={galleryRef}
               horizontal
@@ -102,7 +115,7 @@ export default function PostDetailScreen() {
                 setImageIndex(Math.min(images.length - 1, Math.max(0, next)));
               }}>
               {images.map((src) => (
-                <Image key={src} source={{ uri: src }} style={{ width: imageWidth, height: 280, borderRadius: 16 }} resizeMode="cover" />
+                <Image key={src} source={{ uri: src }} style={{ width: imageWidth, height: Math.round(imageWidth * 57 / 50) }} resizeMode="cover" />
               ))}
             </ScrollView>
             {images.length > 1 ? (
@@ -114,8 +127,8 @@ export default function PostDetailScreen() {
                       galleryRef.current?.scrollTo({ x: next * imageWidth, animated: true });
                       setImageIndex(next);
                     }}
-                    style={{ position: 'absolute', left: 8, top: 120, width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.92)' }}>
-                    <AppText className="text-lg font-black">‹</AppText>
+                    style={{ position: 'absolute', left: 8, top: '42%', width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.55)' }}>
+                    <AppText className="text-lg font-black text-white">‹</AppText>
                   </Pressable>
                 ) : null}
                 {imageIndex < images.length - 1 ? (
@@ -125,31 +138,42 @@ export default function PostDetailScreen() {
                       galleryRef.current?.scrollTo({ x: next * imageWidth, animated: true });
                       setImageIndex(next);
                     }}
-                    style={{ position: 'absolute', right: 8, top: 120, width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.92)' }}>
-                    <AppText className="text-lg font-black">›</AppText>
+                    style={{ position: 'absolute', right: 8, top: '42%', width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.55)' }}>
+                    <AppText className="text-lg font-black text-white">›</AppText>
                   </Pressable>
                 ) : null}
-                <View style={{ position: 'absolute', right: 12, bottom: 12, borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.55)', paddingHorizontal: 8, paddingVertical: 4 }}>
+                <View style={{ position: 'absolute', bottom: 12, alignSelf: 'center', left: 0, right: 0, alignItems: 'center' }}>
+                <View style={{ borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.55)', paddingHorizontal: 10, paddingVertical: 4 }}>
                   <AppText className="text-xs font-bold" style={{ color: '#fff' }}>{imageIndex + 1}/{images.length}</AppText>
+                </View>
                 </View>
               </>
             ) : null}
           </View>
         ) : null}
-        {post.title ? <AppText className="text-xl font-black text-app-text">{String(post.title)}</AppText> : null}
-        {text ? <AppText className="text-base text-app-text" style={{ lineHeight: 24 }}>{text}</AppText> : null}
-        <Pressable
-          onPress={() => {
-            if (!user?.id) {
-              router.push('/login' as never);
-              return;
-            }
-            void dispatch(toggleEngagementLike({ kind: 'post', entityId: post.id, userId: user.id }));
-          }}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', minHeight: 40 }}>
-          <Heart size={18} color={liked ? colors.accent : colors.textMuted} fill={liked ? colors.accent : 'transparent'} />
-          <AppText className="text-sm font-bold text-app-text">{likes.length ? String(likes.length) : 'J’aime'}</AppText>
-        </Pressable>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
+          <Pressable
+            onPress={() => {
+              if (!user?.id) {
+                router.push('/login' as never);
+                return;
+              }
+              void dispatch(toggleEngagementLike({ kind: 'post', entityId: post.id, userId: user.id }));
+            }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40 }}>
+            <Heart size={18} color={liked ? '#ef4444' : colors.textMuted} fill={liked ? '#ef4444' : 'transparent'} />
+            <AppText className="text-sm font-bold" style={{ color: colors.textMuted }}>{likes.length}</AppText>
+          </Pressable>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40 }}>
+            <MessageCircle size={18} color={colors.textMuted} />
+            <AppText className="text-sm font-bold" style={{ color: colors.textMuted }}>0</AppText>
+          </View>
+          <Pressable
+            onPress={() => void Share.share({ message: text || String(post.title || 'MOXT') })}
+            style={{ minHeight: 40, justifyContent: 'center' }}>
+            <Share2 size={18} color={colors.textMuted} />
+          </Pressable>
+        </View>
       </ScrollView>
     </AppChrome>
   );

@@ -29,6 +29,20 @@ export type ListingItem = {
   expiresAt?: string;
   likes?: string[];
   comments?: EngagementComment[];
+  deliveryOptions?: string[];
+  shippingCarriers?: unknown[];
+  deliveryFee?: number | null;
+  deliveryDelay?: string;
+  warranty?: string;
+  returnPolicy?: string;
+  paymentMethods?: string[];
+  questions?: { id?: string; authorName?: string; text?: string; answer?: string; createdAt?: string }[];
+  history?: { status?: string; at?: string }[];
+  brand?: string;
+  model?: string;
+  color?: string;
+  district?: string;
+  stock?: number | null;
 };
 
 type MarketplaceState = {
@@ -99,6 +113,20 @@ function mapRow(row: any): ListingItem {
     // Colonnes likes / comments (miroir dans payload), écrites par les RPC moxt_listing_*.
     likes: asArray(row.likes ?? row.payload?.likes),
     comments: asArray(row.comments ?? row.payload?.comments).filter((c: unknown) => c && typeof c === 'object'),
+    deliveryOptions: asArray(row.delivery_options ?? row.payload?.deliveryOptions),
+    shippingCarriers: asArray(row.shipping_carriers ?? row.payload?.shippingCarriers),
+    deliveryFee: row.delivery_fee ?? row.payload?.deliveryFee ?? null,
+    deliveryDelay: row.delivery_delay || row.payload?.deliveryDelay || '',
+    warranty: row.warranty || row.payload?.warranty || '',
+    returnPolicy: row.return_policy || row.payload?.returnPolicy || '',
+    paymentMethods: asArray(row.payment_methods ?? row.payload?.paymentMethods),
+    questions: asArray(row.questions ?? row.payload?.questions),
+    history: asArray(row.history ?? row.payload?.history),
+    brand: row.brand || row.payload?.brand || '',
+    model: row.model || row.payload?.model || '',
+    color: row.color || row.payload?.color || '',
+    district: row.district || row.payload?.district || '',
+    stock: row.stock ?? row.payload?.stock ?? null,
   };
 }
 

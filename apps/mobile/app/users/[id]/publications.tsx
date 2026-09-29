@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Building2 } from 'lucide-react-native';
@@ -15,7 +15,7 @@ import {
   visiblePublicationCount,
 } from '@moxt/shared/domain/publicationRules.js';
 import { fetchBusinesses } from '@moxt/shared/services/businessesService.js';
-import { fetchBusinessPublications, fetchUserPublications } from '@moxt/shared/services/publicationsService.js';
+import { fetchBusinessPublications, fetchPublicUserPublications } from '@moxt/shared/services/publicationsService.js';
 import { fetchPublicProfile } from '@moxt/shared/services/profileService.js';
 import { fetchReviewsForTargetScope } from '@moxt/shared/services/reviewsService.js';
 import { openContactConversation } from '@moxt/shared/services/contactService.js';
@@ -92,8 +92,7 @@ export default function PublicPublicationsScreen() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [mainTab, setMainTab] = useState('publications');
   const [archiveTab, setArchiveTab] = useState<'active' | 'archived'>('active');
-  const [typeTab, setTypeTab] = useState('post');
-  const typePicked = useRef(false);
+  const [typeTab, setTypeTab] = useState('listing');
 
   useEffect(() => {
     if (!supabase || !id) return undefined;
@@ -104,7 +103,7 @@ export default function PublicPublicationsScreen() {
         if (!cancelled) setProfile(next);
       })
       .catch(() => undefined);
-    fetchUserPublications(client, id)
+    fetchPublicUserPublications(client, id)
       .then((result) => {
         if (!cancelled) setPersonalPubs(filterPublicationsByScope(result.publications, 'personal'));
       })
@@ -162,11 +161,7 @@ export default function PublicPublicationsScreen() {
     colors: PUBLICATION_TYPES[key].chip,
   }));
   useEffect(() => {
-    if (typePicked.current || !typeTabs.length) return;
-    if (typeTabs.some((tab) => tab.key === 'post')) {
-      if (typeTab !== 'post') setTypeTab('post');
-      return;
-    }
+    if (!typeTabs.length) return;
     if (!typeTabs.some((tab) => tab.key === typeTab)) setTypeTab(typeTabs[0].key);
   }, [typeTab, typeTabs]);
 
@@ -342,10 +337,7 @@ export default function PublicPublicationsScreen() {
               tabs={typeTabs}
               active={typeTab}
               pinActive={false}
-              onChange={(key) => {
-                typePicked.current = true;
-                setTypeTab(key);
-              }}
+              onChange={setTypeTab}
             />
           ) : null}
           {visiblePublicationCount(visible) ? (

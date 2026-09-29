@@ -6,8 +6,13 @@ import {
   subscribeToNotifications,
 } from './notificationsService.js'
 import { businessFromRemoteRow, fetchBusinesses, findOwnedBusiness } from './businessesService.js'
-import { fetchBusinessPublications, fetchUserPublications, summarizeUserPublications } from './publicationsService.js'
-import { fetchActiveStatuses, fetchFeedPosts, groupStatusesByAuthor } from './feedService.js'
+import {
+  fetchBusinessPublications,
+  fetchPublicUserPublications,
+  fetchUserPublications,
+  summarizeUserPublications,
+} from './publicationsService.js'
+import { fetchActiveStatuses, fetchFeedPosts, fetchPublicFeedCatalog, groupStatusesByAuthor } from './feedService.js'
 import { buildInboxRows, fetchInbox } from './inboxService.js'
 import { fetchPublisherSubscriptions, selectUserSubscriptionList } from './subscriptionsService.js'
 import { fetchUserFavorites, mergeFavorites } from './favoritesService.js'
@@ -95,6 +100,48 @@ describe('publicationsService', () => {
     const summary = summarizeUserPublications(publications)
     expect(summary.archiveCounts).toEqual({ active: 3, archived: 2 })
     expect(summary.activeTypeCounts.other).toBe(1)
+  })
+
+  it('profil public : mêmes statuts que l’aperçu web, sans offres P2P', async () => {
+    const client = createFakeClient({
+      listings: [{ id: 'l1', owner_id: me, status: 'active' }],
+      posts: [{ id: 'po', author_id: me, status: 'published' }],
+    })
+    const { publications, errors } = await fetchPublicUserPublications(client, me)
+    expect(errors).toEqual([])
+    expect(client.calls.map((call) => call.table)).toEqual(['listings', 'parcels', 'jobs', 'events', 'videos', 'posts'])
+    expect(opsOf(client, 'listings')[0]).toEqual([
+      ['select', '*'],
+      ['eq', 'owner_id', me],
+      ['eq', 'status', 'active'],
+    ])
+    expect(opsOf(client, 'parcels')[0]).toEqual([
+      ['select', '*'],
+      ['eq', 'owner_id', me],
+      ['in', 'status', ['active', 'full']],
+    ])
+    expect(publications.others).toEqual([])
+    expect(publications.listings.map((item) => item.id)).toEqual(['l1'])
+  })
+})
+
+describe('fetchPublicFeedCatalog', () => {
+  it('charge les tables publiques du fil, dont posts et offres P2P actives', async () => {
+    const client = createFakeClient({
+      posts: [{ id: 'po', status: 'published', message: 'Bonjour', images: ['https://cdn.example/a.jpg'] }],
+      p2p_offers: [{ id: 'o1', status: 'active' }],
+    })
+    const catalog = await fetchPublicFeedCatalog(client, { limit: 80 })
+    expect(opsOf(client, 'posts')[0]).toEqual([
+      ['select', '*'],
+      ['order', 'updated_at', { ascending: false }],
+      ['limit', 80],
+      ['eq', 'status', 'published'],
+    ])
+    expect(opsOf(client, 'p2p_offers')[0][3]).toEqual(['eq', 'status', 'active'])
+    expect(catalog.posts[0].images).toEqual(['https://cdn.example/a.jpg'])
+    expect(catalog.p2pOffers.map((item) => item.id)).toEqual(['o1'])
+    expect(catalog.listings).toEqual([])
   })
 })
 

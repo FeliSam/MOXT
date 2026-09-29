@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { formatCurrency } from '@moxt/shared/utils/formatters.js';
 
+import { DetailFloatingActions } from '@/components/marketplace/DetailFloatingActions';
 import { listingCategoryLabel, listingTypeLabel } from '@/components/marketplace/listingMeta';
 import { Badge, StatusBadge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -36,6 +37,28 @@ const CONDITION_LABELS: Record<string, string> = {
   refurbished: 'Reconditionné',
 };
 
+const DELIVERY_LABELS: Record<string, string> = {
+  pickup: 'Retrait sur place',
+  local: 'Livraison locale',
+  shipping: 'Expédition',
+  home: 'Livraison à domicile',
+  onSite: 'Sur site client',
+  remote: 'À distance',
+  workshop: 'En atelier / boutique',
+  handDelivery: 'Remise en main propre',
+  possible: 'Livraison possible',
+  online: 'Téléchargement en ligne',
+  visit: 'Visite sur rendez-vous',
+};
+
+const DETAIL_TABS = [
+  ['description', 'Description'],
+  ['details', 'Caractéristiques'],
+  ['delivery', 'Livraison et garantie'],
+  ['questions', 'Questions'],
+  ['history', 'Historique'],
+] as const;
+
 export default function ListingDetailScreen() {
   const colors = useThemeColors();
   const params = useLocalSearchParams<{ id?: string | string[] }>();
@@ -43,7 +66,7 @@ export default function ListingDetailScreen() {
   const id = routeParam(params.id) || pathnameId;
   const dispatch = useAppDispatch();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [detailTab, setDetailTab] = useState<'description' | 'details'>('description');
+  const [detailTab, setDetailTab] = useState<(typeof DETAIL_TABS)[number][0]>('description');
   const [pending, setPending] = useState(true);
   const scrollRef = useRef<ScrollView>(null);
   const fetched = useRef(false);
@@ -51,6 +74,7 @@ export default function ListingDetailScreen() {
   const listing = useAppSelector((state) =>
     state.marketplace.items.find((l) => l.id === id),
   );
+  const user = useAppSelector((state) => state.auth.user);
 
   useEffect(() => {
     if (!id) {
@@ -98,9 +122,22 @@ export default function ListingDetailScreen() {
 
   const categoryLabel = listingCategoryLabel(listing.type, listing.category) || typeLabel;
 
+  const isOwner = Boolean(user?.id && listing.ownerId === user.id);
+  const deliveryModes = (listing.deliveryOptions?.length ? listing.deliveryOptions : ['pickup'])
+    .map((value) => DELIVERY_LABELS[value] || value)
+    .join(', ');
+  const carriers = (listing.shippingCarriers || [])
+    .map((carrier) => {
+      if (typeof carrier === 'string') return carrier;
+      const row = carrier as { id?: string; etaHint?: string };
+      return row.etaHint ? `${row.id} (${row.etaHint})` : row.id || '';
+    })
+    .filter(Boolean)
+    .join(' · ');
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentContainerStyle={{ padding: spacing.xl, gap: spacing.lg }}>
+      <ScrollView contentContainerStyle={{ padding: spacing.xl, paddingBottom: 120, gap: spacing.lg }}>
         <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
           Marketplace / {categoryLabel} / <Text style={{ color: colors.text, fontWeight: '800' }}>{listing.title}</Text>
         </Text>
@@ -226,41 +263,82 @@ export default function ListingDetailScreen() {
         </Card>
 
         <Card>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            {([
-              ['description', 'Description'],
-              ['details', 'Caractéristiques'],
-            ] as const).map(([key, label]) => {
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+            {DETAIL_TABS.map(([key, label]) => {
               const active = detailTab === key;
               return (
-                <Pressable key={key} onPress={() => setDetailTab(key)} style={{ flex: 1, minHeight: 40, alignItems: 'center', justifyContent: 'center', borderBottomWidth: 2, borderBottomColor: active ? colors.primary : 'transparent' }}>
+                <Pressable key={key} onPress={() => setDetailTab(key)} style={{ minHeight: 40, alignItems: 'center', justifyContent: 'center', borderBottomWidth: 2, borderBottomColor: active ? colors.primary : 'transparent', paddingHorizontal: 4 }}>
                   <Text style={{ fontWeight: '800', color: active ? colors.text : colors.textMuted }}>{label}</Text>
                 </Pressable>
               );
             })}
-          </View>
+          </ScrollView>
           <View style={{ marginTop: 16, gap: 8 }}>
             {detailTab === 'description' ? (
               <>
-                <Text style={{ ...typography.sectionTitle, color: colors.text }}>À propos</Text>
+                <Text style={{ ...typography.sectionTitle, color: colors.text }}>À propos de cette annonce</Text>
                 <Text style={{ ...typography.body, color: colors.textSecondary, lineHeight: 22 }}>
                   {listing.description || 'Aucune description.'}
                 </Text>
               </>
-            ) : (
+            ) : null}
+            {detailTab === 'details' ? (
               [
-                ['Prix', listing.price ? formatCurrency(listing.price, listing.currency || 'RUB') : 'Sur devis'],
-                ['État', conditionLabel || '—'],
-                ['Localisation', [listing.city, listing.address].filter(Boolean).join(', ') || '—'],
                 ['Catégorie', categoryLabel || '—'],
                 ['Type', typeLabel || '—'],
+                ['Marque', listing.brand || '—'],
+                ['Modèle', listing.model || '—'],
+                ['Couleur', listing.color || '—'],
+                ['État', conditionLabel || '—'],
+                ['Quartier', listing.district || '—'],
+                ['Localisation', [listing.city, listing.address].filter(Boolean).join(', ') || '—'],
               ].map(([label, value]) => (
                 <View key={label} style={{ borderRadius: 12, backgroundColor: colors.surfaceMuted, padding: 12 }}>
                   <Text style={{ fontSize: 10, fontWeight: '900', letterSpacing: 0.6, color: colors.textFaint }}>{label.toUpperCase()}</Text>
                   <Text style={{ marginTop: 4, fontWeight: '700', color: colors.text }}>{value}</Text>
                 </View>
               ))
-            )}
+            ) : null}
+            {detailTab === 'delivery' ? (
+              [
+                ['Modes de remise', deliveryModes],
+                ...(carriers ? [['Transporteurs', carriers] as const] : []),
+                ['Frais de livraison', listing.deliveryFee ? formatCurrency(listing.deliveryFee, listing.currency || 'RUB', 'fr-FR') : 'Gratuit ou à convenir'],
+                ['Délai', listing.deliveryDelay || '—'],
+                ['Garantie', listing.warranty || '—'],
+                ['Politique de retour', listing.returnPolicy || '—'],
+                ['Paiements acceptés', listing.paymentMethods?.length ? listing.paymentMethods.join(', ') : 'À convenir'],
+              ].map(([label, value]) => (
+                <View key={label} style={{ borderRadius: 12, backgroundColor: colors.surfaceMuted, padding: 12 }}>
+                  <Text style={{ fontSize: 10, fontWeight: '900', letterSpacing: 0.6, color: colors.textFaint }}>{String(label).toUpperCase()}</Text>
+                  <Text style={{ marginTop: 4, fontWeight: '700', color: colors.text }}>{value}</Text>
+                </View>
+              ))
+            ) : null}
+            {detailTab === 'questions' ? (
+              (listing.questions || []).length ? (
+                listing.questions!.map((item, index) => (
+                  <View key={item.id || String(index)} style={{ gap: 4 }}>
+                    <Text style={{ fontWeight: '800', color: colors.text }}>{item.authorName || 'Membre'}</Text>
+                    <Text style={{ color: colors.textSecondary }}>{item.text}</Text>
+                    {item.answer ? <Text style={{ color: colors.textMuted }}>Réponse du vendeur : {item.answer}</Text> : <Text style={{ color: colors.textFaint }}>En attente de réponse du vendeur.</Text>}
+                  </View>
+                ))
+              ) : (
+                <Text style={{ color: colors.textMuted }}>Aucune question publique.</Text>
+              )
+            ) : null}
+            {detailTab === 'history' ? (
+              (listing.history || []).length ? (
+                listing.history!.map((entry, index) => (
+                  <Text key={`${entry.at || index}`} style={{ color: colors.text }}>
+                    {entry.status || '—'}{entry.at ? ` · ${entry.at}` : ''}
+                  </Text>
+                ))
+              ) : (
+                <Text style={{ color: colors.textMuted }}>Aucun historique.</Text>
+              )
+            ) : null}
           </View>
         </Card>
 
@@ -311,6 +389,7 @@ export default function ListingDetailScreen() {
           </View>
         </Card>
       </ScrollView>
+      <DetailFloatingActions relatedId={listing.id} title={listing.title} ownerId={listing.ownerId} isOwner={isOwner} />
     </SafeAreaView>
   );
 }

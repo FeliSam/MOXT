@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 
 import { cn } from '@/lib/cn';
 import { useTheme } from '@/theme/ThemeContext';
+import { platformShadow } from '@/theme/platformShadow';
 
 type CardVariant = 'default' | 'flat' | 'finance' | 'interactive' | 'featured' | 'verified';
 
@@ -38,13 +39,7 @@ export function Card({ children, variant = 'default', className, style }: CardPr
         className,
       )}
       style={[
-        !isFlat && {
-          shadowColor: '#0f1714',
-          shadowOffset: { width: 0, height: 6 },
-          shadowOpacity: 0.05,
-          shadowRadius: 18,
-          elevation: 1,
-        },
+        !isFlat && platformShadow('0 6px 36px rgba(15,23,20,0.05)'),
         variant === 'verified' && {
           borderLeftWidth: 3,
           borderLeftColor: '#0b8975',

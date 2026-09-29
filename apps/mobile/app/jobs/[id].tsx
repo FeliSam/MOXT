@@ -22,6 +22,7 @@ import { addFavorite, removeFavorite } from '@/store/favorites';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, spacing, typography } from '@/theme/colors';
+import { platformShadow } from '@/theme/platformShadow';
 
 type JobDetail = {
   id: string;
@@ -264,10 +265,6 @@ const sx = StyleSheet.create({
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#0f1714',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 4,
+    ...platformShadow('0 4px 20px rgba(15,23,20,0.12)'),
   },
 });

@@ -84,6 +84,7 @@ export function buildFeedItems(src: {
   events: AnyRow[];
   posts: AnyRow[];
   p2pOffers: AnyRow[];
+  jobs?: AnyRow[];
   businesses: AnyRow[];
   userId?: string;
 }): FeedItem[] {
@@ -139,6 +140,22 @@ export function buildFeedItems(src: {
       videoUrl: '',
       stats: { views: 0, likes: 0, comments: 0, shares: 0 },
       route: `/parcel/${p.id}`,
+    });
+  }
+  for (const j of src.jobs || []) {
+    if (!j?.id || j.status !== 'active') continue;
+    items.push({
+      id: `job:${j.id}`,
+      kind: 'job',
+      entityId: j.id,
+      createdAt: j.createdAt || '',
+      publisher: j.businessId ? businessPublisher(byId.get(j.businessId), j.businessName) : userPublisher(j.ownerId, j.ownerName || j.businessName),
+      title: j.title || '',
+      caption: [j.city, j.contractType].filter(Boolean).join(' · '),
+      image: (Array.isArray(j.images) && j.images[0]) || '',
+      videoUrl: '',
+      stats: { views: 0, likes: 0, comments: 0, shares: 0 },
+      route: `/jobs/${j.id}`,
     });
   }
   for (const e of src.events) {
