@@ -11,6 +11,7 @@ import { AppText } from '@/components/ui/AppText';
 import { supabase } from '@/services/supabase';
 import { useAppSelector } from '@/store/store';
 import { useTheme } from '@/theme/ThemeContext';
+import { isE2eHarnessActive, readE2eFixtures } from '@/utils/e2eHarness';
 
 type Receipt = {
   id: string;
@@ -30,6 +31,12 @@ export default function ReceiptsScreen() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    if (isE2eHarnessActive()) {
+      const fixtures = readE2eFixtures()?.receipts || [];
+      setReceipts(fixtures.filter((item) => !user?.id || !item.userId || item.userId === user.id) as Receipt[]);
+      setReady(true);
+      return undefined;
+    }
     if (!supabase || !user?.id) {
       setReady(true);
       return undefined;

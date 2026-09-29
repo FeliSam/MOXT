@@ -35,6 +35,7 @@ import {
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useTheme } from '@/theme/ThemeContext';
 import { openLink } from '@/utils/appLinks';
+import { isE2eHarnessActive } from '@/utils/e2eHarness';
 import { showNotice } from '@/utils/notice';
 import {
   attachmentImageSrcs,
@@ -127,6 +128,8 @@ export default function ChatScreen() {
 
   useEffect(() => {
     if (!id || !user?.id || !conversation) return;
+    // Le harnais local ne doit pas marquer « lu » côté serveur.
+    if (isE2eHarnessActive()) return;
     dispatch(markConversationRead({ conversationId: id, userId: user.id }));
   }, [conversation?.id, conversation?.messagesLoaded, dispatch, id, user?.id]);
 

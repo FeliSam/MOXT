@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -15,6 +15,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusBadge } from '@/components/ui/Badge';
 import { supabase } from '@/services/supabase';
 import { loadCoreData } from '@/store/data';
+import { loadParcelById } from '@/store/parcels';
 import { mapConversationRow, receiveRemoteConversation, sendMessage } from '@/store/messages';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
@@ -32,12 +33,29 @@ export default function ParcelDetailScreen() {
   const [kg, setKg] = useState('');
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [pending, setPending] = useState(!parcel);
+
+  useEffect(() => {
+    if (!id || parcel) {
+      setPending(false);
+      return undefined;
+    }
+    let alive = true;
+    dispatch(loadParcelById(String(id)))
+      .finally(() => {
+        if (alive) setPending(false);
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [dispatch, id, parcel]);
 
   if (!parcel) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg }}>
-          <Text style={{ ...typography.sectionTitle, color: colors.text }}>Colis introuvable</Text>
+          <Text style={{ ...typography.sectionTitle, color: colors.text }}>{pending ? 'Chargement…' : 'Colis introuvable'}</Text>
           <Button variant="primary" onPress={() => router.back()}>Retour</Button>
         </View>
       </SafeAreaView>

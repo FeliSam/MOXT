@@ -90,8 +90,6 @@ export default function PostDetailScreen() {
             {when ? <AppText className="text-xs text-app-text-muted">{when}</AppText> : null}
           </View>
         </Pressable>
-        {post.title ? <AppText className="text-xl font-black text-app-text">{String(post.title)}</AppText> : null}
-        {text ? <AppText className="text-base text-app-text" style={{ lineHeight: 24 }}>{text}</AppText> : null}
         {images.length ? (
           <View style={{ height: 280 }}>
             <ScrollView
@@ -138,6 +136,8 @@ export default function PostDetailScreen() {
             ) : null}
           </View>
         ) : null}
+        {post.title ? <AppText className="text-xl font-black text-app-text">{String(post.title)}</AppText> : null}
+        {text ? <AppText className="text-base text-app-text" style={{ lineHeight: 24 }}>{text}</AppText> : null}
         <Pressable
           onPress={() => {
             if (!user?.id) {

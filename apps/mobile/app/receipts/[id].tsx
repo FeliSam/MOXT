@@ -13,6 +13,7 @@ import { supabase } from '@/services/supabase';
 import { transferMatches } from '@/store/transfers';
 import { useAppSelector } from '@/store/store';
 import { useTheme } from '@/theme/ThemeContext';
+import { isE2eHarnessActive, readE2eFixtures } from '@/utils/e2eHarness';
 import { routeParam } from '@/utils/routeParam';
 
 type Receipt = {
@@ -28,6 +29,30 @@ type Receipt = {
 
 type TimelineEvent = { status?: string; at?: string; label?: string };
 
+/** Libellés de la chronologie web (transferTimelineLabels). */
+const TIMELINE_LABELS: Record<string, string> = {
+  pending_business_acceptance: "En attente d'acceptation",
+  pending_payment: 'Transfert créé, paiement attendu',
+  business_declined: "Demande refusée par l'entreprise",
+  payment_declared: 'Paiement déclaré par le client',
+  payment_received: 'Paiement reçu par le partenaire',
+  processing: 'Ancien transfert en traitement',
+  paid_out: "Transfert effectué par l'entreprise",
+  completed: 'Paiement validé, transfert terminé',
+  cancelled: 'Transfert annulé',
+  expired: 'Délai de paiement expiré',
+};
+
+const RECEIPT_STATUS: Record<string, string> = {
+  pending_payment: 'Paiement attendu',
+  payment_declared: 'Paiement déclaré',
+  payment_received: 'Paiement reçu',
+  paid_out: 'Payé',
+  completed: 'Terminé',
+  cancelled: 'Annulé',
+  expired: 'Expiré',
+};
+
 /** Détail d’un reçu : icône, badge et chronologie Traitement, comme le web. */
 export default function ReceiptDetailScreen() {
   const params = useLocalSearchParams<{ id?: string | string[] }>();
@@ -39,6 +64,13 @@ export default function ReceiptDetailScreen() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    if (isE2eHarnessActive()) {
+      const fixtures = readE2eFixtures()?.receipts || [];
+      const match = fixtures.find((item) => item.id === id && (!user?.id || !item.userId || item.userId === user.id));
+      setReceipt(match ? (match as Receipt) : null);
+      setReady(true);
+      return undefined;
+    }
     if (!supabase || !id || !user?.id) {
       setReady(true);
       return undefined;
@@ -69,7 +101,7 @@ export default function ReceiptDetailScreen() {
     ? transfers.find((item) => transferMatches(item as never, String(receipt.relatedId)))
     : null;
   const statusKey = String((transfer as { status?: string } | null)?.status || receipt?.status || '');
-  const statusLabel = TRANSFER_STATUS_LABELS[statusKey]?.label || statusKey || 'non défini';
+  const statusLabel = RECEIPT_STATUS[statusKey] || TRANSFER_STATUS_LABELS[statusKey]?.label || statusKey || 'non défini';
   const timeline = Array.isArray((transfer as { timeline?: TimelineEvent[] } | null)?.timeline)
     ? ((transfer as { timeline?: TimelineEvent[] }).timeline as TimelineEvent[])
     : [];
@@ -126,7 +158,8 @@ export default function ReceiptDetailScreen() {
             <View style={{ marginTop: 8, borderRadius: 16, backgroundColor: colors.surfaceMuted, padding: 14, gap: 8 }}>
               <AppText className="text-sm font-black text-app-text">Traitement</AppText>
               {timeline.map((event, index) => {
-                const label = event.label || TRANSFER_STATUS_LABELS[String(event.status || '')]?.label || event.status || 'Étape';
+                const status = String(event.status || '');
+                const label = event.label || TIMELINE_LABELS[status] || TRANSFER_STATUS_LABELS[status]?.label || status || 'Étape';
                 return (
                   <View key={`${event.status}-${event.at}-${index}`} style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
                     <AppText className="flex-1 text-xs font-bold text-app-text">{label}</AppText>

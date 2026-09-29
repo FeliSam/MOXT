@@ -30,4 +30,4 @@ export const {
   logout,
 } = authModule;
 
-export const { clearAuthError, setUser } = authModule.actions;
+export const { clearAuthError, setUser, applySession } = authModule.actions;

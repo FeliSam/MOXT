@@ -12,6 +12,7 @@ import { loadModuleFlags } from '@/store/platform';
 import { loadFeed } from '@/store/feed';
 import { loadDashboardData } from '@/store/dashboard';
 import { useAppDispatch, useAppSelector, store } from '@/store/store';
+import { isE2eHarnessActive } from '@/utils/e2eHarness';
 
 export function DataSync({ children }: { children: ReactNode }) {
   const dispatch = useAppDispatch();
@@ -19,6 +20,7 @@ export function DataSync({ children }: { children: ReactNode }) {
   const userId = useAppSelector((state) => state.auth.user?.id);
 
   useEffect(() => {
+    if (isE2eHarnessActive()) return undefined;
     if (status === 'authenticated' && userId) {
       dispatch(loadCoreData());
       dispatch(loadConversations(userId));
