@@ -101,3 +101,5 @@ scripts/generate_devis_moxt_docx.py
 
 # ffmpeg.wasm core (généré par moxt-react/scripts/copy-ffmpeg-core.mjs)
 moxt-react/public/ffmpeg/
+
+scripts/phase2.yandex-media.env
