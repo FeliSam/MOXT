@@ -53,6 +53,8 @@ jobs:
       - name: Tests shared package
         working-directory: packages/shared
         run: npx vitest run --reporter=verbose
+      - name: Share OG image preference
+        run: node --test supabase/functions/_shared/preferShareImage.test.mjs
 
   test-mobile:
     runs-on: ubuntu-latest

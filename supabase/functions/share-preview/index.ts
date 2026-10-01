@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { selectEntityShareImage } from '../_shared/preferShareImage.mjs'
 
 const SITE_URL = (Deno.env.get('MOXT_SITE_URL') || 'https://moxtapp.ru').replace(/\/$/, '')
 const DEFAULT_OG_IMAGE = 'https://moxtapp.ru/assets/logos/X.png'
@@ -334,74 +335,6 @@ function truncateShareText(value, max = 180) {
   return `${text.slice(0, max - 1).trim()}…`
 }
 
-function asRecord(value: unknown): Record<string, unknown> | null {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
-  return value as Record<string, unknown>
-}
-
-function parseMaybeJson(value: unknown): unknown {
-  if (typeof value !== 'string') return value
-  const trimmed = value.trim()
-  if (!trimmed || (trimmed[0] !== '{' && trimmed[0] !== '[')) return value
-  try {
-    return JSON.parse(trimmed)
-  } catch {
-    return value
-  }
-}
-
-function collectImageUrls(value: unknown, out: string[] = []): string[] {
-  if (value == null) return out
-  if (typeof value === 'string') {
-    const trimmed = value.trim()
-    if (!trimmed) return out
-    const parsed = parseMaybeJson(trimmed)
-    if (parsed !== trimmed) return collectImageUrls(parsed, out)
-    if (trimmed.startsWith('https://') || trimmed.startsWith('http://')) out.push(trimmed)
-    return out
-  }
-  if (Array.isArray(value)) {
-    for (const item of value) collectImageUrls(item, out)
-    return out
-  }
-  const obj = asRecord(value)
-  if (!obj) return out
-  for (const key of ['url', 'src', 'image', 'image_url', 'thumbnail_url', 'href']) {
-    if (obj[key] != null) collectImageUrls(obj[key], out)
-  }
-  if (obj.images != null) collectImageUrls(obj.images, out)
-  return out
-}
-
-function pickShareImage(candidates: unknown[]) {
-  for (const value of candidates) {
-    const urls = collectImageUrls(value)
-    if (urls[0]) return urls[0]
-  }
-  return DEFAULT_OG_IMAGE
-}
-
-function firstImage(row: Record<string, unknown>, keys = ['images', 'image_url', 'thumbnail_url']) {
-  for (const key of keys) {
-    const urls = collectImageUrls(row?.[key])
-    if (urls[0]) return urls[0]
-  }
-  return ''
-}
-
-function payloadImages(row: Record<string, unknown>) {
-  const payload = asRecord(parseMaybeJson(row?.payload))
-  if (!payload) return ''
-  return firstImage(payload, ['images', 'image_url', 'thumbnail_url', 'cover_url', 'photo_url'])
-}
-
-function programImages(row: Record<string, unknown>) {
-  const program = parseMaybeJson(row?.program)
-  const asObj = asRecord(program)
-  if (asObj) return firstImage(asObj, ['images', 'image_url', 'cover_url', 'thumbnail_url'])
-  return collectImageUrls(program)[0] || ''
-}
-
 function parcelRouteTitle(row: Record<string, unknown>) {
   const origin = String(row.origin || row.from || row.from_city || '').trim()
   const destination = String(row.destination || row.to || row.to_city || '').trim()
@@ -491,16 +424,8 @@ async function resolveShareMeta(kind: string, entityId: string) {
     ? truncateShareText([title, ...facts].filter(Boolean).join(' · '))
     : baseDescription
 
-  const image = pickShareImage([
-    kind === 'parcel' ? data.travel_proof_url : '',
-    kind === 'event' ? programImages(data) : '',
-    kind === 'job' || kind === 'event' || kind === 'parcel' ? payloadImages(data) : '',
-    firstImage(data),
-    firstImage(data, ['travel_proof_url', 'thumbnail_url', 'logo_url', 'avatar_url', 'cover_url']),
-    firstImage(data, ['image_url']),
-    programImages(data),
-    payloadImages(data),
-  ])
+  // CDN / image_url wins over leftover Supabase Storage URLs in images[].
+  const image = selectEntityShareImage(kind, data, DEFAULT_OG_IMAGE)
   const targetPath = resolveTargetPath(kind, entityId)
 
   return {
