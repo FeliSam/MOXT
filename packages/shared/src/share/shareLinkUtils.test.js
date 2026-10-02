@@ -7,6 +7,7 @@ import {
   resolveInAppShareTarget,
   resolvePublicShareTarget,
   truncateShareText,
+  parseAppEntityPath,
 } from './shareLinkUtils.js'
 
 describe('shareLinkUtils', () => {
@@ -87,6 +88,10 @@ describe('shareLinkUtils', () => {
     expect(truncateShareText('a'.repeat(200), 20).endsWith('…')).toBe(true)
   })
 
+  it('normalizes marketplace section to listing', () => {
+    expect(normalizeShareKind('marketplace')).toBe('listing')
+  })
+
   it('normalizes colis and French plurals to canonical kinds', () => {
     expect(normalizeShareKind('colis')).toBe('parcel')
     expect(normalizeShareKind('Colis')).toBe('parcel')
@@ -100,5 +105,33 @@ describe('shareLinkUtils', () => {
     expect(buildShareOgUrl({ kind: 'colis', entityId: 'COL-1' })).toBe(
       'https://share.moxtapp.ru/share/parcel/COL-1',
     )
+  })
+})
+
+
+describe('parseAppEntityPath', () => {
+  it('maps entity app paths to share kinds', () => {
+    expect(parseAppEntityPath('/parcels/COL-1')).toEqual({ kind: 'parcel', entityId: 'COL-1' })
+    expect(parseAppEntityPath('/marketplace/ANN-1')).toEqual({ kind: 'listing', entityId: 'ANN-1' })
+    expect(parseAppEntityPath('/jobs/JOB-1')).toEqual({ kind: 'job', entityId: 'JOB-1' })
+    expect(parseAppEntityPath('/events/EV-1')).toEqual({ kind: 'event', entityId: 'EV-1' })
+    expect(parseAppEntityPath('/businesses/BIZ-1')).toEqual({ kind: 'business', entityId: 'BIZ-1' })
+    expect(parseAppEntityPath('/users/U1/publications')).toEqual({ kind: 'user', entityId: 'U1' })
+    expect(parseAppEntityPath('/news/POST-1')).toEqual({ kind: 'post', entityId: 'POST-1' })
+    expect(parseAppEntityPath('/p2p/P2P-1')).toEqual({ kind: 'p2p', entityId: 'P2P-1' })
+  })
+
+  it('parses feed item query', () => {
+    expect(parseAppEntityPath('/feed', '?item=post:POST-9')).toEqual({ kind: 'post', entityId: 'POST-9' })
+    expect(parseAppEntityPath('/feed', 'item=video:VID-1')).toEqual({ kind: 'video', entityId: 'VID-1' })
+  })
+
+  it('ignores list pages and reserved screens', () => {
+    expect(parseAppEntityPath('/parcels')).toBeNull()
+    expect(parseAppEntityPath('/marketplace/mine')).toBeNull()
+    expect(parseAppEntityPath('/marketplace/ANN-1/edit')).toBeNull()
+    expect(parseAppEntityPath('/jobs/publish')).toBeNull()
+    expect(parseAppEntityPath('/feed')).toBeNull()
+    expect(parseAppEntityPath('/p2p/orders/X')).toBeNull()
   })
 })
