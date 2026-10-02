@@ -297,6 +297,8 @@ const SHARE_KIND_ALIASES: Record<string, string> = {
   profiles: 'user',
   users: 'user',
   listings: 'listing',
+  marketplace: 'listing',
+  market: 'listing',
   annonce: 'listing',
   annonces: 'listing',
   videos: 'video',
