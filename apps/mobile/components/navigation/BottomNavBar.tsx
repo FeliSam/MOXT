@@ -123,8 +123,9 @@ export function BottomNavBar({
           return (
             <Pressable
               key={item.id}
+              testID={item.id === 'more' ? 'tab-more-services' : `tab-${item.id}`}
               accessibilityRole="tab"
-              accessibilityState={{ selected: focused }}
+              accessibilityState={{ selected: focused || (item.id === 'more' && moreOpen) }}
               accessibilityLabel={item.id === 'more' ? t('nav.moreServicesAria') : label}
               onPress={() => {
                 // Plus → bottom sheet « Tous les services » (web MobileMoreDrawer), pas la page /moxt.

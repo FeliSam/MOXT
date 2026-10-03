@@ -110,12 +110,26 @@ export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () 
   return (
     <Modal visible={open} animationType="slide" transparent onRequestClose={handleClose}>
       {/* Sur le web la modale sort de ThemeRoot : on repose les variables --app-*. */}
-      <View style={[{ flex: 1, backgroundColor: isDark ? 'rgba(0,0,0,0.82)' : 'rgba(2,6,23,0.82)' }, cssVars]}>
-      <Pressable style={{ flex: 1 }} onPress={handleClose} />
+      <View
+        style={[
+          {
+            flex: 1,
+            justifyContent: 'flex-end',
+            backgroundColor: isDark ? 'rgba(0, 0, 0, 0.82)' : 'rgba(2, 6, 23, 0.82)',
+          },
+          cssVars,
+        ]}>
+      <Pressable
+        accessibilityLabel="Fermer le panneau"
+        onPress={handleClose}
+        style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
+      />
 
       <View
+        testID="more-services-sheet"
         style={{
           maxHeight: '88%',
+          width: '100%',
           borderTopLeftRadius: 22,
           borderTopRightRadius: 22,
           backgroundColor: colors.surface,
@@ -123,6 +137,7 @@ export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () 
           borderBottomWidth: 0,
           borderColor: colors.border,
           paddingBottom: Math.max(insets.bottom, 12),
+          zIndex: 2,
         }}>
         <View style={{ alignItems: 'center', paddingTop: 10 }}>
           <View style={{ height: 4, width: 36, borderRadius: 999, backgroundColor: colors.borderMd }} />
@@ -163,7 +178,7 @@ export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () 
           </View>
         </View>
 
-        <ScrollView style={{ maxHeight: '50%', backgroundColor: colors.surface }} contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 16, paddingBottom: 8 }}>
+        <ScrollView style={{ flexGrow: 1, maxHeight: 480, backgroundColor: colors.surface }} contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 16, paddingBottom: 8 }}>
           {!groups.length ? (
             <Text style={{ paddingVertical: 40, textAlign: 'center', fontSize: 14, color: colors.textMuted }}>
               {translateLabel('Aucun service ne correspond à votre recherche.')}

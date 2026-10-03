@@ -21,7 +21,7 @@ import {
   Gift,
   Layers,
   BookOpen,
-  CircleHelp,
+  HelpCircle,
   Star,
   Shield,
 } from 'lucide-react-native';
@@ -140,7 +140,7 @@ export const navigationGroups: MoreServiceGroup[] = [
       item('jobs', 'Jobs', '/jobs', '💼', Briefcase, { devModule: 'jobs' }),
       item('events', 'Evenements', '/events', '📅', CalendarDays, { devModule: 'events' }),
       item('guide', 'Guide', '/guide', '📖', BookOpen),
-      item('product-help', 'Aide Moxt', '/aide', '❓', CircleHelp),
+      item('product-help', 'Aide Moxt', '/aide', '❓', HelpCircle),
     ],
   },
   {
