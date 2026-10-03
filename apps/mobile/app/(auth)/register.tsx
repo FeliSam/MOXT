@@ -11,8 +11,10 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router, useLocalSearchParams } from 'expo-router';
 
+import { PENDING_INVITE_KEY } from '@/services/inviteCode';
 import { openLink } from '@/utils/appLinks';
 
 import { useLanguage } from '@/providers/LanguageProvider';
@@ -52,6 +54,12 @@ export default function RegisterScreen() {
   const { translateLabel } = useLanguage();
   const { error, status } = useAppSelector((state) => state.auth);
   const registrationEmail = useAppSelector((state) => state.auth.registrationEmail);
+
+  const invite = useLocalSearchParams<{ invite?: string }>().invite;
+  useEffect(() => {
+    const code = String(invite || '').trim();
+    if (code) void AsyncStorage.setItem(PENDING_INVITE_KEY, code);
+  }, [invite]);
 
   const [step, setStep] = useState(0);
 

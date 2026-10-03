@@ -82,6 +82,9 @@ export function resolveNativePath(raw: string | null | undefined): string | null
   const skipped = new Set(['publish', 'mine', 'create', 'setup', 'applications', 'history', 'new', 'edit']);
   const id = (match: RegExpMatchArray) => match[1];
   const rules: [RegExp, (match: RegExpMatchArray) => string | null][] = [
+    [/^\/jobs\/applications$/, () => '/jobs/applications'],
+    [/^\/businesses\/setup$/, () => '/organization/setup'],
+    [/^\/p2p\/([^/]+)\/edit$/, (match) => `/p2p/edit/${id(match)}`],
     [/^\/users\/([^/]+)(?:\/(?:publications|annonces))?$/, (match) => `/users/${id(match)}/publications`],
     [/^\/businesses\/([^/]+)$/, (match) => (skipped.has(id(match)) ? null : `/organization/${id(match)}`)],
     [/^\/organization\/([^/]+)$/, (match) => `/organization/${id(match)}`],
@@ -93,7 +96,10 @@ export function resolveNativePath(raw: string | null | undefined): string | null
     [/^\/events\/([^/]+)$/, (match) => (skipped.has(id(match)) ? null : `/events/${id(match)}`)],
     [/^\/p2p\/orders\/([^/]+)$/, (match) => `/p2p/orders/${id(match)}`],
     [/^\/p2p\/([^/]+)$/, (match) => (id(match) === 'publish' ? '/p2p/publish' : `/p2p/${id(match)}`)],
-    [/^\/transfers\/([^/]+)\/receive$/, (match) => `/transfer/${id(match)}`],
+    [/^\/transfers\/([^/]+)\/receive$/, (match) => `/transfer/receive/${id(match)}`],
+    [/^\/invite\/([^/]+)$/, (match) => `/invite/${id(match)}`],
+    [/^\/guide\/([^/]+)$/, (match) => `/guide/${id(match)}`],
+    [/^\/aide\/([^/]+)$/, (match) => `/aide/${id(match)}`],
     [/^\/transfers\/([^/]+)$/, (match) => {
       if (id(match) === 'new') return '/transfer/wizard';
       if (id(match) === 'history') return '/(tabs)/transfers';
@@ -124,6 +130,19 @@ export function resolveNativePath(raw: string | null | undefined): string | null
     [/^\/activities$/, () => '/activities'],
     [/^\/documents$/, () => '/documents'],
     [/^\/security$/, () => '/security'],
+    [/^\/addresses$/, () => '/addresses'],
+    [/^\/discover$/, () => '/discover'],
+    [/^\/welcome$/, () => '/welcome'],
+    [/^\/forgot-password$/, () => '/forgot-password'],
+    [/^\/reset-password$/, () => '/reset-password'],
+    [/^\/account\/status$/, () => '/account/status'],
+    [/^\/settings\/version$/, () => '/version'],
+    [/^\/exchangers$/, () => '/exchangers'],
+    [/^\/exchanger$/, () => '/exchanger'],
+    [/^\/exchangers\/([^/]+)$/, (match) => `/exchangers/${id(match)}`],
+    [/^\/professional$/, () => '/professional'],
+    [/^\/guide$/, () => '/guide'],
+    [/^\/aide$/, () => '/aide'],
     [/^\/videos$/, () => feedQuery('video', null)],
     [/^\/news$/, () => feedQuery('post', null)],
     [/^\/p2p$/, () => '/p2p'],

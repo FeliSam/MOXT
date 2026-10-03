@@ -249,7 +249,7 @@ export default function P2PDetailScreen() {
         isOwner={isOwner}
         relatedType="p2p"
         relatedPath={`/p2p/${offer.id}`}
-        editTo={isOwner ? `/publications/edit?id=${offer.id}&type=other` : undefined}
+        editTo={isOwner ? `/p2p/edit/${offer.id}` : undefined}
       />
       <ReportSheet
         open={reportOpen}

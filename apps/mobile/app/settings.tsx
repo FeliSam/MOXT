@@ -294,6 +294,9 @@ export default function SettingsScreen() {
         <Card>
           <Text className="text-base font-extrabold text-app-text dark:text-zinc-50 mb-2">Version de l'application</Text>
           <Text className="text-[13px] text-app-text-muted dark:text-zinc-400">MOXT Mobile · 1.0.0</Text>
+          <Button variant="secondary" className="mt-3 self-start" onPress={() => router.push('/version' as never)}>
+            Voir le journal
+          </Button>
         </Card>
 
         {/* ── Zone sensible ── */}

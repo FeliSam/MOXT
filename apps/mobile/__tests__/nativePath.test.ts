@@ -13,6 +13,15 @@ describe('liens moxtapp vers les écrans natifs', () => {
     expect(resolveNativePath('/security')).toBe('/security');
     expect(resolveNativePath('/documents')).toBe('/documents');
     expect(resolveNativePath('/activities')).toBe('/activities');
+    expect(resolveNativePath('/jobs/applications')).toBe('/jobs/applications');
+    expect(resolveNativePath('/businesses/setup')).toBe('/organization/setup');
+    expect(resolveNativePath('/p2p/off1/edit')).toBe('/p2p/edit/off1');
+    expect(resolveNativePath('/transfers/tr1/receive')).toBe('/transfer/receive/tr1');
+    expect(resolveNativePath('/invite/MOXT1')).toBe('/invite/MOXT1');
+    expect(resolveNativePath('/discover')).toBe('/discover');
+    expect(resolveNativePath('/guide/art1')).toBe('/guide/art1');
+    expect(resolveNativePath('/aide')).toBe('/aide');
+    expect(resolveNativePath('/exchangers/EXC-MOXT')).toBe('/exchangers/EXC-MOXT');
     expect(resolveNativePath('/parcels/col1')).toBe('/parcel/col1');
     expect(resolveNativePath('/p2p/off1')).toBe('/p2p/off1');
     expect(resolveNativePath('/transfers/tr1')).toBe('/transfer/tr1');

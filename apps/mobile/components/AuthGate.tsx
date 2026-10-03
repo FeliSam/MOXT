@@ -24,6 +24,10 @@ const PUBLIC_ROUTE_PATTERNS: RegExp[] = [
   /^\/p2p\/(?!publish$)[^/]+$/,
   /^\/status\/[^/]+$/,
   /^\/users\/[^/]+$/,
+  /^\/welcome$/,
+  /^\/discover$/,
+  /^\/invite\/[^/]+$/,
+  /^\/reset-password$/,
 ];
 
 export function isPublicPath(pathname: string) {
@@ -44,7 +48,8 @@ export function AuthGate({ children }: { children: ReactNode }) {
     const inAuthGroup = segments[0] === ('(auth)' as string);
 
     if (status === 'anonymous' && !inAuthGroup && !isPublicPath(pathname)) {
-      router.replace('/login' as never);
+      const guestHome = pathname === '/' || pathname === '/index';
+      router.replace((guestHome ? '/welcome' : '/login') as never);
       return;
     }
 

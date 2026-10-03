@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, usePathname, router } from 'expo-router';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 
+import { canClientDeclareReception } from '@moxt/shared/domain/transferActionUtils.js';
 import { transferFromRemoteRow } from '@moxt/shared/domain/transferRemote.js';
 
 import {
@@ -248,6 +249,12 @@ export default function TransferDetailScreen() {
         </View>
 
         {/* Next step */}
+        {canClientDeclareReception(t, Boolean(user?.id && (t.userId === user.id || t.senderId === user.id))) ? (
+          <Pressable className={twTransfer.navNext} onPress={() => router.push(`/transfer/receive/${t.id}` as never)}>
+            <Text className={twTransfer.navNextText}>J’ai reçu les fonds</Text>
+          </Pressable>
+        ) : null}
+
         {nextStep ? (
           <View className={twTransfer.detailCard}>
             <Text className={twTransfer.nextEyebrow}>PROCHAINE ÉTAPE</Text>
