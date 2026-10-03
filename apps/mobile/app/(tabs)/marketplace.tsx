@@ -24,6 +24,7 @@ import { CATEGORIES_BY_TYPE, LISTING_TYPES_META } from '@/components/marketplace
 import { buildMarketplaceDiscovery, rankMarketplaceVideos } from '@/components/marketplace/marketplaceFeed';
 import { AppText } from '@/components/ui/AppText';
 import { useLanguage } from '@/providers/LanguageProvider';
+import { clearSearchHistory, mergeSearchTerm, readSearchHistory, saveSearchTerm } from '@/services/searchHistory';
 import { loadListings } from '@/store/marketplace';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useIsDark, useShadows, useThemeColors } from '@/theme/ThemeContext';
@@ -202,9 +203,28 @@ export default function MarketplaceScreen() {
     if (authStatus !== 'loading') dispatch(loadListings());
   }, [dispatch, authStatus]);
 
+  const [history, setHistory] = useState<string[]>([]);
   const update = (patch: Partial<Filters>) => setFilters((cur) => ({ ...cur, ...patch }));
-  const searching = Boolean(filters.query.trim());
-  const searchTerms = useMemo(() => (searching ? [filters.query.trim()] : []), [filters.query, searching]);
+  const searching = Boolean(filters.query.trim() || filters.category || filters.city || filters.min || filters.max);
+  const searchTerms = useMemo(() => {
+    const live = filters.query.trim();
+    if (live.length >= 2 && !history.some((term) => term.toLocaleLowerCase('fr') === live.toLocaleLowerCase('fr'))) {
+      return [live, ...history];
+    }
+    return history;
+  }, [filters.query, history]);
+
+  useEffect(() => {
+    readSearchHistory().then(setHistory);
+  }, []);
+
+  function onQueryChange(query: string) {
+    update({ query });
+    if (query.trim().length >= 2) {
+      setHistory((current) => mergeSearchTerm(current, query));
+      saveSearchTerm(query).then(setHistory);
+    }
+  }
 
   const feed = useMemo(() => {
     const q = filters.query.trim().toLowerCase();
@@ -325,7 +345,7 @@ export default function MarketplaceScreen() {
                     placeholder="Rechercher : iPhone, coiffure, appartement, électricien..."
                     placeholderTextColor={colors.textFaint}
                     value={filters.query}
-                    onChangeText={(query) => update({ query })}
+                    onChangeText={onQueryChange}
                     numberOfLines={1}
                     className="rounded-xl pl-11 pr-12 text-base text-app-text"
                     style={{ minHeight: 52, backgroundColor: community.muted }}
@@ -356,6 +376,23 @@ export default function MarketplaceScreen() {
                   ) : null}
                 </Pressable>
               </View>
+              {history.length ? (
+                <View className="mt-3 flex-row flex-wrap items-center gap-2">
+                  <AppText className="text-xs font-bold text-app-text-muted">Récent</AppText>
+                  {history.map((term) => (
+                    <Pressable key={term} onPress={() => onQueryChange(term)} className="rounded-full bg-app-surface-muted px-3 py-1.5">
+                      <AppText className="text-xs font-semibold text-app-text">{term}</AppText>
+                    </Pressable>
+                  ))}
+                  <Pressable
+                    onPress={() => {
+                      clearSearchHistory();
+                      setHistory([]);
+                    }}>
+                    <AppText className="text-xs font-bold text-red-600">Effacer</AppText>
+                  </Pressable>
+                </View>
+              ) : null}
 
               {advancedOpen ? (
                 <View className="mt-4 rounded-2xl border border-app-border p-4" style={{ backgroundColor: community.muted, borderColor: community.border }}>

@@ -27,12 +27,11 @@ import {
   User,
   type LucideIcon,
 } from 'lucide-react-native';
-import { isPhoneVerified } from '@moxt/shared/auth/userSecurity.js';
 import { fetchReviewsForTargetScope } from '@moxt/shared/services/reviewsService.js';
 import { REVIEW_TARGET_TYPES, calculateAggregateRating, filterAggregateReviews } from '@moxt/shared/utils/reviewUtils.js';
 
 import { WebBadge } from '@/components/dashboard/webUi';
-import { DsAlert } from '@/components/ds/Alert';
+import { PhoneVerificationCard } from '@/components/security/PhoneVerificationCard';
 import { AvatarBadge } from '@/components/profile/AvatarBadge';
 import { ProfilePageShell } from '@/components/profile/ProfilePageShell';
 import { AppText } from '@/components/ui/AppText';
@@ -59,7 +58,7 @@ const SECTIONS: { id: string; titleKey: string; links: LinkItem[] }[] = [
       { labelKey: 'profile.links.personalInfo', icon: User, route: '/profile/edit' },
       { labelKey: 'profile.links.favorites', icon: Heart, route: '/favorites' },
       { labelKey: 'profile.links.subscriptions', icon: Bell, route: '/listing/mine?panel=subscriptions' },
-      { labelKey: 'profile.links.activities', icon: Activity, route: null },
+      { labelKey: 'profile.links.activities', icon: Activity, route: '/activities' },
       { labelKey: 'profile.links.referral', icon: Gift, route: '/referral' },
     ],
   },
@@ -68,7 +67,7 @@ const SECTIONS: { id: string; titleKey: string; links: LinkItem[] }[] = [
     titleKey: 'profile.sections.trust',
     links: [
       { labelKey: 'profile.links.verification', icon: CheckCircle, route: '/kyc' },
-      { labelKey: 'profile.links.security', icon: Shield, route: '/settings' },
+      { labelKey: 'profile.links.security', icon: Shield, route: '/security' },
       { labelKey: 'profile.links.settings', icon: Settings, route: '/settings' },
     ],
   },
@@ -76,7 +75,7 @@ const SECTIONS: { id: string; titleKey: string; links: LinkItem[] }[] = [
     id: 'documents',
     titleKey: 'profile.sections.documents',
     links: [
-      { labelKey: 'profile.links.documents', icon: FileText, route: '/kyc' },
+      { labelKey: 'profile.links.documents', icon: FileText, route: '/documents' },
       { labelKey: 'profile.links.receipts', icon: FileText, route: '/receipts' },
       { labelKey: 'profile.links.disputes', icon: AlertTriangle, route: '/disputes' },
       { labelKey: 'profile.links.support', icon: HelpCircle, route: '/support' },
@@ -156,7 +155,6 @@ export default function ProfileScreen() {
   const completion = completionPercent(user);
   const roleLabel = ROLE_KEYS[user.role] ? t(ROLE_KEYS[user.role]) : user.role || t('profile.roles.user');
   const avatarUri = avatarDisplayUrl(user.avatarUrl, 160);
-  const phoneVerified = isPhoneVerified(user);
   const accentText = isDark ? brand[300] : brand[700];
   const stats: { key: string; labelKey: string; icon: LucideIcon; value: number; route: string }[] = [
     { key: 'transfers', labelKey: 'profile.stats.transfers', icon: Repeat, value: transfersCount, route: '/(tabs)/transfers' },
@@ -277,18 +275,7 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* PhoneVerificationCard : état vérifié (sinon renvoi vers la vérification) */}
-      {phoneVerified ? (
-        <DsAlert variant="success" title={t('security.phone.verifiedTitle')}>
-          {t('security.phone.verifiedBody', { phone: user.phone })}
-        </DsAlert>
-      ) : (
-        <Pressable onPress={() => router.push('/kyc' as never)}>
-          <DsAlert variant="warning" title={t('security.phone.title')}>
-            {t('profile.hero.verifyCta')}
-          </DsAlert>
-        </Pressable>
-      )}
+      <PhoneVerificationCard />
 
       {/* Réputation */}
       <View className="rounded-card-lg border border-app-border bg-app-surface p-4" style={[shadows.card, { gap: 12 }]}>
@@ -373,7 +360,7 @@ export default function ProfileScreen() {
               </AppText>
             </View>
           </View>
-          <Pressable onPress={() => router.push('/settings' as never)}>
+          <Pressable onPress={() => router.push('/security' as never)}>
             <AppText className="text-sm font-semibold" style={{ color: accentText }}>
               {t('profile.security.manage')}
             </AppText>

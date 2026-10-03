@@ -15,6 +15,7 @@ import { formatShortDate } from '@moxt/shared/utils/formatters.js';
 
 import { Input, PageHeader } from '@/components/ui';
 import { ListCard } from '@/components/ui/ListCard';
+import { VerifiedIcon } from '@/components/ui/VerifiedIcon';
 import { supabase } from '@/services/supabase';
 import { useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
@@ -24,10 +25,14 @@ type JobItem = {
   id: string;
   title: string;
   company?: string;
+  publisherName?: string;
   city?: string;
+  location?: string;
   type?: string;
   status?: string;
+  businessId?: string | null;
   created_at?: string;
+  createdAt?: string;
 };
 
 export default function JobsScreen() {
@@ -36,6 +41,7 @@ export default function JobsScreen() {
   const [jobs, setJobs] = useState<JobItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState('');
+  const [tab, setTab] = useState<'active' | 'archived'>('active');
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchJobs = useCallback(async () => {
@@ -43,11 +49,15 @@ export default function JobsScreen() {
     setLoading(true);
     const { data } = await supabase
       .from('jobs')
-      .select('id, title, company, city, type, status, created_at')
-      .eq('status', 'active')
+      .select('id, title, company, city, type, status, business_id, created_at')
       .order('created_at', { ascending: false })
       .limit(50);
-    setJobs((data as JobItem[]) || []);
+    setJobs(
+      ((data as (JobItem & { business_id?: string | null })[]) || []).map((row) => ({
+        ...row,
+        businessId: row.business_id,
+      })),
+    );
     setLoading(false);
   }, []);
 
@@ -62,15 +72,18 @@ export default function JobsScreen() {
   }, [fetchJobs]);
 
   const filtered = useMemo(() => {
-    if (!query.trim()) return jobs;
-    const q = query.toLowerCase();
-    return jobs.filter(
-      (j) =>
-        j.title.toLowerCase().includes(q) ||
-        (j.company || '').toLowerCase().includes(q) ||
-        (j.city || '').toLowerCase().includes(q),
-    );
-  }, [jobs, query]);
+    const q = query.trim().toLowerCase();
+    return jobs.filter((job) => {
+      const archived = job.status !== 'active';
+      if (tab === 'active' ? archived : !archived) return false;
+      if (!q) return true;
+      return `${job.title} ${job.company || ''} ${job.publisherName || ''} ${job.city || ''} ${job.location || ''}`
+        .toLowerCase()
+        .includes(q);
+    });
+  }, [jobs, query, tab]);
+  const activeCount = jobs.filter((job) => job.status === 'active').length;
+  const archivedCount = jobs.length - activeCount;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -83,8 +96,28 @@ export default function JobsScreen() {
       <PageHeader
         eyebrow="Recrutement"
         title="Jobs"
-        description={`${filtered.length} offre(s) active(s)`}
+        description={`${activeCount} offre(s) active(s)`}
       />
+      <View style={styles.tabs}>
+        {(
+          [
+            { key: 'active' as const, label: 'Actives', count: activeCount },
+            { key: 'archived' as const, label: 'Archives', count: archivedCount },
+          ]
+        ).map((item) => {
+          const on = tab === item.key;
+          return (
+            <Pressable
+              key={item.key}
+              onPress={() => setTab(item.key)}
+              style={[styles.tab, { backgroundColor: on ? brand[700] : colors.surfaceMuted }]}>
+              <Text style={{ color: on ? '#fff' : colors.text, fontWeight: '800', fontSize: 13 }}>
+                {item.label} · {item.count}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
       <View style={styles.searchWrap}>
         <Input
           placeholder="Rechercher titre, entreprise, ville..."
@@ -119,18 +152,22 @@ export default function JobsScreen() {
                   {item.company ? 'ENTREPRISE' : 'PARTICULIER'}
                 </Text>
               </View>
+              {tab === 'archived' ? (
+                <Text style={[styles.typeBadgeText, { color: colors.textMuted }]}>Archivé</Text>
+              ) : null}
               <View style={styles.cardBody}>
                 <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={2}>
                   {item.title}
                 </Text>
-                {item.company ? (
-                  <Text style={[styles.cardCompany, { color: colors.primary }]}>
-                    {item.company}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Text style={[styles.cardCompany, { color: colors.primary }]} numberOfLines={1}>
+                    {item.company || item.publisherName || 'Particulier'}
                   </Text>
-                ) : null}
+                  {item.businessId ? <VerifiedIcon size={14} /> : null}
+                </View>
                 <Text style={[styles.cardMeta, { color: colors.textMuted }]}>
-                  {item.city || 'Russie'}
-                  {item.created_at ? ` · ${formatShortDate(item.created_at)}` : ''}
+                  {item.city || item.location || 'Russie'}
+                  {item.created_at || item.createdAt ? ` · ${formatShortDate(item.created_at || item.createdAt)}` : ''}
                 </Text>
               </View>
             </ListCard>
@@ -156,6 +193,8 @@ const styles = StyleSheet.create({
   backRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.xs },
   backArrow: { fontSize: 20 },
   backLabel: { fontSize: 16, fontWeight: '600' },
+  tabs: { flexDirection: 'row', gap: 8, paddingHorizontal: spacing.xl, marginBottom: spacing.sm },
+  tab: { flex: 1, minHeight: 40, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   searchWrap: { paddingHorizontal: spacing.xl, marginBottom: spacing.sm },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xl, gap: spacing.sm },

@@ -18,11 +18,12 @@ import {
   formatTransferDate,
 } from '@moxt/shared/utils/transfers.js';
 
+import { isArchivedTransferStatus } from '@/components/dashboard/dashboardInbox';
 import { TransferCalculatorModal } from '@/components/transfers/TransferCalculatorModal';
 import { TransferPageHeader } from '@/components/transfers/TransferPageHeader';
+import { TransferStatusBadge } from '@/components/transfers/TransferStatusBadge';
 import { ListCard } from '@/components/ui/ListCard';
 import { BOTTOM_NAV_PADDING } from '@/components/navigation/BottomNavBar';
-import { TRANSFER_STATUS_LABELS } from '@/constants/transfers';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { loadDashboardData } from '@/store/dashboard';
 import { loadCoreData } from '@/store/data';
@@ -50,9 +51,6 @@ function TransferHistoryCard({ transfer }: { transfer: TransferItem }) {
   const recipientName = [transfer.recipient?.firstName, transfer.recipient?.lastName]
     .filter(Boolean)
     .join(' ');
-  const st =
-    TRANSFER_STATUS_LABELS[transfer.status ?? 'pending_payment'] ||
-    TRANSFER_STATUS_LABELS.pending_payment;
   const totalToPay = (transfer as any).totalToPay ?? (Number(transfer.amountSent || 0) + Number(transfer.fee || 0));
   const currFrom = transfer.currencyFrom || 'XOF';
 
@@ -61,8 +59,8 @@ function TransferHistoryCard({ transfer }: { transfer: TransferItem }) {
       finance
       className="relative"
       onPress={() => router.push(`/transfer/${transfer.id}` as any)}>
-      <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>
-        <Text style={[styles.statusText, { color: st.color }]}>{st.label}</Text>
+      <View style={styles.statusBadge}>
+        <TransferStatusBadge status={transfer.status} />
       </View>
 
       <Text style={[styles.ref, { color: colors.text }]}>{transfer.id}</Text>
@@ -129,6 +127,7 @@ export default function TransfersScreen() {
   const authStatus = useAppSelector((state) => state.auth.status);
   const [query, setQuery] = useState('');
   const [tab, setTab] = useState<'transfers' | 'p2p'>('transfers');
+  const [archive, setArchive] = useState<'active' | 'archived'>('active');
   const [refreshing, setRefreshing] = useState(false);
   const [calculatorOpen, setCalculatorOpen] = useState(false);
 
@@ -137,6 +136,8 @@ export default function TransfersScreen() {
     const normalizedQuery = query.trim().toLowerCase();
     return items.filter((transfer) => {
       if (transfer.userId && transfer.userId !== user.id) return false;
+      const archived = isArchivedTransferStatus(transfer.status);
+      if (archive === 'archived' ? !archived : archived) return false;
       if (!normalizedQuery) return true;
       const recipientName = `${transfer.recipient?.firstName || ''} ${transfer.recipient?.lastName || ''}`.toLowerCase();
       return (
@@ -149,7 +150,7 @@ export default function TransfersScreen() {
           new Date(String(b.createdAt || (b as { updatedAt?: string }).updatedAt || 0)).getTime() -
           new Date(String(a.createdAt || (a as { updatedAt?: string }).updatedAt || 0)).getTime(),
       );
-  }, [items, query, user?.id]);
+  }, [archive, items, query, user?.id]);
 
   const myP2pOrders = useMemo(() => {
     if (!user?.id) return [];
@@ -230,6 +231,29 @@ export default function TransfersScreen() {
             <Text style={[styles.searchHint, { color: colors.textFaint }]}>
               Recherche dynamique · {(tab === 'transfers' ? visibleTransfers : myP2pOrders).length} résultat(s)
             </Text>
+
+            {tab === 'transfers' ? (
+              <View style={[styles.tabs, { backgroundColor: colors.surfaceMuted, borderColor: colors.border }]}>
+                {(
+                  [
+                    { key: 'active' as const, label: 'Actifs' },
+                    { key: 'archived' as const, label: 'Archivés' },
+                  ]
+                ).map((item) => {
+                  const active = archive === item.key;
+                  return (
+                    <Pressable
+                      key={item.key}
+                      onPress={() => setArchive(item.key)}
+                      style={[styles.tab, active ? { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border } : null]}>
+                      <Text style={{ color: active ? colors.text : colors.textMuted, fontWeight: '900', fontSize: 13 }}>
+                        {item.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
 
             <View style={[styles.tabs, { backgroundColor: colors.surfaceMuted, borderColor: colors.border }]}>
               {(

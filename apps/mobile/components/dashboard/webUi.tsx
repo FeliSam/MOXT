@@ -35,7 +35,7 @@ export function WebCard({
 }
 
 /** DashboardSectionHeading du web : sur-titre « Découvrir MOXT », titre 2xl, flèche ronde. */
-export function WebSectionHeading({ title, link }: { title: string; link: string }) {
+export function WebSectionHeading({ title, link, linkLabel }: { title: string; link: string; linkLabel?: string }) {
   const { t } = useLanguage();
   const colors = useThemeColors();
   const shadows = useShadows();
@@ -56,6 +56,7 @@ export function WebSectionHeading({ title, link }: { title: string; link: string
         onPress={() => router.push(link as never)}
         className="flex-row items-center gap-2 rounded-2xl border border-app-border bg-white px-3 py-2 dark:bg-app-surface"
         style={shadows.card}>
+        {linkLabel ? <AppText className="text-xs font-black text-app-text">{linkLabel}</AppText> : null}
         <ArrowRight size={14} color={colors.text} strokeWidth={2} />
       </Pressable>
     </View>

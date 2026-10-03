@@ -3,10 +3,8 @@ import { Pressable, ScrollView, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { CheckCircle } from 'lucide-react-native';
 
-import { p2pReceivedFromOffered } from '@moxt/shared/domain/p2pRules.js';
-import { formatCurrency } from '@moxt/shared/utils/formatters.js';
-
 import { AppChrome } from '@/components/chrome/AppChrome';
+import { P2POfferCard } from '@/components/dashboard/P2POfferCard';
 import { AppText } from '@/components/ui/AppText';
 import { useAppSelector } from '@/store/store';
 import { useTheme } from '@/theme/ThemeContext';
@@ -21,13 +19,16 @@ const CHECKLIST = [
 /** Catalogue P2P (P2PPage) : bannière, checklist, onglets Actives / Archives. */
 export default function P2PScreen() {
   const { colors, isDark } = useTheme();
+  const user = useAppSelector((state) => state.auth.user);
   const offers = useAppSelector((state) => state.dashboard.p2pOffers);
+  const orders = useAppSelector((state) => state.dashboard.p2pOrders);
+  const reviews = useAppSelector((state) => state.dashboard.reviews);
   const [query, setQuery] = useState('');
   const [tab, setTab] = useState<'active' | 'archived'>('active');
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     return offers
-      .filter((offer) => (tab === 'active' ? offer.status === 'active' || !offer.status : offer.status === 'archived' || offer.status === 'accepted'))
+      .filter((offer) => (tab === 'active' ? offer.status === 'active' || !offer.status : offer.status !== 'active' && Boolean(offer.status)))
       .filter((offer) => {
         if (!q) return true;
         return `${offer.fromCurrency} ${offer.toCurrency} ${offer.ownerName || ''} ${offer.method || ''}`.toLowerCase().includes(q);
@@ -84,20 +85,15 @@ export default function P2PScreen() {
             );
           })}
         </View>
-        {visible.map((offer) => {
-          const received = p2pReceivedFromOffered(offer.amount, offer.rate);
-          return (
-            <Pressable key={offer.id} onPress={() => router.push(`/p2p/${offer.id}` as never)} className="border border-app-border bg-app-surface" style={{ borderRadius: 16, padding: 14, gap: 4 }}>
-              <AppText className="text-base font-black text-app-text">
-                {formatCurrency(offer.amount, offer.fromCurrency, 'fr-FR')} → {offer.toCurrency}
-              </AppText>
-              <AppText className="text-sm text-app-text-muted">
-                {received ? `Équivalent ${formatCurrency(received, offer.toCurrency, 'fr-FR')}` : `Taux ${offer.rate}`}
-                {offer.ownerName ? ` · ${offer.ownerName}` : ''}
-              </AppText>
-            </Pressable>
-          );
-        })}
+        {visible.map((offer) => (
+          <P2POfferCard
+            key={offer.id}
+            offer={offer}
+            orders={orders}
+            reviews={reviews}
+            ownerVerified={Boolean(offer.businessId) || (offer.ownerId === user?.id && Boolean(user?.verified))}
+          />
+        ))}
         {!visible.length ? <AppText className="text-sm text-app-text-muted">Aucune offre pour cet onglet.</AppText> : null}
       </ScrollView>
     </AppChrome>

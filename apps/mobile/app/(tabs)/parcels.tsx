@@ -15,6 +15,7 @@ import { router } from 'expo-router';
 import { formatCurrency, formatShortDate } from '@moxt/shared/utils/formatters.js';
 
 import { ListCard } from '@/components/ui/ListCard';
+import { VerifiedIcon } from '@/components/ui/VerifiedIcon';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, radii, spacing } from '@/theme/colors';
@@ -52,9 +53,12 @@ function ParcelCard({ parcel, archived = false }: { parcel: ParcelItem; archived
           </Text>
         ) : null}
         {/* Owner */}
-        <Text style={[styles.parcelOwner, { color: colors.text }]} numberOfLines={1}>
-          {parcel.ownerName || parcel.id}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingRight: 88 }}>
+          <Text style={[styles.parcelOwner, { color: colors.text, flexShrink: 1 }]} numberOfLines={1}>
+            {parcel.ownerName || parcel.id}
+          </Text>
+          {isCompany ? <VerifiedIcon size={14} /> : null}
+        </View>
 
         {/* Web : bloc route pastel avec flèche circulaire verte */}
         <View style={[styles.routeBlock, { backgroundColor: colors.surfaceMuted }]}>

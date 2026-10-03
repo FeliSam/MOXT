@@ -9,6 +9,10 @@ describe('liens moxtapp vers les écrans natifs', () => {
     expect(resolveNativePath('/news/post1')).toBe('/news/post1');
     expect(resolveNativePath('/jobs/job1')).toBe('/jobs/job1');
     expect(resolveNativePath('/events/evt1')).toBe('/events/evt1');
+    expect(resolveNativePath('/events')).toBe('/events');
+    expect(resolveNativePath('/security')).toBe('/security');
+    expect(resolveNativePath('/documents')).toBe('/documents');
+    expect(resolveNativePath('/activities')).toBe('/activities');
     expect(resolveNativePath('/parcels/col1')).toBe('/parcel/col1');
     expect(resolveNativePath('/p2p/off1')).toBe('/p2p/off1');
     expect(resolveNativePath('/transfers/tr1')).toBe('/transfer/tr1');

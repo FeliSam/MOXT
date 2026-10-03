@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { Bell, Check, MessageSquare, Star, Zap } from 'lucide-react-native';
 
 import { AppText } from '@/components/ui/AppText';
+import { LinkifiedText } from '@/components/ui/LinkifiedText';
 import { useLanguage } from '@/providers/LanguageProvider';
 import {
   archiveNotification,
@@ -117,7 +118,11 @@ export default function NotificationsTabScreen() {
                       </AppText>
                     </View>
                   </View>
-                  <AppText className="text-sm leading-5 text-app-text-muted">{item.message}</AppText>
+                  <LinkifiedText
+                    text={item.message}
+                    style={{ fontSize: 14, lineHeight: 20, color: colors.textMuted }}
+                    linkStyle={{ color: colors.accent }}
+                  />
                   {item.createdAt ? (
                     <AppText className="text-[11px] text-app-text-faint">
                       {new Date(item.createdAt).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}

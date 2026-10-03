@@ -10,7 +10,8 @@ import { DashboardCalcBand } from '@/components/dashboard/DashboardCalcBand';
 import { DashboardDiscoverySection } from '@/components/dashboard/DashboardDiscoverySection';
 import { DashboardOverviewPanels } from '@/components/dashboard/DashboardOverviewPanels';
 import { DashboardSearchSection } from '@/components/dashboard/DashboardSearchSection';
-import { DashboardTodoInbox, type TodoItem } from '@/components/dashboard/DashboardTodoInbox';
+import { buildDashboardTodos, buildOnboardingSteps } from '@/components/dashboard/dashboardInbox';
+import { DashboardTodoInbox } from '@/components/dashboard/DashboardTodoInbox';
 import { P2POfferCard } from '@/components/dashboard/P2POfferCard';
 import { StatusRail } from '@/components/dashboard/StatusRail';
 import { WebSectionHeading } from '@/components/dashboard/webUi';
@@ -63,12 +64,21 @@ export default function DashboardHomeScreen() {
       ),
     [myTransfers],
   );
-  const todoItems = useMemo<TodoItem[]>(() => {
-    const pending = myTransfers.filter((item) => item.status === TRANSFER_STATUS.PENDING).length;
-    return pending
-      ? [{ labelKey: 'dashboard.overview.todoPendingTransfers', count: pending, to: '/(tabs)/transfers' }]
-      : [];
-  }, [myTransfers]);
+  const parcelRequests = useAppSelector((s) => s.parcels.requests);
+  const todoItems = useMemo(
+    () =>
+      buildDashboardTodos({
+        userId: user?.id,
+        transfers: myTransfers,
+        parcelRequests: [...dash.incomingParcelRequests, ...parcelRequests],
+        jobApplications: dash.jobApplications,
+      }),
+    [dash.incomingParcelRequests, dash.jobApplications, myTransfers, parcelRequests, user?.id],
+  );
+  const onboardingSteps = useMemo(
+    () => (user ? buildOnboardingSteps(user, myTransfers.length) : []),
+    [myTransfers.length, user],
+  );
 
   // Web selectDashboard* : colis actifs, jobs actifs, événements publiés, annonces actives.
   const liveParcels = useMemo(
@@ -110,7 +120,11 @@ export default function DashboardHomeScreen() {
 
         {p2pOffers.length > 0 ? (
           <View style={{ gap: 12 }}>
-            <WebSectionHeading title={t('dashboard.discovery.latestP2P')} link="/search" />
+            <WebSectionHeading
+              title={t('dashboard.discovery.latestP2P')}
+              link="/p2p"
+              linkLabel={t('dashboard.discovery.viewP2P')}
+            />
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -131,7 +145,12 @@ export default function DashboardHomeScreen() {
         ) : null}
 
         <DashboardTodoInbox todoItems={todoItems} />
-        <DashboardOverviewPanels activeTransfers={activeTransfers} rate={rate} user={user} />
+        <DashboardOverviewPanels
+          activeTransfers={activeTransfers}
+          onboardingSteps={onboardingSteps}
+          rate={rate}
+          user={user}
+        />
 
         <View style={{ marginHorizontal: -16 }}>
           <DashboardDiscoverySection

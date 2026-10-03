@@ -32,6 +32,9 @@ export type DashboardEvent = {
   [key: string]: unknown;
 };
 
+export type InboxParcelRequest = { id: string; parcelId?: string; ownerId?: string; status?: string };
+export type InboxJobApplication = { id: string; jobId?: string; status?: string };
+
 type DashboardState = {
   p2pOffers: P2POffer[];
   p2pOrders: Record<string, unknown>[];
@@ -39,6 +42,8 @@ type DashboardState = {
   events: DashboardEvent[];
   jobs: Record<string, unknown>[];
   businessReviews: Record<string, unknown>[];
+  incomingParcelRequests: InboxParcelRequest[];
+  jobApplications: InboxJobApplication[];
   status: 'idle' | 'loading' | 'ready' | 'error';
 };
 
@@ -49,6 +54,8 @@ const initialState: DashboardState = {
   events: [],
   jobs: [],
   businessReviews: [],
+  incomingParcelRequests: [],
+  jobApplications: [],
   status: 'idle',
 };
 
@@ -60,7 +67,17 @@ const PUBLIC_LIMIT = 50;
  * (+ commandes / avis pour la réputation), événements et jobs. Lecture seule.
  */
 export const loadDashboardData = createAsyncThunk('dashboard/load', async (userId: string) => {
-  if (!supabase) return { p2pOffers: [], p2pOrders: [], reviews: [], events: [], jobs: [] };
+  if (!supabase) {
+    return {
+      p2pOffers: [],
+      p2pOrders: [],
+      reviews: [],
+      events: [],
+      jobs: [],
+      incomingParcelRequests: [],
+      jobApplications: [],
+    };
+  }
   const client = supabase;
   const safe = (res: { data: unknown; error: unknown } | null) =>
     res && !res.error && Array.isArray(res.data) ? (res.data as any[]) : [];
@@ -78,17 +95,28 @@ export const loadDashboardData = createAsyncThunk('dashboard/load', async (userI
   ]);
 
   const p2pOffers = safe(offersRes).map(p2pOfferFromRemoteRow).filter(Boolean) as P2POffer[];
+  const jobs = fromRows(safe(jobsRes)) as Record<string, unknown>[];
+  const ownedJobIds = jobs
+    .filter((job) => job.ownerId === userId)
+    .map((job) => String(job.id || ''))
+    .filter(Boolean);
   const ownerIds = [...new Set(p2pOffers.map((offer) => offer.ownerId).filter(Boolean))] as string[];
-  const reviewsRes = ownerIds.length
-    ? await client.from('reviews').select('*').in('target_id', ownerIds).limit(200)
-    : null;
+  const [reviewsRes, parcelReqRes, appsRes] = await Promise.all([
+    ownerIds.length ? client.from('reviews').select('*').in('target_id', ownerIds).limit(200) : Promise.resolve(null),
+    client.from('parcel_requests').select('*').eq('owner_id', userId).eq('status', 'submitted').limit(50),
+    ownedJobIds.length
+      ? client.from('job_applications').select('*').in('job_id', ownedJobIds).eq('status', 'submitted').limit(100)
+      : Promise.resolve(null),
+  ]);
 
   return {
     p2pOffers,
     p2pOrders: safe(ordersRes).map(p2pOrderFromRemoteRow).filter(Boolean),
     reviews: fromRows(safe(reviewsRes)),
     events: fromRows(safe(eventsRes)) as DashboardEvent[],
-    jobs: fromRows(safe(jobsRes)),
+    jobs,
+    incomingParcelRequests: fromRows(safe(parcelReqRes)) as InboxParcelRequest[],
+    jobApplications: fromRows(safe(appsRes)) as InboxJobApplication[],
   };
 });
 

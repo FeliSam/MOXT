@@ -1,13 +1,17 @@
 import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
-import { ChevronRight, CircleCheck, Inbox, Repeat } from 'lucide-react-native';
+import { Briefcase, ChevronRight, CircleCheck, Inbox, Package, Repeat } from 'lucide-react-native';
+
+import type { TodoIcon } from '@/components/dashboard/dashboardInbox';
 
 import { WebCard } from '@/components/dashboard/webUi';
 import { AppText } from '@/components/ui/AppText';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { useTheme } from '@/theme/ThemeContext';
 
-export type TodoItem = { labelKey: string; count: number; to: string };
+export type TodoItem = { labelKey: string; count: number; to: string; icon?: TodoIcon };
+
+const ICONS = { repeat: Repeat, package: Package, briefcase: Briefcase };
 
 /** DashboardTodoInbox du web. */
 export function DashboardTodoInbox({ todoItems }: { todoItems: TodoItem[] }) {
@@ -32,7 +36,10 @@ export function DashboardTodoInbox({ todoItems }: { todoItems: TodoItem[] }) {
               onPress={() => router.push(item.to as never)}
               className="flex-row items-center gap-3 rounded-2xl bg-app-surface-muted p-3">
               <View className="h-9 w-9 items-center justify-center rounded-xl bg-app-surface">
-                <Repeat size={16} color={colors.accent} strokeWidth={2} />
+                {(() => {
+                  const Icon = ICONS[item.icon || 'repeat'];
+                  return <Icon size={16} color={colors.accent} strokeWidth={2} />;
+                })()}
               </View>
               <AppText className="min-w-0 flex-1 text-sm font-bold text-app-text">
                 {t(item.labelKey, { count: item.count })}
