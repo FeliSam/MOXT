@@ -7,6 +7,7 @@ import { businessActivityLabel } from '@moxt/shared/config/businessActivityLabel
 
 import { PageHeader } from '@/components/ui';
 import { BackHeader } from '@/components/chrome/BackHeader';
+import { BusinessVerificationProgress } from '@/components/business/BusinessVerificationProgress';
 import {
   Business,
   loadBusinesses,
@@ -168,7 +169,12 @@ export default function BusinessesScreen() {
           description={`${owned.length} entreprise(s) · ${followed.length} suivie(s)`}
         />
         {owned.length ? (
-          owned.map((business) => <BusinessCard key={business.id} business={business} subtitle="Propriétaire" />)
+          owned.map((business) => (
+            <View key={business.id} style={{ gap: spacing.md }}>
+              <BusinessCard business={business} subtitle="Propriétaire" />
+              <BusinessVerificationProgress business={business} />
+            </View>
+          ))
         ) : (
           <Text style={[styles.emptyText, { color: colors.textMuted }]}>
             Aucune entreprise à votre nom.
