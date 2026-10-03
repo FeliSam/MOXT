@@ -5,6 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { formatCurrency } from '@moxt/shared/utils/formatters.js';
 
 import { TransferCalculatorModal } from '@/components/transfers/TransferCalculatorModal';
+import { DsAlert } from '@/components/ds/Alert';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { TransferWizardStepper } from '@/components/transfers/TransferWizardStepper';
 import {
@@ -76,17 +77,19 @@ export default function TransferWizardScreen() {
 
   const colors = useThemeColors();
   const info = useMemo(() => directionInfo(direction, originCountry), [direction, originCountry]);
+  /** Même logique que NewTransferPage.ownTransferBusiness (propriétaire + Transfert, même non prêt). */
   const ownBusiness = useMemo(
     () =>
       businesses.find((business) => {
+        if (business.ownerId !== user?.id || business.deletedByUserAt) return false;
         const services = business.services;
-        const offersTransfer = Array.isArray(services)
+        return Array.isArray(services)
           ? services.includes('Transfert')
           : String(services || '').includes('Transfert');
-        return offersTransfer && READY.has(String(business.status || '')) && business.ownerId === user?.id;
       }) || null,
     [businesses, user?.id],
   );
+  const ownBusinessReady = Boolean(ownBusiness && READY.has(String(ownBusiness.status || '')));
   const exchangers = useMemo(
     () =>
       businesses
@@ -220,7 +223,7 @@ export default function TransferWizardScreen() {
             title="Créer un transfert"
             description="Choisissez une entreprise validée. Elle recevra l'opération et suivra son traitement jusqu'à la validation."
             actions={
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              <View style={{ width: '100%', flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {[
                   ['Calculatrice', () => setCalculatorOpen(true)],
                   ['Échangeurs', () => router.push('/exchangers' as never)],
@@ -228,14 +231,37 @@ export default function TransferWizardScreen() {
                 ].map(([label, onPress]) => (
                   <Pressable
                     key={String(label)}
+                    accessibilityRole="button"
+                    accessibilityLabel={String(label)}
                     onPress={onPress as () => void}
-                    style={{ borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: colors.surfaceMuted }}>
-                    <Text style={{ color: colors.text, fontWeight: '700', fontSize: 12 }}>{label as string}</Text>
+                    style={{
+                      borderRadius: 12,
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                      backgroundColor: colors.surface,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                    }}>
+                    <Text style={{ color: colors.text, fontWeight: '700', fontSize: 13 }}>{label as string}</Text>
                   </Pressable>
                 ))}
               </View>
             }
           />
+
+          {ownBusiness ? (
+            <DsAlert
+              variant={ownBusinessReady ? 'info' : 'warning'}
+              title={
+                ownBusinessReady
+                  ? 'Votre entreprise de transfert est active'
+                  : 'Votre entreprise est en cours de validation'
+              }>
+              {ownBusinessReady
+                ? `${ownBusiness.name} est visible par les autres membres dans cette liste. En tant que propriétaire, vous ne pouvez pas l'utiliser pour créer un transfert — c'est votre activité de réception, pas un partenaire à sélectionner.`
+                : `${ownBusiness.name} n'apparaît pas encore ici : MOXT doit d'abord valider votre fiche. Une fois le statut « Vérifié », les membres pourront vous choisir comme partenaire de transfert.`}
+            </DsAlert>
+          ) : null}
 
           <TransferWizardStepper step={step} onGoTo={setStep} />
 
@@ -260,7 +286,11 @@ export default function TransferWizardScreen() {
               exchangerId={exchangerId}
               setExchangerId={setExchangerId}
               exchangers={exchangers}
-              ownBusiness={ownBusiness ? { id: ownBusiness.id, name: ownBusiness.name } : null}
+              ownBusiness={
+                ownBusinessReady && ownBusiness
+                  ? { id: ownBusiness.id, name: ownBusiness.name }
+                  : null
+              }
               originCountry={originCountry}
             />
           ) : null}

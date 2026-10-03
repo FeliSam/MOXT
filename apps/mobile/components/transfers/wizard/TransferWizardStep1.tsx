@@ -132,7 +132,7 @@ export function TransferWizardStep1({
         />
         <AmountField
           accent
-          label={`Montant à recevoir · ${calc.currencyTo}`}
+          label={`Montant exact à recevoir · ${calc.currencyTo}`}
           currency={calc.currencyTo}
           value={derivedReceive}
           onChangeText={onReceiveChange}
@@ -168,12 +168,24 @@ export function TransferWizardStep1({
         {exchangers.length || ownBusiness ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-3 py-1">
             {ownBusiness ? (
-              <View className="w-40 items-center gap-2 rounded-2xl border-2 border-dashed border-brand-300 bg-app-surface-muted p-4 opacity-80">
+              <View className="w-[9.25rem] shrink-0 items-center gap-2 rounded-2xl border-2 border-dashed border-brand-300 bg-app-surface-muted p-4 opacity-80">
                 <View className="h-12 w-12 items-center justify-center rounded-2xl bg-brand-100 dark:bg-brand-950/50">
                   <Text className="text-base font-black text-brand-800 dark:text-brand-200">{ownBusiness.name[0]}</Text>
                 </View>
-                <Text className="text-center text-xs font-bold text-app-text" numberOfLines={2}>{ownBusiness.name}</Text>
-                <Text className="text-center text-[10px] text-app-text-muted">Votre entreprise ne peut pas recevoir votre propre transfert.</Text>
+                <Text className="text-center text-xs font-black leading-tight text-app-text" numberOfLines={2}>
+                  {ownBusiness.name}
+                </Text>
+                <View className="rounded-full bg-brand-100 px-2 py-0.5 dark:bg-brand-950/50">
+                  <Text className="text-[10px] font-bold text-brand-800 dark:text-brand-200">Votre entreprise</Text>
+                </View>
+                <Text className="text-center text-[10px] leading-4 text-app-text-muted">
+                  Réception uniquement ·{' '}
+                  <Text
+                    className="font-bold text-brand-700 underline dark:text-brand-400"
+                    onPress={() => router.push('/organization' as any)}>
+                    Espace pro
+                  </Text>
+                </Text>
               </View>
             ) : null}
             {exchangers.map((ex) => (
@@ -250,6 +262,7 @@ function AmountField({
 }
 
 function PartnerCard({ ex, active, onSelect }: { ex: WizardExchanger; active: boolean; onSelect: () => void }) {
+  const place = [ex.city, ex.country].filter(Boolean).join(' · ');
   return (
     <Pressable
       className={cn(
@@ -260,12 +273,12 @@ function PartnerCard({ ex, active, onSelect }: { ex: WizardExchanger; active: bo
       <View
         className={cn(
           twTransfer.partnerAvatar,
-          active ? 'bg-brand-700 dark:bg-brand-400' : 'bg-app-surface-muted dark:bg-zinc-800',
+          active ? 'bg-emerald-600 dark:bg-emerald-500' : 'bg-app-surface-muted dark:bg-zinc-800',
         )}>
         <Text
           className={cn(
             'text-base font-black',
-            active ? 'text-white dark:text-slate-950' : 'text-app-text-muted',
+            active ? 'text-white' : 'text-app-text-muted',
           )}>
           {ex.name[0]}
         </Text>
@@ -273,17 +286,22 @@ function PartnerCard({ ex, active, onSelect }: { ex: WizardExchanger; active: bo
       <Text className={twTransfer.partnerName} numberOfLines={2}>
         {ex.name}
       </Text>
+      {place ? (
+        <Text className="text-center text-[10px] font-semibold text-app-text-muted" numberOfLines={1}>
+          {place}
+        </Text>
+      ) : null}
       <Text className={twTransfer.partnerRating}>⭐ {ex.rating.toFixed(1)}</Text>
-      <View className="w-full gap-1">
+      <View className="w-full flex-row flex-wrap items-center justify-center gap-1">
         <View
           className={cn(
             twTransfer.partnerTag,
-            active ? 'bg-brand-700 dark:bg-brand-400' : 'bg-app-surface-muted dark:bg-zinc-800',
+            active ? 'bg-emerald-600' : 'bg-app-surface-muted dark:bg-zinc-800',
           )}>
           <Text
             className={cn(
-              'text-center text-[10px] font-bold',
-              active ? 'text-white dark:text-slate-950' : 'text-app-text-muted',
+              'text-center text-[9px] font-bold',
+              active ? 'text-white' : 'text-app-text-muted',
             )}>
             {ex.feePercent}% frais
           </Text>
@@ -291,12 +309,12 @@ function PartnerCard({ ex, active, onSelect }: { ex: WizardExchanger; active: bo
         <View
           className={cn(
             twTransfer.partnerTag,
-            active ? 'bg-brand-600 dark:bg-brand-500' : 'bg-app-surface-muted dark:bg-zinc-800',
+            active ? 'bg-emerald-500' : 'bg-app-surface-muted dark:bg-zinc-800',
           )}>
           <Text
             className={cn(
-              'text-center text-[10px] font-bold',
-              active ? 'text-white dark:text-slate-950' : 'text-app-text-muted',
+              'text-center text-[9px] font-bold',
+              active ? 'text-white' : 'text-app-text-muted',
             )}>
             🕐 {ex.averageDelay}
           </Text>
