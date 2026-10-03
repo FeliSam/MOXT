@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, usePathname, router } from 'expo-router';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { Clock, Repeat, Shield, User } from 'lucide-react-native';
 
 import { canClientDeclareReception } from '@moxt/shared/domain/transferActionUtils.js';
@@ -26,6 +26,35 @@ import { useLanguage } from '@/providers/LanguageProvider';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { idFromPath, routeParam } from '@/utils/routeParam';
 import { cn } from '@/lib/cn';
+
+function useCountdown(deadline?: string | null) {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!deadline) return;
+    const id = setInterval(() => setTick((v) => v + 1), 1000);
+    return () => clearInterval(id);
+  }, [deadline]);
+  if (!deadline) return null;
+  const remaining = Math.max(0, new Date(deadline).getTime() - Date.now());
+  const total = Math.floor(remaining / 1000);
+  return {
+    expired: remaining === 0,
+    label: `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`,
+  };
+}
+
+const CANCELLABLE = ['pending_payment', 'payment_declared', 'pending_business_acceptance', 'declined'];
+
+function confirmAction(title: string, message: string, onConfirm: () => void) {
+  if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined' && window.confirm(`${title}\n\n${message}`)) onConfirm();
+    return;
+  }
+  Alert.alert(title, message, [
+    { text: 'Retour', style: 'cancel' },
+    { text: 'Confirmer', style: 'destructive', onPress: onConfirm },
+  ]);
+}
 
 const NEXT_STEP: Record<string, { title: string; description: string }> = {
   pending_payment: {
@@ -64,6 +93,9 @@ export default function TransferDetailScreen() {
   const [showToast, setShowToast] = useState(justCreated);
   const [loading, setLoading] = useState(!transfer);
   const [detailTab, setDetailTab] = useState<'suivi' | 'paiement' | 'details'>('suivi');
+  const raw = transfer as { status?: string; paymentDeadlineAt?: string; acceptanceExpiresAt?: string } | undefined;
+  const paymentCountdown = useCountdown(raw?.status === 'pending_payment' ? raw.paymentDeadlineAt : null);
+  const acceptanceCountdown = useCountdown(raw?.status === 'pending_business_acceptance' ? raw.acceptanceExpiresAt : null);
 
   useEffect(() => {
     if (!justCreated) return undefined;
@@ -292,10 +324,29 @@ export default function TransferDetailScreen() {
           </View>
         ) : null}
 
+        {acceptanceCountdown ? (
+          <View className={twTransfer.detailCard}>
+            <View className="items-center rounded-xl bg-app-surface-muted px-4 py-3">
+              <Text className="text-xs font-black uppercase tracking-wide text-app-text-faint">
+                {tr('transfers.acceptance.countdownLabel')}
+              </Text>
+              <Text className="mt-1 text-3xl font-black text-brand-700 dark:text-brand-300" style={{ fontVariant: ['tabular-nums'] }}>
+                {acceptanceCountdown.label}
+              </Text>
+              <Text className="mt-2 text-center text-sm text-app-text-muted">
+                {tr('transfers.acceptance.waitingHint', { name: t.exchanger?.name || tr('transfers.acceptance.exchangerFallback') })}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
         {t.status === 'pending_payment' ? (
           <View className={twTransfer.detailCard}>
             <Text className={twTransfer.detailCardTitle}>Déclarer le paiement</Text>
-            <Text className="text-xs text-app-text-muted">Ajoutez une preuve, puis déclarez le paiement. Le partenaire est notifié.</Text>
+            <Text className="text-xs text-app-text-muted">
+              Ajoutez une preuve, puis déclarez le paiement. Le partenaire est notifié.
+              {paymentCountdown ? ` Temps restant : ${paymentCountdown.label}.` : ''}
+            </Text>
             <Pressable className={twTransfer.uploadZone}>
               <Text className="text-2xl">⬆️</Text>
               <Text className={twTransfer.uploadTitle}>Preuve de paiement</Text>
@@ -317,6 +368,22 @@ export default function TransferDetailScreen() {
         <Pressable className={twTransfer.outlineBtn} onPress={() => router.push('/disputes/create' as never)}>
           <Text className={twTransfer.outlineBtnText}>Ouvrir une réclamation</Text>
         </Pressable>
+        {CANCELLABLE.includes(t.status) && user?.id && (t.userId === user.id || t.senderId === user.id) ? (
+          <Pressable
+            testID="transfer-cancel"
+            className="min-h-12 items-center justify-center rounded-2xl border border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-950/30"
+            onPress={() =>
+              confirmAction(tr('transfers.detail.cancel.title'), tr('transfers.detail.cancel.description'), () => {
+                const at = new Date().toISOString();
+                const timeline = [...(Array.isArray(t.timeline) ? t.timeline : []), { status: 'cancelled', at, actorType: 'client', actorId: user.id }];
+                const next = { ...t, status: 'cancelled', updatedAt: at, timeline };
+                dispatch(upsertTransfer(next));
+                void supabase?.from('transfers').update({ status: 'cancelled', timeline }).eq('id', t.id);
+              })
+            }>
+            <Text className="text-sm font-black text-red-700 dark:text-red-300">{tr('transfers.workflow.cancelTransfer')}</Text>
+          </Pressable>
+        ) : null}
           </>
         ) : null}
 
