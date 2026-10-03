@@ -188,7 +188,7 @@ export const FEATURE_MATRIX = [
         id: 'assistant',
         label: 'Moxti (assistant IA)',
         status: 'complete',
-        note: 'Moxti agent: brouillon local + tools (transferts, search, échangeurs, playbooks) + reformulation Yandex ; actions et citations.',
+        note: 'Moxti agent: brouillon local + tools (transferts, search, échangeurs, playbooks) + reformulation Yandex. Une recherche catalogue (annonces, colis, P2P, entreprises, événements, jobs) affiche des cartes in-app triées par prix.',
       },
       {
         id: 'support',
