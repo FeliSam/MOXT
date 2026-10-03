@@ -7,6 +7,7 @@ import { useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, radii, shadows, spacing, typography } from '@/theme/colors';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { BackHeader } from '@/components/chrome/BackHeader';
 
 export default function BadgesScreen() {
   const colors = useThemeColors();
@@ -16,10 +17,7 @@ export default function BadgesScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Pressable style={styles.backRow} onPress={() => router.back()}>
-          <Text style={[styles.backArrow, { color: colors.primary }]}>←</Text>
-          <Text style={[styles.backLabel, { color: colors.primary }]}>Retour</Text>
-        </Pressable>
+        <BackHeader inline title="Mes badges" />
 
         <PageHeader
           eyebrow="ACCOMPLISSEMENTS"

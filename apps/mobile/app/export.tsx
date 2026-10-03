@@ -10,6 +10,7 @@ import { brand, radii, shadows, spacing, typography } from '@/theme/colors';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { BackHeader } from '@/components/chrome/BackHeader';
 
 export default function ExportScreen() {
   const colors = useThemeColors();
@@ -66,10 +67,7 @@ export default function ExportScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Pressable style={styles.backRow} onPress={() => router.back()}>
-          <Text style={[styles.backArrow, { color: colors.primary }]}>←</Text>
-          <Text style={[styles.backLabel, { color: colors.primary }]}>Retour</Text>
-        </Pressable>
+        <BackHeader inline title="Exporter" />
         <PageHeader eyebrow="DONNÉES" title="Exporter mes données" />
 
         {exporting && <ActivityIndicator color={colors.primary} size="large" style={{ marginVertical: spacing.xl }} />}

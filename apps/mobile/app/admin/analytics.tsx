@@ -11,6 +11,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SectionHeading } from '@/components/ui/SectionHeading';
+import { BackHeader } from '@/components/chrome/BackHeader';
 
 type KPI = { label: string; value: string; trend?: string; trendPositive?: boolean };
 type ChartBar = { label: string; value: number };
@@ -78,10 +79,7 @@ export default function AdminAnalyticsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Pressable style={styles.backRow} onPress={() => router.back()}>
-          <Text style={[styles.backArrow, { color: colors.primary }]}>←</Text>
-          <Text style={[styles.backLabel, { color: colors.primary }]}>Retour</Text>
-        </Pressable>
+        <BackHeader inline title="Analytics" />
         <PageHeader eyebrow="INSIGHTS" title="Analytics" />
 
         {loading ? (

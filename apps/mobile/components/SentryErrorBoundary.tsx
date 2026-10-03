@@ -50,6 +50,6 @@ const styles = StyleSheet.create({
   icon: { fontSize: 48, marginBottom: 16 },
   title: { fontSize: 20, fontWeight: '800', color: '#0f172a', marginBottom: 8, textAlign: 'center' },
   message: { fontSize: 14, color: '#64748b', textAlign: 'center', marginBottom: 24 },
-  button: { backgroundColor: '#1d4ed8', borderRadius: 12, paddingHorizontal: 24, paddingVertical: 14 },
+  button: { backgroundColor: '#08705f', borderRadius: 12, paddingHorizontal: 24, paddingVertical: 14 },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
 });

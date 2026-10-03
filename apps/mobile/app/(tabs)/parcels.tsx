@@ -154,7 +154,7 @@ export default function ParcelsScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={[]}>
       <View style={styles.header}>
         <View style={styles.dotRow}>
           <View style={[styles.dot, { backgroundColor: brand[700] }]} />

@@ -10,7 +10,7 @@ import {
 } from '@moxt/shared/utils/transfers.js';
 
 import { ImagePickerButton } from '@/components/ImagePickerButton';
-import { MobileDashboardHeader } from '@/components/layout/MobileDashboardHeader';
+import { BackHeader } from '@/components/chrome/BackHeader';
 import { AppScreen } from '@/components/ui/Card';
 import { PROGRESS_STEPS, TRANSFER_STATUS_LABELS } from '@/constants/transfers';
 import { twTransfer } from '@/constants/transferTailwind';
@@ -79,8 +79,8 @@ export default function TransferDetailScreen() {
   const nextStep = NEXT_STEP[t.status || 'pending_payment'];
 
   return (
-    <AppScreen edges={['top']}>
-      <MobileDashboardHeader eyebrow="FINANCE" title="Transfer details" />
+    <AppScreen edges={[]}>
+      <BackHeader title="Détail du transfert" />
       <ScrollView contentContainerClassName="gap-5 px-4 pb-32 pt-2" showsVerticalScrollIndicator={false}>
         {/* Summary header */}
         <View className={twTransfer.detailCard}>

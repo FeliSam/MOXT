@@ -11,6 +11,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { BackHeader } from '@/components/chrome/BackHeader';
 
 const STATUS_TONE: Record<string, 'warning' | 'brand' | 'success'> = {
   pending: 'warning',
@@ -45,10 +46,7 @@ export default function ReferralScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
-        <Pressable style={styles.backRow} onPress={() => router.back()}>
-          <Text style={[styles.backArrow, { color: colors.primary }]}>←</Text>
-          <Text style={[styles.backLabel, { color: colors.primary }]}>Retour</Text>
-        </Pressable>
+        <BackHeader inline title="Parrainage" />
       </View>
       <PageHeader eyebrow="RÉCOMPENSES" title="Parrainage" />
 

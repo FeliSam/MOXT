@@ -1,31 +1,38 @@
-import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Platform, Pressable, View, type LayoutChangeEvent } from 'react-native';
 import { router } from 'expo-router';
+import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeftRight, Home, ShoppingBag, Package, type LucideIcon } from 'lucide-react-native';
 
-import { MobileMoreSheet, PlusTabIcon } from '@/components/navigation/MobileMoreSheet';
-import { cn } from '@/lib/cn';
+import { FeatherIcon, type FeatherName } from '@/components/chrome/icons';
+import { AppText } from '@/components/ui/AppText';
 import { useLanguage } from '@/providers/LanguageProvider';
-import { bottomNavigationItems } from '@moxt/shared';
+import { withAlphaColor } from '@/theme/palette';
+import { useShadows, useTheme } from '@/theme/ThemeContext';
+import { bottomNavigationItems, moreNavigationItem } from '@moxt/shared';
+import { layoutTokens } from '@moxt/shared/design/index.js';
 
-const TAB_ICONS: Record<string, LucideIcon> = {
-  transfers: ArrowLeftRight,
-  index: Home,
-  marketplace: ShoppingBag,
-  parcels: Package,
+const L = layoutTokens as {
+  bottomNavInset: number;
+  bottomNavPad: number;
+  bottomNavSlotMinHeight: number;
+  bottomNavIcon: number;
+  bottomNavIndicator: number;
+  bottomNavInactiveOpacity: number;
 };
 
-function TabIcon({ routeName, focused }: { routeName: string; focused: boolean }) {
-  const Icon = TAB_ICONS[routeName];
-  const color = focused ? '#08705f' : '#9ca3af';
-  if (!Icon) {
-    return <Text style={{ color, fontSize: 18, fontWeight: '700' }}>•</Text>;
-  }
-  return <Icon size={22} color={color} strokeWidth={focused ? 2.4 : 2} />;
-}
+type NavEntry = { id: string; label: string; labelKey: string | null; mobileRoute: string; icon: string };
 
-/** Barre flottante partagée — tabs principaux + Plus */
+/** .bottom-nav-shell { padding: 0.2rem; padding-bottom: var(--bottom-nav-pad) } */
+const PAD_X = 3.2;
+
+const ITEMS: NavEntry[] = [...(bottomNavigationItems as NavEntry[]), moreNavigationItem as NavEntry];
+
+/**
+ * Barre du bas flottante — miroir de moxt-react BottomNavigation.jsx :
+ * Transfert · Moxt · Market · Fil · Plus, indicateur glissant (fond surface-muted
+ * + trait intérieur haut 3px accent / teal en sombre).
+ */
 export function BottomNavBar({
   activeRoute,
   onTabPress,
@@ -34,70 +41,129 @@ export function BottomNavBar({
   onTabPress: (mobileRoute: string) => void;
 }) {
   const insets = useSafeAreaInsets();
-  const { translateLabel } = useLanguage();
-  const [moreOpen, setMoreOpen] = useState(false);
+  const { t } = useLanguage();
+  const { colors, isDark } = useTheme();
+  const shadows = useShadows();
+  const activeIndex = ITEMS.findIndex((item) => item.mobileRoute === activeRoute);
+  const activeColor = isDark ? colors.teal : colors.accent;
+  const inactiveColor = withAlphaColor(colors.text, L.bottomNavInactiveOpacity);
+
+  const [slotWidth, setSlotWidth] = useState(0);
+  const translate = useRef(new Animated.Value(0)).current;
+  const gap = 2;
+
+  useEffect(() => {
+    if (activeIndex < 0 || !slotWidth) return;
+    Animated.timing(translate, {
+      toValue: activeIndex * (slotWidth + gap),
+      duration: 150,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: Platform.OS !== 'web',
+    }).start();
+  }, [activeIndex, slotWidth, translate]);
+
+  const onLayout = (event: LayoutChangeEvent) => {
+    const inner = event.nativeEvent.layout.width - PAD_X * 2 - 2; // bordure 1px × 2
+    setSlotWidth((inner - gap * (ITEMS.length - 1)) / ITEMS.length);
+  };
+
+  const labelOf = (item: NavEntry) => (item.labelKey ? t(item.labelKey) : item.label);
 
   return (
-    <>
-      <View
-        className="absolute left-3 right-3 flex-row gap-0.5 rounded-2xl bg-white/95 p-1 shadow-lg dark:bg-zinc-900/95"
-        style={{ bottom: Math.max(insets.bottom, 12) }}>
-        {bottomNavigationItems.map((item) => {
-          const focused = activeRoute === item.mobileRoute;
-          const label = translateLabel(item.label);
+    <View
+      accessibilityRole="tablist"
+      accessibilityLabel={t('nav.mobileQuickAria')}
+      onLayout={onLayout}
+      style={[
+        {
+          position: 'absolute',
+          left: L.bottomNavInset,
+          right: L.bottomNavInset,
+          bottom: Math.max(L.bottomNavInset, insets.bottom),
+          borderRadius: 16,
+          borderWidth: 1,
+          borderColor: withAlphaColor(colors.border, 0.75),
+          overflow: 'hidden',
+          backgroundColor: withAlphaColor(colors.surface, 0.92),
+        },
+        shadows.bottomNav,
+      ]}>
+      {Platform.OS !== 'android' ? (
+        <BlurView
+          intensity={24}
+          tint={isDark ? 'dark' : 'light'}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: withAlphaColor(colors.surface, 0.92) }}
+        />
+      ) : null}
 
+      <View style={{ flexDirection: 'row', gap, paddingTop: PAD_X, paddingHorizontal: PAD_X, paddingBottom: L.bottomNavPad }}>
+        {activeIndex >= 0 && slotWidth > 0 ? (
+          <Animated.View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              top: L.bottomNavPad,
+              bottom: L.bottomNavPad,
+              left: PAD_X,
+              width: slotWidth,
+              borderRadius: 12,
+              backgroundColor: colors.surfaceMuted,
+              boxShadow: `inset 0 ${L.bottomNavIndicator}px 0 ${activeColor}`,
+              transform: [{ translateX: translate }],
+            }}
+          />
+        ) : null}
+
+        {ITEMS.map((item, index) => {
+          const focused = index === activeIndex;
+          const color = focused ? activeColor : inactiveColor;
+          const label = labelOf(item);
           return (
             <Pressable
               key={item.id}
-              accessibilityRole="button"
-              accessibilityState={focused ? { selected: true } : {}}
-              accessibilityLabel={label}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: focused }}
+              accessibilityLabel={item.id === 'more' ? t('nav.moreServicesAria') : label}
               onPress={() => onTabPress(item.mobileRoute)}
-              className={cn(
-                'min-h-[3.75rem] flex-1 items-center justify-center gap-0.5 rounded-xl px-1 py-1.5',
-                focused && 'border-t-[3px] border-brand-700 bg-app-surface-muted dark:border-brand-400 dark:bg-zinc-800',
-              )}>
-              <TabIcon routeName={item.mobileRoute} focused={focused} />
-              <Text
+              style={({ pressed }) => ({
+                flex: 1,
+                minWidth: 0,
+                minHeight: L.bottomNavSlotMinHeight,
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 2,
+                borderRadius: 12,
+                paddingHorizontal: 4,
+                paddingVertical: 6,
+                transform: [{ scale: pressed ? 0.98 : 1 }],
+              })}>
+              <View style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}>
+                <FeatherIcon name={item.icon as FeatherName} size={L.bottomNavIcon} color={color} />
+              </View>
+              <AppText
                 numberOfLines={1}
-                className={cn(
-                  'w-full text-center text-[11px] font-semibold',
-                  focused ? 'text-brand-700 dark:text-brand-400' : 'text-app-text-muted dark:text-zinc-500',
-                )}>
+                style={{ width: '100%', textAlign: 'center', fontSize: 11, lineHeight: 11, fontWeight: '600', color }}>
                 {label}
-              </Text>
+              </AppText>
             </Pressable>
           );
         })}
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Plus de services"
-          onPress={() => setMoreOpen(true)}
-          className="min-h-[3.75rem] flex-1 items-center justify-center gap-0.5 rounded-xl px-1 py-1.5">
-          <PlusTabIcon />
-          <Text className="w-full text-center text-[11px] font-semibold text-app-text-muted dark:text-zinc-500">
-            {translateLabel('Plus')}
-          </Text>
-        </Pressable>
       </View>
-
-      <MobileMoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
-    </>
+    </View>
   );
 }
 
-/** Barre basse autonome (hors Tabs) — pour les stacks transfer, etc. */
+/** Barre basse autonome (hors Tabs) — pour les piles transfer, etc. */
 export function AppBottomTabBar({ activeRoute = 'transfers' }: { activeRoute?: string }) {
   return (
     <BottomNavBar
       activeRoute={activeRoute}
       onTabPress={(route) => {
-        router.push(`/(tabs)/${route}` as any);
+        router.push((route === 'index' ? '/(tabs)' : `/(tabs)/${route}`) as never);
       }}
     />
   );
 }
 
-/** Espace réservé sous le contenu scrollable pour ne pas masquer la barre */
+/** Espace réservé sous le contenu défilant (--bottom-nav-clearance-loose : 7.5rem). */
 export const BOTTOM_NAV_PADDING = 120;

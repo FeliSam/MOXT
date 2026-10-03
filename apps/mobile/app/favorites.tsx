@@ -9,6 +9,7 @@ import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { radii, shadows, spacing, typography } from '@/theme/colors';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { BackHeader } from '@/components/chrome/BackHeader';
 
 const TYPE_ICONS: Record<string, string> = { listing: '🏪', parcel: '📦', job: '💼' };
 
@@ -58,10 +59,7 @@ export default function FavoritesScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
-        <Pressable style={styles.backRow} onPress={() => router.back()}>
-          <Text style={[styles.backArrow, { color: colors.primary }]}>←</Text>
-          <Text style={[styles.backLabel, { color: colors.primary }]}>{translateLabel('Retour')}</Text>
-        </Pressable>
+        <BackHeader inline title="Favoris" />
       </View>
       <PageHeader
         eyebrow="Compte"

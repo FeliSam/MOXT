@@ -1,13 +1,15 @@
 import { useEffect, type ReactNode } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 
 import { restoreSession } from '@/store/auth';
 import { useAppDispatch, useAppSelector } from '@/store/store';
+import { useTheme } from '@/theme/ThemeContext';
 
 export function AuthBootstrap({ children, fontsLoaded }: { children: ReactNode; fontsLoaded: boolean }) {
   const dispatch = useAppDispatch();
   const status = useAppSelector((state) => state.auth.status);
+  const { colors, isDark } = useTheme();
 
   useEffect(() => {
     dispatch(restoreSession());
@@ -21,20 +23,12 @@ export function AuthBootstrap({ children, fontsLoaded }: { children: ReactNode; 
 
   if (!fontsLoaded || status === 'loading') {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#1d4ed8" />
+      // Écran de chargement aux couleurs du web (fond --app-bg, indicateur teal / accent).
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={isDark ? colors.teal : colors.accent} />
       </View>
     );
   }
 
   return children;
 }
-
-const styles = StyleSheet.create({
-  loading: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f4f7fb',
-  },
-});

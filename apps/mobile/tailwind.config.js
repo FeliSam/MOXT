@@ -1,3 +1,44 @@
+/**
+ * Tailwind / NativeWind — jetons partagés avec le web.
+ * Source unique : packages/shared/src/design/tokens.json (extraits de moxt-react/src/index.css).
+ *
+ * Les couleurs `app-*` passent par des variables CSS (`--app-*`, triplets RGB)
+ * posées à la racine par `theme/ThemeContext.tsx` : `bg-app-surface/65`
+ * fonctionne donc en clair comme en sombre, comme `bg-[var(--app-surface)]/65` sur le web.
+ */
+const plugin = require('tailwindcss/plugin');
+const tokens = require('@moxt/shared/design/tokens.json');
+
+const kebab = (name) => name.replace(/[A-Z0-9]+/g, (m) => `-${m.toLowerCase()}`);
+const cssVar = (name) => `rgb(var(--app-${name}) / <alpha-value>)`;
+
+const appColors = Object.fromEntries(
+  Object.keys(tokens.colors.light).map((key) => [kebab(key), cssVar(kebab(key))]),
+);
+
+/** Graisses → familles chargées (Inter 400 / 600, Manrope 700), comme le web (font-synthesis: none). */
+const FONT_REGULAR = 'Inter_400Regular';
+const FONT_SEMIBOLD = 'Inter_600SemiBold';
+const FONT_DISPLAY = 'Manrope_700Bold';
+
+const fontWeightUtilities = plugin(({ addUtilities }) => {
+  const regular = { fontFamily: FONT_REGULAR, fontWeight: 'normal' };
+  const semibold = { fontFamily: FONT_SEMIBOLD, fontWeight: 'normal' };
+  addUtilities({
+    '.font-thin': regular,
+    '.font-extralight': regular,
+    '.font-light': regular,
+    '.font-normal': regular,
+    '.font-medium': regular,
+    '.font-semibold': semibold,
+    '.font-bold': semibold,
+    '.font-extrabold': semibold,
+    '.font-black': semibold,
+    // Déclaré en dernier : `font-display font-extrabold` reste en Manrope (titres web).
+    '.font-display': { fontFamily: FONT_DISPLAY, fontWeight: 'normal' },
+  });
+});
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: 'class',
@@ -7,57 +48,34 @@ module.exports = {
     './theme/**/*.{js,jsx,ts,tsx}',
   ],
   presets: [require('nativewind/preset')],
+  corePlugins: {
+    fontWeight: false,
+  },
   theme: {
     extend: {
       colors: {
-        brand: {
-          50: '#edfdf8',
-          100: '#d2f8ec',
-          200: '#a8efdb',
-          300: '#70dfc5',
-          400: '#36c6aa',
-          500: '#16a98f',
-          600: '#0b8975',
-          700: '#08705f',
-          800: '#07594d',
-          900: '#06493f',
-        },
+        brand: tokens.brand,
+        prune: tokens.palettes.prune.brand,
         app: {
-          bg: '#eef1ef',
-          surface: '#ffffff',
-          'surface-elevated': '#ffffff',
-          'surface-interactive': '#f5f7f6',
-          'surface-muted': '#f0f2f1',
-          text: '#111827',
-          'text-secondary': '#374151',
-          'text-muted': '#6b7280',
-          'text-faint': '#9ca3af',
-          border: '#e5e7eb',
-          'border-md': '#d1d5db',
-          accent: '#08705f',
-          'accent-soft': '#ecfdf8',
-          teal: '#12bfa3',
-          cobalt: '#245de8',
-          warm: '#ff6b4a',
-          success: '#059669',
-          'success-soft': '#d1fae5',
-          warning: '#d97706',
-          'warning-soft': '#fef3c7',
-          danger: '#dc2626',
-          'danger-soft': '#fee2e2',
-          gold: '#b8860b',
+          ...appColors,
+          // Alias historiques de l'app mobile
+          'surface-elevated': cssVar('surface'),
+          'surface-interactive': cssVar('surface-muted'),
+          'text-secondary': cssVar('text-2'),
           inverse: '#020617',
         },
       },
       borderRadius: {
-        card: '1rem',
-        'card-sm': '0.75rem',
-        btn: '0.75rem',
+        card: tokens.radius.card,
+        'card-sm': tokens.radius.cardSm,
+        'card-lg': tokens.radius.cardLg,
+        btn: tokens.radius.btn,
+        input: tokens.radius.input,
       },
       fontFamily: {
-        sans: ['System'],
+        sans: [FONT_REGULAR],
       },
     },
   },
-  plugins: [],
+  plugins: [fontWeightUtilities],
 };

@@ -8,6 +8,7 @@ import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { radii, spacing, typography } from '@/theme/colors';
 import { Badge } from '@/components/ui/Badge';
+import { BackHeader } from '@/components/chrome/BackHeader';
 
 type Tone = 'brand' | 'success' | 'warning' | 'danger' | 'info' | 'neutral';
 
@@ -58,10 +59,7 @@ export default function DisputeDetailScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
-        <Pressable style={styles.backRow} onPress={() => router.back()}>
-          <Text style={[styles.backArrow, { color: colors.primary }]}>←</Text>
-          <Text style={[styles.backLabel, { color: colors.primary }]}>Retour</Text>
-        </Pressable>
+        <BackHeader inline title="Détail litige" />
         <Text style={[styles.eyebrow, { color: colors.primary }]}>LITIGE</Text>
         <View style={styles.titleRow}>
           <Text style={[styles.title, { color: colors.text }]}>Litige #{id?.slice(-6)}</Text>

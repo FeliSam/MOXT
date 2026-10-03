@@ -7,7 +7,7 @@ const toneStyles = {
   warning: { backgroundColor: '#fef9c3', color: '#854d0e' },
   danger: { backgroundColor: '#fee2e2', color: '#991b1b' },
   info: { backgroundColor: '#e0f2fe', color: '#075985' },
-  brand: { backgroundColor: '#dbeafe', color: '#1d4ed8' },
+  brand: { backgroundColor: '#d2f8ec', color: '#07594d' },
 };
 
 type StatusBadgeProps = {

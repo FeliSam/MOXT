@@ -1,46 +1,59 @@
 import { useEffect, type ReactNode } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import { useRouter, useSegments } from 'expo-router';
+import { ActivityIndicator, View } from 'react-native';
+import { usePathname, useRouter, useSegments } from 'expo-router';
 
-import { useAppDispatch, useAppSelector } from '@/store/store';
+import { useAppSelector } from '@/store/store';
+import { useTheme } from '@/theme/ThemeContext';
+
+/**
+ * Routes consultables sans compte — alignées sur PublicationShell / FeedAccessShell
+ * du web (marketplace, fil, fiches entreprise, publications d'un membre, fiches
+ * annonce / colis / emploi) et sur les pages d'authentification.
+ */
+const PUBLIC_ROUTE_PATTERNS: RegExp[] = [
+  /^\/marketplace$/, // /marketplace
+  /^\/listing\/[^/]+$/, // /marketplace/:listingId
+  /^\/feed$/, // /feed
+  /^\/organization\/[^/]+$/, // /businesses/:businessId
+  /^\/users\/[^/]+\/publications$/, // /users/:userId/publications
+  /^\/parcel\/[^/]+$/, // /parcels/:parcelId
+  /^\/jobs\/[^/]+$/, // /jobs/:jobId
+];
+
+export function isPublicPath(pathname: string) {
+  if (pathname === '/listing/create' || pathname === '/listing/mine' || pathname === '/parcel/reserve') return false;
+  return PUBLIC_ROUTE_PATTERNS.some((pattern) => pattern.test(pathname));
+}
 
 export function AuthGate({ children }: { children: ReactNode }) {
-  const dispatch = useAppDispatch();
   const status = useAppSelector((state) => state.auth.status);
   const router = useRouter();
   const segments = useSegments();
+  const pathname = usePathname();
+  const { colors, isDark } = useTheme();
 
   useEffect(() => {
     if (status === 'loading') return;
 
     const inAuthGroup = segments[0] === ('(auth)' as string);
 
-    if (status === 'anonymous' && !inAuthGroup) {
-      router.replace('/login' as any);
+    if (status === 'anonymous' && !inAuthGroup && !isPublicPath(pathname)) {
+      router.replace('/login' as never);
       return;
     }
 
     if (status === 'authenticated' && inAuthGroup) {
-      router.replace('/' as any);
+      router.replace('/' as never);
     }
-  }, [status, segments, router]);
+  }, [status, segments, pathname, router]);
 
   if (status === 'loading') {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#1d4ed8" />
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={isDark ? colors.teal : colors.accent} />
       </View>
     );
   }
 
   return children;
 }
-
-const styles = StyleSheet.create({
-  loading: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f4f7fb',
-  },
-});

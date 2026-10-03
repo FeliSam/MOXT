@@ -8,6 +8,7 @@ import { useLanguage } from '@/providers/LanguageProvider';
 import { useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { radii, shadows, spacing, typography } from '@/theme/colors';
+import { BackHeader } from '@/components/chrome/BackHeader';
 
 type ArchiveTab = 'active' | 'archived';
 type TypeTab = 'listing' | 'parcel' | 'job' | 'other';
@@ -94,10 +95,7 @@ export default function MyPublicationsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
-        <Pressable style={styles.backRow} onPress={() => router.back()}>
-          <Text style={[styles.backArrow, { color: colors.primary }]}>←</Text>
-          <Text style={[styles.backLabel, { color: colors.primary }]}>{translateLabel('Retour')}</Text>
-        </Pressable>
+        <BackHeader inline title="Mes publications" />
       </View>
       <PageHeader
         eyebrow="Compte"

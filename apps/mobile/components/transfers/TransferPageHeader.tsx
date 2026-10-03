@@ -1,5 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 
+import { BackHeader } from '@/components/chrome/BackHeader';
 import { cn } from '@/lib/cn';
 
 type Action = { label: string; onPress: () => void; primary?: boolean };
@@ -20,9 +21,7 @@ export function TransferPageHeader({
   return (
     <View className="gap-2 mb-3">
       {onBack ? (
-        <Pressable className="mb-1" onPress={onBack}>
-          <Text className="text-sm font-semibold text-brand-700 dark:text-brand-400">← Retour</Text>
-        </Pressable>
+        <BackHeader inline title={title} onBack={onBack} />
       ) : null}
       <View className="flex-row items-center gap-1.5">
         <View className="w-2 h-2 rounded-full bg-brand-700 dark:bg-brand-400" />

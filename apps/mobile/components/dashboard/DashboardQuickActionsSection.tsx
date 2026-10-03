@@ -5,11 +5,14 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { router } from 'expo-router';
+import { cssInterop } from 'nativewind';
 
 import { QUICK_ACTIONS } from '@/constants/dashboardTailwind';
 import { cn } from '@/lib/cn';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+// NativeWind : un composant Animated doit être déclaré pour que className soit appliqué.
+cssInterop(AnimatedPressable, { className: 'style' });
 
 type BentoSize = 'hero' | 'featured' | 'medium' | 'compact';
 

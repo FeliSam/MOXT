@@ -115,7 +115,8 @@ export default function MarketplaceScreen() {
   ) / columnCount;
 
   useEffect(() => {
-    if (authStatus === 'authenticated') {
+    // Lecture publique (comme le web) : les invités voient aussi les annonces actives.
+    if (authStatus !== 'loading') {
       dispatch(loadListings());
     }
   }, [dispatch, authStatus]);
@@ -148,7 +149,7 @@ export default function MarketplaceScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={[]}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTopRow}>

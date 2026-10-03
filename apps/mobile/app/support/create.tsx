@@ -10,6 +10,7 @@ import { radii, spacing, typography } from '@/theme/colors';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { BackHeader } from '@/components/chrome/BackHeader';
 
 const CATEGORIES: { key: TicketCategory; label: string; icon: string }[] = [
   { key: 'account', label: 'Compte', icon: '👤' },
@@ -65,10 +66,7 @@ export default function CreateTicketScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Pressable style={styles.backRow} onPress={() => router.back()}>
-          <Text style={[styles.backArrow, { color: colors.primary }]}>←</Text>
-          <Text style={[styles.backLabel, { color: colors.primary }]}>Retour</Text>
-        </Pressable>
+        <BackHeader inline title="Nouveau ticket" />
 
         <PageHeader eyebrow="NOUVEAU TICKET" title="Nouveau ticket" />
 

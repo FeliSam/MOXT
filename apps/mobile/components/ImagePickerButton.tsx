@@ -82,7 +82,7 @@ export function ImagePickerButton({ onImageSelected, label = 'Ajouter une photo'
       ) : (
         <Pressable style={styles.button} onPress={handlePress} disabled={loading}>
           {loading ? (
-            <ActivityIndicator color="#1d4ed8" />
+            <ActivityIndicator color="#08705f" />
           ) : (
             <>
               <Text style={styles.icon}>📷</Text>
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   icon: { fontSize: 28 },
-  label: { fontSize: 14, fontWeight: '600', color: '#1d4ed8' },
+  label: { fontSize: 14, fontWeight: '600', color: '#08705f' },
   preview: { borderRadius: 14, overflow: 'hidden', position: 'relative' },
   previewImage: { width: '100%', height: 180, borderRadius: 14 },
   changeBtn: {

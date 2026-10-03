@@ -7,6 +7,7 @@ import { replyToTicket } from '@/store/support';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { radii, spacing, typography } from '@/theme/colors';
+import { BackHeader } from '@/components/chrome/BackHeader';
 
 export default function TicketDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -41,10 +42,7 @@ export default function TicketDetailScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
-        <Pressable style={styles.backRow} onPress={() => router.back()}>
-          <Text style={[styles.backArrow, { color: colors.primary }]}>←</Text>
-          <Text style={[styles.backLabel, { color: colors.primary }]}>Retour</Text>
-        </Pressable>
+        <BackHeader inline title="Ticket" />
         <Text style={[styles.eyebrow, { color: colors.primary }]}>TICKET</Text>
         <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>{ticket.subject}</Text>
         <Text style={[styles.meta, { color: colors.textSecondary }]}>{ticket.category} • {ticket.priority}</Text>

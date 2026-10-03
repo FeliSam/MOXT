@@ -11,6 +11,7 @@ import { BOTTOM_NAV_PADDING } from '@/components/navigation/BottomNavBar';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, radii, shadows, spacing, typography } from '@/theme/colors';
 import { Card, Button, StatusBadge } from '@/components/ui';
+import { BackHeader } from '@/components/chrome/BackHeader';
 
 export default function TransferReceiptScreen() {
   const colors = useThemeColors();
@@ -22,10 +23,7 @@ export default function TransferReceiptScreen() {
   if (!transfer) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <Pressable style={styles.backRow} onPress={() => router.back()}>
-          <Text style={[styles.backArrow, { color: colors.primary }]}>←</Text>
-          <Text style={[styles.backLabel, { color: colors.primary }]}>Retour</Text>
-        </Pressable>
+        <BackHeader inline title="Reçu de transfert" />
         <Text style={[styles.empty, { color: colors.textMuted }]}>
           Transfert introuvable
         </Text>
@@ -71,10 +69,7 @@ export default function TransferReceiptScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: BOTTOM_NAV_PADDING }]}>
-        <Pressable style={styles.backRow} onPress={() => router.back()}>
-          <Text style={[styles.backArrow, { color: colors.primary }]}>←</Text>
-          <Text style={[styles.backLabel, { color: colors.primary }]}>Retour</Text>
-        </Pressable>
+        <BackHeader inline title="Reçu de transfert" />
 
         <Card style={shadows.card}>
           <Text
