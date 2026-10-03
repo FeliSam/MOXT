@@ -22,6 +22,12 @@ describe('liens moxtapp vers les écrans natifs', () => {
     expect(resolveNativePath('/guide/art1')).toBe('/guide/art1');
     expect(resolveNativePath('/aide')).toBe('/aide');
     expect(resolveNativePath('/exchangers/EXC-MOXT')).toBe('/exchangers/EXC-MOXT');
+    expect(resolveNativePath('/admin')).toBe('/admin');
+    expect(resolveNativePath('/admin/guide')).toBe('/admin/guide');
+    expect(resolveNativePath('/moderation')).toBe('/moderation');
+    expect(resolveNativePath('/feature-matrix')).toBe('/feature-matrix');
+    expect(resolveNativePath('/superadmin')).toBe('/superadmin');
+    expect(resolveNativePath('/contribute')).toBe('/contribute');
     expect(resolveNativePath('/parcels/col1')).toBe('/parcel/col1');
     expect(resolveNativePath('/p2p/off1')).toBe('/p2p/off1');
     expect(resolveNativePath('/transfers/tr1')).toBe('/transfer/tr1');

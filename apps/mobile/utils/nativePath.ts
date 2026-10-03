@@ -149,6 +149,12 @@ export function resolveNativePath(raw: string | null | undefined): string | null
     [/^\/transfers$/, () => '/transfer/wizard'],
     [/^\/receipts\/([^/]+)$/, (match) => `/receipts/${id(match)}`],
     [/^\/receipts$/, () => '/receipts'],
+    [/^\/admin\/guide$/, () => '/admin/guide'],
+    [/^\/admin$/, () => '/admin'],
+    [/^\/moderation$/, () => '/moderation'],
+    [/^\/feature-matrix$/, () => '/feature-matrix'],
+    [/^\/superadmin$/, () => '/superadmin'],
+    [/^\/contribute$/, () => '/contribute'],
     [/^\/dashboard$/, () => '/(tabs)'],
     [/^\/profile$/, () => '/profile'],
   ];

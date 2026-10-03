@@ -220,7 +220,7 @@ export const moxtHubSecondaryGroups: { id: string; titleKey: string; links: HubL
     id: 'finance',
     titleKey: 'moxtHub.groups.finance',
     links: [
-      { id: 'contribute', labelKey: 'nav.contribute', path: '/contribute', route: null, icon: 'heart', roles: ['admin', 'superadmin'] },
+      { id: 'contribute', labelKey: 'nav.contribute', path: '/contribute', route: '/contribute', icon: 'heart', roles: ['admin', 'superadmin'] },
       { id: 'receipts', labelKey: 'profile.links.receipts', path: '/receipts', route: null, icon: 'file-text' },
       { id: 'documents', labelKey: 'profile.links.documents', path: '/documents', route: '/documents', icon: 'file-text' },
       { id: 'disputes', labelKey: 'profile.links.disputes', path: '/disputes', route: '/disputes', icon: 'alert-triangle' },
@@ -249,12 +249,12 @@ export const moxtHubSecondaryGroups: { id: string; titleKey: string; links: HubL
 ];
 
 export const moxtHubAdminLinks: HubLink[] = [
-  { id: 'contribute', labelKey: 'nav.contribute', path: '/contribute', route: null, icon: 'heart', roles: ['admin', 'superadmin'] },
-  { id: 'guide-admin', labelKey: 'nav.guideAdmin', path: '/admin/guide', route: null, icon: 'book-open', roles: ['moderator', 'admin', 'superadmin'] },
-  { id: 'moderation', labelKey: 'nav.moderationSpace', path: '/moderation', route: null, icon: 'shield', roles: ['moderator', 'admin', 'superadmin'] },
+  { id: 'contribute', labelKey: 'nav.contribute', path: '/contribute', route: '/contribute', icon: 'heart', roles: ['admin', 'superadmin'] },
+  { id: 'guide-admin', labelKey: 'nav.guideAdmin', path: '/admin/guide', route: '/admin/guide', icon: 'book-open', roles: ['moderator', 'admin', 'superadmin'] },
+  { id: 'moderation', labelKey: 'nav.moderationSpace', path: '/moderation', route: '/moderation', icon: 'shield', roles: ['moderator', 'admin', 'superadmin'] },
   { id: 'admin', labelKey: 'nav.controlCenter', path: '/admin', route: '/admin', icon: 'settings', roles: ['admin', 'superadmin'] },
-  { id: 'feature-matrix', labelKey: 'nav.featureMatrix', path: '/feature-matrix', route: null, icon: 'pie-chart', roles: ['admin', 'superadmin'] },
-  { id: 'superadmin', labelKey: 'nav.systemPilotage', path: '/superadmin', route: null, icon: 'shield', roles: ['superadmin'] },
+  { id: 'feature-matrix', labelKey: 'nav.featureMatrix', path: '/feature-matrix', route: '/feature-matrix', icon: 'pie-chart', roles: ['admin', 'superadmin'] },
+  { id: 'superadmin', labelKey: 'nav.systemPilotage', path: '/superadmin', route: '/superadmin', icon: 'shield', roles: ['superadmin'] },
 ];
 
 export function filterHubLinksByRole(links: HubLink[], role?: string | null) {

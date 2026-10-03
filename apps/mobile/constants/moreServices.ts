@@ -46,8 +46,8 @@ const WEB_TO_MOBILE: Record<string, string> = {
   '/marketplace/mine': '/listing/mine',
   '/profile': '/profile/edit',
   '/admin': '/admin',
-  '/feature-matrix': '/admin',
-  '/superadmin': '/admin',
+  '/feature-matrix': '/feature-matrix',
+  '/superadmin': '/superadmin',
 };
 
 function item(
