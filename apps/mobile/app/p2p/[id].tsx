@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { router, useLocalSearchParams, usePathname } from 'expo-router';
 
-import { calculateP2PFee, p2pOfferFromRemoteRow, p2pReceivedFromOffered } from '@moxt/shared/domain/p2pRules.js';
+import { calculateP2PFee, computeP2PReputation, p2pOfferFromRemoteRow, p2pReceivedFromOffered } from '@moxt/shared/domain/p2pRules.js';
 import { formatCurrency } from '@moxt/shared/utils/formatters.js';
 import { buildAcceptedOrder, syncP2pOrder } from '@moxt/shared/services/p2pOrderWrites.js';
 
 import { FavoriteButton } from '@/components/account/FavoriteButton';
+import { SwipeToAccept } from '@/components/p2p/SwipeToAccept';
+import { usePublishGate } from '@/components/publish/publishKit';
 import { AppChrome } from '@/components/chrome/AppChrome';
 import { ContactButton } from '@/components/communications/ContactButton';
 import { DetailFloatingActions } from '@/components/marketplace/DetailFloatingActions';
@@ -45,6 +47,7 @@ export default function P2PDetailScreen() {
   const [pending, setPending] = useState(!offer);
   const [reportOpen, setReportOpen] = useState(false);
   const publisherProfile = usePublisherDetailProfile(offer as unknown as Record<string, unknown> | undefined, 'p2p');
+  const p2pGate = usePublishGate('p2p');
 
   useEffect(() => {
     if (!id || !supabase || offer) {
@@ -89,10 +92,12 @@ export default function P2PDetailScreen() {
   const completed = (orders as { sellerId?: string; buyerId?: string; status?: string }[]).filter(
     (order) => (order.sellerId === offer.ownerId || order.buyerId === offer.ownerId) && order.status === 'completed',
   ).length;
-  const ownerReviews = (reviews as { targetId?: string; rating?: number }[]).filter((review) => review.targetId === offer.ownerId);
-  const average = ownerReviews.length
-    ? ownerReviews.reduce((sum, review) => sum + (Number(review.rating) || 0), 0) / ownerReviews.length
-    : 0;
+  const reputation = computeP2PReputation(offer.ownerId, { orders, reviews }) as {
+    avgRating?: number | null;
+    ratingCount?: number;
+    completed?: number;
+    successRate?: number | null;
+  };
 
   async function accept() {
     if (!user || !supabase || !offer) {
@@ -158,8 +163,10 @@ export default function P2PDetailScreen() {
           <Row label="Taux" value={String(offer.rate ?? '')} />
           <Row label="Méthode" value={String(offer.method || '')} />
           <Row label="Frais estimés" value={formatCurrency(fee, offer.fromCurrency, 'fr-FR')} />
-          <AppText className="text-xs text-app-text-muted">
-            {ownerReviews.length ? `${average.toFixed(1)} / 5 · ${completed} échanges réussis` : 'Pas encore de note'}
+          <AppText className="text-xs font-bold text-app-text">
+            {reputation.avgRating != null
+              ? `Réputation ${reputation.avgRating}/5 · ${reputation.ratingCount || 0} avis · ${reputation.completed || completed} réussis${reputation.successRate != null ? ` · ${reputation.successRate} %` : ''}`
+              : 'Pas encore de note de réputation'}
           </AppText>
           {offer.comment ? <AppText className="text-sm text-app-text">{String(offer.comment)}</AppText> : null}
         </View>
@@ -170,10 +177,12 @@ export default function P2PDetailScreen() {
             <AppText className="text-sm text-app-text-muted">
               L’acceptation crée une commande suivie dans MOXT. L’argent circule directement entre vous — ajoutez toujours une preuve.
             </AppText>
-            {offer.ownerId && offer.status !== 'accepted' ? (
-              <Pressable onPress={() => void accept()} style={{ minHeight: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent }}>
-                <AppText className="font-bold" style={{ color: isDark ? '#020617' : '#fff' }}>Accepter l’offre</AppText>
-              </Pressable>
+            {offer.ownerId && offer.status === 'active' ? (
+              p2pGate.allowed ? (
+                <SwipeToAccept label="Glisser pour accepter" onComplete={() => void accept()} />
+              ) : (
+                <AppText className="text-sm text-app-text-muted">{p2pGate.message}</AppText>
+              )
             ) : null}
             <ContactButton
               ownerId={offer.ownerId}
