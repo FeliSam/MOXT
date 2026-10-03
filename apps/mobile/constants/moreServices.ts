@@ -1,8 +1,29 @@
 import type { LucideIcon } from 'lucide-react-native';
 import {
-  Home, ArrowLeftRight, Repeat, Handshake, Building2, BriefcaseBusiness, Package,
-  ShoppingBag, Newspaper, Briefcase, CalendarDays, MessageSquare, Bell, Heart,
-  FileText, SlidersHorizontal, BarChart3, ShieldCheck, Gift,
+  Home,
+  ArrowLeftRight,
+  Repeat,
+  Users,
+  Building2,
+  LayoutGrid,
+  Package,
+  ShoppingBag,
+  Newspaper,
+  Briefcase,
+  CalendarDays,
+  MessageSquare,
+  Bell,
+  Heart,
+  FileText,
+  SlidersHorizontal,
+  BarChart3,
+  ShieldCheck,
+  Gift,
+  Layers,
+  BookOpen,
+  CircleHelp,
+  Star,
+  Shield,
 } from 'lucide-react-native';
 
 import { bottomNavigationPaths, moreServicesExcludedPaths } from '@moxt/shared';
@@ -17,6 +38,7 @@ export type MoreServiceItem = {
   Icon: LucideIcon;
   badgeSelector?: 'messages' | 'notifications';
   roles?: string[];
+  devModule?: string;
 };
 
 export type MoreServiceGroup = {
@@ -29,22 +51,30 @@ export type MoreServiceGroup = {
 /** Chemins web → routes Expo */
 const WEB_TO_MOBILE: Record<string, string> = {
   '/dashboard': '/(tabs)/index',
+  '/moxt': '/(tabs)/moxt',
   '/transfers': '/transfer/wizard',
   '/p2p': '/p2p',
-  '/publications/mine': '/listing/mine',
+  '/exchangers': '/exchangers',
+  '/exchanger': '/exchanger',
+  '/stars': '/wallet',
+  '/publications/mine': '/publications',
   '/businesses': '/organization',
   '/professional': '/professional',
   '/parcels': '/(tabs)/parcels',
   '/marketplace': '/(tabs)/marketplace',
-  '/news': '/(tabs)/feed?type=post',
+  '/news': '/news',
   '/jobs': '/jobs',
   '/events': '/events',
+  '/guide': '/guide',
+  '/aide': '/aide',
   '/messages': '/messages',
   '/notifications': '/notifications',
   '/favorites': '/favorites',
   '/referral': '/referral',
   '/marketplace/mine': '/listing/mine',
-  '/profile': '/profile/edit',
+  '/profile': '/profile',
+  '/settings': '/settings',
+  '/moderation': '/moderation',
   '/admin': '/admin',
   '/feature-matrix': '/feature-matrix',
   '/superadmin': '/superadmin',
@@ -74,15 +104,22 @@ export const navigationGroups: MoreServiceGroup[] = [
   {
     id: 'home',
     label: 'Accueil',
-    children: [item('dashboard', 'Accueil', '/dashboard', '🏠', Home)],
+    children: [
+      item('moxt', 'MOXT', '/moxt', '💠', Layers),
+      item('dashboard', 'Accueil', '/dashboard', '🏠', Home),
+    ],
   },
   {
     id: 'finance',
     label: 'Finances',
     children: [
       item('transfers', 'Transfert', '/transfers', '💱', ArrowLeftRight),
-      item('p2p', 'Echanges P2P', '/p2p', '🔄', Repeat),
-      item('exchangers', 'Échangeurs', '/exchangers', '🤝', Handshake),
+      item('p2p', 'Echanges P2P', '/p2p', '🔄', Users),
+      item('exchangers', 'Échangeurs', '/exchangers', '🤝', Repeat),
+      item('stars', 'MOXT Stars', '/stars', '⭐', Star, { devModule: 'stars' }),
+      item('exchanger-dashboard', 'Mon dashboard échangeur', '/exchanger', '📈', Repeat, {
+        roles: ['professional', 'admin', 'superadmin'],
+      }),
     ],
   },
   {
@@ -90,8 +127,8 @@ export const navigationGroups: MoreServiceGroup[] = [
     label: 'Services',
     children: [
       item('businesses', 'Entreprises', '/businesses', '🏢', Building2),
-      item('professional', 'Espace professionnel', '/professional', '💼', BriefcaseBusiness),
-      item('parcels', 'Colis', '/parcels', '📦', Package),
+      item('professional', 'Mon entreprise', '/professional', '💼', LayoutGrid),
+      item('parcels', 'Colis', '/parcels', '📦', Package, { devModule: 'parcels' }),
       item('marketplace', 'Marketplace', '/marketplace', '🛍️', ShoppingBag),
     ],
   },
@@ -99,9 +136,11 @@ export const navigationGroups: MoreServiceGroup[] = [
     id: 'community',
     label: 'Communauté',
     children: [
-      item('news', 'Actualités', '/news', '📰', Newspaper),
-      item('jobs', 'Jobs', '/jobs', '💼', Briefcase),
-      item('events', 'Evenements', '/events', '📅', CalendarDays),
+      item('news', 'Actualités', '/news', '📰', Newspaper, { devModule: 'news' }),
+      item('jobs', 'Jobs', '/jobs', '💼', Briefcase, { devModule: 'jobs' }),
+      item('events', 'Evenements', '/events', '📅', CalendarDays, { devModule: 'events' }),
+      item('guide', 'Guide', '/guide', '📖', BookOpen),
+      item('product-help', 'Aide Moxt', '/aide', '❓', CircleHelp),
     ],
   },
   {
@@ -116,9 +155,19 @@ export const navigationGroups: MoreServiceGroup[] = [
     id: 'account',
     label: 'Compte',
     children: [
-      item('favorites', 'Mes favoris', '/favorites', '❤️', Heart),
-      item('referral', 'Inviter un ami', '/referral', '🎁', Gift),
       item('my-publications', 'Mes publications', '/publications/mine', '📋', FileText),
+      item('favorites', 'Mes favoris', '/favorites', '❤️', Heart),
+      item('referral', 'QR & invitation', '/referral', '🎁', Gift),
+    ],
+  },
+  {
+    id: 'moderation',
+    label: 'Modération',
+    roles: ['moderator', 'admin', 'superadmin'],
+    children: [
+      item('moderation', 'Espace modérateur', '/moderation', '🛡️', Shield, {
+        roles: ['moderator', 'admin', 'superadmin'],
+      }),
     ],
   },
   {

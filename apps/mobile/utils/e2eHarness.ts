@@ -9,6 +9,18 @@ export type E2eFixtures = {
   transfers?: unknown[];
   receipts?: Array<{ id: string; userId?: string; relatedId?: string }>;
   conversation?: { id: string };
+  businesses?: Array<{
+    id: string;
+    ownerId: string;
+    name: string;
+    status?: string;
+    services?: string[] | string;
+    city?: string;
+    country?: string;
+    feePercent?: number;
+    rating?: number;
+    deletedByUserAt?: string | null;
+  }>;
   statuses?: Array<{
     id: string;
     authorId: string;

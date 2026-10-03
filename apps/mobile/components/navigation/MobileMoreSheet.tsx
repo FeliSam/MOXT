@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Search, X, UserRound, Settings, LogOut } from 'lucide-react-native';
+import { Search, X, UserRound, Settings } from 'lucide-react-native';
 
 import {
   badgeForItem,
@@ -13,8 +13,7 @@ import {
 } from '@/constants/moreServices';
 import { cn } from '@/lib/cn';
 import { useLanguage } from '@/providers/LanguageProvider';
-import { logout } from '@/store/auth';
-import { useAppDispatch, useAppSelector } from '@/store/store';
+import { useAppSelector } from '@/store/store';
 import { useTheme, useThemeCssVars } from '@/theme/ThemeContext';
 
 function GridIcon({ active }: { active?: boolean }) {
@@ -86,7 +85,6 @@ function MoreServiceTile({
 }
 
 export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const dispatch = useAppDispatch();
   const cssVars = useThemeCssVars();
   const { colors, isDark } = useTheme();
   const { translateLabel } = useLanguage();
@@ -107,12 +105,6 @@ export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () 
   function handleClose() {
     setQuery('');
     onClose();
-  }
-
-  async function handleLogout() {
-    handleClose();
-    await dispatch(logout());
-    router.replace('/login' as any);
   }
 
   return (
@@ -204,18 +196,7 @@ export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () 
         </ScrollView>
 
         <View style={{ borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 16, paddingVertical: 12 }}>
-          <View style={{ marginBottom: 8, flexDirection: 'row', gap: 8 }}>
-            <Pressable
-              style={{ minHeight: 44, flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
-              onPress={() => {
-                handleClose();
-                router.push('/profile/edit' as any);
-              }}>
-              <UserRound size={16} color={colors.accent} strokeWidth={2.2} />
-              <Text style={{ fontSize: 12, fontWeight: '600', color: colors.text }}>
-                {translateLabel('Mon profil')}
-              </Text>
-            </Pressable>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
             <Pressable
               style={{ minHeight: 44, flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
               onPress={() => {
@@ -227,15 +208,18 @@ export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () 
                 {translateLabel('Réglages')}
               </Text>
             </Pressable>
+            <Pressable
+              style={{ minHeight: 44, flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
+              onPress={() => {
+                handleClose();
+                router.push('/profile' as any);
+              }}>
+              <UserRound size={16} color={colors.accent} strokeWidth={2.2} />
+              <Text style={{ fontSize: 12, fontWeight: '600', color: colors.text }}>
+                {translateLabel('Profil')}
+              </Text>
+            </Pressable>
           </View>
-          <Pressable
-            style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, backgroundColor: isDark ? 'rgba(127,29,29,0.35)' : '#fef2f2' }}
-            onPress={handleLogout}>
-            <LogOut size={16} color="#dc2626" strokeWidth={2.2} />
-            <Text style={{ fontSize: 14, fontWeight: '600', color: isDark ? '#fca5a5' : '#dc2626' }}>
-              {translateLabel('Déconnexion')}
-            </Text>
-          </Pressable>
         </View>
       </View>
       </View>

@@ -92,6 +92,13 @@ const initialState: AccountState = {
 };
 
 export const loadBusinesses = createAsyncThunk('account/loadBusinesses', async (userId: string) => {
+  const { isE2eHarnessActive, readE2eFixtures } = await import('@/utils/e2eHarness');
+  if (isE2eHarnessActive()) {
+    const fixtures = readE2eFixtures();
+    if (Array.isArray(fixtures?.businesses) && fixtures.businesses.length) {
+      return fixtures.businesses as Business[];
+    }
+  }
   if (!supabase) return [] as Business[];
   return (await fetchBusinesses(supabase, userId)) as Business[];
 });

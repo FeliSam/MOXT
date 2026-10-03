@@ -34,6 +34,7 @@ import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, fontFamilies, radii, spacing, typography } from '@/theme/colors';
 import { loadListingById, upsertListing, type ListingItem } from '@/store/marketplace';
 import { useAppDispatch, useAppSelector } from '@/store/store';
+import { normalizeListingImages } from '@/utils/mediaUrl';
 import { showNotice } from '@/utils/notice';
 import { idFromPath, routeParam } from '@/utils/routeParam';
 
@@ -151,6 +152,9 @@ export default function ListingDetailScreen() {
     };
   }, [id]);
 
+  const images = useMemo(() => normalizeListingImages(listing?.images), [listing?.images]);
+  const isAdminViewer = Boolean(user?.role && ['admin', 'superadmin'].includes(String(user.role)));
+
   if (!listing) {
     if (pending) {
       return <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} />;
@@ -167,7 +171,6 @@ export default function ListingDetailScreen() {
 
   const typeLabel = listingTypeLabel(listing.type);
   const conditionLabel = CONDITION_LABELS[listing.condition || ''] || '';
-  const images = listing.images || [];
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offsetX = event.nativeEvent.contentOffset.x;
@@ -541,6 +544,42 @@ export default function ListingDetailScreen() {
 
         {user?.id && !isOwner ? (
           <Button variant="danger" onPress={() => setReportOpen(true)}>Signaler</Button>
+        ) : null}
+
+        {isAdminViewer ? (
+          <Card>
+            <View style={{ gap: spacing.sm }}>
+              <Text style={{ ...typography.sectionTitle, color: colors.text }}>🛡 Actions administrateur</Text>
+              <Text style={{ ...typography.bodySmall, color: colors.textMuted }}>
+                Modération directe de l'annonce depuis sa fiche
+              </Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {(
+                  [
+                    ['active', 'Publier', 'primary'],
+                    ['sold', 'Marquer vendu', 'secondary'],
+                    ['archived', 'Archiver', 'danger'],
+                  ] as const
+                ).map(([status, label, variant]) => (
+                  <Button
+                    key={status}
+                    variant={variant}
+                    onPress={async () => {
+                      if (!supabase) return;
+                      const { error } = await supabase.from('listings').update({ status }).eq('id', listing.id);
+                      if (error) {
+                        showNotice('Modération', error.message);
+                        return;
+                      }
+                      dispatch(upsertListing({ ...listing, status }));
+                      showNotice('Modération', `Statut « ${label} » appliqué.`);
+                    }}>
+                    {label}
+                  </Button>
+                ))}
+              </View>
+            </View>
+          </Card>
         ) : null}
       </ScrollView>
       <DetailFloatingActions

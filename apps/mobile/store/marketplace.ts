@@ -3,6 +3,7 @@ import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { supabase } from '../services/supabase';
 import { fetchActiveListings } from '@moxt/shared/services/publicationsService.js';
 import { toggleLikeList } from '@moxt/shared/services/engagementService.js';
+import { normalizeListingImages } from '@/utils/mediaUrl';
 import { commentAdded, commentRemoved, likeToggled, type EngagementComment } from './engagementActions';
 
 export type ListingItem = {
@@ -105,7 +106,7 @@ function mapRow(row: any): ListingItem {
     city: row.city || row.payload?.city || '',
     country: row.country || 'RU',
     address: row.address || row.payload?.address || '',
-    images: row.images || row.payload?.images || [],
+    images: normalizeListingImages(row.images, row.payload?.images, row.payload?.photos, row.image_url),
     ownerId: row.owner_id,
     businessId: row.business_id || row.payload?.businessId || undefined,
     views: Number(row.views ?? row.payload?.views ?? 0) || 0,

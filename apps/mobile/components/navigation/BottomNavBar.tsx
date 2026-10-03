@@ -5,6 +5,7 @@ import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FeatherIcon, type FeatherName } from '@/components/chrome/icons';
+import { MobileMoreSheet } from '@/components/navigation/MobileMoreSheet';
 import { AppText } from '@/components/ui/AppText';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { withAlphaColor } from '@/theme/palette';
@@ -49,6 +50,7 @@ export function BottomNavBar({
   const inactiveColor = withAlphaColor(colors.text, L.bottomNavInactiveOpacity);
 
   const [slotWidth, setSlotWidth] = useState(0);
+  const [moreOpen, setMoreOpen] = useState(false);
   const translate = useRef(new Animated.Value(0)).current;
   const gap = 2;
 
@@ -124,7 +126,14 @@ export function BottomNavBar({
               accessibilityRole="tab"
               accessibilityState={{ selected: focused }}
               accessibilityLabel={item.id === 'more' ? t('nav.moreServicesAria') : label}
-              onPress={() => onTabPress(item.mobileRoute)}
+              onPress={() => {
+                // Plus → bottom sheet « Tous les services » (web MobileMoreDrawer), pas la page /moxt.
+                if (item.id === 'more') {
+                  setMoreOpen(true);
+                  return;
+                }
+                onTabPress(item.mobileRoute);
+              }}
               style={({ pressed }) => ({
                 flex: 1,
                 minWidth: 0,
@@ -149,6 +158,7 @@ export function BottomNavBar({
           );
         })}
       </View>
+      <MobileMoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
     </View>
   );
 }

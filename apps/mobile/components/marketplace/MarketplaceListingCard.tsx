@@ -7,6 +7,7 @@ import { Heart, MapPin, ShoppingBag } from 'lucide-react-native';
 import { formatMoney } from '@moxt/shared/utils/transfers.js';
 
 import { listingCategoryLabel, listingTypeLabel } from '@/components/marketplace/listingMeta';
+import { normalizeListingImages } from '@/utils/mediaUrl';
 import { AppText } from '@/components/ui/AppText';
 import { toggleFavorite } from '@/store/favorites';
 import type { ListingItem } from '@/store/marketplace';
@@ -72,7 +73,7 @@ function MarketplaceListingCardComponent({
   const liked = useAppSelector((s) => s.favorites.items.some((f) => f.type === 'listing' && f.id === listing.id));
   const [failed, setFailed] = useState<Set<string>>(() => new Set());
   const [slide, setSlide] = useState(0);
-  const images = (listing.images || []).filter((src) => src && !failed.has(src));
+  const images = normalizeListingImages(listing.images).filter((src) => src && !failed.has(src));
   const multi = images.length > 1;
   const detailPath = `/listing/${listing.id}`;
 
