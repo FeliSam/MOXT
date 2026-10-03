@@ -7,6 +7,7 @@ import { PUBLICATION_TABLE, updatePublicationFields } from '@moxt/shared/service
 
 import { AppChrome } from '@/components/chrome/AppChrome';
 import { Field, StepBar } from '@/components/publish/PublishForm';
+import { CitySelector, CurrencyChips, UploadProgressBar } from '@/components/publish/publishKit';
 import { AppText } from '@/components/ui/AppText';
 import { WEB_BUTTON_TEXT } from '@/components/ui/webButtonText';
 import type { PublicationType } from '@/components/profile/PublicationCard';
@@ -25,6 +26,7 @@ const WIZARDS: Record<PublicationType, { steps: string[]; groups: FieldDef[][]; 
       [
         { key: 'title', label: 'Titre' },
         { key: 'price', label: 'Prix', numeric: true },
+        { key: 'currency', label: 'Devise' },
         { key: 'description', label: 'Description', multiline: true },
       ],
       [],
@@ -86,7 +88,7 @@ const WIZARDS: Record<PublicationType, { steps: string[]; groups: FieldDef[][]; 
       ],
       [],
     ],
-    photos: false,
+    photos: true,
     proof: false,
   },
   video: {
@@ -145,6 +147,16 @@ export default function EditPublicationScreen() {
   const [payload, setPayload] = useState<Record<string, unknown>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [progress, setProgress] = useState<number | null>(null);
+  const titles: Record<string, string> = {
+    listing: "Modifier l'annonce",
+    parcel: 'Modifier le voyage',
+    job: "Modifier l'offre d'emploi",
+    event: "Modifier l'événement",
+    video: 'Modifier la vidéo',
+    post: 'Modifier la publication',
+    other: "Modifier l'offre P2P",
+  };
 
   useEffect(() => {
     const table = PUBLICATION_TABLE[type];
@@ -195,8 +207,10 @@ export default function EditPublicationScreen() {
     try {
       const file = await pickLibraryFile('images');
       if (!file) return;
-      const uploaded = await uploadLikeWeb('listings', `${user.id}/edits/${Date.now()}.jpg`, file, 'public');
+      setProgress(0.4);
+      const uploaded = await uploadLikeWeb(type === 'parcel' ? 'parcels' : 'listings', `${user.id}/edits/${Date.now()}.jpg`, file, 'public');
       if (uploaded.url) setImages((prev) => [...prev, uploaded.url as string].slice(0, 5));
+      setProgress(1);
     } catch (error) {
       showNotice('Photo', error instanceof Error ? error.message : 'Envoi impossible.');
     }
@@ -251,7 +265,7 @@ export default function EditPublicationScreen() {
   return (
     <AppChrome pathname="/publications/edit">
       <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 128 }}>
-        <AppText className="text-2xl font-black text-app-text">Modifier</AppText>
+        <AppText className="text-2xl font-black text-app-text">{titles[type] || 'Modifier'}</AppText>
         <StepBar steps={wizard.steps} index={step} />
         {loading ? <ActivityIndicator color={colors.accent} /> : null}
         {step > 0 ? (
@@ -259,20 +273,39 @@ export default function EditPublicationScreen() {
             <AppText className="text-sm font-bold text-app-accent">Retour</AppText>
           </Pressable>
         ) : null}
-        {fields.map((field) => (
-          <Field
-            key={field.key}
-            label={field.label}
-            value={values[field.key] || ''}
-            multiline={field.multiline}
-            keyboardType={field.numeric ? 'numeric' : 'default'}
-            onChangeText={(text) => setValues((prev) => ({ ...prev, [field.key]: text }))}
-          />
-        ))}
-        {wizard.photos && step === (type === 'post' ? 1 : type === 'job' ? 3 : 1) ? (
-          <Pressable onPress={() => void addPhoto()}>
-            <AppText className="text-sm font-bold text-app-accent">Ajouter une photo ({images.length})</AppText>
-          </Pressable>
+        {fields.map((field) =>
+          field.key === 'city' || field.key === 'location' ? (
+            <CitySelector
+              key={field.key}
+              label={field.label}
+              value={values[field.key] || ''}
+              onChange={(text) => setValues((prev) => ({ ...prev, [field.key]: text }))}
+            />
+          ) : field.key === 'currency' || field.key === 'fromCurrency' || field.key === 'toCurrency' ? (
+            <CurrencyChips
+              key={field.key}
+              label={field.label}
+              value={values[field.key] || 'RUB'}
+              onChange={(text) => setValues((prev) => ({ ...prev, [field.key]: text }))}
+            />
+          ) : (
+            <Field
+              key={field.key}
+              label={field.label}
+              value={values[field.key] || ''}
+              multiline={field.multiline}
+              keyboardType={field.numeric ? 'numeric' : 'default'}
+              onChangeText={(text) => setValues((prev) => ({ ...prev, [field.key]: text }))}
+            />
+          ),
+        )}
+        {wizard.photos && step === (type === 'post' ? 1 : type === 'job' || type === 'event' ? 3 : 1) ? (
+          <>
+            <Pressable onPress={() => void addPhoto()}>
+              <AppText className="text-sm font-bold text-app-accent">Ajouter une photo ({images.length}/5)</AppText>
+            </Pressable>
+            <UploadProgressBar progress={progress} />
+          </>
         ) : null}
         {wizard.proof && step === 2 ? (
           <Pressable onPress={() => void addProof()}>
