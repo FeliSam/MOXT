@@ -278,11 +278,25 @@ export default function KycScreen() {
     <AppChrome pathname="/verification">
       <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerClassName="p-5 gap-4 pb-32">
         <PageHeader
-          eyebrow="Compte"
           title="Vérification"
-          description="Identité MOXT (entreprise et transferts) ou renforcée (plafonds élevés)."
           className="px-0"
+          actions={
+            <Pressable
+              onPress={() => (router.canGoBack() ? router.back() : router.replace('/' as never))}
+              style={{ minHeight: 40, paddingHorizontal: 14, borderRadius: 14, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface }}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: colors.text }}>← Retour</Text>
+            </Pressable>
+          }
         />
+
+        {phoneOk ? (
+          <View style={{ borderRadius: 16, borderWidth: 1, padding: 14, borderColor: isDark ? 'rgba(16,185,129,0.4)' : '#a7f3d0', backgroundColor: isDark ? 'rgba(6,78,59,0.35)' : '#ecfdf5' }}>
+            <Text style={{ fontWeight: '900', color: isDark ? '#6ee7b7' : '#065f46' }}>{t('security.phone.verifiedTitle')}</Text>
+            <Text style={{ marginTop: 4, fontSize: 13, color: isDark ? '#a7f3d0' : '#047857' }}>
+              {t('security.phone.verifiedBody', { phone: user?.phone || '' })}
+            </Text>
+          </View>
+        ) : null}
 
         {requestStale ? (
           <View style={{ borderRadius: 16, borderWidth: 1, padding: 14, borderColor: isDark ? 'rgba(245,158,11,0.4)' : '#fcd34d', backgroundColor: isDark ? 'rgba(120,53,15,0.35)' : '#fffbeb' }}>
@@ -353,6 +367,7 @@ export default function KycScreen() {
         {current.key === 'level' ? (
           <Card>
             <Text className="text-base font-black text-app-text mb-3">Choisissez votre niveau</Text>
+            <Text className="mb-3 text-sm text-app-text-muted">{t('verification.chooseLevelHint')}</Text>
             <ChoiceRow
               value={level}
               onChange={(value) => setLevel(value as Level)}

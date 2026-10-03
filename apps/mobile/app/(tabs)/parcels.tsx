@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { Plus, SlidersHorizontal, User } from 'lucide-react-native';
 
 import { formatCurrency, formatShortDate } from '@moxt/shared/utils/formatters.js';
 
@@ -227,33 +228,32 @@ export default function ParcelsScreen() {
         <PageHeader
           className="mx-0"
           title={t('parcels.browse.title')}
+          stats={[
+            { label: t('parcels.browse.stats.availableTrips'), value: visibleParcels.length },
+            {
+              label: t('parcels.browse.stats.availableKg'),
+              value: t('parcels.browse.stats.availableKgValue', {
+                kg: visibleParcels.reduce((sum, parcel) => sum + Number(parcel.remainingKg ?? parcel.capacityKg ?? 0), 0),
+              }),
+            },
+          ]}
           actions={
-            <View style={{ gap: 8 }}>
-              <Pressable onPress={() => setShowMine((value) => !value)}>
-                <Text style={{ fontSize: 12, fontWeight: '700', color: brand[700] }}>
-                  {showMine ? t('parcels.browse.actions.allParcels') : t('parcels.browse.actions.myParcels')}
-                </Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Pressable
+                accessibilityLabel={showMine ? t('parcels.browse.actions.allParcels') : t('parcels.browse.actions.myParcels')}
+                onPress={() => setShowMine((value) => !value)}
+                style={{ height: 44, width: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: showMine ? colors.accentSoft : colors.surface }}>
+                <User size={16} color={brand[700]} strokeWidth={2} />
               </Pressable>
-              <Pressable onPress={() => router.push('/publish/parcel' as never)}>
-                <Text style={{ fontSize: 12, fontWeight: '700', color: brand[700] }}>{t('parcels.browse.actions.publish')}</Text>
+              <Pressable
+                accessibilityLabel={t('parcels.browse.actions.publish')}
+                onPress={() => router.push('/publish/parcel' as never)}
+                style={{ height: 44, width: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}>
+                <Plus size={16} color={brand[700]} strokeWidth={2} />
               </Pressable>
             </View>
           }
         />
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <View style={[styles.statTile, { flex: 1, backgroundColor: colors.surface }]}>
-            <Text style={[styles.statValue, { color: colors.text }]}>{visibleParcels.length}</Text>
-            <Text style={[styles.statLabel, { color: colors.textMuted }]}>{t('parcels.browse.stats.availableTrips')}</Text>
-          </View>
-          <View style={[styles.statTile, { flex: 1, backgroundColor: colors.surface }]}>
-            <Text style={[styles.statValue, { color: colors.text }]}>
-              {t('parcels.browse.stats.availableKgValue', {
-                kg: visibleParcels.reduce((sum, parcel) => sum + Number(parcel.remainingKg ?? parcel.capacityKg ?? 0), 0),
-              })}
-            </Text>
-            <Text style={[styles.statLabel, { color: colors.textMuted }]}>{t('parcels.browse.stats.availableKg')}</Text>
-          </View>
-        </View>
 
         <View style={[styles.searchBar, { backgroundColor: colors.inputBg }]}>
           <Text style={{ fontSize: 14 }}>🔍</Text>
@@ -264,8 +264,11 @@ export default function ParcelsScreen() {
             value={query}
             onChangeText={setQuery}
           />
-          <Pressable onPress={() => setAdvanced((value) => !value)}>
-            <Text style={{ fontSize: 12, fontWeight: '700', color: brand[700] }}>{advanced ? 'Masquer' : 'Filtres'}</Text>
+          <Pressable
+            accessibilityLabel={advanced ? 'Masquer' : 'Filtres'}
+            onPress={() => setAdvanced((value) => !value)}
+            style={{ height: 40, width: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}>
+            <SlidersHorizontal size={16} color={brand[700]} strokeWidth={2} />
           </Pressable>
         </View>
         {advanced ? (

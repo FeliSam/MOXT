@@ -426,6 +426,25 @@ export default function MessagesTabScreen() {
               </View>
               <AppText className="mt-4 text-base font-extrabold text-app-text">{t('messages.empty.title')}</AppText>
               <AppText className="mt-2 text-center text-sm leading-6 text-app-text-muted">{t('messages.empty.description')}</AppText>
+              <View style={{ marginTop: 20, width: '100%', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 }}>
+                <Pressable
+                  onPress={() => router.push('/(tabs)/marketplace' as never)}
+                  style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 14, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14, backgroundColor: colors.surface }}>
+                  <ShoppingBag size={16} color={colors.text} strokeWidth={2} />
+                  <AppText className="text-sm font-bold text-app-text">{t('messages.empty.marketplace')}</AppText>
+                </Pressable>
+                <Pressable
+                  onPress={() => router.push('/(tabs)/parcels' as never)}
+                  style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 14, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14, backgroundColor: colors.surface }}>
+                  <Package size={16} color={colors.text} strokeWidth={2} />
+                  <AppText className="text-sm font-bold text-app-text">{t('messages.empty.parcels')}</AppText>
+                </Pressable>
+                <Pressable
+                  onPress={() => router.push('/activities' as never)}
+                  style={{ minHeight: 44, minWidth: '100%', alignItems: 'center', justifyContent: 'center', borderRadius: 14, paddingHorizontal: 14, backgroundColor: colors.accent }}>
+                  <AppText className="text-sm font-bold text-white">{t('messages.empty.activities')}</AppText>
+                </Pressable>
+              </View>
             </View>
           ) : !visible.length ? (
             <AppText className="text-center text-sm text-app-text-faint" style={{ padding: 24 }}>

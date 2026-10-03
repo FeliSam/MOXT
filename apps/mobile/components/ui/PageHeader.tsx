@@ -10,6 +10,8 @@ interface PageHeaderProps {
   title: string;
   description?: string;
   actions?: React.ReactNode;
+  /** Stats en bas de carte (web PageHeader.stats). */
+  stats?: Array<{ label: string; value: React.ReactNode }>;
   /** Conservé pour les appels existants ; le web n’affiche pas de pastille. */
   showDot?: boolean;
   className?: string;
@@ -24,6 +26,7 @@ export function PageHeader({
   title,
   description,
   actions,
+  stats,
   className,
 }: PageHeaderProps) {
   const { colors } = useTheme();
@@ -60,6 +63,25 @@ export function PageHeader({
         </View>
         {actions ? <View className="shrink-0 flex-row flex-wrap items-center gap-2" style={{ maxWidth: '100%' }}>{actions}</View> : null}
       </View>
+      {stats?.length ? (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {stats.map((stat) => (
+            <View
+              key={stat.label}
+              style={{
+                minWidth: 120,
+                flexGrow: 1,
+                borderRadius: 14,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                backgroundColor: colors.surfaceMuted,
+              }}>
+              <AppText className="text-lg font-black text-app-text">{stat.value}</AppText>
+              <AppText className="mt-0.5 text-xs font-bold text-app-text-muted">{stat.label}</AppText>
+            </View>
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }
