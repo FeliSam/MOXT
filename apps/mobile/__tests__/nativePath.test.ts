@@ -35,6 +35,8 @@ describe('liens moxtapp vers les écrans natifs', () => {
     expect(resolveNativePath('/transfers/history')).toBe('/(tabs)/transfers');
     expect(resolveNativePath('/receipts/r1')).toBe('/receipts/r1');
     expect(resolveNativePath('/statuses/sta1')).toBe('/status/sta1');
+    expect(resolveNativePath('/status/sta1')).toBe('/status/sta1');
+    expect(resolveNativePath('https://moxtapp.ru/statuses/sta1')).toBe('/status/sta1');
   });
 
   it('laisse les pages légales au navigateur', () => {

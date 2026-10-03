@@ -132,7 +132,17 @@ export default function TransferDetailScreen() {
   return (
     <AppScreen edges={[]}>
       <ScrollView contentContainerClassName="gap-5 px-4 pb-32 pt-2" showsVerticalScrollIndicator={false}>
-        <PageHeader className="mx-0" eyebrow="Transfert" title={String(t.id)} description={directionLabel(t.direction || '')} />
+        <PageHeader
+          className="mx-0"
+          eyebrow="Transfert"
+          title="Détail du transfert"
+          description={`${t.id} · ${directionLabel(t.direction || '')}`}
+          actions={
+            <Pressable onPress={() => router.back()} className="min-h-11 items-center justify-center rounded-2xl bg-app-surface px-4">
+              <Text className="text-sm font-bold text-app-text">Retour</Text>
+            </Pressable>
+          }
+        />
         <View className="flex-row flex-wrap justify-between gap-y-3">
           {[
             { emoji: '🔁', label: 'Direction', value: directionLabel(t.direction || '') },
@@ -270,10 +280,39 @@ export default function TransferDetailScreen() {
             <Text className={twTransfer.nextDesc}>{nextStep.description}</Text>
           </View>
         ) : null}
+
+        {t.status === 'pending_payment' ? (
+          <View className={twTransfer.detailCard}>
+            <Text className={twTransfer.detailCardTitle}>Déclarer le paiement</Text>
+            <Text className="text-xs text-app-text-muted">Ajoutez une preuve, puis déclarez le paiement. Le partenaire est notifié.</Text>
+            <Pressable className={twTransfer.uploadZone}>
+              <Text className="text-2xl">⬆️</Text>
+              <Text className={twTransfer.uploadTitle}>Preuve de paiement</Text>
+              <Text className={twTransfer.uploadHint}>Image ou PDF</Text>
+            </Pressable>
+            <ImagePickerButton label="Photo de la preuve" currentUri={proofUri} onImageSelected={setProofUri} />
+            <Pressable className={twTransfer.declareBtn}>
+              <Text className={twTransfer.submitBtnText}>Déclarer le paiement</Text>
+            </Pressable>
+          </View>
+        ) : null}
+        <Pressable className={twTransfer.outlineBtn} onPress={() => router.push('/disputes/create' as never)}>
+          <Text className={twTransfer.outlineBtnText}>Ouvrir une réclamation</Text>
+        </Pressable>
           </>
         ) : null}
 
         {detailTab === 'paiement' ? (
+        <>
+        <View className={twTransfer.detailCard}>
+          <Text className={twTransfer.detailCardTitle}>Coordonnées de paiement</Text>
+          <Text className="text-sm text-app-text-muted">
+            {t.exchanger?.paymentAccount || 'Les coordonnées de paiement apparaissent après l’acceptation du partenaire.'}
+          </Text>
+          {t.noteToExchanger ? (
+            <Text className="mt-2 text-sm text-app-text">Note : {String(t.noteToExchanger)}</Text>
+          ) : null}
+        </View>
         <View className={twTransfer.detailCard}>
           <View className="mb-4 flex-row items-center gap-3">
             <View className="h-9 w-9 items-center justify-center rounded-xl bg-brand-100 dark:bg-brand-950/45">
@@ -302,6 +341,7 @@ export default function TransferDetailScreen() {
             ))}
           </View>
         </View>
+        </>
         ) : null}
 
         {detailTab === 'details' ? (
@@ -340,57 +380,25 @@ export default function TransferDetailScreen() {
             </View>
             <Text className={twTransfer.detailCardTitle}>Chronologie</Text>
           </View>
-          <View className="flex-row gap-3">
-            <View className="h-10 w-10 items-center justify-center rounded-full bg-brand-700 dark:bg-brand-400">
-              <Text className="text-white dark:text-slate-950">🕐</Text>
-            </View>
-            <View className="flex-1">
-              <Text className="text-sm font-bold text-app-text dark:text-zinc-50">
-                Transfert créé, paiement attendu
-              </Text>
-              <Text className="mt-1 text-xs text-app-text-muted dark:text-zinc-400">
-                {t.createdAt || t.created_at ? formatTransferDate(t.createdAt || t.created_at) : '—'}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Actions */}
-        <View className={twTransfer.detailCard}>
-          <View className="mb-2 flex-row items-center gap-3">
-            <View className="h-9 w-9 items-center justify-center rounded-xl bg-brand-100 dark:bg-brand-950/45">
-              <Text>✓</Text>
-            </View>
-            <View>
-              <Text className={twTransfer.detailCardTitle}>Actions</Text>
-              <Text className="text-xs text-app-text-muted dark:text-zinc-400">
-                Chaque action est unique et la prochaine étape dépend du statut actuel.
-              </Text>
-            </View>
-          </View>
-
-          {t.status === 'pending_payment' ? (
-            <View className="gap-3">
-              <Pressable className={twTransfer.uploadZone}>
-                <Text className="text-2xl">⬆️</Text>
-                <Text className={twTransfer.uploadTitle}>Preuve de paiement</Text>
-                <Text className={twTransfer.uploadHint}>Cliquez pour ajouter une image ou un PDF</Text>
-              </Pressable>
-              <ImagePickerButton label="Photo de la preuve" currentUri={proofUri} onImageSelected={setProofUri} />
-              <Pressable className={twTransfer.declareBtn}>
-                <Text className={twTransfer.submitBtnText}>✓ Déclarer le paiement</Text>
-              </Pressable>
-            </View>
-          ) : null}
-
-          <View className="mt-3 gap-2">
-            <Pressable className={twTransfer.cancelBtn}>
-              <Text className={twTransfer.cancelBtnText}>✕ Annuler</Text>
-            </Pressable>
-            <Pressable className={twTransfer.outlineBtn} onPress={() => router.push('/disputes/create' as any)}>
-              <Text className={twTransfer.outlineBtnText}>🚩 Ouvrir une réclamation</Text>
-            </Pressable>
-          </View>
+          {(Array.isArray(t.timeline) && t.timeline.length
+            ? t.timeline
+            : [{ status: t.status, at: t.createdAt || t.created_at, label: st.label }]
+          ).map((event: { status?: string; at?: string; label?: string }, index: number) => {
+            const eventStatus = TRANSFER_STATUS_LABELS[event.status || ''] || st;
+            return (
+              <View key={`${event.status}-${event.at}-${index}`} className="mb-3 flex-row gap-3">
+                <View className="h-10 w-10 items-center justify-center rounded-full bg-brand-700 dark:bg-brand-400">
+                  <Text className="text-xs font-bold text-white dark:text-slate-950">{index + 1}</Text>
+                </View>
+                <View className="flex-1">
+                  <Text className="text-sm font-bold text-app-text">{event.label || eventStatus.label}</Text>
+                  <Text className="mt-1 text-xs text-app-text-muted">
+                    {event.at ? formatTransferDate(event.at) : '—'}
+                  </Text>
+                </View>
+              </View>
+            );
+          })}
         </View>
 
         {/* Operation info */}
@@ -398,7 +406,7 @@ export default function TransferDetailScreen() {
           <Text className={cn(twTransfer.detailCardTitle, 'mb-4')}>Informations de l'opération</Text>
           {[
             ['Référence', t.id],
-            ['Statut', 'Transfert créé, paiement attendu'],
+            ['Statut', st.label],
             ['Montant envoyé', formatMoney(amountSent, currFrom)],
             ['Montant reçu (estimé)', formatMoney(amountReceived, currTo)],
             ['Total à payer', formatMoney(totalToPay, currFrom)],

@@ -103,6 +103,7 @@ function RootLayoutNav() {
                 <Stack.Screen name="(auth)" />
                 <Stack.Screen name="transfer" />
                 <Stack.Screen name="design-system" />
+                <Stack.Screen name="status/[id]" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
               </Stack>
               </PublishMenuProvider>
             </OfflineSync>

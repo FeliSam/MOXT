@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Image, Pressable, TextInput, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
 
@@ -13,12 +13,14 @@ import { supabase } from '@/services/supabase';
 import { statusUpserted, type StatusItem } from '@/store/feed';
 import { mapConversationRow, receiveRemoteConversation, sendMessage } from '@/store/messages';
 import { useAppDispatch, useAppSelector } from '@/store/store';
+import { idFromPath, routeParam } from '@/utils/routeParam';
 
 const REACTIONS = ['❤️', '😂', '😮', '😢', '👏', '🔥'];
 
 /** Lecteur de statut (StatusViewer du web) : photo, légende, réactions, réponse. */
 export default function StatusDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id?: string | string[] }>();
+  const id = routeParam(params.id) || idFromPath(usePathname());
   const insets = useSafeAreaInsets();
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user);

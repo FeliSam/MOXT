@@ -3,6 +3,7 @@ import { ActivityIndicator, View } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 
 import { applySession, restoreSession } from '@/store/auth';
+import { statusUpserted } from '@/store/feed';
 import { receiveRemoteConversation } from '@/store/messages';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { setTransfers } from '@/store/transfers';
@@ -25,6 +26,13 @@ export function AuthBootstrap({ children, fontsLoaded }: { children: ReactNode; 
         }
         if (fixtures?.conversation) {
           dispatch(receiveRemoteConversation(fixtures.conversation as never));
+        }
+        for (const status of fixtures?.statuses || []) {
+          dispatch(statusUpserted({
+            ...status,
+            images: status.images || [],
+            viewedBy: status.viewedBy || [],
+          }));
         }
         return;
       }

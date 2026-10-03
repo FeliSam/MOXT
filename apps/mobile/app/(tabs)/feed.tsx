@@ -26,6 +26,7 @@ import {
 import { usePublisherSubscription } from '@/components/account/SubscribeButton';
 import { StarsGiftButton } from '@/components/feed/StarsGiftButton';
 import { usePublishMenu } from '@/components/chrome/PublishMenuSheet';
+import { StatusRail } from '@/components/dashboard/StatusRail';
 import { FeedCommentsSheet } from '@/components/feed/FeedCommentsSheet';
 import { FeedMedia } from '@/components/feed/FeedMedia';
 import { buildFeedItems, FEED_TYPE_FILTERS, type FeedItem, type FeedKind } from '@/components/feed/feedItems';
@@ -521,6 +522,9 @@ export default function FeedTab() {
           style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
           <Plus size={18} color="#000" strokeWidth={2} />
         </Pressable>
+      </View>
+      <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, top: Math.max(8, insets.top) + 44, zIndex: 19 }}>
+        <StatusRail tone="feed" onAdd={openPublish} />
       </View>
     </View>
   );

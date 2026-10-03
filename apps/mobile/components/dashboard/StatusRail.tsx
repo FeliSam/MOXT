@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Image, Pressable, ScrollView, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { Link } from 'expo-router';
 import { Plus } from 'lucide-react-native';
 
 import { AppText } from '@/components/ui/AppText';
@@ -83,33 +83,45 @@ function Bubble({
   avatarUrl,
   initial,
   onAdd,
-  onOpen,
   mutedAvatar,
+  tone = 'default',
 }: {
   label: string;
   group?: StatusGroup;
   avatarUrl?: string | null;
   initial?: string;
   onAdd?: () => void;
-  onOpen?: () => void;
   mutedAvatar?: boolean;
+  tone?: 'default' | 'feed';
 }) {
   const { colors } = useTheme();
   const thumb = thumbOf(group);
+  const statusId = latestStatusId(group);
+  const face = group ? (
+    <Ring unseen={group.unseen}>
+      <Face uri={thumb || avatarUrl} initial={initial} />
+    </Ring>
+  ) : (
+    <Face uri={avatarUrl} initial={initial} muted={mutedAvatar} />
+  );
+  const bubbleStyle = { width: OUTER, height: OUTER, alignItems: 'center' as const, justifyContent: 'center' as const };
   return (
     <View style={{ width: 68, alignItems: 'center', gap: 6 }}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        disabled={!onOpen}
-        onPress={onOpen}
-        style={{ width: OUTER, height: OUTER, alignItems: 'center', justifyContent: 'center' }}>
-        {group ? (
-          <Ring unseen={group.unseen}>
-            <Face uri={thumb || avatarUrl} initial={initial} />
-          </Ring>
+      <View style={{ width: OUTER, height: OUTER }}>
+        {statusId ? (
+          <Link href={{ pathname: '/status/[id]', params: { id: statusId } }} asChild>
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel={label}
+              testID={`status-bubble-${statusId}`}
+              style={bubbleStyle}>
+              {face}
+            </Pressable>
+          </Link>
         ) : (
-          <Face uri={avatarUrl} initial={initial} muted={mutedAvatar} />
+          <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onAdd} style={bubbleStyle}>
+            {face}
+          </Pressable>
         )}
         {onAdd ? (
           <Pressable
@@ -120,19 +132,23 @@ function Bubble({
               position: 'absolute',
               right: 0,
               bottom: 0,
+              zIndex: 2,
               width: 20,
               height: 20,
               borderRadius: 10,
               alignItems: 'center',
               justifyContent: 'center',
               borderWidth: 2,
-              borderColor: colors.background,
+              borderColor: tone === 'feed' ? '#000000' : colors.background,
             }}>
             <Plus size={11} color="#ffffff" strokeWidth={2.4} />
           </Pressable>
         ) : null}
-      </Pressable>
-      <AppText numberOfLines={1} className="w-full text-center text-[11px] font-semibold text-app-text-muted" style={{ lineHeight: 14 }}>
+      </View>
+      <AppText
+        numberOfLines={1}
+        className="w-full text-center text-[11px] font-semibold text-app-text-muted"
+        style={{ lineHeight: 14, color: tone === 'feed' ? 'rgba(255,255,255,0.8)' : undefined }}>
         {label}
       </AppText>
     </View>
@@ -143,7 +159,7 @@ function Bubble({
  * Bandeau des statuts de l'accueil (moxt-react StatusRail, hideWhenNoCommunity).
  * Ordre du web : Vous, officiels, non vus, déjà vus (plus récents d'abord).
  */
-export function StatusRail({ onAdd }: { onAdd?: () => void }) {
+export function StatusRail({ onAdd, tone = 'default' }: { onAdd?: () => void; tone?: 'default' | 'feed' }) {
   const { t } = useLanguage();
   const user = useAppSelector((s) => s.auth.user);
   const statuses = useAppSelector((s) => s.feed.statuses);
@@ -158,7 +174,8 @@ export function StatusRail({ onAdd }: { onAdd?: () => void }) {
     });
   }, [statuses, user?.id]);
 
-  if (!user || groups.length === 0) return null;
+  if (!user) return null;
+  if (tone !== 'feed' && groups.length === 0) return null;
   const mine = groups.find((g) => g.authorId === user.id && !g.businessId);
   const others = groups.filter((g) => g !== mine);
 
@@ -175,12 +192,8 @@ export function StatusRail({ onAdd }: { onAdd?: () => void }) {
         avatarUrl={(user as { avatarUrl?: string | null }).avatarUrl}
         initial={user.firstName?.charAt(0)}
         mutedAvatar={!mine}
+        tone={tone}
         onAdd={onAdd ?? (() => undefined)}
-        onOpen={() => {
-          const statusId = latestStatusId(mine);
-          if (statusId) router.push(`/status/${statusId}` as never);
-          else onAdd?.();
-        }}
       />
       {others.map((group) => (
         <Bubble
@@ -189,10 +202,7 @@ export function StatusRail({ onAdd }: { onAdd?: () => void }) {
           group={group}
           avatarUrl={group.avatarUrl}
           initial={group.name?.charAt(0)}
-          onOpen={() => {
-            const statusId = latestStatusId(group);
-            if (statusId) router.push(`/status/${statusId}` as never);
-          }}
+          tone={tone}
         />
       ))}
     </ScrollView>

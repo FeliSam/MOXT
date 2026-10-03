@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { formatCurrency } from '@moxt/shared/utils/formatters.js';
 
 import { TransferCalculatorModal } from '@/components/transfers/TransferCalculatorModal';
-import { TransferPageHeader } from '@/components/transfers/TransferPageHeader';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { TransferWizardStepper } from '@/components/transfers/TransferWizardStepper';
 import {
   TransferWizardConfirmStep,
@@ -24,6 +24,7 @@ import { supabase } from '@/services/supabase';
 import { loadBusinesses, type Business } from '@/store/account';
 import { loadCoreData } from '@/store/data';
 import { useAppDispatch, useAppSelector } from '@/store/store';
+import { useThemeColors } from '@/theme/ThemeContext';
 
 const READY = new Set(['verified', 'approved', 'active']);
 
@@ -73,7 +74,19 @@ export default function TransferWizardScreen() {
   const [recipientMethod, setRecipientMethod] = useState('');
   const [acceptTerms, setAcceptTerms] = useState(false);
 
+  const colors = useThemeColors();
   const info = useMemo(() => directionInfo(direction, originCountry), [direction, originCountry]);
+  const ownBusiness = useMemo(
+    () =>
+      businesses.find((business) => {
+        const services = business.services;
+        const offersTransfer = Array.isArray(services)
+          ? services.includes('Transfert')
+          : String(services || '').includes('Transfert');
+        return offersTransfer && READY.has(String(business.status || '')) && business.ownerId === user?.id;
+      }) || null,
+    [businesses, user?.id],
+  );
   const exchangers = useMemo(
     () =>
       businesses
@@ -201,15 +214,27 @@ export default function TransferWizardScreen() {
           contentContainerClassName={twTransfer.scroll}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
-          <TransferPageHeader
+          <PageHeader
+            className="mx-0"
             eyebrow="Transfert"
             title="Créer un transfert"
             description="Choisissez une entreprise validée. Elle recevra l'opération et suivra son traitement jusqu'à la validation."
-            actions={[
-              { label: 'Calculatrice', onPress: () => setCalculatorOpen(true) },
-              { label: 'Échangeurs', onPress: () => router.push('/exchangers' as any) },
-              { label: 'Historique', onPress: () => router.push('/(tabs)/transfers' as any) },
-            ]}
+            actions={
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {[
+                  ['Calculatrice', () => setCalculatorOpen(true)],
+                  ['Échangeurs', () => router.push('/exchangers' as never)],
+                  ['Historique', () => router.push('/(tabs)/transfers' as never)],
+                ].map(([label, onPress]) => (
+                  <Pressable
+                    key={String(label)}
+                    onPress={onPress as () => void}
+                    style={{ borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: colors.surfaceMuted }}>
+                    <Text style={{ color: colors.text, fontWeight: '700', fontSize: 12 }}>{label as string}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            }
           />
 
           <TransferWizardStepper step={step} onGoTo={setStep} />
@@ -235,6 +260,7 @@ export default function TransferWizardScreen() {
               exchangerId={exchangerId}
               setExchangerId={setExchangerId}
               exchangers={exchangers}
+              ownBusiness={ownBusiness ? { id: ownBusiness.id, name: ownBusiness.name } : null}
               originCountry={originCountry}
             />
           ) : null}

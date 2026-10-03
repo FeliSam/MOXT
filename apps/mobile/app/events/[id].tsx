@@ -148,6 +148,16 @@ export default function EventDetailScreen() {
     <AppChrome pathname="/events">
       <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 16 }}>
         <PageHeader className="mx-0" title={String(event.title || 'Événement')} />
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          <View style={{ borderRadius: 999, backgroundColor: colors.surfaceMuted, paddingHorizontal: 10, paddingVertical: 4 }}>
+            <AppText className="text-xs font-bold text-app-text">{String(event.status || 'published')}</AppText>
+          </View>
+          <View style={{ borderRadius: 999, backgroundColor: colors.accentSoft, paddingHorizontal: 10, paddingVertical: 4 }}>
+            <AppText className="text-xs font-bold" style={{ color: colors.accent }}>
+              {capacity && active.length >= capacity ? t('events.detail.full') : t('events.detail.seatsAvailable')}
+            </AppText>
+          </View>
+        </View>
         <DetailMetrics
           items={[
             { emoji: '📅', label: t('events.detail.date'), value: formatWhen(String(event.startAt || '')) },

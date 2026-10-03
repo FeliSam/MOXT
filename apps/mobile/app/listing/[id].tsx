@@ -410,7 +410,7 @@ export default function ListingDetailScreen() {
                 ['Localisation', [listing.city, listing.address].filter(Boolean).join(', ') || '—'],
               ].map(([label, value]) => (
                 <View key={label} style={{ borderRadius: 12, backgroundColor: colors.surfaceMuted, padding: 12 }}>
-                  <Text style={{ fontSize: 10, fontWeight: '900', letterSpacing: 0.6, color: colors.textFaint }}>{label.toUpperCase()}</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textMuted }}>{label}</Text>
                   <Text style={{ marginTop: 4, fontWeight: '700', color: colors.text }}>{value}</Text>
                 </View>
               ))
@@ -426,7 +426,7 @@ export default function ListingDetailScreen() {
                 ['Paiements acceptés', listing.paymentMethods?.length ? listing.paymentMethods.join(', ') : 'À convenir'],
               ].map(([label, value]) => (
                 <View key={label} style={{ borderRadius: 12, backgroundColor: colors.surfaceMuted, padding: 12 }}>
-                  <Text style={{ fontSize: 10, fontWeight: '900', letterSpacing: 0.6, color: colors.textFaint }}>{String(label).toUpperCase()}</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textMuted }}>{String(label)}</Text>
                   <Text style={{ marginTop: 4, fontWeight: '700', color: colors.text }}>{value}</Text>
                 </View>
               ))

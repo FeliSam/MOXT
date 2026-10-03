@@ -175,6 +175,18 @@ export default function ReceiptDetailScreen() {
             </View>
           ) : null}
         </View>
+        <View style={{ borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 16, gap: 10 }}>
+          <AppText className="font-black text-app-text">Actions</AppText>
+          <AppText className="text-sm text-app-text-muted">Enregistrez le reçu ou revenez au transfert.</AppText>
+          {receipt.relatedId ? (
+            <Pressable onPress={() => router.push(`/transfer/${receipt.relatedId}` as never)} style={{ minHeight: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent }}>
+              <AppText className="font-bold text-white">Voir le transfert</AppText>
+            </Pressable>
+          ) : null}
+          <Pressable onPress={() => router.replace('/receipts' as never)} style={{ minHeight: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceMuted }}>
+            <AppText className="font-bold text-app-text">Retour aux reçus</AppText>
+          </Pressable>
+        </View>
       </ScrollView>
     </AppChrome>
   );

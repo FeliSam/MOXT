@@ -18,7 +18,6 @@ import {
   formatTransferDate,
 } from '@moxt/shared/utils/transfers.js';
 
-import { isArchivedTransferStatus } from '@/components/dashboard/dashboardInbox';
 import { TransferCalculatorModal } from '@/components/transfers/TransferCalculatorModal';
 import { TransferStatusBadge } from '@/components/transfers/TransferStatusBadge';
 import { WebBadge } from '@/components/dashboard/webUi';
@@ -56,38 +55,37 @@ function TransferHistoryCard({ transfer }: { transfer: TransferItem }) {
   const currFrom = transfer.currencyFrom || 'XOF';
 
   return (
-    <Card className="relative" style={{ marginTop: 8 }}>
-      <Pressable onPress={() => router.push(`/transfer/${transfer.id}` as any)} style={{ gap: 4 }}>
+    <Card className="relative" style={{ marginTop: 14, overflow: 'visible' }}>
       <View style={styles.statusBadge}>
         <TransferStatusBadge status={transfer.status} />
       </View>
-
-      <Text style={[styles.ref, { color: colors.text }]}>{transfer.id}</Text>
-      <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-        {directionLabel(transfer.direction || '')} - {recipientName}
-      </Text>
-      {transfer.createdAt ? (
-        <Text style={[styles.date, { color: colors.textFaint }]}>
-          {formatTransferDate(transfer.createdAt)}
-        </Text>
-      ) : null}
-
-      <View style={styles.amountBlock}>
-        <Text style={[styles.totalAmount, { color: colors.text }]}>
-          {formatTransferMoney(totalToPay, currFrom)}
-        </Text>
-        <Text style={[styles.amountLine, { color: colors.textMuted }]}>
-          Envoyé: {formatTransferMoney(transfer.amountSent, currFrom)}
-        </Text>
-        <Text style={[styles.amountLine, { color: colors.textMuted }]}>
-          Frais: {formatTransferMoney(transfer.fee, currFrom)}
-        </Text>
-        <Text style={[styles.amountLine, { color: colors.textMuted }]}>
-          Reçu: {transfer.receivedAmount ? formatTransferMoney(transfer.receivedAmount, transfer.currencyTo) : '—'}
-        </Text>
-      </View>
-
-      <Text style={[styles.arrow, { color: brand[700] }]}>→</Text>
+      <Pressable onPress={() => router.push(`/transfer/${transfer.id}` as any)} style={styles.historyRow}>
+        <View style={{ flex: 1, paddingRight: 8 }}>
+          <Text style={[styles.ref, { color: colors.text }]}>{transfer.id}</Text>
+          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+            {directionLabel(transfer.direction || '')} - {recipientName}
+          </Text>
+          {transfer.createdAt ? (
+            <Text style={[styles.date, { color: colors.textFaint }]}>
+              {formatTransferDate(transfer.createdAt)}
+            </Text>
+          ) : null}
+        </View>
+        <View style={{ alignItems: 'flex-end', maxWidth: 150 }}>
+          <Text style={[styles.totalAmount, { color: colors.text }]}>
+            {formatTransferMoney(totalToPay, currFrom)}
+          </Text>
+          <Text style={[styles.amountLine, { color: colors.textMuted }]}>
+            Envoyé : {formatTransferMoney(transfer.amountSent, currFrom)}
+          </Text>
+          <Text style={[styles.amountLine, { color: colors.textMuted }]}>
+            Frais : {formatTransferMoney(transfer.fee, currFrom)}
+          </Text>
+          <Text style={[styles.amountLine, { color: colors.textMuted }]}>
+            Reçu : {transfer.receivedAmount ? formatTransferMoney(transfer.receivedAmount, transfer.currencyTo) : '—'}
+          </Text>
+        </View>
+        <Text style={[styles.arrow, { color: brand[700] }]}>→</Text>
       </Pressable>
     </Card>
   );
@@ -130,8 +128,9 @@ export default function TransfersScreen() {
   const p2pOrders = useAppSelector((state) => state.dashboard.p2pOrders);
   const authStatus = useAppSelector((state) => state.auth.status);
   const [query, setQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [tab, setTab] = useState<'transfers' | 'p2p'>('transfers');
-  const [archive, setArchive] = useState<'active' | 'archived'>('active');
   const [refreshing, setRefreshing] = useState(false);
   const [calculatorOpen, setCalculatorOpen] = useState(false);
 
@@ -140,8 +139,7 @@ export default function TransfersScreen() {
     const normalizedQuery = query.trim().toLowerCase();
     return items.filter((transfer) => {
       if (transfer.userId && transfer.userId !== user.id) return false;
-      const archived = isArchivedTransferStatus(transfer.status);
-      if (archive === 'archived' ? !archived : archived) return false;
+      if (statusFilter && transfer.status !== statusFilter) return false;
       if (!normalizedQuery) return true;
       const recipientName = `${transfer.recipient?.firstName || ''} ${transfer.recipient?.lastName || ''}`.toLowerCase();
       return (
@@ -154,7 +152,7 @@ export default function TransfersScreen() {
           new Date(String(b.createdAt || (b as { updatedAt?: string }).updatedAt || 0)).getTime() -
           new Date(String(a.createdAt || (a as { updatedAt?: string }).updatedAt || 0)).getTime(),
       );
-  }, [archive, items, query, user?.id]);
+  }, [items, query, statusFilter, user?.id]);
 
   const myP2pOrders = useMemo(() => {
     if (!user?.id) return [];
@@ -233,36 +231,34 @@ export default function TransfersScreen() {
                 value={query}
                 onChangeText={setQuery}
               />
-              <Pressable style={[styles.filterBtn, { backgroundColor: colors.surfaceMuted }]}>
-                <Text style={{ fontSize: 12, color: colors.textSecondary, fontWeight: '700' }}>Filtres</Text>
+              <Pressable
+                onPress={() => setFiltersOpen((value) => !value)}
+                style={[styles.filterBtn, { backgroundColor: filtersOpen || statusFilter ? brand[700] : colors.surfaceMuted }]}>
+                <Text style={{ fontSize: 12, color: filtersOpen || statusFilter ? '#fff' : colors.textSecondary, fontWeight: '700' }}>Filtres</Text>
               </Pressable>
             </View>
+            {filtersOpen && tab === 'transfers' ? (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+                <Pressable
+                  onPress={() => setStatusFilter('')}
+                  style={[styles.filterBtn, { backgroundColor: statusFilter ? colors.surfaceMuted : brand[700] }]}>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: statusFilter ? colors.text : '#fff' }}>Tous les statuts</Text>
+                </Pressable>
+                {[...new Set(items.filter((item) => !item.userId || item.userId === user?.id).map((item) => item.status).filter(Boolean))].map((value) => (
+                  <Pressable
+                    key={String(value)}
+                    onPress={() => setStatusFilter(String(value))}
+                    style={[styles.filterBtn, { backgroundColor: statusFilter === value ? brand[700] : colors.surfaceMuted }]}>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: statusFilter === value ? '#fff' : colors.text }}>
+                      {String(value).split('_').join(' ')}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
             <Text style={[styles.searchHint, { color: colors.textFaint }]}>
               Recherche dynamique · {(tab === 'transfers' ? visibleTransfers : myP2pOrders).length} résultat(s)
             </Text>
-
-            {tab === 'transfers' ? (
-              <View style={[styles.tabs, { backgroundColor: colors.surfaceMuted, borderColor: colors.border }]}>
-                {(
-                  [
-                    { key: 'active' as const, label: 'Actifs' },
-                    { key: 'archived' as const, label: 'Archivés' },
-                  ]
-                ).map((item) => {
-                  const active = archive === item.key;
-                  return (
-                    <Pressable
-                      key={item.key}
-                      onPress={() => setArchive(item.key)}
-                      style={[styles.tab, active ? { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border } : null]}>
-                      <Text style={{ color: active ? colors.text : colors.textMuted, fontWeight: '900', fontSize: 13 }}>
-                        {item.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            ) : null}
 
             <View style={[styles.tabs, { backgroundColor: colors.surfaceMuted, borderColor: colors.border }]}>
               {(
@@ -355,13 +351,12 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     position: 'relative',
   },
+  historyRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   statusBadge: {
     position: 'absolute',
-    top: 0,
+    top: -10,
     right: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
+    zIndex: 2,
   },
   statusText: { fontSize: 9, fontWeight: '800', letterSpacing: 0.3 },
   ref: { fontSize: 15, fontWeight: '800', paddingRight: 100 },
@@ -370,7 +365,7 @@ const styles = StyleSheet.create({
   amountBlock: { marginTop: spacing.md, gap: 2 },
   totalAmount: { fontSize: 18, fontWeight: '900' },
   amountLine: { fontSize: 11 },
-  arrow: { position: 'absolute', right: spacing.lg, bottom: spacing.lg, fontSize: 18, fontWeight: '700' },
+  arrow: { fontSize: 18, fontWeight: '700' },
 
   empty: { paddingVertical: 60, alignItems: 'center', gap: spacing.md },
   emptyIcon: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },

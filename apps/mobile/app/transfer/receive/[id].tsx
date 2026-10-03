@@ -80,37 +80,85 @@ export default function ReceiveTransferScreen() {
     }
   }
 
+  const alreadyDeclared = Boolean(transfer?.receivedAt);
+  const expected = transfer?.amountReceived ?? transfer?.receivedAmount;
+  const currency = transfer?.currencyTo || transfer?.toCurrency || '';
+
   return (
     <AppChrome pathname="/transfers">
-      <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 128 }}>
-        <PageHeader className="mx-0" eyebrow="Transfert" title="J’ai reçu les fonds" description="Déclarez le montant reçu et joignez une preuve." />
-        {!transfer ? <AppText className="text-sm text-app-text-muted">Transfert introuvable.</AppText> : null}
-        {transfer && !allowed ? (
-          <AppText className="text-sm text-app-text-muted">
-            La réception se déclare une fois le partenaire a confirmé le virement et joint une preuve.
-          </AppText>
+      <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 128 }}>
+        <PageHeader
+          className="mx-0"
+          eyebrow="Réception"
+          title="J’ai reçu les fonds"
+          description={transfer ? `Transfert ${transfer.id}` : 'Déclarez le montant reçu et joignez une preuve.'}
+          actions={
+            <Pressable onPress={() => (transfer ? router.push(`/transfer/${transfer.id}` as never) : router.back())} style={{ minHeight: 44, borderRadius: 16, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface }}>
+              <AppText className="text-sm font-bold text-app-text">Retour</AppText>
+            </Pressable>
+          }
+        />
+        {!transfer ? (
+          <View style={{ borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 16, gap: 8 }}>
+            <AppText className="text-sm text-app-text-muted">Ce transfert est introuvable.</AppText>
+            <Pressable onPress={() => router.push('/(tabs)/transfers' as never)}>
+              <AppText className="text-sm font-bold" style={{ color: colors.accent }}>Retour aux transferts</AppText>
+            </Pressable>
+          </View>
         ) : null}
-        {allowed ? (
-          <>
-            <AppText className="text-sm text-app-text-muted">
-              Partenaire : {String(transfer?.exchanger?.name || transfer?.businessName || 'Entreprise')}
-            </AppText>
-            <AppText className="text-sm font-bold text-app-text">Montant reçu</AppText>
-            <TextInput value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="Montant reçu" placeholderTextColor={colors.textFaint} style={{ minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceMuted, color: colors.text, paddingHorizontal: 16 }} />
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {METHODS.map(([idMethod, label]) => (
-                <Pressable key={idMethod} onPress={() => setMethod(idMethod)} style={{ paddingHorizontal: 12, minHeight: 36, borderRadius: 999, justifyContent: 'center', backgroundColor: method === idMethod ? colors.accent : colors.surfaceMuted }}>
-                  <AppText className="text-xs font-bold" style={{ color: method === idMethod ? (isDark ? '#020617' : '#fff') : colors.text }}>{label}</AppText>
-                </Pressable>
-              ))}
+        {transfer && !allowed ? (
+          <View style={{ borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 20, gap: 12 }}>
+            <View style={{ width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: isDark ? 'rgba(120,53,15,0.4)' : '#fffbeb' }}>
+              <AppText style={{ fontSize: 20 }}>⏱</AppText>
             </View>
-            <Pressable onPress={() => void attach()} style={{ minHeight: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}>
-              <AppText className="font-bold text-app-text">{proofName || 'Ajouter une preuve'}</AppText>
+            <AppText display className="text-lg text-app-text">
+              {alreadyDeclared ? 'Réception déjà déclarée' : 'En attente du partenaire'}
+            </AppText>
+            <AppText className="text-sm text-app-text-muted">
+              {alreadyDeclared
+                ? 'Vous avez déjà confirmé la réception de ces fonds.'
+                : 'La réception se déclare une fois le partenaire a confirmé le virement et joint une preuve.'}
+            </AppText>
+            <Pressable onPress={() => router.push(`/transfer/${transfer.id}` as never)} style={{ minHeight: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceMuted }}>
+              <AppText className="font-bold text-app-text">Voir le transfert</AppText>
             </Pressable>
-            <UploadProgressBar progress={progress} />
-            <Pressable disabled={busy} onPress={() => void submit()} style={{ minHeight: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent, opacity: busy ? 0.6 : 1 }}>
-              <AppText className="font-bold" style={{ color: isDark ? '#020617' : '#fff' }}>Confirmer la réception</AppText>
-            </Pressable>
+          </View>
+        ) : null}
+        {transfer && allowed ? (
+          <>
+            <View style={{ borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 16, gap: 10 }}>
+              <AppText className="text-xs font-black uppercase text-app-text-muted">Résumé</AppText>
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <AppText className="text-sm text-app-text-muted">Montant attendu</AppText>
+                  <AppText className="text-base font-black" style={{ color: colors.accent }}>{expected ? `${expected} ${currency}` : '—'}</AppText>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <AppText className="text-sm text-app-text-muted">Échangeur</AppText>
+                  <AppText className="text-base font-bold text-app-text">{String(transfer.exchanger?.name || '—')}</AppText>
+                </View>
+              </View>
+            </View>
+            <View style={{ borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 16, gap: 12 }}>
+              <AppText className="text-sm font-bold text-app-text">Montant reçu</AppText>
+              <TextInput value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="Montant reçu" placeholderTextColor={colors.textFaint} style={{ minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceMuted, color: colors.text, paddingHorizontal: 16 }} />
+              <AppText className="text-sm font-bold text-app-text">Moyen de réception</AppText>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {METHODS.map(([idMethod, label]) => (
+                  <Pressable key={idMethod} onPress={() => setMethod(idMethod)} style={{ paddingHorizontal: 12, minHeight: 36, borderRadius: 999, justifyContent: 'center', backgroundColor: method === idMethod ? colors.accent : colors.surfaceMuted }}>
+                    <AppText className="text-xs font-bold" style={{ color: method === idMethod ? (isDark ? '#020617' : '#fff') : colors.text }}>{label}</AppText>
+                  </Pressable>
+                ))}
+              </View>
+              <AppText className="text-sm font-bold text-app-text">Preuve</AppText>
+              <Pressable onPress={() => void attach()} style={{ minHeight: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}>
+                <AppText className="font-bold text-app-text">{proofName || 'Ajouter une preuve'}</AppText>
+              </Pressable>
+              <UploadProgressBar progress={progress} />
+              <Pressable disabled={busy} onPress={() => void submit()} style={{ minHeight: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#08705f', opacity: busy ? 0.6 : 1 }}>
+                <AppText className="font-bold text-white">{busy ? 'Enregistrement…' : 'Confirmer la réception'}</AppText>
+              </Pressable>
+            </View>
           </>
         ) : null}
       </ScrollView>

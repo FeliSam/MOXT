@@ -10,7 +10,9 @@ import {
   DIRECTIONS,
   calculateTransfer,
   directionInfo,
+  flagAccent,
 } from '@/constants/transfers';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
 import { cn } from '@/lib/cn';
 import { useTheme } from '@/theme/ThemeContext';
 
@@ -32,6 +34,7 @@ export function TransferWizardStep1({
   exchangerId,
   setExchangerId,
   exchangers,
+  ownBusiness,
   originCountry,
 }: {
   direction: string;
@@ -41,13 +44,35 @@ export function TransferWizardStep1({
   exchangerId: string;
   setExchangerId: (id: string) => void;
   exchangers: WizardExchanger[];
+  ownBusiness?: { id: string; name: string } | null;
   originCountry: string;
 }) {
   const { colors } = useTheme();
+  const rate = useExchangeRate('XOF');
   const exchanger = exchangers.find((e) => e.id === exchangerId) || exchangers[0];
   const numAmount = Number(amount) || 0;
-  const calc = calculateTransfer(numAmount, direction, exchanger?.feePercent ?? 2.5);
-  const rateDate = new Date().toISOString().slice(0, 10);
+  const base = calculateTransfer(numAmount, direction, exchanger?.feePercent ?? 2.5);
+  const liveRaw = direction === DIRECTIONS.RU_TO_BJ ? rate.rubToOrigin : rate.originToRub;
+  const rawRate = liveRaw && liveRaw > 0 ? liveRaw : base.rawRate;
+  const calc = { ...base, rawRate, amountReceived: base.amountSent * rawRate };
+  const rateDate = rate.date || new Date().toISOString().slice(0, 10);
+  const derivedReceive = numAmount > 0 ? String(Math.round(calc.amountReceived)) : '';
+
+  function onSendChange(text: string) {
+    setAmount(text.replace(/[^\d]/g, ''));
+  }
+
+  function onReceiveChange(text: string) {
+    const cleaned = text.replace(/[^\d.,]/g, '');
+    const received = Number(cleaned.replace(',', '.')) || 0;
+    const feeRate = (exchanger?.feePercent ?? 2.5) / 100;
+    if (!(rawRate > 0) || feeRate >= 1) {
+      setAmount('');
+      return;
+    }
+    const total = received / rawRate / (1 - feeRate);
+    setAmount(total > 0 ? String(Math.round(total)) : '');
+  }
 
   return (
     <View className="gap-5">
@@ -58,10 +83,15 @@ export function TransferWizardStep1({
           {[DIRECTIONS.BJ_TO_RU, DIRECTIONS.RU_TO_BJ].map((dir) => {
             const cardInfo = directionInfo(dir, originCountry);
             const active = direction === dir;
+            const accent = flagAccent(cardInfo.destinationCountry);
             return (
               <Pressable
                 key={dir}
-                className={cn(twTransfer.directionCard, active ? twTransfer.directionCardActive : twTransfer.directionCardIdle)}
+                className={cn(
+                  twTransfer.directionCard,
+                  active ? 'bg-brand-50 shadow-md dark:bg-brand-950/40' : twTransfer.directionCardIdle,
+                )}
+                style={active ? { borderColor: accent } : undefined}
                 onPress={() => onDirectionChange(dir)}>
                 <View className="flex-row flex-wrap items-center gap-2">
                   <Text className={twTransfer.directionFlags}>
@@ -76,7 +106,7 @@ export function TransferWizardStep1({
                   {cardInfo.sub}
                 </Text>
                 {active ? (
-                  <View className={cn(twTransfer.selectedPill, 'bg-brand-700')}>
+                  <View className={twTransfer.selectedPill} style={{ backgroundColor: accent }}>
                     <Text className="text-[10px] font-bold text-white">✓ Sélectionné</Text>
                   </View>
                 ) : null}
@@ -89,14 +119,28 @@ export function TransferWizardStep1({
       {/* Montant */}
       <View className={twTransfer.card}>
         <TransferWizardSectionTitle emoji="📤" label={`Montant à envoyer en ${calc.currencyFrom}`} />
-        <Text className={twTransfer.fieldLabel}>MONTANT EN {calc.currencyFrom}</Text>
-        <TextInput
-          keyboardType="numeric"
-          placeholder={`Min. ${formatCurrency(calc.minimumRequired, calc.currencyFrom)}`}
-          placeholderTextColor={colors.textFaint}
+        <AmountField
+          label={`Montant à envoyer · ${calc.currencyFrom}`}
+          currency={calc.currencyFrom}
           value={amount}
-          onChangeText={setAmount}
-          className={twTransfer.amountInput}
+          onChangeText={onSendChange}
+          placeholder={`Min. ${formatCurrency(calc.minimumRequired, calc.currencyFrom)}`}
+          placeholderColor={colors.textFaint}
+          textColor={colors.text}
+          borderColor={colors.border}
+          backgroundColor={colors.surface}
+        />
+        <AmountField
+          accent
+          label={`Montant à recevoir · ${calc.currencyTo}`}
+          currency={calc.currencyTo}
+          value={derivedReceive}
+          onChangeText={onReceiveChange}
+          placeholder="0"
+          placeholderColor={colors.textFaint}
+          textColor={colors.text}
+          borderColor={colors.border}
+          backgroundColor={colors.surface}
         />
         <View className={cn(twTransfer.infoBox, 'mt-4')}>
           <Text className="text-base text-brand-700">🕐</Text>
@@ -121,8 +165,17 @@ export function TransferWizardStep1({
             <Text className="text-xs font-bold text-brand-700 dark:text-brand-400">Tous les échangeurs ↗</Text>
           </Pressable>
         </View>
-        {exchangers.length ? (
+        {exchangers.length || ownBusiness ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-3 py-1">
+            {ownBusiness ? (
+              <View className="w-40 items-center gap-2 rounded-2xl border-2 border-dashed border-brand-300 bg-app-surface-muted p-4 opacity-80">
+                <View className="h-12 w-12 items-center justify-center rounded-2xl bg-brand-100 dark:bg-brand-950/50">
+                  <Text className="text-base font-black text-brand-800 dark:text-brand-200">{ownBusiness.name[0]}</Text>
+                </View>
+                <Text className="text-center text-xs font-bold text-app-text" numberOfLines={2}>{ownBusiness.name}</Text>
+                <Text className="text-center text-[10px] text-app-text-muted">Votre entreprise ne peut pas recevoir votre propre transfert.</Text>
+              </View>
+            ) : null}
             {exchangers.map((ex) => (
               <PartnerCard
                 key={ex.id}
@@ -141,6 +194,57 @@ export function TransferWizardStep1({
       {numAmount > 0 && exchanger ? (
         <TransferEstimateCard calc={calc} exchanger={exchanger} rateDate={rateDate} />
       ) : null}
+    </View>
+  );
+}
+
+function AmountField({
+  accent,
+  label,
+  currency,
+  value,
+  onChangeText,
+  placeholder,
+  placeholderColor,
+  textColor,
+  borderColor,
+  backgroundColor,
+}: {
+  accent?: boolean;
+  label: string;
+  currency: string;
+  value: string;
+  onChangeText: (value: string) => void;
+  placeholder: string;
+  placeholderColor: string;
+  textColor: string;
+  borderColor: string;
+  backgroundColor: string;
+}) {
+  return (
+    <View
+      style={{
+        borderRadius: 16,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        backgroundColor,
+        borderWidth: 1,
+        borderColor: accent ? 'rgba(8,112,95,0.28)' : borderColor,
+      }}>
+      <Text className={cn('text-[11px] font-bold uppercase', accent ? 'text-brand-700 dark:text-brand-300' : 'text-app-text-muted')}>
+        {label}
+      </Text>
+      <View className="mt-1 flex-row items-center gap-2">
+        <TextInput
+          keyboardType="numeric"
+          placeholder={placeholder}
+          placeholderTextColor={placeholderColor}
+          value={value}
+          onChangeText={onChangeText}
+          style={{ flex: 1, minHeight: 36, fontSize: 22, fontWeight: '800', color: textColor }}
+        />
+        <Text className="text-sm font-bold text-app-text-muted">{currency}</Text>
+      </View>
     </View>
   );
 }

@@ -9,6 +9,14 @@ export type E2eFixtures = {
   transfers?: unknown[];
   receipts?: Array<{ id: string; userId?: string; relatedId?: string }>;
   conversation?: { id: string };
+  statuses?: Array<{
+    id: string;
+    authorId: string;
+    authorName?: string;
+    images?: string[];
+    viewedBy?: string[];
+    createdAt?: string;
+  }>;
 };
 
 function isLocalHost(hostname: string) {
