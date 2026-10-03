@@ -153,6 +153,15 @@ export function ThemeRoot({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * Variables CSS `--app-*` du thème courant, à reposer sur la racine d'un <Modal> :
+ * sur le web, la modale est rendue hors de ThemeRoot et n'en hérite pas.
+ */
+export function useThemeCssVars() {
+  const { resolvedTheme } = useContext(ThemeContext);
+  return CSS_VARS[resolvedTheme];
+}
+
 export function useThemeColors(): ThemeColors {
   return useContext(ThemeContext).colors;
 }

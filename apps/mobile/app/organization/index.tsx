@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from 'react';
-import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
@@ -7,6 +7,7 @@ import { businessActivityLabel } from '@moxt/shared/config/businessActivityLabel
 
 import { PageHeader } from '@/components/ui';
 import { BackHeader } from '@/components/chrome/BackHeader';
+import { BusinessVerificationProgress } from '@/components/business/BusinessVerificationProgress';
 import {
   Business,
   loadBusinesses,
@@ -67,6 +68,9 @@ export default function BusinessesScreen() {
   const loading = useAppSelector(
     (state) => Boolean(state.account.loading.businesses || state.account.loading.subscriptions),
   );
+  const [query, setQuery] = useState('');
+  const [city, setCity] = useState('');
+  const [service, setService] = useState('');
 
   const refresh = () => {
     if (!userId) return;
@@ -82,6 +86,22 @@ export default function BusinessesScreen() {
       selectMySubscriptions(subscriptions, userId).filter((item) => item.publisherType === 'business'),
     [subscriptions, userId],
   );
+
+  const directory = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const ready = new Set(['verified', 'approved', 'active']);
+    return businesses.filter((business) => {
+      if (business.deletedByUserAt) return false;
+      if (owned.some((item) => item.id === business.id)) return false;
+      const status = String(business.status || '').toLowerCase();
+      if (status && !ready.has(status) && !business.verified) return false;
+      const services = Array.isArray(business.services) ? business.services.map(String) : [];
+      if (service && !services.includes(service)) return false;
+      if (city && !String(business.city || '').toLowerCase().includes(city.trim().toLowerCase())) return false;
+      if (!q) return true;
+      return `${business.name || ''} ${business.city || ''} ${business.primaryActivity || ''}`.toLowerCase().includes(q);
+    });
+  }, [businesses, city, owned, query, service]);
 
   const missingIds = useMemo(
     () => followed.map((item) => item.publisherId).filter((id) => !businessById[id]),
@@ -100,12 +120,61 @@ export default function BusinessesScreen() {
         contentContainerStyle={styles.list}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} />}>
         <PageHeader
-          eyebrow="Entreprises"
+          className="mx-0"
+          eyebrow="Annuaire"
+          title="Entreprises"
+          description={`${directory.length} entreprise(s) visible(s)`}
+          actions={
+            <Pressable onPress={() => router.push('/organization/setup' as never)}>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: brand[700] }}>
+                {owned.length ? 'Modifier' : 'Créer'}
+              </Text>
+            </Pressable>
+          }
+        />
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Nom, ville, activité..."
+          placeholderTextColor={colors.textFaint}
+          style={{ minHeight: 44, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 12, color: colors.text, fontSize: 16 }}
+        />
+        <TextInput
+          value={city}
+          onChangeText={setCity}
+          placeholder="Ville"
+          placeholderTextColor={colors.textFaint}
+          style={{ minHeight: 44, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 12, color: colors.text, fontSize: 16 }}
+        />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+          {['', 'Transfert', 'Colis', 'Marketplace', 'Jobs', 'Events'].map((item) => {
+            const active = service === item;
+            return (
+              <Pressable key={item || 'all'} onPress={() => setService(item)} style={{ borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: active ? brand[700] : colors.surfaceMuted }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: active ? '#fff' : colors.text }}>{item || 'Tous les services'}</Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+        {directory.map((business) => (
+          <BusinessCard key={business.id} business={business} subtitle={String(business.city || '')} />
+        ))}
+        {!directory.length ? (
+          <Text style={[styles.emptyText, { color: colors.textMuted }]}>Aucune entreprise dans l’annuaire.</Text>
+        ) : null}
+        <PageHeader
+          className="mx-0"
+          eyebrow="Compte"
           title="Mon entreprise"
           description={`${owned.length} entreprise(s) · ${followed.length} suivie(s)`}
         />
         {owned.length ? (
-          owned.map((business) => <BusinessCard key={business.id} business={business} subtitle="Propriétaire" />)
+          owned.map((business) => (
+            <View key={business.id} style={{ gap: spacing.md }}>
+              <BusinessCard business={business} subtitle="Propriétaire" />
+              <BusinessVerificationProgress business={business} />
+            </View>
+          ))
         ) : (
           <Text style={[styles.emptyText, { color: colors.textMuted }]}>
             Aucune entreprise à votre nom.

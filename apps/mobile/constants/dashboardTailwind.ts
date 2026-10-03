@@ -24,7 +24,7 @@ export const tw = {
   carouselTrack: '-mx-4 flex flex-row gap-3 px-4 py-2',
   carouselTrackSm: '-mx-4 flex flex-row gap-3 px-4 py-2 sm:gap-4',
 
-  sectionHeadingEyebrow: 'text-[10px] font-black uppercase tracking-[0.2em] text-brand-700 dark:text-brand-400',
+  sectionHeadingEyebrow: 'text-[11px] font-black uppercase tracking-[0.2em] text-brand-700 dark:text-brand-300',
   sectionHeadingTitle: 'mt-1 text-2xl font-black tracking-[-0.035em] text-app-text dark:text-zinc-50',
   sectionHeadingPill:
     'flex-row items-center gap-2 rounded-2xl bg-white px-3 py-2 shadow-sm dark:bg-zinc-900',

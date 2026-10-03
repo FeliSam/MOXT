@@ -5,10 +5,11 @@ import { subscribeToNotifications } from '@moxt/shared/services/notificationsSer
 import { notificationUpserted, type NotificationItem } from '@/store/notifications';
 import {
   mapConversationRow,
+  mapMessageRow,
+  patchMessage,
   receiveMessage,
   receiveRemoteConversation,
   syncRemoteConversation,
-  type Message,
 } from '@/store/messages';
 import { supabase } from './supabase';
 
@@ -17,16 +18,6 @@ type GetState = () => { messages: { conversations: { id: string }[] } };
 
 let channels: RealtimeChannel[] = [];
 let notificationsUnsubscribe: (() => void) | null = null;
-
-function mapMessageRow(row: Record<string, unknown>): Message {
-  return {
-    id: String(row.id),
-    senderId: String(row.sender_id),
-    senderName: String(row.sender_name || ''),
-    text: String(row.text || ''),
-    createdAt: String(row.created_at),
-  };
-}
 
 function mapConversationPayload(row: Record<string, unknown>) {
   return mapConversationRow(row);
@@ -92,6 +83,18 @@ export function subscribeRealtime(userId: string, dispatch: Dispatch, getState: 
         const conversationId = String(row.conversation_id || '');
         if (!conversationId) return;
         ingestRemoteMessage(conversationId, row, userId, dispatch, getState);
+      },
+    )
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'messages' },
+      (payload) => {
+        const row = payload.new as Record<string, unknown>;
+        const conversationId = String(row.conversation_id || '');
+        if (!conversationId) return;
+        const known = getState().messages.conversations.some((item) => item.id === conversationId);
+        if (!known) return;
+        dispatch(patchMessage({ conversationId, message: mapMessageRow(row) }));
       },
     )
     .on(

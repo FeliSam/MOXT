@@ -49,6 +49,12 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     };
   }, [applyLanguage]);
 
+  // Comme le web : <html lang> suit la langue, les formats (montants, dates) du shared s'y fient.
+  useEffect(() => {
+    const doc = (globalThis as { document?: { documentElement?: { lang: string } } }).document;
+    if (doc?.documentElement) doc.documentElement.lang = language;
+  }, [language]);
+
   const value = useMemo<LanguageContextValue>(
     () => ({
       language,

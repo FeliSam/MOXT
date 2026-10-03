@@ -5,6 +5,7 @@ import { Bell, History, MessageCircle, Newspaper, Package, Plus, type LucideIcon
 
 import { AppText } from '@/components/ui/AppText';
 import { getMobileHeaderActions, ROUTE_TITLES } from '@/constants/routeTitles';
+import { usePublishMenu } from '@/components/chrome/PublishMenuSheet';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { selectUnreadMessageCount } from '@/store/messages';
 import { selectUnreadNotificationCount } from '@/store/notifications';
@@ -42,9 +43,18 @@ export function AppHeader({ pathname }: { pathname: string }) {
     const today = new Date().toISOString().slice(0, 10);
     return (s.parcels.items as ParcelLike[]).filter((p) => isAvailableParcel(p, today)).length;
   });
-  // Modules « dev » du web (feed / parcels actifs, news masqué quand le fil est actif).
-  const actions = getMobileHeaderActions(pathname, { canFeed: true, canNews: false, canParcels: true });
-  const title = translateLabel(ROUTE_TITLES[pathname] ?? 'MOXT');
+  // Modules « dev » du web (drapeaux app_module_flags, news masqué quand le fil est actif).
+  const flags = useAppSelector((s) => s.platform.flags);
+  const openPublish = usePublishMenu();
+  const actions = getMobileHeaderActions(pathname, { canFeed: flags.feed, canNews: flags.news, canParcels: flags.parcels });
+  const matchedPath =
+    (ROUTE_TITLES[pathname] && pathname) ||
+    Object.keys(ROUTE_TITLES)
+      .sort((a, b) => b.length - a.length)
+      .find((key) => pathname === key || pathname.startsWith(`${key}/`));
+  const title = translateLabel(
+    pathname.startsWith('/news/') ? 'Publication' : (matchedPath && ROUTE_TITLES[matchedPath]) || 'MOXT',
+  );
 
   return (
     <View
@@ -60,7 +70,7 @@ export function AppHeader({ pathname }: { pathname: string }) {
           transparent
           size={HEADER.avatar}
           accessibilityLabel={t('settings.profileSecurity.openProfile')}
-          onPress={() => router.push('/profile/edit' as never)}>
+          onPress={() => router.push('/profile' as never)}>
           <UserAvatar user={user} size={HEADER.avatar} />
         </HeaderActionButton>
         <View style={{ flex: 1, minWidth: 0 }}>
@@ -72,12 +82,12 @@ export function AppHeader({ pathname }: { pathname: string }) {
 
       <View style={{ height: HEADER.height, flexDirection: 'row', alignItems: 'center', gap: HEADER.gap, flexShrink: 0 }}>
         {actions.showPublishMenu ? (
-          <HeaderActionButton accessibilityLabel={translateLabel('Publier')} onPress={() => router.push('/listing/create' as never)}>
+          <HeaderActionButton testID="header-publish" accessibilityLabel={translateLabel('Publier')} onPress={openPublish}>
             <HeaderIcon icon={Plus} />
           </HeaderActionButton>
         ) : null}
         {actions.showNews ? (
-          <HeaderActionButton accessibilityLabel={t('nav.news')} onPress={() => router.push('/search' as never)}>
+          <HeaderActionButton accessibilityLabel={t('nav.news')} onPress={() => router.push('/news' as never)}>
             <HeaderIcon icon={Newspaper} />
           </HeaderActionButton>
         ) : null}

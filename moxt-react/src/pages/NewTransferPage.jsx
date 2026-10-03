@@ -7,10 +7,8 @@ import {
   FiClock,
   FiExternalLink,
   FiPlus,
-  FiRefreshCw,
   FiSend,
   FiShield,
-  FiSliders,
   FiStar,
   FiUsers,
   FiZap,
@@ -24,7 +22,7 @@ import { Card } from '../components/ui/Card'
 import { LinkifiedText } from '../components/ui/LinkifiedText'
 import { Input, Textarea } from '../components/ui/Input'
 import { Modal } from '../components/ui/Modal'
-import { HeaderIslandButton, PageHeader } from '../components/ui/PageHeader'
+import { PageHeader } from '../components/ui/PageHeader'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { Select } from '../components/ui/Select'
 import { flagColor, flagEmoji } from '../config/flags'
@@ -480,23 +478,27 @@ export function NewTransferPage() {
         eyebrow={t('transfers.new.eyebrow')}
         title={t('transfers.new.title')}
         description={t('transfers.new.description')}
+        showDescriptionOnMobile
         actions={
           <>
-            <HeaderIslandButton
-              icon={FiSliders}
-              label={t('transfers.new.calculator')}
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
               onClick={() => setCalculatorOpen(true)}
-            />
-            <HeaderIslandButton
-              icon={FiRefreshCw}
-              label={t('transfers.new.exchangers')}
-              to="/exchangers"
-            />
-            <HeaderIslandButton
-              icon={FiClock}
-              label={t('transfers.history.sectionTitle')}
-              to="/transfers/history"
-            />
+            >
+              {t('transfers.new.calculator')}
+            </Button>
+            <Link to="/exchangers">
+              <Button type="button" variant="secondary" size="sm">
+                {t('transfers.new.exchangers')}
+              </Button>
+            </Link>
+            <Link to="/transfers/history">
+              <Button type="button" variant="secondary" size="sm">
+                {t('transfers.history.sectionTitle')}
+              </Button>
+            </Link>
           </>
         }
       />

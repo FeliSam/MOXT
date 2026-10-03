@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import {
   fetchActiveStatuses,
@@ -6,7 +6,10 @@ import {
   fetchVideos,
   groupStatusesByAuthor,
 } from '@moxt/shared/services/feedService.js';
+import { incrementEntityView } from '@moxt/shared/services/viewsService.js';
 import { supabase } from '../services/supabase';
+import { commentAdded, commentRemoved, likeToggled, videoShareIncremented, type EngagementKind } from './engagementActions';
+import { toggleLikeList } from '@moxt/shared/services/engagementService.js';
 
 export type FeedPost = {
   id: string;
@@ -39,6 +42,7 @@ export type StatusItem = {
   authorAvatarUrl?: string | null;
   businessId?: string | null;
   images: string[];
+  caption?: string;
   viewedBy: string[];
   createdAt?: string;
   expiresAt?: string;
@@ -80,10 +84,33 @@ export const loadFeed = createAsyncThunk('feed/load', async (userId: string) => 
   };
 });
 
+/** Vue d'une vidéo après 350 ms d'affichage (videos/incrementVideoView). Le RPC ignore l'auteur. */
+export const recordVideoView = createAsyncThunk('feed/recordView', async (videoId: string) => {
+  if (!supabase) return null;
+  return incrementEntityView(supabase, 'video', videoId) as Promise<number | null>;
+});
+
+function findEntity(state: FeedState, kind: EngagementKind, id: string): Record<string, unknown> | undefined {
+  if (kind === 'video') return state.videos.find((item) => item.id === id);
+  if (kind === 'post') return state.posts.find((item) => item.id === id);
+  return undefined;
+}
+
 const feedSlice = createSlice({
   name: 'feed',
   initialState,
-  reducers: {},
+  reducers: {
+    publicFeedReceived(state, action: PayloadAction<{ posts: FeedPost[]; videos: FeedVideo[] }>) {
+      state.posts = action.payload.posts;
+      state.videos = action.payload.videos;
+      state.status = 'ready';
+    },
+    statusUpserted(state, action: PayloadAction<StatusItem>) {
+      const index = state.statuses.findIndex((item) => item.id === action.payload.id);
+      if (index >= 0) state.statuses[index] = action.payload;
+      else state.statuses.unshift(action.payload);
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(loadFeed.pending, (state) => {
@@ -97,10 +124,34 @@ const feedSlice = createSlice({
       })
       .addCase(loadFeed.rejected, (state) => {
         state.status = 'error';
+      })
+      .addCase(likeToggled, (state, action) => {
+        const entity = findEntity(state, action.payload.kind, action.payload.entityId);
+        if (entity) entity.likes = toggleLikeList(entity.likes, action.payload.userId);
+      })
+      .addCase(commentAdded, (state, action) => {
+        const entity = findEntity(state, action.payload.kind, action.payload.entityId);
+        if (entity) entity.comments = [...(Array.isArray(entity.comments) ? entity.comments : []), action.payload.comment];
+      })
+      .addCase(commentRemoved, (state, action) => {
+        const entity = findEntity(state, action.payload.kind, action.payload.entityId);
+        if (entity && Array.isArray(entity.comments)) {
+          entity.comments = entity.comments.filter((item: { id?: string }) => item?.id !== action.payload.commentId);
+        }
+      })
+      .addCase(videoShareIncremented, (state, action) => {
+        const video = state.videos.find((item) => item.id === action.payload.videoId);
+        if (video) video.shareCount = (Number(video.shareCount) || 0) + 1;
+      })
+      .addCase(recordVideoView.fulfilled, (state, action) => {
+        if (action.payload == null) return;
+        const video = state.videos.find((item) => item.id === action.meta.arg);
+        if (video) video.viewCount = action.payload;
       });
   },
 });
 
+export const { publicFeedReceived, statusUpserted } = feedSlice.actions;
 export const feedReducer = feedSlice.reducer;
 
 export function selectStatusGroups(statuses: StatusItem[], userId?: string | null): StatusGroup[] {

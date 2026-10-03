@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Linking,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,64 +11,70 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Heart } from 'lucide-react-native';
 
+import { entityFromRemoteRow } from '@moxt/shared/services/rowUtils.js';
 import { formatShortDate } from '@moxt/shared/utils/formatters.js';
 
+import { FavoriteButton } from '@/components/account/FavoriteButton';
+import { ContactButton } from '@/components/communications/ContactButton';
+import { DetailFloatingActions } from '@/components/marketplace/DetailFloatingActions';
+import { PublisherBlock } from '@/components/publications/PublisherBlock';
+import { usePublisherDetailProfile } from '@/components/publications/usePublisherDetailProfile';
+import { imageList } from '@/components/publications/publisherCatalog';
 import { Button, Card, Input, PageHeader } from '@/components/ui';
 import { DetailFacts, DetailMetrics, DetailSection, TrustPanel } from '@/components/ui/DetailBlocks';
+import { ImageGalleryViewer } from '@/components/ui/ImageGalleryViewer';
+import { ReportSheet } from '@/components/ui/ReportSheet';
 import { supabase } from '@/services/supabase';
-import { addFavorite, removeFavorite } from '@/store/favorites';
-import { useAppDispatch, useAppSelector } from '@/store/store';
+import { useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
-import { brand, spacing, typography } from '@/theme/colors';
+import { brand, fontFamilies, spacing, typography } from '@/theme/colors';
 
 type JobDetail = {
   id: string;
   title: string;
   description?: string;
   company?: string;
+  publisherName?: string;
   city?: string;
+  location?: string;
   type?: string;
+  contractType?: string;
   sector?: string;
   status?: string;
-  salary_min?: number;
-  salary_max?: number;
-  salary_currency?: string;
-  contact?: string;
-  whatsapp?: string;
+  salary?: string;
+  salaryMin?: number;
+  salaryMax?: number;
+  salaryCurrency?: string;
   requirements?: string;
-  created_at?: string;
-  expires_at?: string;
+  benefits?: string;
+  ownerId?: string;
+  businessId?: string;
+  images?: unknown;
+  createdAt?: string;
+  expiresAt?: string;
+  contactCount?: number;
+  shareCount?: number;
+  updatedAt?: string;
 };
 
 export default function JobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const colors = useThemeColors();
-  const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user);
-  const liked = useAppSelector((state) =>
-    state.favorites.items.some((f) => f.id === id && f.type === 'job'),
-  );
   const [job, setJob] = useState<JobDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
   const [message, setMessage] = useState('');
-
-  function toggleFavorite() {
-    if (!job) return;
-    if (liked) {
-      dispatch(removeFavorite({ id: job.id, type: 'job' }));
-    } else {
-      dispatch(addFavorite({ id: job.id, type: 'job', title: job.title, subtitle: job.company }));
-    }
-  }
+  const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const publisherProfile = usePublisherDetailProfile(job as unknown as Record<string, unknown> | null, 'job');
 
   useEffect(() => {
     if (!supabase || !id) return;
     (async () => {
       const { data } = await supabase.from('jobs').select('*').eq('id', id).single();
-      setJob(data as JobDetail | null);
+      setJob(data ? (entityFromRemoteRow(data) as JobDetail) : null);
       setLoading(false);
     })();
   }, [id]);
@@ -113,32 +119,23 @@ export default function JobDetailScreen() {
     );
 
   const salary =
-    job.salary_min || job.salary_max
-      ? `${job.salary_min ?? '?'} – ${job.salary_max ?? '?'} ${job.salary_currency || 'RUB'}`
-      : null;
+    job.salary ||
+    (job.salaryMin || job.salaryMax
+      ? `${job.salaryMin ?? '?'} – ${job.salaryMax ?? '?'} ${job.salaryCurrency || 'RUB'}`
+      : null);
+  const place = job.city || job.location;
+  const contract = job.contractType || job.type;
+  const images = imageList(job.images);
+  const isOwner = Boolean(user?.id && job.ownerId === user.id);
 
   return (
     <SafeAreaView style={[sx.container, { backgroundColor: colors.background }]}>
-      {/* Favori flottant — coin haut droit */}
-      <Pressable
-        onPress={toggleFavorite}
-        hitSlop={10}
-        accessibilityLabel={liked ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-        style={[sx.favFloat, { backgroundColor: liked ? '#e11d48' : colors.surface }]}>
-        <Heart
-          size={20}
-          color={liked ? '#ffffff' : colors.textMuted}
-          fill={liked ? '#ffffff' : 'transparent'}
-          strokeWidth={2.2}
-        />
-      </Pressable>
-
-      <ScrollView contentContainerStyle={{ paddingBottom: 40, gap: spacing.lg }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 120, gap: spacing.lg }}>
         {/* ── Web : PageHeader eyebrow = secteur, titre du poste ── */}
         <PageHeader
-          eyebrow={job.sector || job.type || 'Opportunité'}
+          eyebrow={job.sector || contract || 'Opportunité'}
           title={job.title}
-          description={[job.company, job.created_at ? `Publié le ${formatShortDate(job.created_at)}` : null]
+          description={[job.publisherName || job.company, job.createdAt ? `Publié le ${formatShortDate(job.createdAt)}` : null]
             .filter(Boolean)
             .join(' · ') || undefined}
         />
@@ -148,9 +145,9 @@ export default function JobDetailScreen() {
           <DetailMetrics
             items={[
               { emoji: '💰', label: 'Salaire', value: salary || 'À négocier' },
-              { emoji: '📍', label: 'Lieu', value: job.city || 'Russie' },
-              { emoji: '📋', label: 'Contrat', value: job.type || '—' },
-              { emoji: '⏳', label: 'Expire', value: job.expires_at ? formatShortDate(job.expires_at) : '—' },
+              { emoji: '📍', label: 'Lieu', value: place || 'Russie' },
+              { emoji: '📋', label: 'Contrat', value: contract || '—' },
+              { emoji: '⏳', label: 'Expire', value: job.expiresAt ? formatShortDate(job.expiresAt) : '—' },
             ]}
           />
 
@@ -174,6 +171,16 @@ export default function JobDetailScreen() {
             </Card>
           ) : null}
 
+          {images.length ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+              {images.map((src, index) => (
+                <Pressable key={src} onPress={() => setGalleryIndex(index)}>
+                  <Image source={{ uri: src }} style={{ width: index === 0 ? 260 : 140, height: 160, borderRadius: 16 }} />
+                </Pressable>
+              ))}
+            </ScrollView>
+          ) : null}
+
           {/* ── Web : carte "Candidature" ── */}
           <Card style={{ gap: spacing.md }}>
             <Text style={[sx.h2, { color: colors.text }]}>Candidature</Text>
@@ -184,49 +191,47 @@ export default function JobDetailScreen() {
               multiline
               style={{ height: 80, textAlignVertical: 'top' }}
             />
-            <Button
-              variant="primary"
-              size="lg"
-              loading={applying}
-              disabled={applying}
-              onPress={handleApply}>
-              Soumettre ma candidature
-            </Button>
-            <Text style={[sx.body, { color: colors.textMuted, marginTop: 4 }]}>
-              Vous serez recontacté par {job.company ? 'l’entreprise' : 'le recruteur'} après examen de votre candidature.
-            </Text>
-
-            {job.contact || job.whatsapp ? (
-              <>
-                <Text style={[sx.contactLabel, { color: colors.textFaint }]}>
-                  OU CONTACTER {job.company ? 'L’ENTREPRISE' : 'LE PARTICULIER'} DIRECTEMENT
-                </Text>
-                <View style={sx.contactRow}>
-                  {job.contact ? (
-                    <Button variant="secondary" style={{ flex: 1 }} onPress={() => Linking.openURL(`tel:${job.contact}`)}>
-                      📞 Appeler
-                    </Button>
-                  ) : null}
-                  {job.whatsapp ? (
-                    <Button variant="teal" style={{ flex: 1 }} onPress={() => Linking.openURL(`https://wa.me/${job.whatsapp}`)}>
-                      WhatsApp
-                    </Button>
-                  ) : null}
-                </View>
-              </>
+            {!isOwner ? (
+              <Button
+                variant="primary"
+                size="lg"
+                loading={applying}
+                disabled={applying}
+                onPress={handleApply}>
+                Soumettre ma candidature
+              </Button>
+            ) : (
+              <Text style={[sx.body, { color: colors.textMuted }]}>Vous êtes l’auteur de cette offre.</Text>
+            )}
+            <ContactButton
+              ownerId={job.ownerId}
+              relatedType="job"
+              relatedId={job.id}
+              relatedPath={`/jobs/${job.id}`}
+              relatedTitle={job.title}
+              variant="secondary"
+              badge="Job"
+            />
+            <FavoriteButton relatedId={job.id} relatedType="job" title={job.title} subtitle={job.publisherName || job.company} path={`/jobs/${job.id}`} />
+            {!isOwner && user?.id ? (
+              <Button variant="danger" onPress={() => setReportOpen(true)}>Signaler</Button>
             ) : null}
+            <Text style={[sx.body, { color: colors.textMuted, marginTop: 4 }]}>
+              Vous serez recontacté par {job.company || job.businessId ? 'l’entreprise' : 'le recruteur'} après examen de votre candidature.
+            </Text>
           </Card>
 
           {/* ── Web : DetailSection "Informations sur le poste" ── */}
           <DetailSection title="Informations sur le poste">
             <DetailFacts
               items={[
-                { label: 'Entreprise', value: job.company },
+                { label: 'Entreprise', value: job.publisherName || job.company },
+                { label: 'Profil', value: job.businessId ? 'Entreprise' : 'Particulier' },
                 { label: 'Secteur', value: job.sector },
-                { label: 'Type de contrat', value: job.type },
-                { label: 'Ville', value: job.city },
-                { label: 'Publié le', value: job.created_at ? formatShortDate(job.created_at) : null },
-                { label: 'Expire le', value: job.expires_at ? formatShortDate(job.expires_at) : null },
+                { label: 'Type de contrat', value: contract },
+                { label: 'Ville', value: place },
+                { label: 'Publié le', value: job.createdAt ? formatShortDate(job.createdAt) : null },
+                { label: 'Expire le', value: job.expiresAt ? formatShortDate(job.expiresAt) : null },
               ]}
             />
           </DetailSection>
@@ -241,8 +246,43 @@ export default function JobDetailScreen() {
               'Signalez toute offre suspecte à notre équipe.',
             ]}
           />
+
+          {job.benefits ? (
+            <Card>
+              <Text style={[sx.h2, { color: colors.text }]}>Avantages</Text>
+              <Text style={[sx.body, { color: colors.textSecondary }]}>{job.benefits}</Text>
+            </Card>
+          ) : null}
+
+          <PublisherBlock profile={publisherProfile} currentId={job.id} />
         </View>
       </ScrollView>
+      <DetailFloatingActions
+        relatedId={job.id}
+        title={job.title}
+        ownerId={job.ownerId}
+        isOwner={isOwner}
+        relatedType="job"
+        relatedPath={`/jobs/${job.id}`}
+        editTo={isOwner ? `/publications/edit?id=${job.id}&type=job` : undefined}
+      />
+      <ImageGalleryViewer
+        open={galleryIndex !== null}
+        images={images}
+        index={galleryIndex ?? 0}
+        title={job.title}
+        onClose={() => setGalleryIndex(null)}
+        onIndex={setGalleryIndex}
+      />
+      <ReportSheet
+        open={reportOpen}
+        title="Signaler cette offre"
+        target="job"
+        targetId={job.id}
+        userId={user?.id}
+        userName={[user?.firstName, user?.lastName].filter(Boolean).join(' ')}
+        onClose={() => setReportOpen(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -250,24 +290,6 @@ export default function JobDetailScreen() {
 const sx = StyleSheet.create({
   container: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  h2: { fontSize: 15, fontWeight: '900' },
+  h2: { fontSize: 16, fontFamily: fontFamilies.display },
   body: { marginTop: 8, fontSize: 14, lineHeight: 22 },
-  contactRow: { flexDirection: 'row', gap: spacing.md },
-  contactLabel: { marginTop: 6, fontSize: 10, fontWeight: '900', letterSpacing: 0.8 },
-  favFloat: {
-    position: 'absolute',
-    top: 8,
-    right: 16,
-    zIndex: 20,
-    width: 42,
-    height: 42,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#0f1714',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 4,
-  },
 });

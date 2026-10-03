@@ -10,7 +10,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useThemeColors, useShadows } from '@/theme/ThemeContext';
-import { radii, spacing } from '@/theme/colors';
+import { fontFamilies, radii } from '@/theme/colors';
 
 /* ── DetailMetrics ── */
 export type MetricItem = { emoji: string; label: string; value: string | number };
@@ -23,7 +23,7 @@ export function DetailMetrics({ items }: { items: MetricItem[] }) {
       {items.map(({ emoji, label, value }) => (
         <View
           key={label}
-          style={[sx.metricCard, { backgroundColor: colors.surfaceElevated }, shadows.card]}>
+          style={[sx.metricCard, { backgroundColor: colors.surface, borderColor: colors.border }, shadows.card]}>
           <View style={[sx.metricIcon, { backgroundColor: colors.accentSoft }]}>
             <Text style={{ fontSize: 16 }}>{emoji}</Text>
           </View>
@@ -46,7 +46,7 @@ export function DetailSection({ title, description, children }: {
   const colors = useThemeColors();
   const shadows = useShadows();
   return (
-    <View style={[sx.sectionCard, { backgroundColor: colors.surfaceElevated }, shadows.card]}>
+    <View style={[sx.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }, shadows.card]}>
       <Text style={[sx.sectionTitle, { color: colors.text }]}>{title}</Text>
       {description ? (
         <Text style={[sx.sectionDesc, { color: colors.textMuted }]}>{description}</Text>
@@ -65,7 +65,7 @@ export function DetailFacts({ items }: { items: FactItem[] }) {
     <View style={sx.factsGrid}>
       {items.map(({ label, value }) => (
         <View key={label} style={[sx.factBox, { backgroundColor: colors.surfaceMuted }]}>
-          <Text style={[sx.factLabel, { color: colors.textFaint }]}>{label.toUpperCase()}</Text>
+          <Text style={[sx.factLabel, { color: colors.textFaint }]}>{label}</Text>
           <Text style={[sx.factValue, { color: colors.text }]}>
             {value != null && value !== '' ? String(value) : 'Non renseigné'}
           </Text>
@@ -145,10 +145,11 @@ const sx = StyleSheet.create({
     width: '48%',
     flexGrow: 1,
     borderRadius: radii.lg,
-    padding: 14,
+    borderWidth: 1,
+    padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
   metricIcon: {
     width: 40,
@@ -157,22 +158,23 @@ const sx = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  metricValue: { fontSize: 14, fontWeight: '800' },
-  metricLabel: { marginTop: 2, fontSize: 11 },
+  metricValue: { fontSize: 14, fontFamily: fontFamilies.semibold },
+  metricLabel: { marginTop: 2, fontSize: 11, fontFamily: fontFamilies.regular },
 
   /* section */
   sectionCard: {
     borderRadius: radii.lg,
-    padding: 20,
+    borderWidth: 1,
+    padding: 16,
   },
-  sectionTitle: { fontSize: 19, fontWeight: '900', letterSpacing: -0.3 },
+  sectionTitle: { fontSize: 20, fontFamily: fontFamilies.display, letterSpacing: -0.3 },
   sectionDesc: { marginTop: 4, fontSize: 13, lineHeight: 19 },
 
   /* facts */
   factsGrid: { gap: 10 },
   factBox: { borderRadius: radii.md, padding: 14 },
-  factLabel: { fontSize: 10, fontWeight: '900', letterSpacing: 1 },
-  factValue: { marginTop: 6, fontSize: 14, fontWeight: '700' },
+  factLabel: { fontSize: 12, fontFamily: fontFamilies.semibold },
+  factValue: { marginTop: 8, fontSize: 14, fontFamily: fontFamilies.semibold },
 
   /* trust */
   trustPanel: { borderRadius: radii.lg, padding: 20, overflow: 'hidden' },
@@ -184,7 +186,7 @@ const sx = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  trustTitle: { marginTop: 14, fontSize: 19, fontWeight: '900', color: '#ffffff' },
+  trustTitle: { marginTop: 16, fontSize: 20, fontFamily: fontFamilies.display, color: '#ffffff' },
   trustRow: {
     flexDirection: 'row',
     gap: 10,
@@ -211,6 +213,6 @@ const sx = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 1,
   },
-  timelineLabel: { fontSize: 13, fontWeight: '800' },
+  timelineLabel: { fontSize: 13, fontFamily: fontFamilies.semibold },
   timelineDate: { marginTop: 2, fontSize: 11 },
 });

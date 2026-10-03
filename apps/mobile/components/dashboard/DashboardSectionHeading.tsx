@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { ArrowUpRight, ChevronRight, type LucideIcon } from 'lucide-react-native';
+import { ArrowRight, ArrowUpRight, type LucideIcon } from 'lucide-react-native';
 
 import { tw } from '@/constants/dashboardTailwind';
 import { cn } from '@/lib/cn';
@@ -21,8 +21,11 @@ export function DashboardSectionHeading({
         <Text className={tw.sectionHeadingTitle}>{title}</Text>
       </View>
       {linkLabel && onPress ? (
-        <Pressable className={tw.sectionHeadingPill} onPress={onPress}>
-          <Text className={tw.sectionHeadingPillText}>{linkLabel} →</Text>
+        <Pressable
+          accessibilityLabel={linkLabel}
+          className="flex-row items-center gap-2 rounded-2xl border border-app-border bg-white px-3 py-2 dark:bg-app-surface"
+          onPress={onPress}>
+          <ArrowRight size={14} color="#6b7280" strokeWidth={2} />
         </Pressable>
       ) : null}
     </View>

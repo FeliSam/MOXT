@@ -11,7 +11,11 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router, useLocalSearchParams } from 'expo-router';
+
+import { PENDING_INVITE_KEY } from '@/services/inviteCode';
+import { openLink } from '@/utils/appLinks';
 
 import { useLanguage } from '@/providers/LanguageProvider';
 import { clearAuthError, register } from '@/store/auth';
@@ -50,6 +54,12 @@ export default function RegisterScreen() {
   const { translateLabel } = useLanguage();
   const { error, status } = useAppSelector((state) => state.auth);
   const registrationEmail = useAppSelector((state) => state.auth.registrationEmail);
+
+  const invite = useLocalSearchParams<{ invite?: string }>().invite;
+  useEffect(() => {
+    const code = String(invite || '').trim();
+    if (code) void AsyncStorage.setItem(PENDING_INVITE_KEY, code);
+  }, [invite]);
 
   const [step, setStep] = useState(0);
 
@@ -381,7 +391,15 @@ export default function RegisterScreen() {
           {acceptTerms && <Text style={styles.checkmark}>✓</Text>}
         </View>
         <Text style={[styles.termsText, { color: colors.textSecondary }]}>
-          J'accepte les conditions d'utilisation et la politique de confidentialité.
+          J'accepte les{' '}
+          <Text style={{ color: brand[700], fontWeight: '700' }} onPress={() => openLink('https://moxtapp.ru/legal/mentions')}>
+            conditions d'utilisation
+          </Text>
+          {' '}et la{' '}
+          <Text style={{ color: brand[700], fontWeight: '700' }} onPress={() => openLink('https://moxtapp.ru/legal/privacy')}>
+            politique de confidentialité
+          </Text>
+          .
         </Text>
       </Pressable>
 

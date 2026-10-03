@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
 import { useEffect, useRef } from 'react';
 
 type NotificationData = {
-  type?: 'transfer' | 'parcel' | 'marketplace' | 'message' | 'system' | 'job';
+  type?: 'transfer' | 'parcel' | 'marketplace' | 'message' | 'system' | 'job' | 'status';
   relatedId?: string;
 };
 
@@ -34,6 +34,9 @@ function navigateFromNotification(data: NotificationData) {
     case 'job':
       if (data.relatedId) router.push(`/jobs/${data.relatedId}` as any);
       else router.push('/jobs' as any);
+      break;
+    case 'status':
+      if (data.relatedId) router.push({ pathname: '/status/[id]', params: { id: data.relatedId } } as never);
       break;
     default:
       router.push('/notifications' as any);

@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import {
   fetchBusinessById,
@@ -46,6 +46,7 @@ export type PublisherSubscription = {
   publisherPath?: string;
   notifyPref?: string;
   createdAt?: string;
+  updatedAt?: string;
 };
 
 export type Review = {
@@ -73,6 +74,8 @@ type AccountState = {
     verified: boolean;
     level: string | null;
     requestedAt: string | null;
+    reviewNote?: string | null;
+    documentCount?: number;
   };
   loading: Record<string, boolean>;
 };
@@ -89,6 +92,13 @@ const initialState: AccountState = {
 };
 
 export const loadBusinesses = createAsyncThunk('account/loadBusinesses', async (userId: string) => {
+  const { isE2eHarnessActive, readE2eFixtures } = await import('@/utils/e2eHarness');
+  if (isE2eHarnessActive()) {
+    const fixtures = readE2eFixtures();
+    if (Array.isArray(fixtures?.businesses) && fixtures.businesses.length) {
+      return fixtures.businesses as Business[];
+    }
+  }
   if (!supabase) return [] as Business[];
   return (await fetchBusinesses(supabase, userId)) as Business[];
 });
@@ -125,13 +135,15 @@ export const loadVerification = createAsyncThunk(
   async (userId: string) => {
     if (!supabase) return null;
     const result = (await fetchVerificationStatus(supabase, userId)) as {
-      latest: { status?: string; level?: string; createdAt?: string } | null;
+      latest: { status?: string; level?: string; createdAt?: string; reviewNote?: string; documentIds?: unknown[] } | null;
       verified: boolean;
     };
     return {
       status: result.latest?.status ?? null,
       level: result.latest?.level ?? null,
       requestedAt: result.latest?.createdAt ?? null,
+      reviewNote: result.latest?.reviewNote ?? null,
+      documentCount: Array.isArray(result.latest?.documentIds) ? result.latest.documentIds.length : 0,
       verified: result.verified,
     };
   },
@@ -146,7 +158,27 @@ function indexBusinesses(state: AccountState, items: Business[]) {
 const accountSlice = createSlice({
   name: 'account',
   initialState,
-  reducers: {},
+  reducers: {
+    /** Ajout / mise à jour optimiste d'un abonnement (web accountSlice.upsertPublisherSubscription). */
+    subscriptionUpserted(state, action: PayloadAction<PublisherSubscription>) {
+      const sub = action.payload;
+      const index = state.subscriptions.findIndex(
+        (item) => item.userId === sub.userId && item.publisherType === sub.publisherType && item.publisherId === sub.publisherId,
+      );
+      if (index >= 0) state.subscriptions[index] = sub;
+      else state.subscriptions.unshift(sub);
+    },
+    publicBusinessesReceived(state, action: PayloadAction<Business[]>) {
+      state.businesses = action.payload;
+      indexBusinesses(state, action.payload);
+    },
+    subscriptionRemoved(state, action: PayloadAction<{ userId: string; publisherType: string; publisherId: string }>) {
+      const { userId, publisherType, publisherId } = action.payload;
+      state.subscriptions = state.subscriptions.filter(
+        (item) => !(item.userId === userId && item.publisherType === publisherType && item.publisherId === publisherId),
+      );
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(loadBusinesses.pending, (state) => {
@@ -201,6 +233,7 @@ const accountSlice = createSlice({
   },
 });
 
+export const { publicBusinessesReceived, subscriptionUpserted, subscriptionRemoved } = accountSlice.actions;
 export const accountReducer = accountSlice.reducer;
 
 /** Mes abonnements (web selectUserSubscriptions). */
@@ -215,4 +248,19 @@ export function selectMySubscriptions(
 export function selectOwnedBusinesses(businesses: Business[], userId?: string | null): Business[] {
   if (!userId) return [];
   return businesses.filter((item) => item.ownerId === userId && !item.deletedByUserAt);
+}
+
+/** Abonnement de l'utilisateur à un éditeur (web selectPublisherSubscription). */
+export function findPublisherSubscription(
+  subscriptions: PublisherSubscription[],
+  userId: string | null | undefined,
+  publisherType: string,
+  publisherId: string | null | undefined,
+): PublisherSubscription | null {
+  if (!userId || !publisherId) return null;
+  return (
+    subscriptions.find(
+      (item) => item.userId === userId && item.publisherType === publisherType && item.publisherId === publisherId,
+    ) || null
+  );
 }

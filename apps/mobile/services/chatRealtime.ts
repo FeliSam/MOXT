@@ -22,9 +22,26 @@ export type TypingState = {
 
 let onPresenceChange: ((state: PresenceState) => void) | null = null;
 let onTypingChange: ((state: TypingState) => void) | null = null;
+const presenceListeners = new Set<(state: PresenceState) => void>();
+let latestPresence: PresenceState = {};
+
+function emitPresence(state: PresenceState) {
+  latestPresence = state;
+  onPresenceChange?.(state);
+  presenceListeners.forEach((listener) => listener(state));
+}
 
 export function setPresenceListener(cb: (state: PresenceState) => void) {
   onPresenceChange = cb;
+}
+
+/** Abonnement supplémentaire (fil de discussion) sans écraser la liste. */
+export function subscribePresenceUpdates(cb: (state: PresenceState) => void) {
+  presenceListeners.add(cb);
+  cb(latestPresence);
+  return () => {
+    presenceListeners.delete(cb);
+  };
 }
 
 export function setTypingListener(cb: (state: TypingState) => void) {
@@ -35,7 +52,8 @@ export function subscribePresence(userId: string) {
   if (!supabase) return;
   unsubscribePresence();
 
-  presenceChannel = supabase.channel('online-users', {
+  // Même canal que le web (realtimeService presence-online) pour que la pastille soit partagée.
+  presenceChannel = supabase.channel('presence-online', {
     config: { presence: { key: userId } },
   });
 
@@ -50,13 +68,12 @@ export function subscribePresence(userId: string) {
           lastSeen: latest?.lastSeen || new Date().toISOString(),
         };
       });
-      onPresenceChange?.(presenceMap);
+      emitPresence(presenceMap);
     })
     .subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
         await presenceChannel!.track({
-          userId,
-          lastSeen: new Date().toISOString(),
+          online_at: new Date().toISOString(),
         });
       }
     });
