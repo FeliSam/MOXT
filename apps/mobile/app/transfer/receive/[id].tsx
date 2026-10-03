@@ -8,6 +8,7 @@ import { TRANSFER_STATUS } from '@moxt/shared/domain/transferConfig.js';
 import { AppChrome } from '@/components/chrome/AppChrome';
 import { UploadProgressBar } from '@/components/publish/publishKit';
 import { AppText } from '@/components/ui/AppText';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { pickImageOrPdf, uploadLikeWeb } from '@/services/mediaUpload';
 import { supabase } from '@/services/supabase';
 import { upsertTransfer } from '@/store/transfers';
@@ -82,7 +83,7 @@ export default function ReceiveTransferScreen() {
   return (
     <AppChrome pathname="/transfers">
       <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 128 }}>
-        <AppText className="text-2xl font-black text-app-text">J’ai reçu les fonds</AppText>
+        <PageHeader className="mx-0" eyebrow="Transfert" title="J’ai reçu les fonds" description="Déclarez le montant reçu et joignez une preuve." />
         {!transfer ? <AppText className="text-sm text-app-text-muted">Transfert introuvable.</AppText> : null}
         {transfer && !allowed ? (
           <AppText className="text-sm text-app-text-muted">
@@ -94,7 +95,8 @@ export default function ReceiveTransferScreen() {
             <AppText className="text-sm text-app-text-muted">
               Partenaire : {String(transfer?.exchanger?.name || transfer?.businessName || 'Entreprise')}
             </AppText>
-            <TextInput value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="Montant reçu" placeholderTextColor={colors.textFaint} style={{ minHeight: 44, borderRadius: 12, borderWidth: 1, borderColor: colors.border, color: colors.text, paddingHorizontal: 12 }} />
+            <AppText className="text-sm font-bold text-app-text">Montant reçu</AppText>
+            <TextInput value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="Montant reçu" placeholderTextColor={colors.textFaint} style={{ minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceMuted, color: colors.text, paddingHorizontal: 16 }} />
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               {METHODS.map(([idMethod, label]) => (
                 <Pressable key={idMethod} onPress={() => setMethod(idMethod)} style={{ paddingHorizontal: 12, minHeight: 36, borderRadius: 999, justifyContent: 'center', backgroundColor: method === idMethod ? colors.accent : colors.surfaceMuted }}>

@@ -14,6 +14,7 @@ import { PublisherBlock } from '@/components/publications/PublisherBlock';
 import { usePublisherDetailProfile } from '@/components/publications/usePublisherDetailProfile';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/Button';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { DetailFacts, DetailMetrics, DetailSection, TrustPanel } from '@/components/ui/DetailBlocks';
 import { ImageGalleryViewer } from '@/components/ui/ImageGalleryViewer';
 import { ReportSheet } from '@/components/ui/ReportSheet';
@@ -146,7 +147,7 @@ export default function EventDetailScreen() {
   return (
     <AppChrome pathname="/events">
       <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 16 }}>
-        <AppText className="text-2xl font-black text-app-text">{String(event.title || 'Événement')}</AppText>
+        <PageHeader className="mx-0" title={String(event.title || 'Événement')} />
         <DetailMetrics
           items={[
             { emoji: '📅', label: t('events.detail.date'), value: formatWhen(String(event.startAt || '')) },

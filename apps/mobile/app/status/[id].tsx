@@ -5,9 +5,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
 
 import { openContactConversation } from '@moxt/shared/services/contactService.js';
+import { STATUS_COLUMNS } from '@moxt/shared/services/feedService.js';
+import { fromRow } from '@moxt/shared/utils/remoteRowMapper.js';
 
 import { AppText } from '@/components/ui/AppText';
 import { supabase } from '@/services/supabase';
+import { statusUpserted, type StatusItem } from '@/store/feed';
 import { mapConversationRow, receiveRemoteConversation, sendMessage } from '@/store/messages';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 
@@ -20,9 +23,41 @@ export default function StatusDetailScreen() {
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user);
   const status = useAppSelector((state) => state.feed.statuses.find((item) => item.id === id));
+  const [missing, setMissing] = useState(false);
   const [page, setPage] = useState(0);
   const [reply, setReply] = useState('');
   const [reaction, setReaction] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!id || status || !supabase) return undefined;
+    let alive = true;
+    supabase
+      .from('statuses')
+      .select(STATUS_COLUMNS)
+      .eq('id', id)
+      .maybeSingle()
+      .then(
+        ({ data }) => {
+          if (!alive) return;
+          const mapped = data ? (fromRow(data) as StatusItem) : null;
+          if (!mapped?.id) {
+            setMissing(true);
+            return;
+          }
+          dispatch(statusUpserted({
+            ...mapped,
+            images: Array.isArray(mapped.images) ? mapped.images : [],
+            viewedBy: Array.isArray(mapped.viewedBy) ? mapped.viewedBy : [],
+          }));
+        },
+        () => {
+          if (alive) setMissing(true);
+        },
+      );
+    return () => {
+      alive = false;
+    };
+  }, [dispatch, id, status]);
 
   useEffect(() => {
     if (!supabase || !status || !user?.id || user.id === status.authorId) return;
@@ -36,7 +71,7 @@ export default function StatusDetailScreen() {
   if (!status) {
     return (
       <View style={{ flex: 1, backgroundColor: '#020617', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-        <AppText className="text-base font-black text-white">Statut introuvable</AppText>
+        <AppText className="text-base font-black text-white">{missing ? 'Statut introuvable' : 'Chargement…'}</AppText>
         <Pressable onPress={() => router.back()} style={{ marginTop: 16 }}>
           <AppText className="font-bold text-white">Fermer</AppText>
         </Pressable>

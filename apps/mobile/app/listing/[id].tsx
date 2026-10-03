@@ -25,12 +25,13 @@ import { usePublisherDetailProfile } from '@/components/publications/usePublishe
 import { Badge, StatusBadge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { DetailFacts, DetailMetrics } from '@/components/ui/DetailBlocks';
 import { ImageGalleryViewer } from '@/components/ui/ImageGalleryViewer';
 import { ReportSheet } from '@/components/ui/ReportSheet';
 import { supabase } from '@/services/supabase';
 import { useThemeColors } from '@/theme/ThemeContext';
-import { radii, spacing, typography } from '@/theme/colors';
+import { brand, fontFamilies, radii, spacing, typography } from '@/theme/colors';
 import { loadListingById, upsertListing, type ListingItem } from '@/store/marketplace';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { showNotice } from '@/utils/notice';
@@ -242,9 +243,10 @@ export default function ListingDetailScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={{ padding: spacing.xl, paddingBottom: 120, gap: spacing.lg }}>
-        <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
-          Marketplace / {categoryLabel} / <Text style={{ color: colors.text, fontWeight: '800' }}>{listing.title}</Text>
+        <Text numberOfLines={1} style={{ fontSize: 12, fontFamily: fontFamilies.regular, color: colors.textMuted }}>
+          Marketplace / {categoryLabel} / <Text style={{ color: colors.text, fontFamily: fontFamilies.semibold }}>{listing.title}</Text>
         </Text>
+        <PageHeader className="mx-0" title={listing.title} />
         {/* Images Carousel */}
         {images.length > 0 ? (
           <View style={{ width: IMAGE_WIDTH, height: IMAGE_HEIGHT + 30, alignSelf: 'center' }}>
@@ -351,8 +353,7 @@ export default function ListingDetailScreen() {
               {listing.category ? <Badge tone="neutral">{listing.category}</Badge> : null}
               {conditionLabel ? <Badge tone="success">{conditionLabel}</Badge> : null}
             </View>
-            <Text style={{ ...typography.title, color: colors.text }}>{listing.title}</Text>
-            <Text style={{ fontSize: 24, fontWeight: '900', color: colors.primary }}>
+            <Text style={{ fontSize: 30, fontFamily: fontFamilies.semibold, color: brand[700] }}>
               {listing.price
                 ? formatCurrency(listing.price, listing.currency || 'RUB')
                 : 'Sur devis'}
@@ -391,7 +392,7 @@ export default function ListingDetailScreen() {
           <View style={{ marginTop: 16, gap: 8 }}>
             {detailTab === 'description' ? (
               <>
-                <Text style={{ ...typography.sectionTitle, color: colors.text }}>À propos de cette annonce</Text>
+                <Text style={{ fontSize: 20, fontFamily: fontFamilies.display, letterSpacing: -0.3, color: colors.text }}>À propos de cette annonce</Text>
                 <Text style={{ ...typography.body, color: colors.textSecondary, lineHeight: 22 }}>
                   {listing.description || 'Aucune description.'}
                 </Text>

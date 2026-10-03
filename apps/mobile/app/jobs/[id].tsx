@@ -28,7 +28,7 @@ import { ReportSheet } from '@/components/ui/ReportSheet';
 import { supabase } from '@/services/supabase';
 import { useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
-import { brand, spacing, typography } from '@/theme/colors';
+import { brand, fontFamilies, spacing, typography } from '@/theme/colors';
 
 type JobDetail = {
   id: string;
@@ -290,6 +290,6 @@ export default function JobDetailScreen() {
 const sx = StyleSheet.create({
   container: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  h2: { fontSize: 15, fontWeight: '900' },
+  h2: { fontSize: 16, fontFamily: fontFamilies.display },
   body: { marginTop: 8, fontSize: 14, lineHeight: 22 },
 });

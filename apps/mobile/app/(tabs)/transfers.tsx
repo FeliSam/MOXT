@@ -20,9 +20,10 @@ import {
 
 import { isArchivedTransferStatus } from '@/components/dashboard/dashboardInbox';
 import { TransferCalculatorModal } from '@/components/transfers/TransferCalculatorModal';
-import { TransferPageHeader } from '@/components/transfers/TransferPageHeader';
 import { TransferStatusBadge } from '@/components/transfers/TransferStatusBadge';
-import { ListCard } from '@/components/ui/ListCard';
+import { WebBadge } from '@/components/dashboard/webUi';
+import { Card } from '@/components/ui/Card';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { BOTTOM_NAV_PADDING } from '@/components/navigation/BottomNavBar';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { loadDashboardData } from '@/store/dashboard';
@@ -55,10 +56,8 @@ function TransferHistoryCard({ transfer }: { transfer: TransferItem }) {
   const currFrom = transfer.currencyFrom || 'XOF';
 
   return (
-    <ListCard
-      finance
-      className="relative"
-      onPress={() => router.push(`/transfer/${transfer.id}` as any)}>
+    <Card className="relative" style={{ marginTop: 8 }}>
+      <Pressable onPress={() => router.push(`/transfer/${transfer.id}` as any)} style={{ gap: 4 }}>
       <View style={styles.statusBadge}>
         <TransferStatusBadge status={transfer.status} />
       </View>
@@ -89,7 +88,8 @@ function TransferHistoryCard({ transfer }: { transfer: TransferItem }) {
       </View>
 
       <Text style={[styles.arrow, { color: brand[700] }]}>→</Text>
-    </ListCard>
+      </Pressable>
+    </Card>
   );
 }
 
@@ -104,16 +104,20 @@ function P2POrderCard({ order }: { order: Record<string, unknown> }) {
   const to = String(order.toCurrency || '');
 
   return (
-    <ListCard className="relative" onPress={() => router.push(`/p2p/orders/${order.id}` as never)}>
-      <View style={[styles.statusBadge, { backgroundColor: '#e0f2fe' }]}>
-        <Text style={[styles.statusText, { color: '#0369a1' }]}>{P2P_STATUS[status] || status}</Text>
+    <Card className="relative" style={{ marginTop: 8 }}>
+      <Pressable onPress={() => router.push(`/p2p/orders/${order.id}` as never)} style={{ gap: 4 }}>
+      <View style={styles.statusBadge}>
+        <WebBadge tone={status === 'completed' ? 'success' : status === 'cancelled' ? 'danger' : status === 'waiting_payment' || status === 'disputed' ? 'warning' : 'info'}>
+          {P2P_STATUS[status] || status}
+        </WebBadge>
       </View>
       <Text style={[styles.ref, { color: colors.text }]}>{String(order.id)}</Text>
       <Text style={[styles.subtitle, { color: colors.textMuted }]}>Avec {counterpart}</Text>
       <Text style={[styles.totalAmount, { color: colors.text, marginTop: 8 }]}>
         {amount ? `${amount} ${from}${to ? ` → ${to}` : ''}` : 'P2P'}
       </Text>
-    </ListCard>
+      </Pressable>
+    </Card>
   );
 }
 
@@ -190,21 +194,26 @@ export default function TransfersScreen() {
         }
         ListHeaderComponent={
           <>
-            <View style={[styles.headerCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <TransferPageHeader
-                eyebrow="Historique"
-                title={translateLabel('Transferts')}
-                description="Estimez, créez et suivez vos transferts entre le Bénin et la Russie."
-                actions={[
-                  { label: 'Calculatrice', onPress: () => setCalculatorOpen(true) },
-                  { label: 'Nouveau transfert', onPress: () => router.push('/transfer/wizard' as any), primary: true },
-                ]}
-              />
-            </View>
+            <PageHeader
+              className="mx-0"
+              eyebrow="Historique"
+              title={translateLabel('Transferts')}
+              description="Estimez, créez et suivez vos transferts entre le Bénin et la Russie."
+              actions={
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  <Pressable onPress={() => setCalculatorOpen(true)} style={[styles.headerLink, { backgroundColor: colors.surfaceMuted }]}>
+                    <Text style={{ color: colors.text, fontWeight: '700' }}>Calculatrice</Text>
+                  </Pressable>
+                  <Pressable onPress={() => router.push('/transfer/wizard' as any)} style={[styles.headerLink, { backgroundColor: brand[700] }]}>
+                    <Text style={{ color: '#fff', fontWeight: '700' }}>Nouveau transfert</Text>
+                  </Pressable>
+                </View>
+              }
+            />
 
             <View style={styles.sectionHead}>
               <View>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: 'Manrope_700Bold' }]}>
                   {tab === 'transfers' ? 'Historique' : 'Échanges P2P'}
                 </Text>
                 <Text style={[styles.sectionSub, { color: colors.textMuted }]}>

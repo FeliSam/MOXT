@@ -13,7 +13,9 @@ import {
 } from '@moxt/shared/utils/transfers.js';
 
 import { ImagePickerButton } from '@/components/ImagePickerButton';
+import { TransferStatusBadge } from '@/components/transfers/TransferStatusBadge';
 import { AppScreen } from '@/components/ui/Card';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { PROGRESS_STEPS, TRANSFER_STATUS_LABELS } from '@/constants/transfers';
 import { twTransfer } from '@/constants/transferTailwind';
 import { supabase } from '@/services/supabase';
@@ -130,6 +132,7 @@ export default function TransferDetailScreen() {
   return (
     <AppScreen edges={[]}>
       <ScrollView contentContainerClassName="gap-5 px-4 pb-32 pt-2" showsVerticalScrollIndicator={false}>
+        <PageHeader className="mx-0" eyebrow="Transfert" title={String(t.id)} description={directionLabel(t.direction || '')} />
         <View className="flex-row flex-wrap justify-between gap-y-3">
           {[
             { emoji: '🔁', label: 'Direction', value: directionLabel(t.direction || '') },
@@ -153,10 +156,8 @@ export default function TransferDetailScreen() {
             end={{ x: 1, y: 1 }}
             className="p-5"
             style={{ borderRadius: 16, minHeight: 220 }}>
-            <View className="mb-4 self-start rounded-full px-2.5 py-1" style={{ backgroundColor: st.bg }}>
-              <Text className={twTransfer.detailHeroBadgeText} style={{ color: st.color }}>
-                {st.label}
-              </Text>
+            <View className="mb-4 self-start">
+              <TransferStatusBadge status={t.status} />
             </View>
             <Text className={twTransfer.detailHeroLabel}>ENVOYÉ</Text>
             <Text className={twTransfer.detailHeroValue}>{formatMoney(amountSent, currFrom)}</Text>
@@ -174,7 +175,7 @@ export default function TransferDetailScreen() {
           </LinearGradient>
         </View>
 
-        <View className="flex-row gap-1 rounded-2xl border border-app-border bg-app-surface-muted/60 p-1 dark:border-zinc-700">
+        <View className="flex-row gap-1 rounded-2xl border border-app-border bg-app-surface-muted p-1">
           {([
             ['suivi', 'Suivi'],
             ['paiement', 'Paiement'],
@@ -185,8 +186,8 @@ export default function TransferDetailScreen() {
               <Pressable
                 key={key}
                 onPress={() => setDetailTab(key)}
-                className={cn('min-h-11 flex-1 items-center justify-center rounded-xl px-2', active && 'bg-white shadow-sm dark:bg-zinc-800')}>
-                <Text className={cn('text-sm font-black', active ? 'text-app-text dark:text-zinc-50' : 'text-app-text-muted dark:text-zinc-400')}>
+                className={cn('min-h-11 flex-1 items-center justify-center rounded-xl px-2', active && 'bg-app-surface shadow-sm')}>
+                <Text className={cn('text-sm font-black', active ? 'text-app-text' : 'text-app-text-muted')}>
                   {label}
                 </Text>
               </Pressable>

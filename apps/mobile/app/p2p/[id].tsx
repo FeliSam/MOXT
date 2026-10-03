@@ -16,6 +16,7 @@ import { PublisherBlock } from '@/components/publications/PublisherBlock';
 import { usePublisherDetailProfile } from '@/components/publications/usePublisherDetailProfile';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/Button';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { DetailFacts, DetailMetrics } from '@/components/ui/DetailBlocks';
 import { ReportSheet } from '@/components/ui/ReportSheet';
 import { supabase } from '@/services/supabase';
@@ -130,15 +131,25 @@ export default function P2PDetailScreen() {
   return (
     <AppChrome pathname="/p2p">
       <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 128 }}>
-        <AppText className="text-xs font-black uppercase text-app-text-muted">Échanges communautaires</AppText>
-        <AppText className="text-2xl font-black text-app-text">
-          {formatCurrency(offer.amount, offer.fromCurrency, 'fr-FR')} vers {offer.toCurrency}
-        </AppText>
-        <AppText className="text-sm text-app-text-muted">Offre publiée par {offer.ownerName || 'un membre'}</AppText>
+        <PageHeader
+          className="mx-0"
+          title={`${formatCurrency(offer.amount, offer.fromCurrency, 'fr-FR')} vers ${offer.toCurrency}`}
+          description={`Offre publiée par ${offer.ownerName || 'un membre'}`}
+        />
 
-        <View style={{ flexDirection: 'row', gap: 10, borderRadius: 16, borderWidth: 1, borderColor: isDark ? '#155e75' : '#a5f3fc', backgroundColor: isDark ? '#083344' : '#ecfeff', padding: 12 }}>
-          <AppText className="text-base">🛡️</AppText>
-          <AppText className="flex-1 text-sm" style={{ color: isDark ? '#cffafe' : '#083344', lineHeight: 20 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            gap: 12,
+            borderRadius: 16,
+            borderWidth: 1,
+            borderColor: isDark ? 'rgba(22,78,99,0.5)' : 'rgba(165,243,252,0.8)',
+            backgroundColor: isDark ? 'rgba(8,51,68,0.35)' : 'rgba(236,254,255,0.9)',
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+          }}>
+          <AppText className="text-base" style={{ color: isDark ? '#67e8f9' : '#0e7490' }}>🛡️</AppText>
+          <AppText className="flex-1 text-sm" style={{ color: isDark ? '#cffafe' : '#083344', lineHeight: 24 }}>
             MOXT ne détient pas vos fonds. Suivez les étapes, gardez vos preuves et ne payez qu’aux coordonnées affichées dans la commande.
           </AppText>
         </View>
@@ -154,8 +165,8 @@ export default function P2PDetailScreen() {
 
         <View style={card}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <AppText className="font-black text-app-text">Conditions de l’offre</AppText>
-            <AppText className="text-xs font-bold" style={{ color: offer.status === 'active' ? '#059669' : colors.textMuted }}>{offer.status}</AppText>
+            <AppText display className="text-base text-app-text">Conditions de l’offre</AppText>
+            <AppText className="text-xs font-bold" style={{ color: offer.status === 'active' ? colors.success : colors.textMuted }}>{offer.status}</AppText>
           </View>
           <Row label="Montant proposé" value={formatCurrency(offer.amount, offer.fromCurrency, 'fr-FR')} />
           {received ? <Row label="Équivalent" value={formatCurrency(received, offer.toCurrency, 'fr-FR')} /> : null}
@@ -173,7 +184,7 @@ export default function P2PDetailScreen() {
 
         {!isOwner ? (
           <View style={card}>
-            <AppText className="font-black text-app-text">Contacter ou accepter</AppText>
+            <AppText display className="text-base text-app-text">Contacter ou accepter</AppText>
             <AppText className="text-sm text-app-text-muted">
               L’acceptation crée une commande suivie dans MOXT. L’argent circule directement entre vous — ajoutez toujours une preuve.
             </AppText>
@@ -204,7 +215,7 @@ export default function P2PDetailScreen() {
           </View>
         ) : (
           <View style={card}>
-            <AppText className="font-black text-app-text">Gérer l’offre</AppText>
+            <AppText display className="text-base text-app-text">Gérer l’offre</AppText>
             <AppText className="text-sm text-app-text-muted">L’archivage retire l’offre du catalogue actif.</AppText>
             {offer.status === 'active' ? (
               <Pressable onPress={() => void setStatus('archived')} style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
@@ -219,7 +230,7 @@ export default function P2PDetailScreen() {
         )}
 
         <View style={card}>
-          <AppText className="font-black text-app-text">Détails de l’échange</AppText>
+          <AppText display className="text-base text-app-text">Détails de l’échange</AppText>
           <DetailFacts
             items={[
               { label: 'Montant disponible', value: formatCurrency(offer.amount, offer.fromCurrency, 'fr-FR') },
@@ -236,7 +247,7 @@ export default function P2PDetailScreen() {
         <PublisherBlock profile={publisherProfile} currentId={offer.id} />
 
         <View style={card}>
-          <AppText className="font-black text-app-text">Sécurité P2P</AppText>
+          <AppText display className="text-base text-app-text">Sécurité P2P</AppText>
           <AppText className="text-sm text-app-text-muted">MOXT ne détient pas vos fonds. Ne payez qu’aux coordonnées affichées dans la commande.</AppText>
           <AppText className="text-sm text-app-text-muted">Vérifiez le profil avant d’accepter et gardez vos preuves dans MOXT.</AppText>
           <AppText className="text-sm text-app-text-muted">En cas de problème, ouvrez un litige pour contacter le support.</AppText>

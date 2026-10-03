@@ -3,8 +3,7 @@ import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 
 import { cn } from '@/lib/cn';
-import { useTheme } from '@/theme/ThemeContext';
-import { platformShadow } from '@/theme/platformShadow';
+import { useShadows, useTheme } from '@/theme/ThemeContext';
 
 type CardVariant = 'default' | 'flat' | 'finance' | 'interactive' | 'featured' | 'verified';
 
@@ -15,8 +14,7 @@ interface CardProps {
   style?: ViewStyle;
 }
 
-// Séparation par nuances de surface (pas de bordure, ombre quasi nulle).
-// Élévation en dark = teinte plus claire ; en light = surface blanche + micro-ombre.
+// Même carte que le web : surface + bordure + ombre du thème (clair et sombre).
 const variantClasses: Record<CardVariant, string> = {
   default: '',
   flat: '',
@@ -27,23 +25,21 @@ const variantClasses: Record<CardVariant, string> = {
 };
 
 export function Card({ children, variant = 'default', className, style }: CardProps) {
+  const shadows = useShadows();
   const isFlat = variant === 'flat';
   return (
     <View
       className={cn(
         'rounded-2xl',
         isFlat
-          ? 'bg-app-surface-muted dark:bg-[#171d1b] p-4'
-          : 'bg-app-surface-elevated dark:bg-[#1b2320] p-5',
+          ? 'bg-app-surface-muted p-4'
+          : 'border border-app-border bg-app-surface p-4',
+        variant === 'verified' && 'border-l-[3px] border-l-brand-600 dark:border-l-brand-400',
         variantClasses[variant],
         className,
       )}
       style={[
-        !isFlat && platformShadow('0 6px 36px rgba(15,23,20,0.05)'),
-        variant === 'verified' && {
-          borderLeftWidth: 3,
-          borderLeftColor: '#0b8975',
-        },
+        !isFlat && (variant === 'finance' ? shadows.finance : shadows.card),
         style,
       ]}>
       {children}

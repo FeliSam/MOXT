@@ -24,8 +24,8 @@ import { loadCoreData } from '@/store/data';
 import { loadParcelById } from '@/store/parcels';
 import { mapConversationRow, receiveRemoteConversation, sendMessage } from '@/store/messages';
 import { useAppDispatch, useAppSelector } from '@/store/store';
-import { useThemeColors } from '@/theme/ThemeContext';
-import { brand, radii, shadows, spacing, typography } from '@/theme/colors';
+import { useShadows, useThemeColors } from '@/theme/ThemeContext';
+import { brand, fontFamilies, radii, spacing, typography } from '@/theme/colors';
 import { asStringList } from '@/utils/stringList';
 
 /** publish.parcel.types du web (fr). */
@@ -46,6 +46,7 @@ function parcelTypeLabels(value: unknown) {
 
 export default function ParcelDetailScreen() {
   const colors = useThemeColors();
+  const shadows = useShadows();
   const dispatch = useAppDispatch();
   const { id } = useLocalSearchParams<{ id: string }>();
   const user = useAppSelector((state) => state.auth.user);
@@ -342,10 +343,10 @@ const sx = StyleSheet.create({
   routeBadge: { position: 'absolute', top: -12, right: 12, zIndex: 2 },
   routeCard: { borderRadius: 18, borderWidth: 1, padding: 18 },
   routeCities: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  routeLabel: { fontSize: 10, fontWeight: '900', letterSpacing: 1 },
-  routeCode: { marginTop: 4, fontSize: 18, fontWeight: '900', letterSpacing: -0.3 },
-  routeCountry: { marginTop: 2, fontSize: 11, fontWeight: '700' },
-  card: { borderRadius: radii.lg, borderWidth: 1, padding: 20 },
-  cardTitle: { fontSize: 15, fontWeight: '900' },
+  routeLabel: { fontSize: 10, fontFamily: fontFamilies.semibold, letterSpacing: 1 },
+  routeCode: { marginTop: 4, fontSize: 18, fontFamily: fontFamilies.semibold, letterSpacing: -0.3 },
+  routeCountry: { marginTop: 2, fontSize: 12, fontFamily: fontFamilies.semibold },
+  card: { borderRadius: radii.lg, borderWidth: 1, padding: 16 },
+  cardTitle: { fontSize: 20, fontFamily: fontFamilies.display },
   cardDesc: { marginTop: 6, fontSize: 13, lineHeight: 19 },
 });

@@ -8,6 +8,7 @@ import { formatMoney, formatTransferDate } from '@moxt/shared/utils/transfers.js
 
 import { AppChrome } from '@/components/chrome/AppChrome';
 import { AppText } from '@/components/ui/AppText';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { TRANSFER_STATUS_LABELS } from '@/constants/transfers';
 import { supabase } from '@/services/supabase';
 import { transferMatches } from '@/store/transfers';
@@ -110,7 +111,7 @@ export default function ReceiptDetailScreen() {
     return (
       <AppChrome pathname="/receipts">
         <View style={{ flex: 1, backgroundColor: colors.background, padding: 16, gap: 12 }}>
-          <AppText className="text-2xl font-black text-app-text">{ready ? 'Reçu introuvable' : 'Chargement…'}</AppText>
+          <PageHeader className="mx-0" title={ready ? 'Reçu introuvable' : 'Chargement…'} />
           {ready ? <AppText className="text-sm text-app-text-muted">Ce reçu n’existe pas ou n’est plus accessible.</AppText> : null}
           <Pressable onPress={() => router.replace('/receipts' as never)}>
             <AppText className="font-bold" style={{ color: colors.accent }}>Retour aux reçus</AppText>
@@ -130,13 +131,17 @@ export default function ReceiptDetailScreen() {
   return (
     <AppChrome pathname="/receipts">
       <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 128 }}>
-        <Pressable onPress={() => router.back()}>
-          <AppText className="font-bold" style={{ color: colors.accent }}>← Retour</AppText>
-        </Pressable>
-        <AppText className="text-2xl font-black text-app-text">{receipt.title || 'Reçu'}</AppText>
-        <AppText className="text-sm text-app-text-muted">
-          {formatMoney(receipt.amount, receipt.currency)} · {receipt.createdAt ? formatTransferDate(receipt.createdAt) : ''}
-        </AppText>
+        <PageHeader
+          className="mx-0"
+          eyebrow="Reçu"
+          title={receipt.title || 'Reçu'}
+          description={`${formatMoney(receipt.amount, receipt.currency)} · ${receipt.createdAt ? formatTransferDate(receipt.createdAt) : ''}`}
+          actions={
+            <Pressable onPress={() => router.back()}>
+              <AppText className="font-bold" style={{ color: colors.accent }}>Retour</AppText>
+            </Pressable>
+          }
+        />
         <View style={{ borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 16, gap: 10 }}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
             <View style={{ width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentSoft }}>
@@ -156,7 +161,7 @@ export default function ReceiptDetailScreen() {
           </View>
           {timeline.length ? (
             <View style={{ marginTop: 8, borderRadius: 16, backgroundColor: colors.surfaceMuted, padding: 14, gap: 8 }}>
-              <AppText className="text-sm font-black text-app-text">Traitement</AppText>
+              <AppText display className="text-sm text-app-text">Traitement</AppText>
               {timeline.map((event, index) => {
                 const status = String(event.status || '');
                 const label = event.label || TIMELINE_LABELS[status] || TRANSFER_STATUS_LABELS[status]?.label || status || 'Étape';

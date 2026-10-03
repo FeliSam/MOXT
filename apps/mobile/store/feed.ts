@@ -105,6 +105,11 @@ const feedSlice = createSlice({
       state.videos = action.payload.videos;
       state.status = 'ready';
     },
+    statusUpserted(state, action: PayloadAction<StatusItem>) {
+      const index = state.statuses.findIndex((item) => item.id === action.payload.id);
+      if (index >= 0) state.statuses[index] = action.payload;
+      else state.statuses.unshift(action.payload);
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -146,7 +151,7 @@ const feedSlice = createSlice({
   },
 });
 
-export const { publicFeedReceived } = feedSlice.actions;
+export const { publicFeedReceived, statusUpserted } = feedSlice.actions;
 export const feedReducer = feedSlice.reducer;
 
 export function selectStatusGroups(statuses: StatusItem[], userId?: string | null): StatusGroup[] {

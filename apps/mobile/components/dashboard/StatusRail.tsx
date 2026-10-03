@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Image, Pressable, ScrollView, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
 import { Plus } from 'lucide-react-native';
 
 import { AppText } from '@/components/ui/AppText';
@@ -69,12 +70,20 @@ function thumbOf(group: StatusGroup | undefined) {
   return images.length ? images[images.length - 1] : null;
 }
 
+function latestStatusId(group?: StatusGroup) {
+  if (!group?.items.length) return null;
+  return [...group.items].sort(
+    (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime(),
+  )[0]?.id;
+}
+
 function Bubble({
   label,
   group,
   avatarUrl,
   initial,
   onAdd,
+  onOpen,
   mutedAvatar,
 }: {
   label: string;
@@ -82,13 +91,19 @@ function Bubble({
   avatarUrl?: string | null;
   initial?: string;
   onAdd?: () => void;
+  onOpen?: () => void;
   mutedAvatar?: boolean;
 }) {
   const { colors } = useTheme();
   const thumb = thumbOf(group);
   return (
     <View style={{ width: 68, alignItems: 'center', gap: 6 }}>
-      <View style={{ width: OUTER, height: OUTER, alignItems: 'center', justifyContent: 'center' }}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        disabled={!onOpen}
+        onPress={onOpen}
+        style={{ width: OUTER, height: OUTER, alignItems: 'center', justifyContent: 'center' }}>
         {group ? (
           <Ring unseen={group.unseen}>
             <Face uri={thumb || avatarUrl} initial={initial} />
@@ -116,7 +131,7 @@ function Bubble({
             <Plus size={11} color="#ffffff" strokeWidth={2.4} />
           </Pressable>
         ) : null}
-      </View>
+      </Pressable>
       <AppText numberOfLines={1} className="w-full text-center text-[11px] font-semibold text-app-text-muted" style={{ lineHeight: 14 }}>
         {label}
       </AppText>
@@ -161,9 +176,24 @@ export function StatusRail({ onAdd }: { onAdd?: () => void }) {
         initial={user.firstName?.charAt(0)}
         mutedAvatar={!mine}
         onAdd={onAdd ?? (() => undefined)}
+        onOpen={() => {
+          const statusId = latestStatusId(mine);
+          if (statusId) router.push(`/status/${statusId}` as never);
+          else onAdd?.();
+        }}
       />
       {others.map((group) => (
-        <Bubble key={group.key} label={group.name} group={group} avatarUrl={group.avatarUrl} initial={group.name?.charAt(0)} />
+        <Bubble
+          key={group.key}
+          label={group.name}
+          group={group}
+          avatarUrl={group.avatarUrl}
+          initial={group.name?.charAt(0)}
+          onOpen={() => {
+            const statusId = latestStatusId(group);
+            if (statusId) router.push(`/status/${statusId}` as never);
+          }}
+        />
       ))}
     </ScrollView>
   );

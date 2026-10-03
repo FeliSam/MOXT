@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
 import { formatCurrency } from '@moxt/shared/utils/formatters.js';
 
@@ -12,22 +12,41 @@ import {
   TransferWizardNav,
 } from '@/components/transfers/wizard/TransferWizardConfirmStep';
 import { TransferWizardPartyStep } from '@/components/transfers/wizard/TransferWizardPartyStep';
-import { TransferWizardStep1 } from '@/components/transfers/wizard/TransferWizardStep1';
+import { TransferWizardStep1, type WizardExchanger } from '@/components/transfers/wizard/TransferWizardStep1';
 import { AppScreen } from '@/components/ui/Card';
 import {
   DIRECTIONS,
-  FALLBACK_EXCHANGERS,
   calculateTransfer,
   directionInfo,
 } from '@/constants/transfers';
 import { twTransfer } from '@/constants/transferTailwind';
 import { supabase } from '@/services/supabase';
+import { loadBusinesses, type Business } from '@/store/account';
 import { loadCoreData } from '@/store/data';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 
+const READY = new Set(['verified', 'approved', 'active']);
+
+function toExchanger(business: Business): WizardExchanger {
+  const services = business.services;
+  const fee = Number(business.feePercent ?? 2.5);
+  return {
+    id: business.id,
+    name: business.name,
+    rating: Number(business.rating) || 0,
+    feePercent: Number.isFinite(fee) ? fee : 2.5,
+    averageDelay: '10 à 20 min',
+    city: business.city,
+    country: typeof business.country === 'string' ? business.country : undefined,
+    ...(Array.isArray(services) ? {} : {}),
+  };
+}
+
 export default function TransferWizardScreen() {
   const dispatch = useAppDispatch();
+  const params = useLocalSearchParams<{ exchangerId?: string }>();
   const user = useAppSelector((state) => state.auth.user);
+  const businesses = useAppSelector((state) => state.account.businesses);
   const originCountry = (user as any)?.originCountry || ((user as any)?.country !== 'RU' ? (user as any)?.country : 'BJ') || 'BJ';
 
   const initialDirection = (user as any)?.country === 'RU' ? DIRECTIONS.RU_TO_BJ : DIRECTIONS.BJ_TO_RU;
@@ -41,7 +60,7 @@ export default function TransferWizardScreen() {
 
   const [direction, setDirection] = useState<(typeof DIRECTIONS)[keyof typeof DIRECTIONS]>(initialDirection);
   const [amount, setAmount] = useState('');
-  const [exchangerId, setExchangerId] = useState(FALLBACK_EXCHANGERS[0].id);
+  const [exchangerId, setExchangerId] = useState(typeof params.exchangerId === 'string' ? params.exchangerId : '');
 
   const [senderFirstName, setSenderFirstName] = useState(user?.firstName || '');
   const [senderLastName, setSenderLastName] = useState(user?.lastName || '');
@@ -55,9 +74,36 @@ export default function TransferWizardScreen() {
   const [acceptTerms, setAcceptTerms] = useState(false);
 
   const info = useMemo(() => directionInfo(direction, originCountry), [direction, originCountry]);
-  const exchanger = FALLBACK_EXCHANGERS.find((e) => e.id === exchangerId)!;
+  const exchangers = useMemo(
+    () =>
+      businesses
+        .filter((business) => {
+          const services = business.services;
+          const offersTransfer = Array.isArray(services)
+            ? services.includes('Transfert')
+            : String(services || '').includes('Transfert');
+          return (
+            offersTransfer &&
+            READY.has(String(business.status || '')) &&
+            business.ownerId !== user?.id &&
+            !business.deletedByUserAt
+          );
+        })
+        .map(toExchanger),
+    [businesses, user?.id],
+  );
+  const exchanger = exchangers.find((item) => item.id === exchangerId) || exchangers[0];
   const numAmount = Number(amount) || 0;
-  const calc = calculateTransfer(numAmount, direction, exchanger.feePercent);
+  const calc = calculateTransfer(numAmount, direction, exchanger?.feePercent ?? 2.5);
+
+  useEffect(() => {
+    if (user?.id) dispatch(loadBusinesses(user.id));
+  }, [dispatch, user?.id]);
+
+  useEffect(() => {
+    if (!exchangers.length) return;
+    if (!exchangers.some((item) => item.id === exchangerId)) setExchangerId(exchangers[0].id);
+  }, [exchangerId, exchangers]);
 
   const goNext = () => {
     if (step === 1) {
@@ -65,7 +111,7 @@ export default function TransferWizardScreen() {
         Alert.alert('Montant invalide', `Minimum : ${formatCurrency(calc.minimumRequired, calc.currencyFrom, 'fr-FR')}`);
         return;
       }
-      if (!exchangerId) {
+      if (!exchanger) {
         Alert.alert('Partenaire requis', 'Choisissez un échangeur.');
         return;
       }
@@ -91,22 +137,22 @@ export default function TransferWizardScreen() {
       Alert.alert('Conditions', 'Acceptez les conditions pour continuer.');
       return;
     }
-    if (!supabase) return;
+    if (!supabase || !exchanger) return;
     setLoading(true);
     try {
       const now = new Date().toISOString();
       const transferId = `MXT-${Date.now().toString(36).toUpperCase()}`;
+      const business = businesses.find((item) => item.id === exchanger.id);
       const { error } = await supabase.from('transfers').insert({
         id: transferId,
         user_id: user?.id,
+        business_id: exchanger.id,
+        business_owner_id: business?.ownerId || null,
         status: 'pending_payment',
         direction,
-        amount_sent: numAmount,
+        amount: numAmount,
         fee: calc.fees,
-        amount_received: calc.amountReceived,
-        total_to_pay: calc.totalToPay,
-        currency_from: calc.currencyFrom,
-        currency_to: calc.currencyTo,
+        received_amount: calc.amountReceived,
         rate: calc.rawRate,
         rate_source: 'Frankfurter',
         rate_date: new Date().toISOString().slice(0, 10),
@@ -122,8 +168,19 @@ export default function TransferWizardScreen() {
           phone: senderPhone.trim(),
           method: senderMethod,
         },
-        exchanger: { id: exchanger.id, name: exchanger.name, feePercent: exchanger.feePercent },
+        exchanger: { id: exchanger.id, name: exchanger.name, feePercent: exchanger.feePercent, rating: exchanger.rating },
         origin_country: originCountry,
+        timeline: [{ status: 'pending_payment', at: now }],
+        payload: {
+          amountSent: numAmount,
+          fees: calc.fees,
+          totalToPay: calc.totalToPay,
+          currencyFrom: calc.currencyFrom,
+          currencyTo: calc.currencyTo,
+          feePercent: exchanger.feePercent,
+          amountReceived: calc.amountReceived,
+          rawRate: calc.rawRate,
+        },
         created_at: now,
         updated_at: now,
       });
@@ -177,6 +234,7 @@ export default function TransferWizardScreen() {
               setAmount={setAmount}
               exchangerId={exchangerId}
               setExchangerId={setExchangerId}
+              exchangers={exchangers}
               originCountry={originCountry}
             />
           ) : null}
@@ -216,8 +274,8 @@ export default function TransferWizardScreen() {
             <TransferWizardConfirmStep
               direction={direction}
               amount={numAmount}
-              feePercent={exchanger.feePercent}
-              exchangerName={exchanger.name}
+              feePercent={exchanger?.feePercent ?? 2.5}
+              exchangerName={exchanger?.name || '—'}
               senderName={`${senderFirstName} ${senderLastName}`.trim()}
               recipientName={`${recipientFirstName} ${recipientLastName}`.trim()}
               acceptTerms={acceptTerms}

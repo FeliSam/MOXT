@@ -8,14 +8,21 @@ import { TransferWizardSectionTitle } from '@/components/transfers/wizard/Transf
 import { twTransfer } from '@/constants/transferTailwind';
 import {
   DIRECTIONS,
-  FALLBACK_EXCHANGERS,
   calculateTransfer,
   directionInfo,
 } from '@/constants/transfers';
 import { cn } from '@/lib/cn';
 import { useTheme } from '@/theme/ThemeContext';
 
-type Exchanger = (typeof FALLBACK_EXCHANGERS)[number];
+export type WizardExchanger = {
+  id: string;
+  name: string;
+  rating: number;
+  feePercent: number;
+  averageDelay: string;
+  city?: string;
+  country?: string;
+};
 
 export function TransferWizardStep1({
   direction,
@@ -24,6 +31,7 @@ export function TransferWizardStep1({
   setAmount,
   exchangerId,
   setExchangerId,
+  exchangers,
   originCountry,
 }: {
   direction: string;
@@ -32,12 +40,13 @@ export function TransferWizardStep1({
   setAmount: (v: string) => void;
   exchangerId: string;
   setExchangerId: (id: string) => void;
+  exchangers: WizardExchanger[];
   originCountry: string;
 }) {
-  const { isDark } = useTheme();
-  const exchanger = FALLBACK_EXCHANGERS.find((e) => e.id === exchangerId)!;
+  const { colors } = useTheme();
+  const exchanger = exchangers.find((e) => e.id === exchangerId) || exchangers[0];
   const numAmount = Number(amount) || 0;
-  const calc = calculateTransfer(numAmount, direction, exchanger.feePercent);
+  const calc = calculateTransfer(numAmount, direction, exchanger?.feePercent ?? 2.5);
   const rateDate = new Date().toISOString().slice(0, 10);
 
   return (
@@ -49,34 +58,26 @@ export function TransferWizardStep1({
           {[DIRECTIONS.BJ_TO_RU, DIRECTIONS.RU_TO_BJ].map((dir) => {
             const cardInfo = directionInfo(dir, originCountry);
             const active = direction === dir;
-            const activeInk = isDark ? '#fde68a' : '#78350f';
             return (
               <Pressable
                 key={dir}
-                className={cn(twTransfer.directionCard, !active && twTransfer.directionCardIdle)}
-                style={
-                  active
-                    ? { borderColor: '#FCD116', backgroundColor: isDark ? '#422006' : '#fffbeb' }
-                    : undefined
-                }
+                className={cn(twTransfer.directionCard, active ? twTransfer.directionCardActive : twTransfer.directionCardIdle)}
                 onPress={() => onDirectionChange(dir)}>
                 <View className="flex-row flex-wrap items-center gap-2">
-                  <Text style={active ? { color: activeInk, fontSize: 18, fontWeight: '900' } : undefined} className={active ? undefined : twTransfer.directionFlags}>
+                  <Text className={twTransfer.directionFlags}>
                     {cardInfo.fromFlag} {cardInfo.from}
                   </Text>
-                  <Text style={{ color: active ? activeInk : '#6b7280' }}>→</Text>
-                  <Text style={active ? { color: activeInk, fontSize: 18, fontWeight: '900' } : undefined} className={active ? undefined : twTransfer.directionFlags}>
+                  <Text className={active ? 'text-brand-700' : 'text-app-text-muted'}>→</Text>
+                  <Text className={twTransfer.directionFlags}>
                     {cardInfo.toFlag} {cardInfo.to}
                   </Text>
                 </View>
-                <Text
-                  style={{ color: active ? activeInk : undefined }}
-                  className={cn(twTransfer.directionSub, !active && 'text-app-text-muted dark:text-zinc-300')}>
+                <Text className={cn(twTransfer.directionSub, active ? 'text-brand-700 dark:text-brand-400' : 'text-app-text-muted')}>
                   {cardInfo.sub}
                 </Text>
                 {active ? (
-                  <View className={twTransfer.selectedPill} style={{ backgroundColor: '#FCD116' }}>
-                    <Text className="text-[10px] font-bold" style={{ color: '#1c1917' }}>✓ Sélectionné</Text>
+                  <View className={cn(twTransfer.selectedPill, 'bg-brand-700')}>
+                    <Text className="text-[10px] font-bold text-white">✓ Sélectionné</Text>
                   </View>
                 ) : null}
               </Pressable>
@@ -92,7 +93,7 @@ export function TransferWizardStep1({
         <TextInput
           keyboardType="numeric"
           placeholder={`Min. ${formatCurrency(calc.minimumRequired, calc.currencyFrom)}`}
-          placeholderTextColor="#94a3b8"
+          placeholderTextColor={colors.textFaint}
           value={amount}
           onChangeText={setAmount}
           className={twTransfer.amountInput}
@@ -120,27 +121,31 @@ export function TransferWizardStep1({
             <Text className="text-xs font-bold text-brand-700 dark:text-brand-400">Tous les échangeurs ↗</Text>
           </Pressable>
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-3 py-1">
-          {FALLBACK_EXCHANGERS.map((ex) => (
-            <PartnerCard
-              key={ex.id}
-              ex={ex}
-              active={exchangerId === ex.id}
-              onSelect={() => setExchangerId(ex.id)}
-            />
-          ))}
-        </ScrollView>
+        {exchangers.length ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-3 py-1">
+            {exchangers.map((ex) => (
+              <PartnerCard
+                key={ex.id}
+                ex={ex}
+                active={exchangerId === ex.id}
+                onSelect={() => setExchangerId(ex.id)}
+              />
+            ))}
+          </ScrollView>
+        ) : (
+          <Text className="text-sm text-app-text-muted">Aucun partenaire validé pour ce sens. Ouvrez la liste des échangeurs.</Text>
+        )}
       </View>
 
       {/* Estimation */}
-      {numAmount > 0 && exchangerId ? (
+      {numAmount > 0 && exchanger ? (
         <TransferEstimateCard calc={calc} exchanger={exchanger} rateDate={rateDate} />
       ) : null}
     </View>
   );
 }
 
-function PartnerCard({ ex, active, onSelect }: { ex: Exchanger; active: boolean; onSelect: () => void }) {
+function PartnerCard({ ex, active, onSelect }: { ex: WizardExchanger; active: boolean; onSelect: () => void }) {
   return (
     <Pressable
       className={cn(
@@ -204,11 +209,11 @@ function TransferEstimateCard({
   rateDate,
 }: {
   calc: ReturnType<typeof calculateTransfer>;
-  exchanger: Exchanger;
+  exchanger: WizardExchanger;
   rateDate: string;
 }) {
   return (
-    <View className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-zinc-900">
+    <View className="overflow-hidden rounded-2xl bg-app-surface shadow-sm">
       <LinearGradient
         colors={['#0d9488', '#14b8a6', '#06b6d4']}
         start={{ x: 0, y: 0 }}
