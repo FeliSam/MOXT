@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 
-import { isEmailVerified, isPhoneVerified } from '@moxt/shared/auth/userSecurity.js';
+import { isEmailVerified, isPhoneVerified, verificationRequestIsStale } from '@moxt/shared/auth/userSecurity.js';
+import { router } from 'expo-router';
 import {
   buildPersonalDocument,
   buildPersonalDocumentPath,
@@ -13,6 +14,7 @@ import { AppChrome } from '@/components/chrome/AppChrome';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { useLanguage } from '@/providers/LanguageProvider';
 import { cn } from '@/lib/cn';
 import { pickImageOrPdf, uploadLikeWeb, type UploadFile } from '@/services/mediaUpload';
 import { supabase } from '@/services/supabase';
@@ -106,6 +108,7 @@ export default function KycScreen() {
   const colors = useThemeColors();
   const user = useAppSelector((state) => state.auth.user);
   const verification = useAppSelector((state) => state.account.verification);
+  const { t } = useLanguage();
 
   const [level, setLevel] = useState<Level>('identity');
   const [step, setStep] = useState(0);
@@ -262,6 +265,14 @@ export default function KycScreen() {
 
   const requestLevel = (verification.level === 'enhanced' ? 'enhanced' : 'identity') as Level;
   const requestHeading = verification.status ? `Demande ${LEVEL_LABEL[requestLevel] || LEVEL_LABEL[level]}` : null;
+  const isDark = colors.background === '#0c0c0e';
+  const requestStale = verificationRequestIsStale({ status: verification.status, createdAt: verification.requestedAt });
+  const statusTone =
+    verification.status === 'rejected'
+      ? { label: 'Refusé', bg: isDark ? 'rgba(127,29,29,0.5)' : '#fee2e2', fg: isDark ? '#fca5a5' : '#b91c1c' }
+      : verification.status === 'approved' || verification.status === 'verified'
+        ? { label: 'Vérifié', bg: isDark ? 'rgba(6,78,59,0.5)' : '#d1fae5', fg: isDark ? '#6ee7b7' : '#047857' }
+        : { label: 'En vérification', bg: isDark ? 'rgba(120,53,15,0.5)' : '#fef3c7', fg: isDark ? '#fcd34d' : '#b45309' };
 
   return (
     <AppChrome pathname="/verification">
@@ -273,12 +284,43 @@ export default function KycScreen() {
           className="px-0"
         />
 
+        {requestStale ? (
+          <View style={{ borderRadius: 16, borderWidth: 1, padding: 14, borderColor: isDark ? 'rgba(245,158,11,0.4)' : '#fcd34d', backgroundColor: isDark ? 'rgba(120,53,15,0.35)' : '#fffbeb' }}>
+            <Text style={{ fontWeight: '900', color: isDark ? '#fcd34d' : '#92400e' }}>{t('verification.overdue.title')}</Text>
+            <Text style={{ marginTop: 4, fontSize: 13, color: isDark ? '#fde68a' : '#78350f' }}>
+              {t('verification.overdue.before')}{' '}
+              <Text onPress={() => router.push('/support' as never)} style={{ fontWeight: '800', color: colors.accent }}>
+                {t('verification.overdue.link')}
+              </Text>
+              .
+            </Text>
+          </View>
+        ) : null}
+
         {requestHeading ? (
           <Card>
-            <Text className="text-base font-black text-app-text">{requestHeading}</Text>
-            <Text className="mt-1 text-sm text-app-text-muted">
-              {verification.requestedAt ? `Demandée le ${new Date(verification.requestedAt).toLocaleDateString('fr-FR')}` : 'Dossier en cours'}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text className="text-base font-black text-app-text">{requestHeading}</Text>
+                <Text className="mt-1 text-sm text-app-text-muted">
+                  {t('verification.request.docs', { count: verification.documentCount ?? 0 })}
+                </Text>
+              </View>
+              <View style={{ borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: statusTone.bg }}>
+                <Text style={{ fontSize: 11, fontWeight: '900', color: statusTone.fg }}>{statusTone.label}</Text>
+              </View>
+            </View>
+            {verification.status === 'rejected' ? (
+              <View style={{ marginTop: 12, borderRadius: 14, borderWidth: 1, padding: 12, borderColor: isDark ? 'rgba(239,68,68,0.4)' : '#fca5a5', backgroundColor: isDark ? 'rgba(127,29,29,0.35)' : '#fef2f2' }}>
+                <Text style={{ fontWeight: '900', color: isDark ? '#fca5a5' : '#991b1b' }}>{t('verification.rejected.title')}</Text>
+                <Text style={{ marginTop: 4, fontSize: 13, color: isDark ? '#fecaca' : '#7f1d1d' }}>
+                  {verification.reviewNote
+                    ? t('verification.rejected.reason', { note: verification.reviewNote })
+                    : t('verification.rejected.fallback')}
+                </Text>
+                <Text style={{ marginTop: 6, fontSize: 13, color: isDark ? '#fecaca' : '#7f1d1d' }}>{t('verification.rejected.hint')}</Text>
+              </View>
+            ) : null}
           </Card>
         ) : null}
 

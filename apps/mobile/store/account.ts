@@ -74,6 +74,8 @@ type AccountState = {
     verified: boolean;
     level: string | null;
     requestedAt: string | null;
+    reviewNote?: string | null;
+    documentCount?: number;
   };
   loading: Record<string, boolean>;
 };
@@ -126,13 +128,15 @@ export const loadVerification = createAsyncThunk(
   async (userId: string) => {
     if (!supabase) return null;
     const result = (await fetchVerificationStatus(supabase, userId)) as {
-      latest: { status?: string; level?: string; createdAt?: string } | null;
+      latest: { status?: string; level?: string; createdAt?: string; reviewNote?: string; documentIds?: unknown[] } | null;
       verified: boolean;
     };
     return {
       status: result.latest?.status ?? null,
       level: result.latest?.level ?? null,
       requestedAt: result.latest?.createdAt ?? null,
+      reviewNote: result.latest?.reviewNote ?? null,
+      documentCount: Array.isArray(result.latest?.documentIds) ? result.latest.documentIds.length : 0,
       verified: result.verified,
     };
   },

@@ -26,35 +26,76 @@ import { loadCoreData } from '@/store/data';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import type { ParcelItem } from '@/store/parcels';
 
-const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  active: { label: 'ACTIF', color: '#047857', bg: '#d1fae5' },
-  completed: { label: 'TERMINÉ', color: '#6b7280', bg: '#f3f4f6' },
-  reserved: { label: 'RÉSERVÉ', color: '#6d28d9', bg: '#ede9fe' },
+/** resolveParcelProofStatus + parcelProofTone du web. */
+function proofStatus(parcel: ParcelItem) {
+  const row = parcel as { proofStatus?: string; travelProofUrl?: string };
+  const status = row.proofStatus;
+  if (status === 'verified' || status === 'rejected' || status === 'missing') return status;
+  if (status === 'pending_review' || row.travelProofUrl) return 'pending_review';
+  return 'missing';
+}
+
+const PROOF_META: Record<string, { key: string; light: [string, string]; dark: [string, string] }> = {
+  verified: { key: 'parcels.card.proofVerified', light: ['#d1fae5', '#047857'], dark: ['rgba(6,78,59,0.5)', '#6ee7b7'] },
+  pending_review: { key: 'parcels.card.proofPending', light: ['#fef3c7', '#b45309'], dark: ['rgba(120,53,15,0.5)', '#fcd34d'] },
+  rejected: { key: 'parcels.card.proofRejected', light: ['#fee2e2', '#b91c1c'], dark: ['rgba(127,29,29,0.5)', '#fca5a5'] },
+  missing: { key: 'parcels.card.proofMissing', light: ['#e0f2fe', '#0369a1'], dark: ['rgba(12,74,110,0.5)', '#7dd3fc'] },
 };
 
 function ParcelCard({ parcel, archived = false }: { parcel: ParcelItem; archived?: boolean }) {
   const colors = useThemeColors();
+  const { t } = useLanguage();
+  const isDark = colors.background === '#0c0c0e';
   const isCompany = Boolean((parcel as any).ownerType === 'business' || (parcel as any).businessId);
   const kg = parcel.remainingKg ?? parcel.capacityKg ?? 0;
+  const proof = PROOF_META[proofStatus(parcel)];
+  const [proofBg, proofFg] = isDark ? proof.dark : proof.light;
+  const extra = parcel as { depositDeadline?: string; distributionDate?: string };
+
+  if (archived) {
+    return (
+      <ListCard className="overflow-hidden p-0" onPress={() => router.push(`/parcel/${parcel.id}` as any)}>
+        <View style={{ opacity: 0.8, padding: spacing.lg, gap: spacing.md }}>
+          <Text testID="parcel-archived-badge" style={[styles.archivedBadge, { alignSelf: 'flex-end', color: colors.textFaint, backgroundColor: colors.surfaceMuted, borderWidth: 0 }]}>
+            {t('parcels.card.archived')}
+          </Text>
+          <Text style={[styles.parcelOwner, { color: colors.text, paddingRight: 0 }]} numberOfLines={1}>
+            {parcel.ownerName || parcel.id}
+          </Text>
+          <View style={[styles.routeBlock, { backgroundColor: colors.surfaceMuted }]}>
+            <Text style={[styles.routeCity, { color: colors.text, textAlign: 'center' }]} numberOfLines={1}>
+              {(parcel.origin || '—').toUpperCase()}
+            </Text>
+            <Text style={{ color: colors.textMuted }}>→</Text>
+            <Text style={[styles.routeCity, { color: colors.text, textAlign: 'center' }]} numberOfLines={1}>
+              {(parcel.destination || '—').toUpperCase()}
+            </Text>
+          </View>
+          {parcel.departureDate ? (
+            <Text style={[styles.parcelDate, { color: colors.textMuted }]}>
+              {t('parcels.card.departure', { date: formatShortDate(parcel.departureDate) })}
+            </Text>
+          ) : null}
+        </View>
+      </ListCard>
+    );
+  }
 
   return (
     <ListCard className="overflow-hidden p-0" onPress={() => router.push(`/parcel/${parcel.id}` as any)}>
-      {/* Web : badge Particulier/Entreprise absolu top-right */}
-      <View style={[styles.ownerBadge, { backgroundColor: isCompany ? colors.accentSoft : colors.surfaceMuted }]}>
-        <Text style={[styles.ownerBadgeText, { color: isCompany ? brand[700] : colors.textFaint }]}>
-          {isCompany ? 'Entreprise' : 'Particulier'}
-        </Text>
+      <View style={styles.ownerBadge}>
+        <View style={{ borderRadius: 999, paddingHorizontal: 6, paddingVertical: 2, backgroundColor: proofBg }}>
+          <Text style={{ fontSize: 9, fontWeight: '800', color: proofFg }}>{t(proof.key)}</Text>
+        </View>
+        <View style={{ borderRadius: 999, paddingHorizontal: 6, paddingVertical: 2, backgroundColor: isCompany ? colors.accentSoft : colors.surfaceMuted }}>
+          <Text style={{ fontSize: 9, fontWeight: '800', color: isCompany ? colors.accent : colors.textFaint }}>
+            {isCompany ? t('parcels.card.business') : t('parcels.card.individual')}
+          </Text>
+        </View>
       </View>
 
       <View style={styles.cardContent}>
-        {/* Web : badge « Archivé » sur l'onglet Archives */}
-        {archived ? (
-          <Text testID="parcel-archived-badge" style={[styles.archivedBadge, { color: colors.textMuted, borderColor: colors.border }]}>
-            Archivé
-          </Text>
-        ) : null}
-        {/* Owner */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingRight: 88 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
           <Text style={[styles.parcelOwner, { color: colors.text, flexShrink: 1 }]} numberOfLines={1}>
             {parcel.ownerName || parcel.id}
           </Text>
@@ -77,27 +118,38 @@ function ParcelCard({ parcel, archived = false }: { parcel: ParcelItem; archived
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <View style={[styles.infoTile, { flex: 1, backgroundColor: colors.surfaceMuted }]}>
             <Text style={[styles.infoTileValue, { color: colors.text }]}>{kg} kg</Text>
-            <Text style={[styles.infoTileLabel, { color: colors.textMuted }]}>Disponible</Text>
+            <Text style={[styles.infoTileLabel, { color: colors.textMuted }]}>{t('parcels.card.available')}</Text>
           </View>
           {parcel.pricePerKg != null ? (
             <View style={[styles.infoTile, { flex: 1, backgroundColor: colors.surfaceMuted }]}>
               <Text style={[styles.infoTileValue, { color: colors.text }]}>
                 {formatCurrency(parcel.pricePerKg, parcel.currency || 'RUB')}
               </Text>
-              <Text style={[styles.infoTileLabel, { color: colors.textMuted }]}>Par kg</Text>
+              <Text style={[styles.infoTileLabel, { color: colors.textMuted }]}>{t('parcels.card.perKg')}</Text>
             </View>
           ) : null}
         </View>
 
-        {parcel.departureDate ? (
-          <Text style={[styles.parcelDate, { color: colors.textFaint }]}>
-            Départ · {formatShortDate(parcel.departureDate)}
-          </Text>
-        ) : null}
+        <View style={{ gap: 6 }}>
+          {parcel.departureDate ? (
+            <Text style={[styles.parcelDate, { color: colors.textMuted }]}>
+              {t('parcels.card.departure', { date: formatShortDate(parcel.departureDate) })}
+            </Text>
+          ) : null}
+          {extra.depositDeadline || parcel.departureDate ? (
+            <Text style={[styles.parcelDate, { color: colors.textMuted }]}>
+              {t('parcels.card.depositBefore', { date: formatShortDate(String(extra.depositDeadline || parcel.departureDate)) })}
+            </Text>
+          ) : null}
+          {extra.distributionDate ? (
+            <Text style={[styles.parcelDate, { color: colors.textMuted }]}>
+              {t('parcels.card.pickupFrom', { date: formatShortDate(extra.distributionDate) })}
+            </Text>
+          ) : null}
+        </View>
 
-        {/* Web : bouton "Voir le détail →" pleine largeur */}
-        <View style={[styles.detailBtn, { backgroundColor: brand[700] }]}>
-          <Text style={styles.detailBtnText}>Voir le détail  →</Text>
+        <View style={[styles.detailBtn, { backgroundColor: isDark ? brand[600] : brand[700] }]}>
+          <Text style={styles.detailBtnText}>{t('parcels.card.viewDetail')}  →</Text>
         </View>
       </View>
     </ListCard>
@@ -333,16 +385,15 @@ const styles = StyleSheet.create({
   listContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, gap: spacing.md, paddingBottom: 20 },
 
   card: { borderRadius: radii.lg, overflow: 'hidden' },
-  cardContent: { padding: spacing.lg, paddingTop: 18, gap: spacing.md },
+  cardContent: { padding: spacing.lg, paddingTop: 36, gap: spacing.md },
 
   ownerBadge: {
     position: 'absolute',
     top: 8,
     left: 8,
     zIndex: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
+    flexDirection: 'row',
+    gap: 4,
   },
   ownerBadgeText: { fontSize: 11, fontWeight: '800' },
 
