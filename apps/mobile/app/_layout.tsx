@@ -96,7 +96,7 @@ function RootLayoutNav() {
                   return {
                     headerShown: Boolean(title),
                     header: title ? () => <BackHeader title={title} /> : undefined,
-                    contentStyle: { backgroundColor: colors.background },
+                    contentStyle: { flex: 1, backgroundColor: colors.background },
                   };
                 }}>
                 <Stack.Screen name="(tabs)" />

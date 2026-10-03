@@ -372,7 +372,7 @@ export default function MessagesTabScreen() {
             : t('messages.noUnread');
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={{ paddingTop: headerTop, paddingHorizontal: HEADER.padX, flexDirection: 'row', alignItems: 'center', gap: HEADER.gap }}>
         <HeaderChip>
           <View style={{ width: HEADER.avatar, height: HEADER.avatar, borderRadius: 999, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentSoft }}>

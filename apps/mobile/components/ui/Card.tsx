@@ -57,12 +57,12 @@ interface AppScreenProps {
 
 /** Conteneur racine aligné sur le fond web (--app-bg) + StatusBar */
 export function AppScreen({ children, edges = ['top'], className, style, padded = false }: AppScreenProps) {
-  const { isDark } = useTheme();
+  const { isDark, colors } = useTheme();
 
   return (
     <SafeAreaView
       className={cn('flex-1 bg-app-bg dark:bg-[#0c0c0e]', padded && 'px-5', className)}
-      style={style}
+      style={[{ flex: 1, backgroundColor: colors.background }, style]}
       edges={edges}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       {children}

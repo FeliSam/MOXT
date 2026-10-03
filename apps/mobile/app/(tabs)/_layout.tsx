@@ -7,6 +7,7 @@ import { FloatingTabBar } from '@/components/navigation/FloatingTabBar';
 import { TAB_ROUTE_PATHS } from '@/constants/routeTitles';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { useAppSelector } from '@/store/store';
+import { useTheme } from '@/theme/ThemeContext';
 import { bottomNavigationItems } from '@moxt/shared';
 
 function TabHeader({ routeName }: { routeName: string }) {
@@ -21,6 +22,7 @@ function TabHeader({ routeName }: { routeName: string }) {
  */
 export default function TabLayout() {
   const { t } = useLanguage();
+  const { colors } = useTheme();
   const items = bottomNavigationItems as unknown as { id: string; label: string; labelKey: string | null; mobileRoute: string }[];
   const labelFor = (route: string) => {
     const item = items.find((entry) => entry.mobileRoute === route);
@@ -35,7 +37,10 @@ export default function TabLayout() {
       screenOptions={({ route }) => ({
         headerShown: true,
         header: () => <TabHeader routeName={route.name} />,
-        sceneStyle: { backgroundColor: 'transparent' },
+        // Les onglets inactifs restent montés : un fond opaque empêche l'onglet précédent de transparaître.
+        sceneStyle: { flex: 1, backgroundColor: colors.background },
+        animation: 'none',
+        freezeOnBlur: true,
         tabBarStyle: { display: 'none' },
       })}>
       <Tabs.Screen name="index" options={{ title: labelFor('index') }} />
