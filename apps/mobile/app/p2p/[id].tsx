@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Modal, Pressable, ScrollView, View } from 'react-native';
 import { router, useLocalSearchParams, usePathname } from 'expo-router';
 
 import { calculateP2PFee, computeP2PReputation, p2pOfferFromRemoteRow, p2pReceivedFromOffered } from '@moxt/shared/domain/p2pRules.js';
@@ -47,6 +47,8 @@ export default function P2PDetailScreen() {
   const reviews = useAppSelector((state) => state.dashboard.reviews);
   const [pending, setPending] = useState(!offer);
   const [reportOpen, setReportOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [swipeKey, setSwipeKey] = useState(0);
   const publisherProfile = usePublisherDetailProfile(offer as unknown as Record<string, unknown> | undefined, 'p2p');
   const p2pGate = usePublishGate('p2p');
 
@@ -190,7 +192,7 @@ export default function P2PDetailScreen() {
             </AppText>
             {offer.ownerId && offer.status === 'active' ? (
               p2pGate.allowed ? (
-                <SwipeToAccept label="Glisser pour accepter" onComplete={() => void accept()} />
+                <SwipeToAccept key={swipeKey} label="Glisser pour accepter" onComplete={() => setConfirmOpen(true)} />
               ) : (
                 <AppText className="text-sm text-app-text-muted">{p2pGate.message}</AppText>
               )
@@ -262,6 +264,34 @@ export default function P2PDetailScreen() {
         relatedPath={`/p2p/${offer.id}`}
         editTo={isOwner ? `/p2p/edit/${offer.id}` : undefined}
       />
+      <Modal transparent animationType="fade" visible={confirmOpen} onRequestClose={() => setConfirmOpen(false)}>
+        <View style={{ flex: 1, justifyContent: 'center', padding: 20, backgroundColor: isDark ? 'rgba(0,0,0,0.82)' : 'rgba(2,6,23,0.6)' }}>
+          <View testID="p2p-accept-confirm" style={{ gap: 16, borderRadius: 24, borderWidth: 1, padding: 20, borderColor: colors.border, backgroundColor: colors.surface }}>
+            <AppText display className="text-lg text-app-text">Démarrer l’échange ?</AppText>
+            <AppText className="text-sm leading-6 text-app-text-muted">
+              Vous allez démarrer un échange. MOXT ne détient pas l’argent. Paiement hors app + preuve obligatoire. Continuer ?
+            </AppText>
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>
+              <Button
+                variant="secondary"
+                onPress={() => {
+                  setConfirmOpen(false);
+                  setSwipeKey((value) => value + 1);
+                }}>
+                Annuler
+              </Button>
+              <Button
+                onPress={() => {
+                  setConfirmOpen(false);
+                  void accept();
+                }}>
+                Confirmer
+              </Button>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <ReportSheet
         open={reportOpen}
         title="Signaler cette offre"
