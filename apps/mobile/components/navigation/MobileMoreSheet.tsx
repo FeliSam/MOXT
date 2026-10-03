@@ -59,27 +59,28 @@ function MoreServiceTile({
       }}
       style={{
         position: 'relative',
-        minHeight: 84,
-        justifyContent: 'space-between',
+        minHeight: 56,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
         borderRadius: 16,
         borderWidth: 1,
         borderColor: border,
         backgroundColor: surface,
-        padding: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 12,
       }}>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 4 }}>
-        <View style={{ height: 36, width: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 11, backgroundColor: muted }}>
-          <item.Icon size={18} color="#08705f" strokeWidth={2.1} />
-        </View>
-        {badge > 0 ? (
-          <View style={{ borderRadius: 999, backgroundColor: '#ef4444', paddingHorizontal: 6, paddingVertical: 2 }}>
-            <Text style={{ fontSize: 9, fontWeight: '700', lineHeight: 11, color: '#fff' }}>{badge > 9 ? '9+' : badge}</Text>
-          </View>
-        ) : null}
+      <View style={{ height: 36, width: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 11, backgroundColor: muted }}>
+        <item.Icon size={18} color="#08705f" strokeWidth={2.1} />
       </View>
-      <Text numberOfLines={2} style={{ fontSize: 12, fontWeight: '600', lineHeight: 16, color: text }}>
+      <Text numberOfLines={2} style={{ flex: 1, fontSize: 12, fontWeight: '600', lineHeight: 16, color: text }}>
         {translateLabel(item.label)}
       </Text>
+      {badge > 0 ? (
+        <View style={{ borderRadius: 999, backgroundColor: '#ef4444', paddingHorizontal: 6, paddingVertical: 2 }}>
+          <Text style={{ fontSize: 9, fontWeight: '700', lineHeight: 11, color: '#fff' }}>{badge > 9 ? '9+' : badge}</Text>
+        </View>
+      ) : null}
     </Pressable>
   );
 }
