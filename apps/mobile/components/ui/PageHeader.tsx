@@ -42,8 +42,8 @@ export function PageHeader({
         },
         shadows.card,
       ]}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: 200, minWidth: 0, gap: 4 }}>
           {eyebrow ? (
             <AppText
               className="text-[11px] font-black uppercase text-brand-700 dark:text-brand-300"
@@ -58,7 +58,7 @@ export function PageHeader({
             <AppText className="text-sm leading-5 text-app-text-muted">{description}</AppText>
           ) : null}
         </View>
-        {actions ? <View className="shrink-0 flex-row flex-wrap items-center gap-2">{actions}</View> : null}
+        {actions ? <View className="shrink-0 flex-row flex-wrap items-center gap-2" style={{ maxWidth: '100%' }}>{actions}</View> : null}
       </View>
     </View>
   );
