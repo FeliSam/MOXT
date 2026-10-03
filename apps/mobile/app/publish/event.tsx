@@ -5,8 +5,19 @@ import { router } from 'expo-router';
 import { createEvent } from '@moxt/shared/services/contentWrites.js';
 
 import { Field, PublishForm, StepBar } from '@/components/publish/PublishForm';
+import {
+  BusinessPublishNotice,
+  CitySelector,
+  PosterUploader,
+  PublishFormulaSheet,
+  SecurityGate,
+  ShareToFeedModal,
+  uploadPhotos,
+  type PosterPhoto,
+} from '@/components/publish/publishKit';
 import { AppText } from '@/components/ui/AppText';
 import { supabase } from '@/services/supabase';
+import { selectOwnedBusinesses } from '@/store/account';
 import { useAppSelector } from '@/store/store';
 import { showNotice } from '@/utils/notice';
 
@@ -34,7 +45,12 @@ export default function PublishEventScreen() {
   const [startAt, setStartAt] = useState('');
   const [description, setDescription] = useState('');
   const [program, setProgram] = useState('');
-  const [city, setCity] = useState(user?.city || '');
+  const [city, setCity] = useState(user?.city || 'Moscou');
+  const [photos, setPhotos] = useState<PosterPhoto[]>([]);
+  const [progress, setProgress] = useState<number | null>(null);
+  const [formula, setFormula] = useState('standard');
+  const [shareOpen, setShareOpen] = useState(false);
+  const business = useAppSelector((state) => selectOwnedBusinesses(state.account.businesses, user?.id)[0]);
   const [venue, setVenue] = useState('');
   const [onlineLink, setOnlineLink] = useState('');
   const [busy, setBusy] = useState(false);
@@ -66,8 +82,9 @@ export default function PublishEventScreen() {
         program: program.trim(),
         venue: venue.trim(),
         onlineLink: onlineLink.trim(),
+        images: await uploadPhotos(user.id, 'events', photos, setProgress),
       });
-      router.replace('/(tabs)/feed?type=event' as never);
+      setShareOpen(true);
     } catch (error) {
       showNotice('Événement', error instanceof Error ? error.message : 'Publication impossible.');
     } finally {
@@ -76,6 +93,7 @@ export default function PublishEventScreen() {
   }
 
   return (
+    <SecurityGate kind="publish" pathname="/publish/event">
     <PublishForm
       pathname="/publish/event"
       title="Publier un événement"
@@ -125,7 +143,8 @@ export default function PublishEventScreen() {
       ) : null}
       {step === 2 ? (
         <>
-          <Field label="Ville" value={city} onChangeText={setCity} />
+          <CitySelector value={city} onChange={setCity} />
+          <PosterUploader photos={photos} onChange={setPhotos} progress={progress} label="Affiches" />
           {format !== 'online' ? <Field label="Lieu" value={venue} onChangeText={setVenue} /> : null}
           {format !== 'in_person' ? <Field label="Lien en ligne" value={onlineLink} onChangeText={setOnlineLink} /> : null}
         </>
@@ -135,6 +154,21 @@ export default function PublishEventScreen() {
           {title} · {city || 'Ville'} · {FORMATS.find((item) => item.value === format)?.label}
         </AppText>
       ) : null}
+      {step === 3 ? (
+        <>
+          <BusinessPublishNotice business={business as { status?: string; services?: string[] }} contentType="event" />
+          <PublishFormulaSheet value={formula} onChange={setFormula} />
+        </>
+      ) : null}
     </PublishForm>
+    <ShareToFeedModal
+      visible={shareOpen}
+      message={title}
+      onClose={() => {
+        setShareOpen(false);
+        router.replace('/events' as never);
+      }}
+    />
+    </SecurityGate>
   );
 }

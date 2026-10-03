@@ -6,6 +6,7 @@ import { createP2POffer } from '@moxt/shared/services/contentWrites.js';
 import { Pressable } from 'react-native';
 
 import { Field, PublishForm, StepBar } from '@/components/publish/PublishForm';
+import { CurrencyChips, SecurityGate } from '@/components/publish/publishKit';
 import { AppText } from '@/components/ui/AppText';
 import { supabase } from '@/services/supabase';
 import { useAppSelector } from '@/store/store';
@@ -50,7 +51,10 @@ export default function PublishP2PScreen() {
     }
   }
 
+  const originCountry = user?.originCountry || (user?.country !== 'RU' ? user?.country : 'BJ') || 'BJ';
+
   return (
+    <SecurityGate kind="p2p" pathname="/p2p/publish">
     <PublishForm
       pathname="/p2p/publish"
       title="Proposer une offre"
@@ -62,8 +66,8 @@ export default function PublishP2PScreen() {
       {step > 0 ? <Pressable onPress={() => setStep(step - 1)}><AppText className="text-sm font-bold text-app-accent">Retour</AppText></Pressable> : null}
       {step === 0 ? (
         <>
-          <Field label="Je donne (devise)" value={fromCurrency} onChangeText={setFromCurrency} />
-          <Field label="Je reçois (devise)" value={toCurrency} onChangeText={setToCurrency} />
+          <CurrencyChips label="Je donne" value={fromCurrency} onChange={setFromCurrency} countryCode={originCountry} />
+          <CurrencyChips label="Je reçois" value={toCurrency} onChange={setToCurrency} countryCode={originCountry} />
         </>
       ) : null}
       {step === 1 ? (
@@ -81,5 +85,6 @@ export default function PublishP2PScreen() {
         </>
       ) : null}
     </PublishForm>
+    </SecurityGate>
   );
 }

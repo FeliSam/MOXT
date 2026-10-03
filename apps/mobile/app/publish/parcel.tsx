@@ -1,13 +1,23 @@
 import { useState } from 'react';
-import { Pressable } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 
 import { createParcel } from '@moxt/shared/services/contentWrites.js';
 
 import { Field, PublishForm, StepBar } from '@/components/publish/PublishForm';
+import {
+  AirportSelector,
+  BusinessPublishNotice,
+  CurrencyChips,
+  PublishFormulaSheet,
+  SecurityGate,
+  ShareToFeedModal,
+  UploadProgressBar,
+} from '@/components/publish/publishKit';
 import { AppText } from '@/components/ui/AppText';
 import { pickLibraryFile, uploadLikeWeb } from '@/services/mediaUpload';
 import { supabase } from '@/services/supabase';
+import { selectOwnedBusinesses } from '@/store/account';
 import { useAppSelector } from '@/store/store';
 import { showNotice } from '@/utils/notice';
 
@@ -18,8 +28,17 @@ const TYPES = ['Vêtements', 'Nourriture', 'Électronique', 'Documents', 'Autre'
 export default function PublishParcelScreen() {
   const user = useAppSelector((state) => state.auth.user);
   const [step, setStep] = useState(0);
+  const [originCountry, setOriginCountry] = useState('RU');
+  const [destinationCountry, setDestinationCountry] = useState('BJ');
+  const [originCode, setOriginCode] = useState('');
+  const [destinationCode, setDestinationCode] = useState('');
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
+  const [currency, setCurrency] = useState('RUB');
+  const [formula, setFormula] = useState('standard');
+  const [progress, setProgress] = useState<number | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const business = useAppSelector((state) => selectOwnedBusinesses(state.account.businesses, user?.id)[0]);
   const [departureDate, setDepartureDate] = useState('');
   const [depositDeadline, setDepositDeadline] = useState('');
   const [distributionDate, setDistributionDate] = useState('');
@@ -36,8 +55,10 @@ export default function PublishParcelScreen() {
     try {
       const file = await pickLibraryFile('images');
       if (!file) return;
+      setProgress(0.4);
       const uploaded = await uploadLikeWeb('parcels', `${user.id}/draft/proof-${Date.now()}.jpg`, file, 'private');
       setProof(uploaded.path);
+      setProgress(1);
     } catch (error) {
       showNotice('Preuve', error instanceof Error ? error.message : 'Envoi impossible.');
     }
@@ -57,13 +78,14 @@ export default function PublishParcelScreen() {
         distributionDate,
         capacityKg,
         pricePerKg,
+        currency,
         acceptedTypes: accepted,
         conditions,
         contact,
         proofPath: proof,
         proofStatus: proof ? 'pending_review' : 'missing',
       });
-      router.replace('/(tabs)/parcels' as never);
+      setShareOpen(true);
     } catch (error) {
       showNotice('Colis', error instanceof Error ? error.message : 'Publication impossible.');
     } finally {
@@ -77,6 +99,7 @@ export default function PublishParcelScreen() {
     true;
 
   return (
+    <SecurityGate kind="voyage" pathname="/publish/parcel">
     <PublishForm
       pathname="/publish/parcel"
       title="Publier un voyage"
@@ -102,8 +125,40 @@ export default function PublishParcelScreen() {
       ) : null}
       {step === 0 ? (
         <>
-          <Field label="Départ" value={origin} onChangeText={setOrigin} placeholder="Moscou" />
-          <Field label="Arrivée" value={destination} onChangeText={setDestination} placeholder="Cotonou" />
+          <AppText className="text-xs font-bold text-app-text-muted">Pays de départ</AppText>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {['RU', 'BJ'].map((code) => (
+              <Pressable key={code} onPress={() => setOriginCountry(code)}>
+                <AppText className={originCountry === code ? 'font-black text-app-accent' : 'font-bold text-app-text'}>{code}</AppText>
+              </Pressable>
+            ))}
+          </View>
+          <AirportSelector
+            label="Aéroport de départ"
+            countryCode={originCountry}
+            value={originCode}
+            onChange={(airport) => {
+              setOriginCode(airport.code);
+              setOrigin(`${airport.city} (${airport.code})`);
+            }}
+          />
+          <AppText className="text-xs font-bold text-app-text-muted">Pays d&apos;arrivée</AppText>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {['BJ', 'RU'].map((code) => (
+              <Pressable key={`to-${code}`} onPress={() => setDestinationCountry(code)}>
+                <AppText className={destinationCountry === code ? 'font-black text-app-accent' : 'font-bold text-app-text'}>{code}</AppText>
+              </Pressable>
+            ))}
+          </View>
+          <AirportSelector
+            label="Aéroport d'arrivée"
+            countryCode={destinationCountry}
+            value={destinationCode}
+            onChange={(airport) => {
+              setDestinationCode(airport.code);
+              setDestination(`${airport.city} (${airport.code})`);
+            }}
+          />
           <Field label="Date de départ (AAAA-MM-JJ)" value={departureDate} onChangeText={setDepartureDate} />
           <Field label="Limite de dépôt" value={depositDeadline} onChangeText={setDepositDeadline} />
           <Field label="Date de distribution" value={distributionDate} onChangeText={setDistributionDate} />
@@ -113,6 +168,7 @@ export default function PublishParcelScreen() {
         <>
           <Field label="Capacité (kg)" value={capacityKg} onChangeText={setCapacityKg} keyboardType="numeric" />
           <Field label="Prix par kg" value={pricePerKg} onChangeText={setPricePerKg} keyboardType="numeric" />
+          <CurrencyChips label="Devise" value={currency} onChange={setCurrency} />
           <AppText className="text-xs font-bold uppercase text-app-text-muted">Types acceptés</AppText>
           {TYPES.map((type) => {
             const on = accepted.includes(type);
@@ -131,14 +187,30 @@ export default function PublishParcelScreen() {
           <Pressable onPress={() => void addProof()}>
             <AppText className="text-sm font-bold text-app-accent">{proof ? 'Preuve de voyage ajoutée' : 'Ajouter une preuve (passeport ou billet)'}</AppText>
           </Pressable>
+          <UploadProgressBar progress={progress} />
         </>
       ) : null}
       {step === 3 ? (
         <AppText className="text-sm leading-5 text-app-text">
-          {origin} → {destination} · {capacityKg || '0'} kg · {pricePerKg || '0'} / kg
+          {origin} → {destination} · {capacityKg || '0'} kg · {pricePerKg || '0'} {currency} / kg
           {proof ? '\nPreuve jointe.' : '\nSans preuve pour le moment.'}
         </AppText>
       ) : null}
+      {step === 3 ? (
+        <>
+          <BusinessPublishNotice business={business as { status?: string; services?: string[] }} contentType="parcel" />
+          <PublishFormulaSheet value={formula} onChange={setFormula} />
+        </>
+      ) : null}
     </PublishForm>
+    <ShareToFeedModal
+      visible={shareOpen}
+      message={`Voyage ${origin} → ${destination}`}
+      onClose={() => {
+        setShareOpen(false);
+        router.replace('/(tabs)/parcels' as never);
+      }}
+    />
+    </SecurityGate>
   );
 }

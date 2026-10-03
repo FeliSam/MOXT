@@ -14,6 +14,15 @@ import { router } from 'expo-router';
 import { formatCurrency } from '@moxt/shared/utils/formatters.js';
 
 import { AppChrome } from '@/components/chrome/AppChrome';
+import {
+  BusinessPublishNotice,
+  CitySelector,
+  CurrencyChips,
+  PublishFormulaSheet,
+  SecurityGate,
+  ShareToFeedModal,
+  UploadProgressBar,
+} from '@/components/publish/publishKit';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -22,6 +31,7 @@ import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, radii, shadows, spacing, typography } from '@/theme/colors';
 import { uploadLikeWeb } from '@/services/mediaUpload';
 import { supabase } from '@/services/supabase';
+import { selectOwnedBusinesses } from '@/store/account';
 import { loadListings } from '@/store/marketplace';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 
@@ -49,9 +59,15 @@ export default function CreateListingScreen() {
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [city, setCity] = useState('Moscou');
+  const [currency, setCurrency] = useState('RUB');
+  const [formula, setFormula] = useState('standard');
   const [contact, setContact] = useState(user?.phone || '');
   const [imageUri, setImageUri] = useState<string | null>(null);
+  const [progress, setProgress] = useState<number | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [publishedImage, setPublishedImage] = useState<string | undefined>();
   const [loading, setLoading] = useState(false);
+  const business = useAppSelector((state) => selectOwnedBusinesses(state.account.businesses, user?.id)[0]);
 
   const goNext = () => {
     if (step === 'type') setStep('info');
@@ -77,6 +93,7 @@ export default function CreateListingScreen() {
       const listingId = `ANN-${Date.now().toString(36).toUpperCase()}`;
       let imageUrl = imageUri;
       if (imageUri && user?.id && !imageUri.startsWith('http')) {
+        setProgress(0.35);
         const uploaded = await uploadLikeWeb(
           'listings',
           `${user.id}/listings/${listingId}.jpg`,
@@ -84,6 +101,7 @@ export default function CreateListingScreen() {
           'public',
         );
         imageUrl = uploaded.url;
+        setProgress(1);
       }
       const { error } = await supabase.from('listings').insert({
         id: listingId,
@@ -92,7 +110,7 @@ export default function CreateListingScreen() {
         type,
         status: 'active',
         price: Number(price),
-        currency: 'RUB',
+        currency,
         country: 'RU',
         city: city.trim(),
         images: imageUrl ? [imageUrl] : [],
@@ -103,7 +121,8 @@ export default function CreateListingScreen() {
           description: description.trim(),
           type,
           price: Number(price),
-          currency: 'RUB',
+          currency,
+          formula,
           city: city.trim(),
           contact,
           sellerName: `${user?.firstName} ${user?.lastName}`,
@@ -114,12 +133,12 @@ export default function CreateListingScreen() {
       });
       if (error) throw new Error(error.message);
       await dispatch(loadListings());
-      Alert.alert('Annonce publiée !', `Réf: ${listingId}`, [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      setPublishedImage(imageUrl || undefined);
+      setShareOpen(true);
     } catch (err: any) {
       Alert.alert('Erreur', err.message || 'Publication impossible.');
     } finally {
+      setProgress(null);
       setLoading(false);
     }
   };
@@ -128,6 +147,7 @@ export default function CreateListingScreen() {
   const typeLabel = LISTING_TYPES.find((t) => t.key === type)?.label || type;
 
   return (
+    <SecurityGate kind="publish" pathname="/listing/create">
     <AppChrome pathname="/listing/create">
       <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.background }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: spacing.xl, gap: spacing.lg }}>
@@ -187,8 +207,9 @@ export default function CreateListingScreen() {
                 <Text style={{ ...typography.sectionTitle, color: colors.text }}>Informations</Text>
                 <Input placeholder="Titre de l'annonce *" value={title} onChangeText={setTitle} autoFocus />
                 <Input placeholder="Description" value={description} onChangeText={setDescription} multiline style={{ height: 80, textAlignVertical: 'top' }} />
-                <Input placeholder="Prix (RUB) *" value={price} onChangeText={setPrice} keyboardType="numeric" />
-                <Input placeholder="Ville" value={city} onChangeText={setCity} />
+                <Input placeholder="Prix *" value={price} onChangeText={setPrice} keyboardType="numeric" />
+                <CurrencyChips label="Devise" value={currency} onChange={setCurrency} />
+                <CitySelector value={city} onChange={setCity} />
                 <Input placeholder="Téléphone de contact" value={contact} onChangeText={setContact} keyboardType="phone-pad" />
               </View>
             </Card>
@@ -200,6 +221,7 @@ export default function CreateListingScreen() {
               <View style={{ gap: spacing.md }}>
                 <Text style={{ ...typography.sectionTitle, color: colors.text }}>Photo (optionnel)</Text>
                 <ImagePickerButton label="Ajouter une photo" currentUri={imageUri} onImageSelected={setImageUri} />
+                <UploadProgressBar progress={progress} />
               </View>
             </Card>
           ) : null}
@@ -219,7 +241,7 @@ export default function CreateListingScreen() {
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
                   <Text style={{ ...typography.body, color: colors.textMuted }}>Prix</Text>
-                  <Text style={{ ...typography.body, fontWeight: '600', color: colors.primary }}>{formatCurrency(Number(price), 'RUB')}</Text>
+                  <Text style={{ ...typography.body, fontWeight: '600', color: colors.primary }}>{formatCurrency(Number(price), currency)}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
                   <Text style={{ ...typography.body, color: colors.textMuted }}>Ville</Text>
@@ -235,6 +257,8 @@ export default function CreateListingScreen() {
                     <Text style={{ ...typography.body, fontWeight: '600', color: colors.text }}>1 image jointe</Text>
                   </View>
                 ) : null}
+                <BusinessPublishNotice business={business as { status?: string; services?: string[] }} contentType="listing" />
+                <PublishFormulaSheet value={formula} onChange={setFormula} />
               </View>
             </Card>
           ) : null}
@@ -255,5 +279,15 @@ export default function CreateListingScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
     </AppChrome>
+    <ShareToFeedModal
+      visible={shareOpen}
+      message={`${title} — ${city}`}
+      imageUrl={publishedImage}
+      onClose={() => {
+        setShareOpen(false);
+        router.back();
+      }}
+    />
+    </SecurityGate>
   );
 }
