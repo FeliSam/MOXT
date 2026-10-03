@@ -52,7 +52,9 @@ export function AppHeader({ pathname }: { pathname: string }) {
     Object.keys(ROUTE_TITLES)
       .sort((a, b) => b.length - a.length)
       .find((key) => pathname === key || pathname.startsWith(`${key}/`));
-  const title = translateLabel((matchedPath && ROUTE_TITLES[matchedPath]) || 'MOXT');
+  const title = translateLabel(
+    pathname.startsWith('/news/') ? 'Publication' : (matchedPath && ROUTE_TITLES[matchedPath]) || 'MOXT',
+  );
 
   return (
     <View
@@ -85,7 +87,7 @@ export function AppHeader({ pathname }: { pathname: string }) {
           </HeaderActionButton>
         ) : null}
         {actions.showNews ? (
-          <HeaderActionButton accessibilityLabel={t('nav.news')} onPress={() => router.push('/(tabs)/feed?type=post' as never)}>
+          <HeaderActionButton accessibilityLabel={t('nav.news')} onPress={() => router.push('/news' as never)}>
             <HeaderIcon icon={Newspaper} />
           </HeaderActionButton>
         ) : null}

@@ -282,9 +282,31 @@ export default function KycScreen() {
           </Card>
         ) : null}
 
-        <Text className="text-xs font-black uppercase text-app-text-muted">
-          Étape {step + 1}/{steps.length} · {current.label}
-        </Text>
+        <Card>
+          <Text className="text-xs font-black uppercase text-brand-700">
+            Étape {step + 1}/{steps.length} · {current.label}
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="mt-3 flex-row items-center gap-2">
+            {steps.map((item, index) => {
+              const done = step > index;
+              const active = step === index;
+              return (
+                <View key={item.key} className="flex-row items-center gap-2">
+                  <View
+                    className={cn(
+                      'h-8 w-8 items-center justify-center rounded-full',
+                      done ? 'bg-emerald-500' : active ? 'bg-brand-700' : 'bg-app-surface-muted',
+                    )}>
+                    <Text className={cn('text-xs font-black', done || active ? 'text-white' : 'text-app-text-muted')}>
+                      {done ? '✓' : index + 1}
+                    </Text>
+                  </View>
+                  {index < steps.length - 1 ? <View className="h-px w-4 bg-app-border" /> : null}
+                </View>
+              );
+            })}
+          </ScrollView>
+        </Card>
 
         {current.key === 'level' ? (
           <Card>

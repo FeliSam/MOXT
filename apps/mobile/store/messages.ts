@@ -24,6 +24,10 @@ export type MessageAttachment = {
   urls?: string[];
   fromStatus?: boolean;
   reactionEmoji?: string;
+  userId?: string;
+  avatarUrl?: string | null;
+  city?: string;
+  path?: string;
 };
 
 export type Message = {
@@ -649,6 +653,12 @@ const messagesSlice = createSlice({
       if (!current) return;
       Object.assign(current, action.payload.message);
     },
+    messageRemoved(state, action: PayloadAction<{ conversationId: string; messageId: string }>) {
+      const conv = state.conversations.find((item) => item.id === action.payload.conversationId);
+      if (!conv) return;
+      conv.messages = conv.messages.filter((item) => item.id !== action.payload.messageId);
+      conv.messageCount = Math.max(0, (conv.messageCount || conv.messages.length) - 1);
+    },
     receiveRemoteConversation(state, action: PayloadAction<Conversation>) {
       const conversation = normalizeConversation(action.payload);
       const duplicate = findByParticipants(state.conversations, conversation.participantIds);
@@ -781,6 +791,7 @@ export const {
   createLocalConversation,
   receiveMessage,
   patchMessage,
+  messageRemoved,
   receiveRemoteConversation,
   syncRemoteConversation,
 } = messagesSlice.actions;

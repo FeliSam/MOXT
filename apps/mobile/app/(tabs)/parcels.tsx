@@ -15,6 +15,7 @@ import { router } from 'expo-router';
 import { formatCurrency, formatShortDate } from '@moxt/shared/utils/formatters.js';
 
 import { ListCard } from '@/components/ui/ListCard';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { VerifiedIcon } from '@/components/ui/VerifiedIcon';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { useThemeColors } from '@/theme/ThemeContext';
@@ -39,8 +40,8 @@ function ParcelCard({ parcel, archived = false }: { parcel: ParcelItem; archived
   return (
     <ListCard className="overflow-hidden p-0" onPress={() => router.push(`/parcel/${parcel.id}` as any)}>
       {/* Web : badge Particulier/Entreprise absolu top-right */}
-      <View style={[styles.ownerBadge, { backgroundColor: isCompany ? colors.accentSoft : '#fdf0e8' }]}>
-        <Text style={[styles.ownerBadgeText, { color: isCompany ? brand[700] : '#b45309' }]}>
+      <View style={[styles.ownerBadge, { backgroundColor: isCompany ? colors.accentSoft : colors.surfaceMuted }]}>
+        <Text style={[styles.ownerBadgeText, { color: isCompany ? brand[700] : colors.textFaint }]}>
           {isCompany ? 'Entreprise' : 'Particulier'}
         </Text>
       </View>
@@ -73,21 +74,20 @@ function ParcelCard({ parcel, archived = false }: { parcel: ParcelItem; archived
           </Text>
         </View>
 
-        {/* Tuile kg */}
-        <View style={[styles.infoTile, { backgroundColor: colors.surfaceMuted }]}>
-          <Text style={[styles.infoTileValue, { color: colors.text }]}>{kg} kg</Text>
-          <Text style={[styles.infoTileLabel, { color: colors.textMuted }]}>Disponible</Text>
-        </View>
-
-        {/* Tuile prix */}
-        {parcel.pricePerKg != null ? (
-          <View style={[styles.infoTile, { backgroundColor: colors.surfaceMuted }]}>
-            <Text style={[styles.infoTileValue, { color: colors.text }]}>
-              {formatCurrency(parcel.pricePerKg, parcel.currency || 'RUB')}
-            </Text>
-            <Text style={[styles.infoTileLabel, { color: colors.textMuted }]}>Par kg</Text>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View style={[styles.infoTile, { flex: 1, backgroundColor: colors.surfaceMuted }]}>
+            <Text style={[styles.infoTileValue, { color: colors.text }]}>{kg} kg</Text>
+            <Text style={[styles.infoTileLabel, { color: colors.textMuted }]}>Disponible</Text>
           </View>
-        ) : null}
+          {parcel.pricePerKg != null ? (
+            <View style={[styles.infoTile, { flex: 1, backgroundColor: colors.surfaceMuted }]}>
+              <Text style={[styles.infoTileValue, { color: colors.text }]}>
+                {formatCurrency(parcel.pricePerKg, parcel.currency || 'RUB')}
+              </Text>
+              <Text style={[styles.infoTileLabel, { color: colors.textMuted }]}>Par kg</Text>
+            </View>
+          ) : null}
+        </View>
 
         {parcel.departureDate ? (
           <Text style={[styles.parcelDate, { color: colors.textFaint }]}>
@@ -107,11 +107,14 @@ function ParcelCard({ parcel, archived = false }: { parcel: ParcelItem; archived
 export default function ParcelsScreen() {
   const dispatch = useAppDispatch();
   const colors = useThemeColors();
-  const { translateLabel } = useLanguage();
+  const { t } = useLanguage();
   const user = useAppSelector((state) => state.auth.user);
   const items = useAppSelector((state) => state.parcels.items);
   const authStatus = useAppSelector((state) => state.auth.status);
   const [query, setQuery] = useState('');
+  const [origin, setOrigin] = useState('');
+  const [destination, setDestination] = useState('');
+  const [advanced, setAdvanced] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [tab, setTab] = useState<'active' | 'archived'>('active');
   const [showMine, setShowMine] = useState(false);
@@ -134,13 +137,15 @@ export default function ParcelsScreen() {
     const source = (tab === 'active' ? browse.active : browse.archived).filter((parcel) =>
       showMine ? parcel.ownerId === user?.id : true,
     );
-    if (!normalizedQuery) return source;
     return source.filter((parcel) => {
       const haystack =
         `${parcel.origin || ''} ${parcel.destination || ''} ${parcel.ownerName || ''}`.toLowerCase();
-      return haystack.includes(normalizedQuery);
+      if (normalizedQuery && !haystack.includes(normalizedQuery)) return false;
+      if (origin && !String(parcel.origin || '').toLowerCase().includes(origin.trim().toLowerCase())) return false;
+      if (destination && !String(parcel.destination || '').toLowerCase().includes(destination.trim().toLowerCase())) return false;
+      return true;
     });
-  }, [browse, query, showMine, tab, user?.id]);
+  }, [browse, destination, origin, query, showMine, tab, user?.id]);
 
   // Même écran que le web quand le catalogue actif est vide : ouvrir Archives.
   useEffect(() => {
@@ -167,51 +172,72 @@ export default function ParcelsScreen() {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={[]}>
       <View style={styles.header}>
-        <View style={styles.dotRow}>
-          <View style={[styles.dot, { backgroundColor: brand[700] }]} />
-          <Text style={[styles.eyebrow, { color: brand[700] }]}>TRANSPORT</Text>
-        </View>
-        <Text style={[styles.title, { color: colors.text }]}>
-          {translateLabel('Colis et voyages')}
-        </Text>
-        <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-          Publiez une capacité de transport ou réservez une place disponible.
-        </Text>
-
-        {/* Web : "Tous les colis" + "Publier un voyage" */}
-        <View style={styles.headerBtnRow}>
-          <Pressable
-            style={[styles.headerBtn, { backgroundColor: colors.surfaceMuted }]}
-            onPress={() => setShowMine((value) => !value)}>
-            <Text style={[styles.headerBtnText, { color: brand[700] }]}>{showMine ? 'Mes colis' : 'Tous les colis'}</Text>
-          </Pressable>
-          <Pressable
-            style={[styles.headerBtn, { backgroundColor: brand[700] }]}
-            onPress={() => router.push('/publish/parcel' as any)}>
-            <Text style={[styles.headerBtnText, { color: '#fff' }]}>+ Publier un voyage</Text>
-          </Pressable>
-        </View>
-
-        {/* Web : stat "N Trajets disponibles" */}
-        <View style={[styles.statTile, { backgroundColor: colors.surfaceMuted }]}>
-          <Text style={[styles.statValue, { color: colors.text }]}>{activeCount}</Text>
-          <Text style={[styles.statLabel, { color: colors.textMuted }]}>Trajets disponibles</Text>
+        <PageHeader
+          className="mx-0"
+          title={t('parcels.browse.title')}
+          actions={
+            <View style={{ gap: 8 }}>
+              <Pressable onPress={() => setShowMine((value) => !value)}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: brand[700] }}>
+                  {showMine ? t('parcels.browse.actions.allParcels') : t('parcels.browse.actions.myParcels')}
+                </Text>
+              </Pressable>
+              <Pressable onPress={() => router.push('/publish/parcel' as never)}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: brand[700] }}>{t('parcels.browse.actions.publish')}</Text>
+              </Pressable>
+            </View>
+          }
+        />
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View style={[styles.statTile, { flex: 1, backgroundColor: colors.surface }]}>
+            <Text style={[styles.statValue, { color: colors.text }]}>{visibleParcels.length}</Text>
+            <Text style={[styles.statLabel, { color: colors.textMuted }]}>{t('parcels.browse.stats.availableTrips')}</Text>
+          </View>
+          <View style={[styles.statTile, { flex: 1, backgroundColor: colors.surface }]}>
+            <Text style={[styles.statValue, { color: colors.text }]}>
+              {t('parcels.browse.stats.availableKgValue', {
+                kg: visibleParcels.reduce((sum, parcel) => sum + Number(parcel.remainingKg ?? parcel.capacityKg ?? 0), 0),
+              })}
+            </Text>
+            <Text style={[styles.statLabel, { color: colors.textMuted }]}>{t('parcels.browse.stats.availableKg')}</Text>
+          </View>
         </View>
 
         <View style={[styles.searchBar, { backgroundColor: colors.inputBg }]}>
           <Text style={{ fontSize: 14 }}>🔍</Text>
           <TextInput
-            placeholder="Pays, ville, voyageur, entreprise..."
+            placeholder={t('parcels.browse.search.placeholder')}
             placeholderTextColor={colors.textFaint}
-            style={[styles.searchInput, { color: colors.text }]}
+            style={[styles.searchInput, { color: colors.text, fontSize: 16 }]}
             value={query}
             onChangeText={setQuery}
           />
+          <Pressable onPress={() => setAdvanced((value) => !value)}>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: brand[700] }}>{advanced ? 'Masquer' : 'Filtres'}</Text>
+          </Pressable>
         </View>
+        {advanced ? (
+          <View style={{ gap: 8 }}>
+            <TextInput
+              value={origin}
+              onChangeText={setOrigin}
+              placeholder={t('parcels.browse.filters.origin')}
+              placeholderTextColor={colors.textFaint}
+              style={[styles.searchBar, { color: colors.text, fontSize: 16, backgroundColor: colors.surface }]}
+            />
+            <TextInput
+              value={destination}
+              onChangeText={setDestination}
+              placeholder={t('parcels.browse.filters.destination')}
+              placeholderTextColor={colors.textFaint}
+              style={[styles.searchBar, { color: colors.text, fontSize: 16, backgroundColor: colors.surface }]}
+            />
+          </View>
+        ) : null}
 
         {/* Web : CatalogArchiveTabs — Voyages actifs / Archives (avec compteurs) */}
         <View style={styles.tabsUnderline}>
-          {([['active', 'Voyages actifs', activeCount], ['archived', 'Archives', archivedCount]] as const).map(
+          {([['active', t('parcels.browse.tabs.active'), activeCount], ['archived', t('parcels.browse.tabs.archived'), archivedCount]] as const).map(
             ([key, label, count]) => (
               <Pressable key={key} style={styles.tabUnderlineBtn} onPress={() => setTab(key)}>
                 <View style={styles.tabUnderlineRow}>
@@ -311,8 +337,8 @@ const styles = StyleSheet.create({
 
   ownerBadge: {
     position: 'absolute',
-    top: 12,
-    right: 12,
+    top: 8,
+    left: 8,
     zIndex: 1,
     paddingHorizontal: 10,
     paddingVertical: 4,

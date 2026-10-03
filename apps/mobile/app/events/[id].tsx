@@ -167,25 +167,63 @@ export default function EventDetailScreen() {
           ]}
         />
         {images.length ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {images.map((src, index) => (
-              <Pressable key={src} onPress={() => setGalleryIndex(index)}>
-                <Image source={{ uri: src }} style={{ width: index === 0 ? 280 : 160, height: 160, borderRadius: 16 }} />
+              <Pressable key={src} onPress={() => setGalleryIndex(index)} style={{ width: index === 0 ? '100%' : '48%' }}>
+                <Image source={{ uri: src }} style={{ width: '100%', height: index === 0 ? 200 : 120, borderRadius: 16 }} />
               </Pressable>
             ))}
-          </ScrollView>
+          </View>
         ) : null}
-        <DetailSection title={t('events.detail.about')}>
-          <AppText className="text-sm text-app-text-muted">{String(event.description || '')}</AppText>
+        <View style={{ borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 16, gap: 10 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            <View style={{ borderRadius: 999, backgroundColor: colors.surfaceMuted, paddingHorizontal: 10, paddingVertical: 4 }}>
+              <AppText className="text-xs font-bold text-app-text">{String(event.status || 'published')}</AppText>
+            </View>
+            <View style={{ borderRadius: 999, backgroundColor: colors.accentSoft, paddingHorizontal: 10, paddingVertical: 4 }}>
+              <AppText className="text-xs font-bold" style={{ color: colors.accent }}>
+                {full ? t('events.detail.full') : t('events.detail.seatsAvailable')}
+              </AppText>
+            </View>
+          </View>
+          <AppText className="text-base font-black text-app-text">{t('events.detail.about')}</AppText>
+          <AppText className="text-sm leading-6 text-app-text-muted">{String(event.description || '')}</AppText>
+          <AppText className="text-sm text-app-text">
+            {t('events.detail.organizerLabel')} : {String(event.organizerName || '—')} ({event.businessId ? t('events.publisher.business') : t('events.publisher.individual')})
+          </AppText>
+          <AppText className="text-sm text-app-text">{t('events.detail.priceLabel')} : {priceLabel}</AppText>
+          <AppText className="text-sm text-app-text">
+            {t('events.detail.seatsLabel')} : {active.length}/{capacity || '—'}
+          </AppText>
+        </View>
+        <View style={{ borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 16, gap: 8 }}>
+          <AppText className="text-base font-black text-app-text">{t('events.detail.registration')}</AppText>
+          {isOwner ? (
+            <AppText className="text-sm text-app-text-muted">{t('events.detail.ownerHint')}</AppText>
+          ) : mine ? (
+            <AppText className="text-sm font-semibold text-app-accent">{t('events.detail.registrationTracked')}</AppText>
+          ) : (
+            <Pressable
+              disabled={full || busy}
+              onPress={() => void register()}
+              style={{ minHeight: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: full ? colors.border : colors.accent }}>
+              <AppText className="font-bold text-white">{full ? t('events.detail.eventFull') : busy ? t('events.detail.registering') : t('events.detail.register')}</AppText>
+            </Pressable>
+          )}
+        </View>
+        <DetailSection title={t('events.detail.practicalInfo')}>
+          <DetailFacts
+            items={[
+              { label: t('events.detail.facts.organizer'), value: String(event.organizerName || '—') },
+              { label: t('events.detail.facts.profile'), value: event.businessId ? t('events.publisher.business') : t('events.publisher.individual') },
+              { label: t('events.detail.facts.category'), value: String(event.category || '—') },
+              { label: t('events.detail.facts.venue'), value: String(event.venue || '—') },
+              { label: t('events.detail.facts.city'), value: String(event.city || '—') },
+              { label: t('events.detail.facts.capacity'), value: capacity ? t('events.detail.capacityValue', { count: capacity }) : '—' },
+              { label: t('events.detail.facts.status'), value: String(event.status || '—') },
+            ]}
+          />
         </DetailSection>
-        <DetailFacts
-          items={[
-            { label: t('events.detail.facts.organizer'), value: String(event.organizerName || '—') },
-            { label: t('events.detail.facts.category'), value: String(event.category || '—') },
-            { label: t('events.detail.facts.city'), value: String(event.city || '—') },
-            { label: t('events.detail.facts.capacity'), value: capacity ? t('events.detail.capacityValue', { count: capacity }) : '—' },
-          ]}
-        />
         <TrustPanel
           title={t('events.detail.trustTitle')}
           items={[t('events.detail.trust.venue'), t('events.detail.trust.confirmation'), t('events.detail.trust.contact')]}
@@ -205,18 +243,6 @@ export default function EventDetailScreen() {
           title={String(event.title || 'Événement')}
           path={`/events/${current.id}`}
         />
-        {mine ? (
-          <AppText className="text-sm font-semibold text-app-accent">{t('events.detail.registrationTracked')}</AppText>
-        ) : isOwner ? (
-          <AppText className="text-sm text-app-text-muted">{t('events.detail.ownerHint')}</AppText>
-        ) : (
-          <Pressable
-            disabled={full || busy}
-            onPress={() => void register()}
-            style={{ minHeight: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: full ? colors.border : colors.accent }}>
-            <AppText className="font-bold text-white">{full ? t('events.detail.eventFull') : busy ? t('events.detail.registering') : t('events.detail.register')}</AppText>
-          </Pressable>
-        )}
         {!isOwner && user?.id ? <Button variant="danger" onPress={() => setReportOpen(true)}>{t('events.detail.report')}</Button> : null}
         {isOwner ? (
           <EventParticipantsSection

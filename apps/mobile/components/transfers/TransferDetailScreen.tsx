@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, usePathname, router } from 'expo-router';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { Clock, Repeat, Shield, User } from 'lucide-react-native';
 
 import { canClientDeclareReception } from '@moxt/shared/domain/transferActionUtils.js';
+import { canRevealPaymentDetails } from '@moxt/shared/domain/transferAcceptanceUtils.js';
 import { transferFromRemoteRow } from '@moxt/shared/domain/transferRemote.js';
 
 import {
@@ -20,6 +22,7 @@ import { PROGRESS_STEPS, TRANSFER_STATUS_LABELS } from '@/constants/transfers';
 import { twTransfer } from '@/constants/transferTailwind';
 import { supabase } from '@/services/supabase';
 import { upsertTransfer, transferMatches } from '@/store/transfers';
+import { useLanguage } from '@/providers/LanguageProvider';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { idFromPath, routeParam } from '@/utils/routeParam';
 import { cn } from '@/lib/cn';
@@ -52,6 +55,7 @@ export default function TransferDetailScreen() {
   const transferId = routeParam(params.id) || idFromPath(usePathname());
   const justCreated = routeParam(params.created) === '1';
   const dispatch = useAppDispatch();
+  const { t: tr } = useLanguage();
   const user = useAppSelector((state) => state.auth.user);
   const transfer = useAppSelector((state) =>
     state.transfers.items.find((item) => transferMatches(item as any, transferId)),
@@ -128,6 +132,9 @@ export default function TransferDetailScreen() {
   const st = TRANSFER_STATUS_LABELS[t.status] || TRANSFER_STATUS_LABELS.pending_payment;
   const currentStepIndex = PROGRESS_STEPS.findIndex((s) => s.key === t.status);
   const nextStep = NEXT_STEP[t.status || 'pending_payment'];
+  const showPayment = canRevealPaymentDetails(t);
+  const heroSent = tr('transfers.detail.hero.sent');
+  const heroReceived = tr('transfers.detail.hero.receivedEstimated');
 
   return (
     <AppScreen edges={[]}>
@@ -145,13 +152,13 @@ export default function TransferDetailScreen() {
         />
         <View className="flex-row flex-wrap justify-between gap-y-3">
           {[
-            { emoji: '🔁', label: 'Direction', value: directionLabel(t.direction || '') },
-            { emoji: '🕐', label: 'Création', value: t.createdAt || t.created_at ? formatTransferDate(t.createdAt || t.created_at) : '—' },
-            { emoji: '👤', label: 'Destinataire', value: recipientName || '—' },
-            { emoji: '🛡️', label: 'Partenaire', value: t.exchanger?.name || 'MOXT Change' },
+            { icon: Repeat, label: tr('transfers.detail.metrics.direction'), value: directionLabel(t.direction || '') },
+            { icon: Clock, label: tr('transfers.detail.metrics.created'), value: t.createdAt || t.created_at ? formatTransferDate(t.createdAt || t.created_at) : '—' },
+            { icon: User, label: tr('transfers.detail.metrics.recipient'), value: recipientName || '—' },
+            { icon: Shield, label: tr('transfers.detail.metrics.partner'), value: t.exchanger?.name || tr('transfers.detail.financial.historicPartner') },
           ].map((m) => (
             <View key={m.label} className={twTransfer.detailMetric}>
-              <Text className="text-lg">{m.emoji}</Text>
+              <m.icon size={18} color="#08705f" />
               <Text className={twTransfer.detailMetricValue} numberOfLines={2}>{m.value}</Text>
               <Text className={twTransfer.detailMetricLabel}>{m.label}</Text>
             </View>
@@ -169,14 +176,18 @@ export default function TransferDetailScreen() {
             <View className="mb-4 self-start">
               <TransferStatusBadge status={t.status} />
             </View>
-            <Text className={twTransfer.detailHeroLabel}>ENVOYÉ</Text>
+            <Text className={twTransfer.detailHeroLabel}>{heroSent}</Text>
             <Text className={twTransfer.detailHeroValue}>{formatMoney(amountSent, currFrom)}</Text>
-            <Text className="my-3 text-center text-xl text-white/40">↓</Text>
-            <Text className={twTransfer.detailHeroLabel}>REÇU (ESTIMÉ)</Text>
+            <View style={{ alignItems: 'center', marginVertical: 12 }}>
+              <Repeat size={18} color="rgba(255,255,255,0.4)" style={{ transform: [{ rotate: '90deg' }] }} />
+            </View>
+            <Text className={twTransfer.detailHeroLabel}>{heroReceived}</Text>
             <Text className={twTransfer.detailHeroValue}>{formatMoney(amountReceived, currTo)}</Text>
             {t.exchanger?.name ? (
               <View className={twTransfer.detailHeroPartner}>
-                <Text className={twTransfer.detailHeroPartnerText}>Traité par {t.exchanger.name}</Text>
+                <Text className={twTransfer.detailHeroPartnerText}>
+                  {tr('transfers.detail.hero.processedBy', { name: t.exchanger.name })}
+                </Text>
                 <View className={twTransfer.detailVerified}>
                   <Text className={twTransfer.detailVerifiedText}>✓ VÉRIFIÉ MOXT</Text>
                 </View>
@@ -291,7 +302,14 @@ export default function TransferDetailScreen() {
               <Text className={twTransfer.uploadHint}>Image ou PDF</Text>
             </Pressable>
             <ImagePickerButton label="Photo de la preuve" currentUri={proofUri} onImageSelected={setProofUri} />
-            <Pressable className={twTransfer.declareBtn}>
+            <Pressable
+              className={twTransfer.declareBtn}
+              onPress={() => {
+                if (!proofUri || !supabase) return;
+                const next = { ...t, status: 'payment_declared', paymentProof: proofUri };
+                void supabase.from('transfers').update({ status: 'payment_declared', payment_proof: proofUri }).eq('id', t.id);
+                dispatch(upsertTransfer(next));
+              }}>
               <Text className={twTransfer.submitBtnText}>Déclarer le paiement</Text>
             </Pressable>
           </View>
@@ -307,7 +325,9 @@ export default function TransferDetailScreen() {
         <View className={twTransfer.detailCard}>
           <Text className={twTransfer.detailCardTitle}>Coordonnées de paiement</Text>
           <Text className="text-sm text-app-text-muted">
-            {t.exchanger?.paymentAccount || 'Les coordonnées de paiement apparaissent après l’acceptation du partenaire.'}
+            {showPayment
+              ? t.exchanger?.paymentAccount || tr('transfers.detail.financial.confirmWithBusiness')
+              : tr('transfers.acceptance.paymentHidden')}
           </Text>
           {t.noteToExchanger ? (
             <Text className="mt-2 text-sm text-app-text">Note : {String(t.noteToExchanger)}</Text>
@@ -410,7 +430,7 @@ export default function TransferDetailScreen() {
             ['Montant envoyé', formatMoney(amountSent, currFrom)],
             ['Montant reçu (estimé)', formatMoney(amountReceived, currTo)],
             ['Total à payer', formatMoney(totalToPay, currFrom)],
-            ['Mode', 'Estimation — aucun débit automatique'],
+            [tr('transfers.detail.info.mode'), tr('transfers.detail.info.modeValue')],
           ].map(([label, value]) => (
             <View key={label} className={twTransfer.factBlock}>
               <Text className={twTransfer.factLabel}>{label}</Text>

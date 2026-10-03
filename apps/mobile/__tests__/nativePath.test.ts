@@ -6,6 +6,7 @@ describe('liens moxtapp vers les écrans natifs', () => {
     expect(resolveNativePath('https://www.moxtapp.ru/users/u1')).toBe('/users/u1/publications');
     expect(resolveNativePath('https://moxtapp.ru/marketplace/lst1')).toBe('/listing/lst1');
     expect(resolveNativePath('moxt://videos/vid1')).toBe('/(tabs)/feed?type=video&item=video%3Avid1');
+    expect(resolveNativePath('/news')).toBe('/news');
     expect(resolveNativePath('/news/post1')).toBe('/news/post1');
     expect(resolveNativePath('/jobs/job1')).toBe('/jobs/job1');
     expect(resolveNativePath('/events/evt1')).toBe('/events/evt1');

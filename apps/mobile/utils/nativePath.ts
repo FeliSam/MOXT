@@ -144,7 +144,7 @@ export function resolveNativePath(raw: string | null | undefined): string | null
     [/^\/guide$/, () => '/guide'],
     [/^\/aide$/, () => '/aide'],
     [/^\/videos$/, () => feedQuery('video', null)],
-    [/^\/news$/, () => feedQuery('post', null)],
+    [/^\/news$/, () => '/news'],
     [/^\/p2p$/, () => '/p2p'],
     [/^\/transfers$/, () => '/transfer/wizard'],
     [/^\/receipts\/([^/]+)$/, (match) => `/receipts/${id(match)}`],

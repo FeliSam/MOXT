@@ -1,7 +1,7 @@
 import { supabase } from '@/services/supabase';
 import { uploadLikeWeb, type UploadFile } from '@/services/mediaUpload';
 
-export type ReportTarget = 'listing' | 'job' | 'event' | 'parcel' | 'p2p';
+export type ReportTarget = 'listing' | 'job' | 'event' | 'parcel' | 'p2p' | 'message';
 
 const REPORT_TABLE: Partial<Record<ReportTarget, { table: string; foreign: string }>> = {
   listing: { table: 'listing_reports', foreign: 'listing_id' },
@@ -52,7 +52,12 @@ export async function submitContentReport(args: {
 
   const id = `TKT-${Date.now().toString(36).toUpperCase()}`;
   const now = new Date().toISOString();
-  const subject = args.target === 'parcel' ? `Signalement colis ${args.targetId}` : `Signalement offre P2P ${args.targetId}`;
+  const subject =
+    args.target === 'parcel'
+      ? `Signalement colis ${args.targetId}`
+      : args.target === 'message'
+        ? `Signalement message ${args.targetId}`
+        : `Signalement offre P2P ${args.targetId}`;
   const { error } = await supabase.from('support_tickets').insert({
     id,
     user_id: args.reporterId,

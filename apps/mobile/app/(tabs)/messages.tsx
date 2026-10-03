@@ -267,8 +267,7 @@ function FilterMenu({
       <Pressable style={{ flex: 1 }} onPress={onClose}>
         <View
           accessibilityRole="menu"
-          className="border border-app-border bg-app-surface"
-          style={[{ position: 'absolute', top, right: 12, width: 240, borderRadius: 16, padding: 6 }, shadows.float]}>
+          style={[{ position: 'absolute', top, right: 12, width: 240, borderRadius: 16, padding: 6, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }, shadows.float]}>
           <AppText className="text-[11px] font-bold uppercase text-app-text-faint" style={{ paddingHorizontal: 12, paddingVertical: 8, letterSpacing: 0.9 }}>
             {t('messages.filterShow')}
           </AppText>
@@ -464,8 +463,7 @@ export default function MessagesTabScreen() {
           />
           <View
             accessibilityRole="search"
-            className="border border-app-border bg-app-surface"
-            style={[{ position: 'absolute', left: 12, right: 12, top: Math.max(12, insets.top + 12), maxHeight: '72%', borderRadius: 16, overflow: 'hidden' }, shadows.float]}>
+            style={[{ position: 'absolute', left: 12, right: 12, top: Math.max(12, insets.top + 12), maxHeight: '72%', borderRadius: 16, overflow: 'hidden', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }, shadows.float]}>
             <View style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: withAlphaColor(colors.border, 0.6) }}>
               <View className="bg-app-surface-muted" style={{ minHeight: 48, borderRadius: 16, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12 }}>
                 <Search size={16} color={colors.textMuted} strokeWidth={2} />
@@ -476,7 +474,7 @@ export default function MessagesTabScreen() {
                   placeholder={t('messages.searchPlaceholder')}
                   placeholderTextColor={colors.textFaint}
                   accessibilityLabel={t('messages.searchPlaceholder')}
-                  style={{ flex: 1, minWidth: 0, fontSize: 14, color: colors.text }}
+                  style={{ flex: 1, minWidth: 0, fontSize: 16, color: colors.text }}
                 />
                 <Pressable
                   accessibilityLabel={t('messages.closeSearch')}

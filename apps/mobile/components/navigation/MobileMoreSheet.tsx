@@ -15,7 +15,7 @@ import { cn } from '@/lib/cn';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { logout } from '@/store/auth';
 import { useAppDispatch, useAppSelector } from '@/store/store';
-import { useThemeCssVars } from '@/theme/ThemeContext';
+import { useTheme, useThemeCssVars } from '@/theme/ThemeContext';
 
 function GridIcon({ active }: { active?: boolean }) {
   return (
@@ -38,30 +38,47 @@ function MoreServiceTile({
   badge,
   onNavigate,
   translateLabel,
+  surface,
+  muted,
+  border,
+  text,
 }: {
   item: MoreServiceItem;
   badge: number;
   onNavigate: () => void;
   translateLabel: (label: string) => string;
+  surface: string;
+  muted: string;
+  border: string;
+  text: string;
 }) {
   return (
     <Pressable
-      className="relative min-h-[5.25rem] flex-col justify-between rounded-2xl border border-app-border bg-app-surface p-3 shadow-sm active:border-brand-700 active:bg-brand-50 dark:border-zinc-800 dark:bg-zinc-900 dark:active:border-brand-400 dark:active:bg-brand-950/30"
       onPress={() => {
         onNavigate();
         router.push(item.mobileRoute as any);
+      }}
+      style={{
+        position: 'relative',
+        minHeight: 84,
+        justifyContent: 'space-between',
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: border,
+        backgroundColor: surface,
+        padding: 12,
       }}>
-      <View className="flex-row items-start justify-between gap-1">
-        <View className="h-9 w-9 items-center justify-center rounded-[0.7rem] bg-app-surface-muted dark:bg-zinc-800">
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 4 }}>
+        <View style={{ height: 36, width: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 11, backgroundColor: muted }}>
           <item.Icon size={18} color="#08705f" strokeWidth={2.1} />
         </View>
         {badge > 0 ? (
-          <View className="rounded-full bg-red-500 px-1.5 py-0.5">
-            <Text className="text-[9px] font-bold leading-none text-white">{badge > 9 ? '9+' : badge}</Text>
+          <View style={{ borderRadius: 999, backgroundColor: '#ef4444', paddingHorizontal: 6, paddingVertical: 2 }}>
+            <Text style={{ fontSize: 9, fontWeight: '700', lineHeight: 11, color: '#fff' }}>{badge > 9 ? '9+' : badge}</Text>
           </View>
         ) : null}
       </View>
-      <Text numberOfLines={2} className="text-xs font-semibold leading-snug text-app-text dark:text-zinc-50">
+      <Text numberOfLines={2} style={{ fontSize: 12, fontWeight: '600', lineHeight: 16, color: text }}>
         {translateLabel(item.label)}
       </Text>
     </Pressable>
@@ -71,6 +88,7 @@ function MoreServiceTile({
 export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const dispatch = useAppDispatch();
   const cssVars = useThemeCssVars();
+  const { colors, isDark } = useTheme();
   const { translateLabel } = useLanguage();
   const user = useAppSelector((s) => s.auth.user);
   const state = useAppSelector((s) => s);
@@ -100,45 +118,50 @@ export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () 
   return (
     <Modal visible={open} animationType="slide" transparent onRequestClose={handleClose}>
       {/* Sur le web la modale sort de ThemeRoot : on repose les variables --app-*. */}
-      <View style={[{ flex: 1 }, cssVars]}>
-      <Pressable className="flex-1 bg-slate-950/40" onPress={handleClose} />
+      <View style={[{ flex: 1, backgroundColor: isDark ? 'rgba(0,0,0,0.82)' : 'rgba(2,6,23,0.82)' }, cssVars]}>
+      <Pressable style={{ flex: 1 }} onPress={handleClose} />
 
       <View
-        className="max-h-[88%] rounded-t-[1rem] bg-app-bg shadow-2xl dark:bg-[#0c0c0e]"
-        style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
-        <View className="items-center pt-2.5">
-          <View className="h-1 w-9 rounded-full bg-app-border dark:bg-zinc-700" />
+        style={{
+          maxHeight: '88%',
+          borderTopLeftRadius: 22,
+          borderTopRightRadius: 22,
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderBottomWidth: 0,
+          borderColor: colors.border,
+          paddingBottom: Math.max(insets.bottom, 12),
+        }}>
+        <View style={{ alignItems: 'center', paddingTop: 10 }}>
+          <View style={{ height: 4, width: 36, borderRadius: 999, backgroundColor: colors.borderMd }} />
         </View>
 
-        <View className="border-b border-app-border bg-app-surface px-4 pb-4 pt-1 dark:border-zinc-800 dark:bg-zinc-900">
-          <View className="flex-row items-start justify-between gap-3">
-            <View className="min-w-0 flex-1">
-              <Text className="text-[10px] font-black uppercase tracking-[0.16em] text-brand-700 dark:text-brand-400">
-                MOXT
-              </Text>
-              <Text className="text-xl font-extrabold tracking-tight text-app-text dark:text-zinc-50">
+        <View style={{ borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 16, paddingBottom: 16, paddingTop: 4 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+            <View style={{ minWidth: 0, flex: 1 }}>
+              <Text style={{ fontSize: 20, fontWeight: '800', letterSpacing: -0.3, color: colors.text }}>
                 {translateLabel('Tous les services')}
               </Text>
-              <Text className="mt-1 text-xs text-app-text-muted dark:text-zinc-400">
+              <Text style={{ marginTop: 4, fontSize: 12, color: colors.textMuted }}>
                 {translateLabel('Accédez aux modules hors barre de navigation.')}
               </Text>
             </View>
             <Pressable
               accessibilityLabel="Fermer"
               onPress={handleClose}
-              className="h-10 w-10 items-center justify-center rounded-xl bg-app-surface-muted dark:bg-zinc-800">
-              <X size={18} color="#6b7280" strokeWidth={2.4} />
+              style={{ height: 40, width: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}>
+              <X size={18} color={colors.textMuted} strokeWidth={2.4} />
             </Pressable>
           </View>
 
-          <View className="mt-4 flex-row items-center gap-2 rounded-2xl bg-app-surface-muted px-3 py-2.5 dark:bg-zinc-800">
-            <Search size={16} color="#9ca3af" strokeWidth={2.2} />
+          <View style={{ marginTop: 16, flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceMuted, paddingHorizontal: 12, paddingVertical: 10 }}>
+            <Search size={16} color={colors.textFaint} strokeWidth={2.2} />
             <TextInput
               value={query}
               onChangeText={setQuery}
               placeholder={translateLabel('Rechercher un service...')}
-              placeholderTextColor="#9ca3af"
-              className="min-w-0 flex-1 bg-transparent text-sm text-app-text dark:text-zinc-50"
+              placeholderTextColor={colors.textFaint}
+              style={{ minWidth: 0, flex: 1, fontSize: 16, color: colors.text, backgroundColor: 'transparent' }}
             />
             {query ? (
               <Pressable onPress={() => setQuery('')} accessibilityLabel="Effacer">
@@ -148,18 +171,18 @@ export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () 
           </View>
         </View>
 
-        <ScrollView className="max-h-[50%] px-4 py-4" contentContainerClassName="pb-2">
+        <ScrollView style={{ maxHeight: '50%', backgroundColor: colors.surface }} contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 16, paddingBottom: 8 }}>
           {!groups.length ? (
-            <Text className="py-10 text-center text-sm text-app-text-muted dark:text-zinc-400">
+            <Text style={{ paddingVertical: 40, textAlign: 'center', fontSize: 14, color: colors.textMuted }}>
               {translateLabel('Aucun service ne correspond à votre recherche.')}
             </Text>
           ) : (
             groups.map((group) => (
-              <View key={group.id} className="mb-5">
-                <Text className="mb-2.5 px-1 text-[10px] font-black uppercase tracking-[0.16em] text-app-text-faint dark:text-zinc-500">
+              <View key={group.id} style={{ marginBottom: 20 }}>
+                <Text style={{ marginBottom: 10, paddingHorizontal: 4, fontSize: 10, fontWeight: '800', letterSpacing: 1.6, textTransform: 'uppercase', color: colors.textFaint }}>
                   {translateLabel(group.label)}
                 </Text>
-                <View className="flex-row flex-wrap gap-2">
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                   {group.children.map((item) => (
                     <View key={item.path} style={{ width: tileWidth }}>
                       <MoreServiceTile
@@ -167,6 +190,10 @@ export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () 
                         badge={badgeForItem(item, state)}
                         onNavigate={handleClose}
                         translateLabel={translateLabel}
+                        surface={colors.surface}
+                        muted={colors.surfaceMuted}
+                        border={colors.border}
+                        text={colors.text}
                       />
                     </View>
                   ))}
@@ -176,36 +203,36 @@ export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () 
           )}
         </ScrollView>
 
-        <View className="border-t border-app-border bg-app-surface px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
-          <View className="mb-2 flex-row gap-2">
+        <View style={{ borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 16, paddingVertical: 12 }}>
+          <View style={{ marginBottom: 8, flexDirection: 'row', gap: 8 }}>
             <Pressable
-              className="min-h-11 flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-app-surface-muted dark:bg-zinc-800"
+              style={{ minHeight: 44, flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
               onPress={() => {
                 handleClose();
                 router.push('/profile/edit' as any);
               }}>
-              <UserRound size={16} color="#6b7280" strokeWidth={2.2} />
-              <Text className="text-xs font-semibold text-app-text dark:text-zinc-50">
+              <UserRound size={16} color={colors.accent} strokeWidth={2.2} />
+              <Text style={{ fontSize: 12, fontWeight: '600', color: colors.text }}>
                 {translateLabel('Mon profil')}
               </Text>
             </Pressable>
             <Pressable
-              className="min-h-11 flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-app-surface-muted dark:bg-zinc-800"
+              style={{ minHeight: 44, flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
               onPress={() => {
                 handleClose();
                 router.push('/settings' as any);
               }}>
-              <Settings size={16} color="#6b7280" strokeWidth={2.2} />
-              <Text className="text-xs font-semibold text-app-text dark:text-zinc-50">
+              <Settings size={16} color={colors.accent} strokeWidth={2.2} />
+              <Text style={{ fontSize: 12, fontWeight: '600', color: colors.text }}>
                 {translateLabel('Réglages')}
               </Text>
             </Pressable>
           </View>
           <Pressable
-            className="min-h-11 flex-row items-center justify-center gap-2 rounded-xl bg-red-50 dark:bg-red-950/20"
+            style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, backgroundColor: isDark ? 'rgba(127,29,29,0.35)' : '#fef2f2' }}
             onPress={handleLogout}>
             <LogOut size={16} color="#dc2626" strokeWidth={2.2} />
-            <Text className="text-sm font-semibold text-red-600 dark:text-red-400">
+            <Text style={{ fontSize: 14, fontWeight: '600', color: isDark ? '#fca5a5' : '#dc2626' }}>
               {translateLabel('Déconnexion')}
             </Text>
           </Pressable>

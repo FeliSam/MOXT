@@ -44,7 +44,7 @@ export const ROUTE_TITLES: Record<string, string> = {
   '/publications/edit': 'Modifier',
   '/messages/moxt-assistant': 'Moxti',
   '/events': 'Événement',
-  '/news': 'Publication',
+  '/news': 'Actualités',
   '/status': 'Statut',
   '/videos': 'Vidéo',
   '/users': 'Profil',

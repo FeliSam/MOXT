@@ -1,25 +1,46 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
+  Alert,
   FlatList,
   Image,
   Keyboard,
   Modal,
   Platform,
   Pressable,
+  ScrollView,
   TextInput,
   View,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Check, ExternalLink, FileText, MoreVertical, Paperclip, Plus, Search, Send, X } from 'lucide-react-native';
+import {
+  Check,
+  Copy,
+  CornerUpLeft,
+  ExternalLink,
+  FileText,
+  Flag,
+  Globe,
+  MoreVertical,
+  Paperclip,
+  Pencil,
+  Plus,
+  Search,
+  Send,
+  Trash2,
+  User,
+  X,
+} from 'lucide-react-native';
 
 import { HeaderActionButton, HeaderChip } from '@/components/chrome/HeaderChrome';
 import { HEADER, headerPaddingTop } from '@/components/chrome/headerTokens';
 import { EntityAvatar } from '@/components/profile/EntityAvatar';
+import { ReportSheet } from '@/components/ui/ReportSheet';
 import { AppText } from '@/components/ui/AppText';
 import { VerifiedIcon } from '@/components/ui/VerifiedIcon';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { subscribePresenceUpdates } from '@/services/chatRealtime';
+import { supabase } from '@/services/supabase';
 import { pickImageOrPdf, uploadLikeWeb, type UploadFile } from '@/services/mediaUpload';
 import {
   buildConversationTimeline,
@@ -27,6 +48,8 @@ import {
   getConversationPeer,
   loadConversationMessages,
   markConversationRead,
+  messageRemoved,
+  patchMessage,
   sendMessage,
   type Message,
   type MessageAttachment,
@@ -50,6 +73,15 @@ import {
   shouldGroupMessages,
 } from '@/utils/messageThread';
 
+const QUICK_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '👏', '🔥'];
+const TRANSLATE_LANGS = [
+  { code: 'fr', label: 'Français' },
+  { code: 'en', label: 'English' },
+  { code: 'es', label: 'Español' },
+  { code: 'pt', label: 'Português' },
+  { code: 'ru', label: 'Русский' },
+];
+
 const RELATED_TONE: Record<string, string> = {
   parcel: '#f97316',
   listing: '#ec4899',
@@ -69,10 +101,18 @@ export default function ChatScreen() {
   const { colors, isDark } = useTheme();
   const { t } = useLanguage();
   const user = useAppSelector((state) => state.auth.user);
+  const subscriptions = useAppSelector((state) => state.account.subscriptions);
   const conversation = useAppSelector((state) => state.messages.conversations.find((item) => item.id === id));
   const [text, setText] = useState('');
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
+  const [replyTo, setReplyTo] = useState<Message | null>(null);
+  const [editing, setEditing] = useState<Message | null>(null);
+  const [actionMessage, setActionMessage] = useState<Message | null>(null);
+  const [translateOpen, setTranslateOpen] = useState(false);
+  const [reportId, setReportId] = useState<string | null>(null);
+  const [translations, setTranslations] = useState<Record<string, string>>({});
   const [searchOpen, setSearchOpen] = useState(false);
   const [threadQuery, setThreadQuery] = useState('');
   const [optionsOpen, setOptionsOpen] = useState(false);
@@ -169,7 +209,101 @@ export default function ChatScreen() {
     }
   }
 
+  async function copyMessage(value: string) {
+    const payload = value.trim();
+    if (!payload) return;
+    try {
+      if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(payload);
+      }
+      showNotice(t('messages.copiedTitle'), t('messages.copied'));
+    } catch {
+      showNotice(t('messages.copyFailedTitle'), t('messages.copyFailed'));
+    }
+  }
+
+  async function translateMessage(message: Message, lang: string) {
+    const source = message.text?.trim();
+    if (!source) return;
+    try {
+      const response = await fetch(
+        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(source.slice(0, 450))}&langpair=autodetect|${lang}`,
+      );
+      const body = (await response.json()) as { responseData?: { translatedText?: string } };
+      const translated = body.responseData?.translatedText?.trim();
+      if (!translated) throw new Error('empty');
+      setTranslations((current) => ({ ...current, [message.id]: translated }));
+    } catch {
+      showNotice(t('messages.translateFailedTitle'), t('messages.translateFailed'));
+    }
+  }
+
+  async function reactTo(message: Message, emoji: string) {
+    if (!conversation) return;
+    const next = { ...message, attachment: { ...(message.attachment || {}), reactionEmoji: emoji } };
+    dispatch(patchMessage({ conversationId: conversation.id, message: next }));
+    if (supabase) {
+      await supabase.from('messages').update({ attachment: next.attachment }).eq('id', message.id);
+    }
+  }
+
+  async function saveEdit() {
+    if (!conversation || !editing) return;
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    const next = { ...editing, text: trimmed, editedAt: new Date().toISOString() };
+    dispatch(patchMessage({ conversationId: conversation.id, message: next }));
+    if (supabase) {
+      await supabase.from('messages').update({ text: trimmed }).eq('id', editing.id);
+    }
+    setEditing(null);
+    setText('');
+  }
+
+  function removeMessage(message: Message) {
+    if (!conversation) return;
+    Alert.alert(t('messages.deleteConfirmTitle'), '', [
+      { text: t('common.cancel') || 'Annuler', style: 'cancel' },
+      {
+        text: t('messages.delete'),
+        style: 'destructive',
+        onPress: () => {
+          dispatch(messageRemoved({ conversationId: conversation.id, messageId: message.id }));
+          if (supabase) void supabase.from('messages').delete().eq('id', message.id);
+        },
+      },
+    ]);
+  }
+
+  async function shareContact(contact: { userId: string; name: string; city?: string }) {
+    if (!conversation || !user) return;
+    await dispatch(
+      sendMessage({
+        conversationId: conversation.id,
+        senderId: user.id,
+        senderName: `${user.firstName} ${user.lastName}`.trim(),
+        text: '',
+        attachment: {
+          kind: 'contact',
+          userId: contact.userId,
+          name: contact.name,
+          city: contact.city || '',
+          path: `/users/${contact.userId}/publications`,
+        },
+      }),
+    ).unwrap();
+  }
+
   async function handleSend() {
+    if (editing) {
+      setSending(true);
+      try {
+        await saveEdit();
+      } finally {
+        setSending(false);
+      }
+      return;
+    }
     if (!conversation || !user || sending) return;
     const trimmed = text.trim();
     if (!trimmed && !files.length) return;
@@ -208,12 +342,13 @@ export default function ChatScreen() {
           conversationId: conversation.id,
           senderId: user.id,
           senderName: `${user.firstName} ${user.lastName}`.trim(),
-          text: trimmed,
+          text: replyTo ? `${t('messages.replyToMessage', { name: replyTo.senderName || t('messages.replyToMessageFallback') })}\n${trimmed}` : trimmed,
           attachment,
         }),
       ).unwrap();
       setText('');
       setFiles([]);
+      setReplyTo(null);
       setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 80);
     } catch (error) {
       showNotice('Message', error instanceof Error ? error.message : 'Envoi impossible.');
@@ -285,7 +420,7 @@ export default function ChatScreen() {
               onChangeText={setThreadQuery}
               placeholder={t('messages.searchInConversation')}
               placeholderTextColor={colors.textFaint}
-              style={{ flex: 1, color: colors.text, fontSize: 14, paddingVertical: 8 }}
+              style={{ flex: 1, color: colors.text, fontSize: 16, paddingVertical: 8 }}
             />
             {threadQuery ? (
               <Pressable accessibilityLabel={t('messages.clearSearch')} onPress={() => setThreadQuery('')}>
@@ -363,7 +498,12 @@ export default function ChatScreen() {
                 colors={colors}
                 isDark={isDark}
                 t={t}
+                translation={translations[message.id]}
                 onOpenImage={setPreview}
+                onPress={() => {
+                  setTranslateOpen(false);
+                  setActionMessage(message);
+                }}
               />
             </View>
           );
@@ -376,7 +516,29 @@ export default function ChatScreen() {
         }
       />
 
-      <View style={{ paddingHorizontal: 12, paddingBottom: composerPad, paddingTop: 8, backgroundColor: colors.surfaceMuted }}>
+      <View style={{ paddingHorizontal: 12, paddingBottom: composerPad, paddingTop: 8, backgroundColor: colors.surfaceMuted, overflow: 'visible', zIndex: 20 }}>
+        {replyTo ? (
+          <View style={{ marginBottom: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, borderRadius: 12, borderLeftWidth: 3, borderLeftColor: colors.accent, paddingHorizontal: 12, paddingVertical: 8 }}>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <AppText className="text-xs font-bold text-app-accent">{t('messages.replyToMessage', { name: replyTo.senderName || t('messages.replyToMessageFallback') })}</AppText>
+              <AppText numberOfLines={1} className="text-xs text-app-text-muted">{replyTo.text}</AppText>
+            </View>
+            <Pressable accessibilityLabel={t('messages.cancelReply')} onPress={() => setReplyTo(null)}>
+              <X size={16} color={colors.accent} />
+            </Pressable>
+          </View>
+        ) : null}
+        {editing ? (
+          <View style={{ marginBottom: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, borderRadius: 12, borderLeftWidth: 3, borderLeftColor: '#f59e0b', paddingHorizontal: 12, paddingVertical: 8 }}>
+            <View style={{ flex: 1 }}>
+              <AppText className="text-xs font-bold" style={{ color: '#b45309' }}>{t('messages.editingTitle')}</AppText>
+              <AppText className="text-xs text-app-text-muted">{t('messages.editingHint')}</AppText>
+            </View>
+            <Pressable accessibilityLabel={t('messages.cancelEdit')} onPress={() => { setEditing(null); setText(''); }}>
+              <X size={16} color="#b45309" />
+            </Pressable>
+          </View>
+        ) : null}
         {files.length ? (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
             {files.map((file) => (
@@ -390,20 +552,62 @@ export default function ChatScreen() {
             ))}
           </View>
         ) : null}
-        <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6, borderRadius: 20, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 6 }}>
-          <Pressable
-            accessibilityLabel={t('messages.composerPlusAria')}
-            onPress={() => setMenuOpen((open) => !open)}
-            style={{ width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: menuOpen ? colors.accentSoft : 'transparent' }}>
-            <Plus size={20} color={colors.accent} style={{ transform: [{ rotate: menuOpen ? '45deg' : '0deg' }] }} />
-          </Pressable>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6, borderRadius: 20, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 6, overflow: 'visible' }}>
+          <View style={{ position: 'relative', overflow: 'visible' }}>
+            {menuOpen ? (
+              <View
+                accessibilityRole="menu"
+                style={{
+                  position: 'absolute',
+                  bottom: '100%',
+                  left: 0,
+                  marginBottom: 9,
+                  zIndex: 30,
+                  minWidth: 184,
+                  gap: 6,
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: colors.surface,
+                  padding: 6,
+                }}>
+                <Pressable
+                  accessibilityRole="menuitem"
+                  onPress={() => void addFile()}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 }}>
+                  <View style={{ width: 32, height: 32, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentSoft }}>
+                    <FileText size={16} color={colors.accent} />
+                  </View>
+                  <AppText className="text-sm font-bold text-app-text">{t('messages.composerAttachFile')}</AppText>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="menuitem"
+                  onPress={() => {
+                    setMenuOpen(false);
+                    setContactOpen(true);
+                  }}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 }}>
+                  <View style={{ width: 32, height: 32, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentSoft }}>
+                    <User size={16} color={colors.accent} />
+                  </View>
+                  <AppText className="text-sm font-bold text-app-text">{t('messages.composerAttachContact')}</AppText>
+                </Pressable>
+              </View>
+            ) : null}
+            <Pressable
+              accessibilityLabel={t('messages.composerPlusAria')}
+              onPress={() => setMenuOpen((open) => !open)}
+              style={{ width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: menuOpen ? colors.accentSoft : 'transparent' }}>
+              <Plus size={20} color={colors.accent} style={{ transform: [{ rotate: menuOpen ? '45deg' : '0deg' }] }} />
+            </Pressable>
+          </View>
           <TextInput
             value={text}
             onChangeText={setText}
             placeholder={t('messages.writePlaceholder')}
             placeholderTextColor={colors.textFaint}
             multiline
-            style={{ flex: 1, maxHeight: 112, minHeight: 36, color: colors.text, fontSize: 13, lineHeight: 20, paddingVertical: 8 }}
+            style={{ flex: 1, maxHeight: 112, minHeight: 36, color: colors.text, fontSize: 16, lineHeight: 22, paddingVertical: 8 }}
           />
           <Pressable
             accessibilityLabel={t('messages.send')}
@@ -413,14 +617,6 @@ export default function ChatScreen() {
             <Send size={18} color={canSend ? (isDark ? '#020617' : '#fff') : colors.textFaint} />
           </Pressable>
         </View>
-        {menuOpen ? (
-          <Pressable
-            onPress={() => void addFile()}
-            style={{ marginTop: 8, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 16, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, paddingVertical: 10 }}>
-            <FileText size={16} color={colors.accent} />
-            <AppText className="text-sm font-bold text-app-text">{t('messages.composerAttachFile')}</AppText>
-          </Pressable>
-        ) : null}
       </View>
 
       <Modal visible={optionsOpen} transparent animationType="fade" onRequestClose={() => setOptionsOpen(false)}>
@@ -435,12 +631,145 @@ export default function ChatScreen() {
         </Pressable>
       </Modal>
 
+      <Modal visible={Boolean(actionMessage)} transparent animationType="slide" onRequestClose={() => setActionMessage(null)}>
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(15,23,42,0.45)', justifyContent: 'flex-end' }} onPress={() => setActionMessage(null)}>
+          <Pressable
+            onPress={(event) => event.stopPropagation()}
+            style={{ borderTopLeftRadius: 22, borderTopRightRadius: 22, borderWidth: 1, borderBottomWidth: 0, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 16, paddingTop: 8, paddingBottom: Math.max(16, insets.bottom), gap: 10 }}>
+            <View style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 999, backgroundColor: colors.border }} />
+            {actionMessage ? (
+              <>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingVertical: 6, paddingHorizontal: 4 }}>
+                  {QUICK_REACTIONS.map((emoji) => (
+                    <Pressable
+                      key={emoji}
+                      accessibilityLabel={t('messages.reactAria', { emoji })}
+                      onPress={() => {
+                        void reactTo(actionMessage, emoji);
+                        setActionMessage(null);
+                      }}
+                      style={{ flex: 1, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+                      <AppText style={{ fontSize: 22 }}>{emoji}</AppText>
+                    </Pressable>
+                  ))}
+                </View>
+                {translateOpen ? (
+                  TRANSLATE_LANGS.map((lang) => (
+                    <Pressable
+                      key={lang.code}
+                      onPress={() => {
+                        void translateMessage(actionMessage, lang.code);
+                        setActionMessage(null);
+                        setTranslateOpen(false);
+                      }}
+                      style={{ minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 14, paddingHorizontal: 8 }}>
+                      <Globe size={18} color={colors.text} />
+                      <AppText className="text-base font-semibold text-app-text">{lang.label}</AppText>
+                    </Pressable>
+                  ))
+                ) : (
+                  <>
+                    <SheetAction icon={<CornerUpLeft size={18} color={colors.text} />} label={t('messages.reply')} onPress={() => { setReplyTo(actionMessage); setEditing(null); setActionMessage(null); }} />
+                    <SheetAction icon={<Copy size={18} color={colors.text} />} label={t('messages.copy')} onPress={() => { void copyMessage(actionMessage.text || ''); setActionMessage(null); }} />
+                    <SheetAction icon={<Globe size={18} color={colors.text} />} label={t('messages.translate')} onPress={() => setTranslateOpen(true)} />
+                    {String(actionMessage.senderId) !== String(user?.id) ? (
+                      <SheetAction icon={<User size={18} color={colors.text} />} label={t('messages.viewProfile')} onPress={() => { const target = actionMessage.senderId; setActionMessage(null); if (target) router.push(`/users/${target}/publications` as never); }} />
+                    ) : null}
+                    {String(actionMessage.senderId) !== String(user?.id) ? (
+                      <SheetAction icon={<Flag size={18} color={colors.text} />} label={t('messages.report')} onPress={() => { setReportId(actionMessage.id); setActionMessage(null); }} />
+                    ) : null}
+                    {String(actionMessage.senderId) === String(user?.id) ? (
+                      <SheetAction icon={<Pencil size={18} color={colors.text} />} label={t('messages.edit')} onPress={() => { setEditing(actionMessage); setReplyTo(null); setText(actionMessage.text || ''); setActionMessage(null); }} />
+                    ) : null}
+                    {String(actionMessage.senderId) === String(user?.id) ? (
+                      <SheetAction icon={<Trash2 size={18} color="#dc2626" />} label={t('messages.delete')} danger onPress={() => { const current = actionMessage; setActionMessage(null); removeMessage(current); }} />
+                    ) : null}
+                  </>
+                )}
+              </>
+            ) : null}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal visible={contactOpen} transparent animationType="slide" onRequestClose={() => setContactOpen(false)}>
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(15,23,42,0.45)', justifyContent: 'flex-end' }} onPress={() => setContactOpen(false)}>
+          <Pressable onPress={(event) => event.stopPropagation()} style={{ maxHeight: '70%', borderTopLeftRadius: 22, borderTopRightRadius: 22, backgroundColor: colors.surface, padding: 16, paddingBottom: Math.max(16, insets.bottom) }}>
+            <AppText className="text-base font-black text-app-text">{t('messages.composerAttachContact')}</AppText>
+            <ScrollView style={{ marginTop: 12 }} contentContainerStyle={{ gap: 8, paddingBottom: 12 }}>
+              {shareableContacts(subscriptions, user?.id).map((contact) => (
+                <Pressable
+                  key={contact.userId}
+                  onPress={() => {
+                    setContactOpen(false);
+                    void shareContact(contact).catch((error) => showNotice('Contact', error instanceof Error ? error.message : 'Envoi impossible.'));
+                  }}
+                  style={{ minHeight: 48, justifyContent: 'center', borderRadius: 12, paddingHorizontal: 8 }}>
+                  <AppText className="text-sm font-bold text-app-text">{contact.name}</AppText>
+                  {contact.city ? <AppText className="text-xs text-app-text-muted">{contact.city}</AppText> : null}
+                </Pressable>
+              ))}
+              {!shareableContacts(subscriptions, user?.id).length ? (
+                <AppText className="text-sm text-app-text-muted">Aucun contact à partager.</AppText>
+              ) : null}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <ReportSheet
+        open={Boolean(reportId)}
+        title={t('messages.reportTitle')}
+        target="message"
+        targetId={reportId || ''}
+        userId={user?.id}
+        userName={`${user?.firstName || ''} ${user?.lastName || ''}`.trim()}
+        onClose={() => setReportId(null)}
+      />
+
       <Modal visible={Boolean(preview)} transparent animationType="fade" onRequestClose={() => setPreview(null)}>
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(2,6,23,0.88)', alignItems: 'center', justifyContent: 'center' }} onPress={() => setPreview(null)}>
           {preview ? <Image source={{ uri: preview }} style={{ width: '92%', height: '70%' }} resizeMode="contain" /> : null}
         </Pressable>
       </Modal>
     </View>
+  );
+}
+
+function shareableContacts(
+  subscriptions: { userId?: string; publisherType?: string; publisherId?: string; publisherName?: string }[],
+  userId?: string,
+) {
+  if (!userId) return [] as { userId: string; name: string; city?: string }[];
+  const seen = new Set<string>();
+  const contacts: { userId: string; name: string; city?: string }[] = [];
+  for (const item of subscriptions) {
+    const following = item.userId === userId && item.publisherType === 'user' && item.publisherId && item.publisherId !== userId;
+    const follower = item.publisherType === 'user' && item.publisherId === userId && item.userId && item.userId !== userId;
+    const id = following ? String(item.publisherId) : follower ? String(item.userId) : '';
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    contacts.push({ userId: id, name: item.publisherName || 'Contact MOXT' });
+  }
+  return contacts.sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+}
+
+function SheetAction({
+  icon,
+  label,
+  onPress,
+  danger,
+}: {
+  icon: ReactNode;
+  label: string;
+  onPress: () => void;
+  danger?: boolean;
+}) {
+  return (
+    <Pressable onPress={onPress} style={{ minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 14, paddingHorizontal: 8 }}>
+      {icon}
+      <AppText className={`text-base font-semibold ${danger ? 'text-red-600' : 'text-app-text'}`}>{label}</AppText>
+    </Pressable>
   );
 }
 
@@ -501,7 +830,9 @@ function Bubble({
   colors,
   isDark,
   t,
+  translation,
   onOpenImage,
+  onPress,
 }: {
   message: Message;
   mine: boolean;
@@ -512,7 +843,9 @@ function Bubble({
   colors: { surface: string; accent: string; accentSoft: string; teal: string; text: string; textMuted: string; textFaint: string; border: string };
   isDark: boolean;
   t: (key: string, vars?: Record<string, string | number>) => string;
+  translation?: string;
   onOpenImage: (uri: string) => void;
+  onPress: () => void;
 }) {
   const images = attachmentImageSrcs(message.attachment);
   const showImages = isImageAttachment(message.attachment) && images.length > 0;
@@ -533,7 +866,7 @@ function Bubble({
           <EntityAvatar name={message.senderName || peer.name} src={String(message.senderId) === String(peer.id) ? peer.avatarUrl : null} size={26} shape="user" />
         )
       ) : null}
-      <View style={{ maxWidth: '100%', alignItems: mine ? 'flex-end' : 'flex-start' }}>
+      <Pressable onPress={onPress} style={{ maxWidth: '100%', alignItems: mine ? 'flex-end' : 'flex-start' }}>
         <View
           style={{
             ...radius,
@@ -563,7 +896,7 @@ function Bubble({
           {fromStatus && !showImages ? (
             <AppText className="text-sm font-bold" style={{ color: mine ? '#fff' : colors.text }}>{message.text || 'Statut'}</AppText>
           ) : null}
-          {message.attachment && !showImages && !fromStatus ? (
+          {message.attachment && message.attachment.kind !== 'contact' && !showImages && !fromStatus ? (
             <Pressable
               onPress={() => {
                 const href = message.attachment?.url;
@@ -574,8 +907,17 @@ function Bubble({
               <AppText className="text-xs font-bold" style={{ color: mine ? '#fff' : colors.text }}>{message.attachment.name || 'Fichier'}</AppText>
             </Pressable>
           ) : null}
+          {message.attachment?.kind === 'contact' && message.attachment.userId ? (
+            <Pressable onPress={() => router.push(`/users/${message.attachment?.userId}/publications` as never)} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: message.text ? 6 : 0 }}>
+              <User size={16} color={mine ? '#fff' : colors.accent} />
+              <AppText className="text-sm font-bold" style={{ color: mine ? '#fff' : colors.text }}>{message.attachment.name || t('messages.composerAttachContact')}</AppText>
+            </Pressable>
+          ) : null}
           {message.text && !(fromStatus && !showImages) ? (
-            <AppText className="text-[15px]" style={{ lineHeight: 22, color: mine ? '#fff' : colors.text }}>{message.text}</AppText>
+            <AppText className="text-[15px]" style={{ lineHeight: 22, color: mine ? '#fff' : colors.text }}>{translation || message.text}</AppText>
+          ) : null}
+          {translation ? (
+            <AppText className="text-[10px] font-semibold" style={{ marginTop: 4, color: mine ? 'rgba(255,255,255,0.75)' : colors.textMuted }}>{t('messages.autoTranslated')}</AppText>
           ) : null}
         </View>
         {!groupedNext ? (
@@ -590,7 +932,7 @@ function Bubble({
             ) : null}
           </View>
         ) : null}
-      </View>
+      </Pressable>
     </View>
   );
 }
