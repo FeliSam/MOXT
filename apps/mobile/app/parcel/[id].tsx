@@ -8,8 +8,14 @@ import { requestParcelReservation } from '@moxt/shared/services/contentWrites.js
 import { openContactConversation } from '@moxt/shared/services/contactService.js';
 import { createAuthorNotification } from '@moxt/shared/services/authorNotifications.js';
 
+import { FavoriteButton } from '@/components/account/FavoriteButton';
+import { ContactButton } from '@/components/communications/ContactButton';
+import { DetailFloatingActions } from '@/components/marketplace/DetailFloatingActions';
+import { PublisherBlock } from '@/components/publications/PublisherBlock';
+import { usePublisherDetailProfile } from '@/components/publications/usePublisherDetailProfile';
 import { Button } from '@/components/ui/Button';
 import { DetailFacts, DetailMetrics, DetailSection, TrustPanel } from '@/components/ui/DetailBlocks';
+import { ReportSheet } from '@/components/ui/ReportSheet';
 import { Input } from '@/components/ui/Input';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusBadge } from '@/components/ui/Badge';
@@ -50,6 +56,8 @@ export default function ParcelDetailScreen() {
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [pending, setPending] = useState(!parcel);
+  const [reportOpen, setReportOpen] = useState(false);
+  const publisherProfile = usePublisherDetailProfile(parcel as Record<string, unknown> | undefined, 'parcel');
 
   useEffect(() => {
     if (!id || parcel) {
@@ -79,6 +87,8 @@ export default function ParcelDetailScreen() {
   }
 
   const canReserve = (parcel.status === 'active' || parcel.status === 'open') && parcel.remainingKg > 0 && user?.id !== parcel.ownerId;
+  const isOwner = Boolean(user?.id && parcel.ownerId === user.id);
+  const routeTitle = `${parcel.origin || '?'} vers ${parcel.destination || '?'}`;
   const price = parcel.pricePerKg != null ? formatCurrency(parcel.pricePerKg, parcel.currency || 'RUB') : '—';
   const deposit = parcel.depositDeadline ? formatShortDate(parcel.depositDeadline) : '—';
   const distribution = parcel.distributionDate || parcel.pickupDate;
@@ -212,9 +222,25 @@ export default function ParcelDetailScreen() {
             ) : null}
             {parcel.ownerName ? (
               <Text style={{ marginTop: 12, fontSize: 13, color: colors.textMuted }}>
-                Transporteur : {parcel.ownerName}{parcel.contact ? ` · ${parcel.contact}` : ''}
+                Transporteur : {parcel.ownerName}
               </Text>
             ) : null}
+            <View style={{ marginTop: 16, gap: 10 }}>
+              <ContactButton
+                ownerId={parcel.ownerId}
+                relatedType="parcel"
+                relatedId={parcel.id}
+                relatedPath={`/parcels/${parcel.id}`}
+                relatedTitle={routeTitle}
+                badge="Colis"
+              />
+              <FavoriteButton
+                relatedId={parcel.id}
+                relatedType="parcel"
+                title={routeTitle}
+                path={`/parcels/${parcel.id}`}
+              />
+            </View>
           </View>
 
           {canReserve ? (
@@ -281,8 +307,32 @@ export default function ParcelDetailScreen() {
               'Confirmez la remise du colis dans l’application.',
             ]}
           />
+
+          <PublisherBlock profile={publisherProfile} currentId={parcel.id} />
+
+          {user?.id && !isOwner ? (
+            <Button variant="danger" onPress={() => setReportOpen(true)}>Signaler</Button>
+          ) : null}
         </View>
       </ScrollView>
+      <DetailFloatingActions
+        relatedId={parcel.id}
+        title={routeTitle}
+        ownerId={parcel.ownerId}
+        isOwner={isOwner}
+        relatedType="parcel"
+        relatedPath={`/parcels/${parcel.id}`}
+        editTo={isOwner ? `/publications/edit?id=${parcel.id}&type=parcel` : undefined}
+      />
+      <ReportSheet
+        open={reportOpen}
+        title="Signaler ce trajet"
+        target="parcel"
+        targetId={parcel.id}
+        userId={user?.id}
+        userName={[user?.firstName, user?.lastName].filter(Boolean).join(' ')}
+        onClose={() => setReportOpen(false)}
+      />
     </SafeAreaView>
   );
 }

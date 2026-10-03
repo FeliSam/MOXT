@@ -1,29 +1,39 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocalSearchParams, usePathname, router } from 'expo-router';
 import {
   Dimensions,
   Image,
-  Linking,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
   ScrollView,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { formatCurrency } from '@moxt/shared/utils/formatters.js';
 
+import { FavoriteButton } from '@/components/account/FavoriteButton';
+import { ContactButton } from '@/components/communications/ContactButton';
 import { DetailFloatingActions } from '@/components/marketplace/DetailFloatingActions';
 import { listingCategoryLabel, listingTypeLabel } from '@/components/marketplace/listingMeta';
+import { MarketplaceListingCard } from '@/components/marketplace/MarketplaceListingCard';
+import { PublisherBlock } from '@/components/publications/PublisherBlock';
+import { usePublisherDetailProfile } from '@/components/publications/usePublisherDetailProfile';
 import { Badge, StatusBadge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { DetailFacts, DetailMetrics } from '@/components/ui/DetailBlocks';
+import { ImageGalleryViewer } from '@/components/ui/ImageGalleryViewer';
+import { ReportSheet } from '@/components/ui/ReportSheet';
+import { supabase } from '@/services/supabase';
 import { useThemeColors } from '@/theme/ThemeContext';
-import { brand, radii, shadows, spacing, typography } from '@/theme/colors';
-import { loadListingById } from '@/store/marketplace';
+import { radii, spacing, typography } from '@/theme/colors';
+import { loadListingById, upsertListing, type ListingItem } from '@/store/marketplace';
 import { useAppDispatch, useAppSelector } from '@/store/store';
+import { showNotice } from '@/utils/notice';
 import { idFromPath, routeParam } from '@/utils/routeParam';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -68,6 +78,11 @@ export default function ListingDetailScreen() {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [detailTab, setDetailTab] = useState<(typeof DETAIL_TABS)[number][0]>('description');
   const [pending, setPending] = useState(true);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [question, setQuestion] = useState('');
+  const [answerDrafts, setAnswerDrafts] = useState<Record<string, string>>({});
+  const [questions, setQuestions] = useState<NonNullable<ListingItem['questions']>>([]);
   const scrollRef = useRef<ScrollView>(null);
   const fetched = useRef(false);
 
@@ -75,6 +90,20 @@ export default function ListingDetailScreen() {
     state.marketplace.items.find((l) => l.id === id),
   );
   const user = useAppSelector((state) => state.auth.user);
+  const catalog = useAppSelector((state) => state.marketplace.items);
+  const publisherProfile = usePublisherDetailProfile(listing as unknown as Record<string, unknown>, 'listing');
+  const similar = useMemo(
+    () =>
+      catalog
+        .filter(
+          (item) =>
+            item.id !== id &&
+            item.status === 'active' &&
+            (item.category === listing?.category || item.city === listing?.city),
+        )
+        .slice(0, 3),
+    [catalog, id, listing?.category, listing?.city],
+  );
 
   useEffect(() => {
     if (!id) {
@@ -90,6 +119,36 @@ export default function ListingDetailScreen() {
       .finally(() => setPending(false))
       .catch(() => undefined);
   }, [dispatch, id, listing]);
+
+  useEffect(() => {
+    if (listing?.questions?.length) setQuestions(listing.questions);
+  }, [listing?.questions]);
+
+  useEffect(() => {
+    if (!supabase || !id) return undefined;
+    let alive = true;
+    supabase
+      .from('listing_questions')
+      .select('*')
+      .eq('listing_id', id)
+      .order('created_at', { ascending: true })
+      .then(({ data }) => {
+        if (!alive || !Array.isArray(data) || !data.length) return;
+        setQuestions(
+          data.map((row) => ({
+            id: String(row.id),
+            authorName: String(row.author_name || 'Membre'),
+            text: String(row.text || ''),
+            answer: String(row.answer || ''),
+            createdAt: row.created_at ? String(row.created_at) : undefined,
+          })),
+        );
+      })
+      .then(undefined, () => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [id]);
 
   if (!listing) {
     if (pending) {
@@ -123,6 +182,51 @@ export default function ListingDetailScreen() {
   const categoryLabel = listingCategoryLabel(listing.type, listing.category) || typeLabel;
 
   const isOwner = Boolean(user?.id && listing.ownerId === user.id);
+
+  async function publishQuestion() {
+    if (!listing) return;
+    const text = question.trim();
+    if (!user?.id) {
+      router.push('/login' as never);
+      return;
+    }
+    if (text.length < 5 || !supabase) {
+      showNotice('Question', 'Écrivez au moins 5 caractères.');
+      return;
+    }
+    const row = {
+      id: `Q-${Date.now().toString(36).toUpperCase()}`,
+      listing_id: listing.id,
+      author_id: user.id,
+      author_name: [user.firstName, user.lastName].filter(Boolean).join(' ').trim() || 'Membre',
+      text,
+      answer: '',
+      created_at: new Date().toISOString(),
+    };
+    const { error } = await supabase.from('listing_questions').insert(row);
+    if (error) {
+      showNotice('Question', error.message);
+      return;
+    }
+    const next = [...questions, { id: row.id, authorName: row.author_name, text, answer: '' }];
+    setQuestions(next);
+    dispatch(upsertListing({ ...listing, questions: next }));
+    setQuestion('');
+  }
+
+  async function publishAnswer(questionId: string) {
+    if (!listing) return;
+    const answer = (answerDrafts[questionId] || '').trim();
+    if (!answer || !supabase || !questionId) return;
+    const { error } = await supabase.from('listing_questions').update({ answer, answered_at: new Date().toISOString() }).eq('id', questionId);
+    if (error) {
+      showNotice('Réponse', error.message);
+      return;
+    }
+    const next = questions.map((item) => (item.id === questionId ? { ...item, answer } : item));
+    setQuestions(next);
+    dispatch(upsertListing({ ...listing, questions: next }));
+  }
   const deliveryModes = (listing.deliveryOptions?.length ? listing.deliveryOptions : ['pickup'])
     .map((value) => DELIVERY_LABELS[value] || value)
     .join(', ');
@@ -156,9 +260,9 @@ export default function ListingDetailScreen() {
               scrollEventThrottle={16}
               style={{ width: IMAGE_WIDTH, height: IMAGE_HEIGHT, borderRadius: radii.lg, overflow: 'hidden' }}>
               {images.map((uri, idx) => (
-                <View key={idx} style={{ width: IMAGE_WIDTH, height: IMAGE_HEIGHT, borderRadius: radii.lg, overflow: 'hidden', backgroundColor: colors.surfaceMuted }}>
+                <Pressable key={idx} accessibilityLabel="Ouvrir la galerie" onPress={() => { setActiveImageIndex(idx); setGalleryOpen(true); }} style={{ width: IMAGE_WIDTH, height: IMAGE_HEIGHT, borderRadius: radii.lg, overflow: 'hidden', backgroundColor: colors.surfaceMuted }}>
                   <Image source={{ uri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-                </View>
+                </Pressable>
               ))}
             </ScrollView>
 
@@ -259,6 +363,17 @@ export default function ListingDetailScreen() {
               </Text>
             ) : null}
             {listing.status ? <StatusBadge status={listing.status} /> : null}
+            <DetailMetrics
+              items={[
+                { emoji: '📦', label: conditionLabel ? 'État' : 'Type', value: conditionLabel || typeLabel || '—' },
+                { emoji: '📍', label: 'Localisation', value: listing.city || '—' },
+                { emoji: '👁', label: 'Consultations', value: `${listing.views || 0} vues` },
+                { emoji: '♡', label: 'Intérêt', value: `${listing.favorites?.length || 0} favoris` },
+              ]}
+            />
+            <Text style={{ borderRadius: 14, overflow: 'hidden', backgroundColor: colors.warningBg, color: colors.warning, padding: 12, fontSize: 12, lineHeight: 18 }}>
+              Paiement via MOXT. Vérifiez le produit avant toute transaction.
+            </Text>
           </View>
         </Card>
 
@@ -316,17 +431,45 @@ export default function ListingDetailScreen() {
               ))
             ) : null}
             {detailTab === 'questions' ? (
-              (listing.questions || []).length ? (
-                listing.questions!.map((item, index) => (
-                  <View key={item.id || String(index)} style={{ gap: 4 }}>
-                    <Text style={{ fontWeight: '800', color: colors.text }}>{item.authorName || 'Membre'}</Text>
-                    <Text style={{ color: colors.textSecondary }}>{item.text}</Text>
-                    {item.answer ? <Text style={{ color: colors.textMuted }}>Réponse du vendeur : {item.answer}</Text> : <Text style={{ color: colors.textFaint }}>En attente de réponse du vendeur.</Text>}
+              <View style={{ gap: 12 }}>
+                {questions.length ? (
+                  questions.map((item, index) => (
+                    <View key={item.id || String(index)} style={{ gap: 4 }}>
+                      <Text style={{ fontWeight: '800', color: colors.text }}>{item.authorName || 'Membre'}</Text>
+                      <Text style={{ color: colors.textSecondary }}>{item.text}</Text>
+                      {item.answer ? <Text style={{ color: colors.textMuted }}>Réponse du vendeur : {item.answer}</Text> : <Text style={{ color: colors.textFaint }}>En attente de réponse du vendeur.</Text>}
+                      {isOwner && !item.answer && item.id ? (
+                        <View style={{ gap: 8, marginTop: 6 }}>
+                          <TextInput
+                            value={answerDrafts[item.id] || ''}
+                            onChangeText={(value) => setAnswerDrafts((current) => ({ ...current, [item.id!]: value }))}
+                            placeholder="Répondre publiquement"
+                            placeholderTextColor={colors.textFaint}
+                            style={{ minHeight: 44, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceMuted, paddingHorizontal: 12, color: colors.text }}
+                          />
+                          <Button variant="secondary" onPress={() => void publishAnswer(item.id!)}>Publier la réponse</Button>
+                        </View>
+                      ) : null}
+                    </View>
+                  ))
+                ) : (
+                  <Text style={{ color: colors.textMuted }}>Aucune question publique.</Text>
+                )}
+                {!isOwner ? (
+                  <View style={{ gap: 8 }}>
+                    <Text style={{ fontWeight: '800', color: colors.text }}>Poser une question publique</Text>
+                    <TextInput
+                      value={question}
+                      onChangeText={setQuestion}
+                      placeholder="Demandez une précision sur l’état, la livraison ou la disponibilité..."
+                      placeholderTextColor={colors.textFaint}
+                      multiline
+                      style={{ minHeight: 88, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceMuted, padding: 12, color: colors.text, textAlignVertical: 'top' }}
+                    />
+                    <Button variant="primary" onPress={() => void publishQuestion()}>Publier la question</Button>
                   </View>
-                ))
-              ) : (
-                <Text style={{ color: colors.textMuted }}>Aucune question publique.</Text>
-              )
+                ) : null}
+              </View>
             ) : null}
             {detailTab === 'history' ? (
               (listing.history || []).length ? (
@@ -352,44 +495,80 @@ export default function ListingDetailScreen() {
                 <Text style={{ ...typography.body, fontWeight: '600', color: colors.text }}>{listing.sellerName}</Text>
               </View>
             ) : null}
-            {listing.contact ? (
-              <Pressable
-                style={{
-                  marginTop: spacing.xs,
-                  backgroundColor: colors.primaryLight,
-                  borderWidth: 1,
-                  borderColor: colors.primaryBorder,
-                  borderRadius: radii.md,
-                  paddingVertical: spacing.md,
-                  alignItems: 'center',
-                }}
-                onPress={() => Linking.openURL(`tel:${listing.contact}`)}>
-                <Text style={{ ...typography.body, fontWeight: '700', color: colors.primary }}>
-                  📞 Appeler {listing.contact}
-                </Text>
-              </Pressable>
-            ) : null}
-            {listing.whatsapp ? (
-              <Pressable
-                style={{
-                  marginTop: spacing.xs,
-                  backgroundColor: colors.successBg,
-                  borderWidth: 1,
-                  borderColor: colors.successBorder,
-                  borderRadius: radii.md,
-                  paddingVertical: spacing.md,
-                  alignItems: 'center',
-                }}
-                onPress={() => Linking.openURL(`https://wa.me/${listing.whatsapp?.replace(/[^0-9]/g, '')}`)}>
-                <Text style={{ ...typography.body, fontWeight: '700', color: colors.success }}>
-                  💬 WhatsApp {listing.whatsapp}
-                </Text>
-              </Pressable>
-            ) : null}
+            <ContactButton
+              ownerId={listing.ownerId}
+              relatedType="listing"
+              relatedId={listing.id}
+              relatedPath={`/marketplace/${listing.id}`}
+              relatedTitle={listing.title}
+              subtitle={listing.city}
+              badge="Annonce"
+            />
+            <FavoriteButton
+              relatedId={listing.id}
+              relatedType="listing"
+              title={listing.title}
+              subtitle={listing.city}
+              path={`/marketplace/${listing.id}`}
+            />
           </View>
         </Card>
+
+        <PublisherBlock profile={publisherProfile} currentId={listing.id} limit={5} />
+
+        <DetailFacts
+          items={[
+            { label: 'Catégorie', value: categoryLabel },
+            { label: 'Type', value: typeLabel },
+            { label: 'Marque', value: listing.brand },
+            { label: 'État', value: conditionLabel },
+            { label: 'Ville', value: listing.city },
+          ]}
+        />
+
+        {similar.length ? (
+          <View style={{ gap: spacing.sm }}>
+            <Text style={{ ...typography.sectionTitle, color: colors.text }}>Annonces similaires</Text>
+            <Text style={{ ...typography.bodySmall, color: colors.textMuted }}>Même catégorie ou même zone géographique.</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+              {similar.map((item) => (
+                <MarketplaceListingCard key={item.id} listing={item} width={220} height={280} />
+              ))}
+            </ScrollView>
+          </View>
+        ) : null}
+
+        {user?.id && !isOwner ? (
+          <Button variant="danger" onPress={() => setReportOpen(true)}>Signaler</Button>
+        ) : null}
       </ScrollView>
-      <DetailFloatingActions relatedId={listing.id} title={listing.title} ownerId={listing.ownerId} isOwner={isOwner} />
+      <DetailFloatingActions
+        relatedId={listing.id}
+        title={listing.title}
+        ownerId={listing.ownerId}
+        isOwner={isOwner}
+        relatedType="listing"
+        relatedPath={`/marketplace/${listing.id}`}
+        subtitle={listing.city}
+        editTo={isOwner ? `/publications/edit?id=${listing.id}&type=listing` : undefined}
+      />
+      <ImageGalleryViewer
+        open={galleryOpen}
+        images={images}
+        index={activeImageIndex}
+        title={listing.title}
+        onClose={() => setGalleryOpen(false)}
+        onIndex={setActiveImageIndex}
+      />
+      <ReportSheet
+        open={reportOpen}
+        title="Signaler cette annonce"
+        target="listing"
+        targetId={listing.id}
+        userId={user?.id}
+        userName={[user?.firstName, user?.lastName].filter(Boolean).join(' ')}
+        onClose={() => setReportOpen(false)}
+      />
     </SafeAreaView>
   );
 }

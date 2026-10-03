@@ -4,14 +4,20 @@ import { router, useLocalSearchParams, usePathname } from 'expo-router';
 
 import { calculateP2PFee, p2pOfferFromRemoteRow, p2pReceivedFromOffered } from '@moxt/shared/domain/p2pRules.js';
 import { formatCurrency } from '@moxt/shared/utils/formatters.js';
-import { openContactConversation } from '@moxt/shared/services/contactService.js';
 import { buildAcceptedOrder, syncP2pOrder } from '@moxt/shared/services/p2pOrderWrites.js';
 
+import { FavoriteButton } from '@/components/account/FavoriteButton';
 import { AppChrome } from '@/components/chrome/AppChrome';
+import { ContactButton } from '@/components/communications/ContactButton';
+import { DetailFloatingActions } from '@/components/marketplace/DetailFloatingActions';
+import { PublisherBlock } from '@/components/publications/PublisherBlock';
+import { usePublisherDetailProfile } from '@/components/publications/usePublisherDetailProfile';
 import { AppText } from '@/components/ui/AppText';
+import { Button } from '@/components/ui/Button';
+import { DetailFacts, DetailMetrics } from '@/components/ui/DetailBlocks';
+import { ReportSheet } from '@/components/ui/ReportSheet';
 import { supabase } from '@/services/supabase';
 import { loadDashboardData, upsertP2POffer, type P2POffer } from '@/store/dashboard';
-import { mapConversationRow, receiveRemoteConversation } from '@/store/messages';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useTheme } from '@/theme/ThemeContext';
 import { idFromPath, routeParam } from '@/utils/routeParam';
@@ -37,6 +43,8 @@ export default function P2PDetailScreen() {
   const orders = useAppSelector((state) => state.dashboard.p2pOrders);
   const reviews = useAppSelector((state) => state.dashboard.reviews);
   const [pending, setPending] = useState(!offer);
+  const [reportOpen, setReportOpen] = useState(false);
+  const publisherProfile = usePublisherDetailProfile(offer as unknown as Record<string, unknown> | undefined, 'p2p');
 
   useEffect(() => {
     if (!id || !supabase || offer) {
@@ -86,35 +94,6 @@ export default function P2PDetailScreen() {
     ? ownerReviews.reduce((sum, review) => sum + (Number(review.rating) || 0), 0) / ownerReviews.length
     : 0;
 
-  async function contact() {
-    if (!user?.id || !offer?.ownerId || !supabase) {
-      router.push('/login' as never);
-      return;
-    }
-    try {
-      const result = await openContactConversation(supabase, {
-        createdBy: user.id,
-        ownerId: offer.ownerId,
-        relatedType: 'p2p',
-        relatedId: offer.id,
-        relatedPath: `/p2p/${offer.id}`,
-        relatedSnapshot: {
-          type: 'p2p',
-          id: offer.id,
-          title: `${offer.amount} ${offer.fromCurrency}`,
-          path: `/p2p/${offer.id}`,
-          subtitle: `${offer.fromCurrency} → ${offer.toCurrency}`,
-          badge: 'P2P',
-          details: [],
-        },
-      });
-      dispatch(receiveRemoteConversation(mapConversationRow(result.conversation as unknown as Record<string, unknown>)));
-      router.push(`/messages/${result.id}` as never);
-    } catch (error) {
-      showNotice('Contacter', error instanceof Error ? error.message : 'Conversation impossible.');
-    }
-  }
-
   async function accept() {
     if (!user || !supabase || !offer) {
       router.push('/login' as never);
@@ -159,24 +138,14 @@ export default function P2PDetailScreen() {
           </AppText>
         </View>
 
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {[
-            ['🔁', 'Équivalent', received ? formatCurrency(received, offer.toCurrency, 'fr-FR') : '—'],
-            ['💳', 'Méthode', String(offer.method || '—')],
-            ['🕐', 'Statut', offer.status === 'active' ? 'Active' : offer.status === 'archived' ? 'Archivée' : String(offer.status || '—')],
-            ['👤', 'Proposé par', String(offer.ownerName || '—')],
-          ].map(([icon, label, value]) => (
-            <View key={label} style={{ width: '48%', borderRadius: 14, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, padding: 12, flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-              <View style={{ width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentSoft }}>
-                <AppText>{icon}</AppText>
-              </View>
-              <View style={{ flex: 1 }}>
-                <AppText className="font-black text-app-text" numberOfLines={2}>{value}</AppText>
-                <AppText className="text-xs text-app-text-muted">{label}</AppText>
-              </View>
-            </View>
-          ))}
-        </View>
+        <DetailMetrics
+          items={[
+            { emoji: '🔁', label: 'Équivalent', value: received ? formatCurrency(received, offer.toCurrency, 'fr-FR') : '—' },
+            { emoji: '💳', label: 'Méthode', value: String(offer.method || '—') },
+            { emoji: '🕐', label: 'Statut', value: offer.status === 'active' ? 'Active' : offer.status === 'archived' ? 'Archivée' : String(offer.status || '—') },
+            { emoji: '👤', label: 'Proposé par', value: String(offer.ownerName || '—') },
+          ]}
+        />
 
         <View style={card}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -206,9 +175,23 @@ export default function P2PDetailScreen() {
                 <AppText className="font-bold" style={{ color: isDark ? '#020617' : '#fff' }}>Accepter l’offre</AppText>
               </Pressable>
             ) : null}
-            <Pressable onPress={() => void contact()} style={{ minHeight: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}>
-              <AppText className="font-bold text-app-text">Contacter</AppText>
-            </Pressable>
+            <ContactButton
+              ownerId={offer.ownerId}
+              relatedType="p2p"
+              relatedId={offer.id}
+              relatedPath={`/p2p/${offer.id}`}
+              relatedTitle={`${offer.fromCurrency} → ${offer.toCurrency}`}
+              variant="secondary"
+              badge="P2P"
+            />
+            <FavoriteButton
+              relatedId={offer.id}
+              relatedType="p2p"
+              title={`${offer.amount} ${offer.fromCurrency}`}
+              subtitle={`${offer.fromCurrency} → ${offer.toCurrency}`}
+              path={`/p2p/${offer.id}`}
+            />
+            {user?.id ? <Button variant="danger" onPress={() => setReportOpen(true)}>Signaler</Button> : null}
           </View>
         ) : (
           <View style={card}>
@@ -228,23 +211,20 @@ export default function P2PDetailScreen() {
 
         <View style={card}>
           <AppText className="font-black text-app-text">Détails de l’échange</AppText>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {[
-              ['Montant disponible', formatCurrency(offer.amount, offer.fromCurrency, 'fr-FR')],
-              ['Devise demandée', String(offer.toCurrency || '')],
-              ['Taux proposé', String(offer.rate ?? '')],
-              ['Frais', formatCurrency(fee, offer.fromCurrency, 'fr-FR')],
-              ['Méthode', String(offer.method || '')],
-              ['Profil', offer.businessId ? 'Entreprise' : 'Particulier'],
-              ['Référence', offer.id],
-            ].map(([label, value]) => (
-              <View key={label} style={{ width: '48%', borderRadius: 14, backgroundColor: colors.surfaceMuted, padding: 12 }}>
-                <AppText className="text-[10px] font-black uppercase text-app-text-muted">{label}</AppText>
-                <AppText className="mt-1 font-bold text-app-text">{value || '—'}</AppText>
-              </View>
-            ))}
-          </View>
+          <DetailFacts
+            items={[
+              { label: 'Montant disponible', value: formatCurrency(offer.amount, offer.fromCurrency, 'fr-FR') },
+              { label: 'Devise demandée', value: String(offer.toCurrency || '') },
+              { label: 'Taux proposé', value: String(offer.rate ?? '') },
+              { label: 'Frais', value: formatCurrency(fee, offer.fromCurrency, 'fr-FR') },
+              { label: 'Méthode', value: String(offer.method || '') },
+              { label: 'Profil', value: offer.businessId ? 'Entreprise' : 'Particulier' },
+              { label: 'Référence', value: offer.id },
+            ]}
+          />
         </View>
+
+        <PublisherBlock profile={publisherProfile} currentId={offer.id} />
 
         <View style={card}>
           <AppText className="font-black text-app-text">Sécurité P2P</AppText>
@@ -253,6 +233,24 @@ export default function P2PDetailScreen() {
           <AppText className="text-sm text-app-text-muted">En cas de problème, ouvrez un litige pour contacter le support.</AppText>
         </View>
       </ScrollView>
+      <DetailFloatingActions
+        relatedId={offer.id}
+        title={`${offer.amount || ''} ${offer.fromCurrency || ''} vers ${offer.toCurrency || ''}`}
+        ownerId={offer.ownerId}
+        isOwner={isOwner}
+        relatedType="p2p"
+        relatedPath={`/p2p/${offer.id}`}
+        editTo={isOwner ? `/publications/edit?id=${offer.id}&type=other` : undefined}
+      />
+      <ReportSheet
+        open={reportOpen}
+        title="Signaler cette offre"
+        target="p2p"
+        targetId={offer.id}
+        userId={user?.id}
+        userName={[user?.firstName, user?.lastName].filter(Boolean).join(' ')}
+        onClose={() => setReportOpen(false)}
+      />
     </AppChrome>
   );
 }

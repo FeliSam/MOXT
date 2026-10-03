@@ -3,7 +3,7 @@ import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { fetchUserFavorites } from '@moxt/shared/services/favoritesService.js';
 import { supabase } from '../services/supabase';
 
-export type FavoriteType = 'listing' | 'parcel' | 'job' | 'event' | 'business';
+export type FavoriteType = 'listing' | 'parcel' | 'job' | 'event' | 'business' | 'p2p';
 
 /** `id` = identifiant de l’élément favori (related_id), comme les boutons cœur des écrans. */
 export type FavoriteItem = {

@@ -21,6 +21,10 @@ export type ListingItem = {
   ownerId?: string;
   businessId?: string;
   views?: number;
+  favorites?: string[];
+  contactCount?: number;
+  shareCount?: number;
+  updatedAt?: string;
   sellerName?: string;
   contact?: string;
   whatsapp?: string;
@@ -104,6 +108,11 @@ function mapRow(row: any): ListingItem {
     images: row.images || row.payload?.images || [],
     ownerId: row.owner_id,
     businessId: row.business_id || row.payload?.businessId || undefined,
+    views: Number(row.views ?? row.payload?.views ?? 0) || 0,
+    favorites: asArray(row.favorites ?? row.payload?.favorites),
+    contactCount: Number(row.contact_count ?? row.payload?.contactCount ?? 0) || 0,
+    shareCount: Number(row.share_count ?? row.payload?.shareCount ?? 0) || 0,
+    updatedAt: row.updated_at || row.payload?.updatedAt || '',
     sellerName: row.seller_name || row.payload?.sellerName || '',
     contact: row.payload?.contact || '',
     whatsapp: row.payload?.whatsapp || '',
