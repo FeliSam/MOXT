@@ -1,7 +1,46 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, router } from 'expo-router';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { useLocalSearchParams, usePathname, router } from 'expo-router';
+import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, Share, Text, View } from 'react-native';
+import {
+  AlertTriangle,
+  Check,
+  Clock,
+  Copy,
+  FileDown,
+  FileText,
+  History,
+  Image as ImageIcon,
+  Repeat,
+  Share2,
+  Shield,
+  ShieldAlert,
+  UploadCloud,
+  User,
+  Users,
+  X,
+} from 'lucide-react-native';
+
+async function copyToClipboard(text: string) {
+  try {
+    if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+    const expoClipboard = await import('expo-clipboard').catch(() => null);
+    if (expoClipboard?.setStringAsync) {
+      await expoClipboard.setStringAsync(text);
+      return true;
+    }
+  } catch {
+    // fallback
+  }
+  return false;
+}
+
+import { canClientDeclareReception } from '@moxt/shared/domain/transferActionUtils.js';
+import { canRevealPaymentDetails } from '@moxt/shared/domain/transferAcceptanceUtils.js';
+import { transferFromRemoteRow } from '@moxt/shared/domain/transferRemote.js';
 
 import {
   directionLabel,
@@ -10,12 +49,48 @@ import {
 } from '@moxt/shared/utils/transfers.js';
 
 import { ImagePickerButton } from '@/components/ImagePickerButton';
-import { BackHeader } from '@/components/chrome/BackHeader';
+import { TransferStatusBadge } from '@/components/transfers/TransferStatusBadge';
 import { AppScreen } from '@/components/ui/Card';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { PROGRESS_STEPS, TRANSFER_STATUS_LABELS } from '@/constants/transfers';
 import { twTransfer } from '@/constants/transferTailwind';
-import { useAppSelector } from '@/store/store';
+import { supabase } from '@/services/supabase';
+import { upsertTransfer, transferMatches } from '@/store/transfers';
+import { useLanguage } from '@/providers/LanguageProvider';
+import { useAppDispatch, useAppSelector } from '@/store/store';
+import { idFromPath, routeParam } from '@/utils/routeParam';
 import { cn } from '@/lib/cn';
+import { useTheme } from '@/theme/ThemeContext';
+import { showNotice } from '@/utils/notice';
+
+function useCountdown(deadline?: string | null) {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!deadline) return;
+    const id = setInterval(() => setTick((v) => v + 1), 1000);
+    return () => clearInterval(id);
+  }, [deadline]);
+  if (!deadline) return null;
+  const remaining = Math.max(0, new Date(deadline).getTime() - Date.now());
+  const total = Math.floor(remaining / 1000);
+  return {
+    expired: remaining === 0,
+    label: `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`,
+  };
+}
+
+const CANCELLABLE = ['pending_payment', 'payment_declared', 'pending_business_acceptance', 'declined'];
+
+function confirmAction(title: string, message: string, onConfirm: () => void) {
+  if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined' && window.confirm(`${title}\n\n${message}`)) onConfirm();
+    return;
+  }
+  Alert.alert(title, message, [
+    { text: 'Retour', style: 'cancel' },
+    { text: 'Confirmer', style: 'destructive', onPress: onConfirm },
+  ]);
+}
 
 const NEXT_STEP: Record<string, { title: string; description: string }> = {
   pending_payment: {
@@ -41,15 +116,64 @@ const NEXT_STEP: Record<string, { title: string; description: string }> = {
 };
 
 export default function TransferDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id?: string | string[]; created?: string | string[] }>();
+  const transferId = routeParam(params.id) || idFromPath(usePathname());
+  const justCreated = routeParam(params.created) === '1';
+  const dispatch = useAppDispatch();
+  const { t: tr } = useLanguage();
+  const { colors, isDark } = useTheme();
   const user = useAppSelector((state) => state.auth.user);
   const transfer = useAppSelector((state) =>
-    state.transfers.items.find((t: any) => t.id === id),
+    state.transfers.items.find((item) => transferMatches(item as any, transferId)),
   );
   const [proofUri, setProofUri] = useState<string | null>(null);
-  const [showToast, setShowToast] = useState(true);
+  const [showToast, setShowToast] = useState(justCreated);
+  const [loading, setLoading] = useState(!transfer);
+  const [detailTab, setDetailTab] = useState<'suivi' | 'paiement' | 'details'>('suivi');
+  const raw = transfer as { status?: string; paymentDeadlineAt?: string; acceptanceExpiresAt?: string } | undefined;
+  const paymentCountdown = useCountdown(raw?.status === 'pending_payment' ? raw.paymentDeadlineAt : null);
+  const acceptanceCountdown = useCountdown(raw?.status === 'pending_business_acceptance' ? raw.acceptanceExpiresAt : null);
+
+  useEffect(() => {
+    if (!justCreated) return undefined;
+    const timer = setTimeout(() => setShowToast(false), 4000);
+    return () => clearTimeout(timer);
+  }, [justCreated]);
+
+  useEffect(() => {
+    if (!transferId || !supabase) {
+      setLoading(false);
+      return undefined;
+    }
+    let alive = true;
+    const client = supabase;
+    async function load() {
+      const byId = await client.from('transfers').select('*').eq('id', transferId).maybeSingle();
+      let row = byId.data;
+      if (!row && !byId.error) {
+        const byReference = await client.from('transfers').select('*').filter('payload->>id', 'eq', transferId).limit(1);
+        row = byReference.data?.[0] || null;
+      }
+      if (!alive) return;
+      if (row) dispatch(upsertTransfer(transferFromRemoteRow(row) as any));
+      setLoading(false);
+    }
+    load().catch(() => {
+      if (alive) setLoading(false);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [dispatch, transferId]);
 
   if (!transfer) {
+    if (loading) {
+      return (
+        <AppScreen edges={['top']} className="items-center justify-center">
+          <ActivityIndicator />
+        </AppScreen>
+      );
+    }
     return (
       <AppScreen edges={['top']} className="items-center justify-center gap-4">
         <Text className="text-xl font-black text-app-text dark:text-zinc-50">Transfert introuvable</Text>
@@ -77,43 +201,39 @@ export default function TransferDetailScreen() {
   const st = TRANSFER_STATUS_LABELS[t.status] || TRANSFER_STATUS_LABELS.pending_payment;
   const currentStepIndex = PROGRESS_STEPS.findIndex((s) => s.key === t.status);
   const nextStep = NEXT_STEP[t.status || 'pending_payment'];
+  const showPayment = canRevealPaymentDetails(t);
+  const heroSent = tr('transfers.detail.hero.sent');
+  const heroReceived = tr('transfers.detail.hero.receivedEstimated');
 
   return (
     <AppScreen edges={[]}>
-      <BackHeader title="Détail du transfert" />
       <ScrollView contentContainerClassName="gap-5 px-4 pb-32 pt-2" showsVerticalScrollIndicator={false}>
-        {/* Summary header */}
-        <View className={twTransfer.detailCard}>
-          <Text className="text-[10px] font-black uppercase tracking-widest text-brand-700 dark:text-brand-400">
-            {t.id}
-          </Text>
-          <Text className="mt-1 text-2xl font-black text-app-text dark:text-zinc-50">Transfer details</Text>
-          <Text className="mt-1 text-sm text-app-text-muted dark:text-zinc-400">
-            {directionLabel(t.direction || '')} · créé le{' '}
-            {t.createdAt || t.created_at ? formatTransferDate(t.createdAt || t.created_at) : '—'}
-          </Text>
-          <Pressable className={cn(twTransfer.navBack, 'mt-4 self-start px-4')} onPress={() => router.back()}>
-            <Text className={twTransfer.navBackText}>← Back</Text>
-          </Pressable>
-        </View>
-
-        {/* Metrics 2x2 */}
-        <View className={twTransfer.detailMetricGrid}>
+        <PageHeader
+          className="mx-0"
+          eyebrow="Transfert"
+          title="Détail du transfert"
+          description={`${t.id} · ${directionLabel(t.direction || '')}`}
+          actions={
+            <Pressable onPress={() => router.back()} className="min-h-11 items-center justify-center rounded-2xl bg-app-surface px-4">
+              <Text className="text-sm font-bold text-app-text">Retour</Text>
+            </Pressable>
+          }
+        />
+        <View className="flex-row flex-wrap justify-between gap-y-3">
           {[
-            { emoji: '🔁', label: 'Direction', value: directionLabel(t.direction || '') },
-            { emoji: '🕐', label: 'Création', value: t.createdAt || t.created_at ? formatTransferDate(t.createdAt || t.created_at) : '—' },
-            { emoji: '👤', label: 'Destinataire', value: recipientName || '—' },
-            { emoji: '🛡️', label: 'Partenaire', value: t.exchanger?.name || 'MOXT Change' },
+            { icon: Repeat, label: tr('transfers.detail.metrics.direction'), value: directionLabel(t.direction || '') },
+            { icon: Clock, label: tr('transfers.detail.metrics.created'), value: t.createdAt || t.created_at ? formatTransferDate(t.createdAt || t.created_at) : '—' },
+            { icon: User, label: tr('transfers.detail.metrics.recipient'), value: recipientName || '—' },
+            { icon: Shield, label: tr('transfers.detail.metrics.partner'), value: t.exchanger?.name || tr('transfers.detail.financial.historicPartner') },
           ].map((m) => (
             <View key={m.label} className={twTransfer.detailMetric}>
-              <Text className="text-lg">{m.emoji}</Text>
-              <Text className={twTransfer.detailMetricValue}>{m.value}</Text>
+              <m.icon size={18} color="#08705f" />
+              <Text className={twTransfer.detailMetricValue} numberOfLines={2}>{m.value}</Text>
               <Text className={twTransfer.detailMetricLabel}>{m.label}</Text>
             </View>
           ))}
         </View>
 
-        {/* Hero gradient */}
         <View className={twTransfer.detailHero}>
           <LinearGradient
             colors={['#0f766e', '#08705f', '#2563eb']}
@@ -121,26 +241,22 @@ export default function TransferDetailScreen() {
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             className="p-5"
-            style={{ borderRadius: 16 }}>
-            <View className={twTransfer.detailHeroBadge} style={{ backgroundColor: st.bg }}>
-              <Text className={twTransfer.detailHeroBadgeText} style={{ color: st.color }}>
-                {st.label}
-              </Text>
+            style={{ borderRadius: 16, minHeight: 220 }}>
+            <View className="mb-4 self-start">
+              <TransferStatusBadge status={t.status} />
             </View>
-            <View className="mt-2 flex-row items-center gap-3">
-              <View className="flex-1">
-                <Text className={twTransfer.detailHeroLabel}>ENVOYÉ</Text>
-                <Text className={twTransfer.detailHeroValue}>{formatMoney(amountSent, currFrom)}</Text>
-              </View>
-              <Text className="text-xl text-white/40">⇄</Text>
-              <View className="flex-1">
-                <Text className={twTransfer.detailHeroLabel}>REÇU (ESTIMÉ)</Text>
-                <Text className={twTransfer.detailHeroValue}>{formatMoney(amountReceived, currTo)}</Text>
-              </View>
+            <Text className={twTransfer.detailHeroLabel}>{heroSent}</Text>
+            <Text className={twTransfer.detailHeroValue}>{formatMoney(amountSent, currFrom)}</Text>
+            <View style={{ alignItems: 'center', marginVertical: 12 }}>
+              <Repeat size={18} color="rgba(255,255,255,0.4)" style={{ transform: [{ rotate: '90deg' }] }} />
             </View>
+            <Text className={twTransfer.detailHeroLabel}>{heroReceived}</Text>
+            <Text className={twTransfer.detailHeroValue}>{formatMoney(amountReceived, currTo)}</Text>
             {t.exchanger?.name ? (
               <View className={twTransfer.detailHeroPartner}>
-                <Text className={twTransfer.detailHeroPartnerText}>Traité par {t.exchanger.name}</Text>
+                <Text className={twTransfer.detailHeroPartnerText}>
+                  {tr('transfers.detail.hero.processedBy', { name: t.exchanger.name })}
+                </Text>
                 <View className={twTransfer.detailVerified}>
                   <Text className={twTransfer.detailVerifiedText}>✓ VÉRIFIÉ MOXT</Text>
                 </View>
@@ -149,10 +265,32 @@ export default function TransferDetailScreen() {
           </LinearGradient>
         </View>
 
+        <View className="flex-row gap-1 rounded-2xl border border-app-border bg-app-surface-muted p-1">
+          {([
+            ['suivi', 'Suivi'],
+            ['paiement', 'Paiement'],
+            ['details', 'Détails'],
+          ] as const).map(([key, label]) => {
+            const active = detailTab === key;
+            return (
+              <Pressable
+                key={key}
+                onPress={() => setDetailTab(key)}
+                className={cn('min-h-11 flex-1 items-center justify-center rounded-xl px-2', active && 'bg-app-surface shadow-sm')}>
+                <Text className={cn('text-sm font-black', active ? 'text-app-text' : 'text-app-text-muted')}>
+                  {label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {detailTab === 'suivi' ? (
+          <>
         {/* Progression */}
         <View className={twTransfer.detailCard}>
           <View className="flex-row items-center gap-2">
-            <Text className="text-lg">🕐</Text>
+            <Clock size={18} color="#08705f" />
             <Text className={twTransfer.detailCardTitle}>Progression</Text>
           </View>
           <View className={twTransfer.progressRow}>
@@ -170,13 +308,17 @@ export default function TransferDetailScreen() {
                           ? 'border-brand-700 bg-white dark:border-brand-400 dark:bg-zinc-900'
                           : 'border-app-border bg-white dark:border-zinc-700 dark:bg-zinc-900',
                     )}>
-                    <Text
-                      className={cn(
-                        'text-[11px] font-bold',
-                        done ? 'text-white dark:text-slate-950' : active ? 'text-brand-700' : 'text-app-text-muted',
-                      )}>
-                      {done ? '✓' : idx + 1}
-                    </Text>
+                    {done ? (
+                      <Check size={12} color={isDark ? '#020617' : '#ffffff'} strokeWidth={3} />
+                    ) : (
+                      <Text
+                        className={cn(
+                          'text-[11px] font-bold',
+                          active ? 'text-brand-700 dark:text-brand-400' : 'text-app-text-muted',
+                        )}>
+                        {idx + 1}
+                      </Text>
+                    )}
                   </View>
                   <Text
                     className={cn(
@@ -193,8 +335,10 @@ export default function TransferDetailScreen() {
 
         {/* Security */}
         <View className={twTransfer.warningCard}>
-          <Text className="text-lg">🛡️</Text>
-          <Text className={cn(twTransfer.warningTitle, 'mt-2')}>⚠ Payez en toute sécurité</Text>
+          <View className="flex-row items-center gap-2">
+            <ShieldAlert size={18} color="#b45309" />
+            <Text className={twTransfer.warningTitle}>Payez en toute sécurité</Text>
+          </View>
           <Text className={twTransfer.warningText}>
             Ne payez jamais en dehors de MOXT, conservez toutes vos preuves de paiement et vérifiez les
             coordonnées du partenaire avant toute transaction.
@@ -202,6 +346,12 @@ export default function TransferDetailScreen() {
         </View>
 
         {/* Next step */}
+        {canClientDeclareReception(t, Boolean(user?.id && (t.userId === user.id || t.senderId === user.id))) ? (
+          <Pressable className={twTransfer.navNext} onPress={() => router.push(`/transfer/receive/${t.id}` as never)}>
+            <Text className={twTransfer.navNextText}>J’ai reçu les fonds</Text>
+          </Pressable>
+        ) : null}
+
         {nextStep ? (
           <View className={twTransfer.detailCard}>
             <Text className={twTransfer.nextEyebrow}>PROCHAINE ÉTAPE</Text>
@@ -217,11 +367,86 @@ export default function TransferDetailScreen() {
           </View>
         ) : null}
 
-        {/* Financial summary */}
+        {acceptanceCountdown ? (
+          <View className={twTransfer.detailCard}>
+            <View className="items-center rounded-xl bg-app-surface-muted px-4 py-3">
+              <Text className="text-xs font-black uppercase tracking-wide text-app-text-faint">
+                {tr('transfers.acceptance.countdownLabel')}
+              </Text>
+              <Text className="mt-1 text-3xl font-black text-brand-700 dark:text-brand-300" style={{ fontVariant: ['tabular-nums'] }}>
+                {acceptanceCountdown.label}
+              </Text>
+              <Text className="mt-2 text-center text-sm text-app-text-muted">
+                {tr('transfers.acceptance.waitingHint', { name: t.exchanger?.name || tr('transfers.acceptance.exchangerFallback') })}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
+        {t.status === 'pending_payment' ? (
+          <View className={twTransfer.detailCard}>
+            <Text className={twTransfer.detailCardTitle}>Déclarer le paiement</Text>
+            <Text className="text-xs text-app-text-muted">
+              Ajoutez une preuve, puis déclarez le paiement. Le partenaire est notifié.
+              {paymentCountdown ? ` Temps restant : ${paymentCountdown.label}.` : ''}
+            </Text>
+            <Pressable className={twTransfer.uploadZone}>
+              <UploadCloud size={28} color="#08705f" />
+              <Text className={cn(twTransfer.uploadTitle, 'mt-2')}>Preuve de paiement</Text>
+              <Text className={twTransfer.uploadHint}>Image ou PDF</Text>
+            </Pressable>
+            <ImagePickerButton label="Photo de la preuve" currentUri={proofUri} onImageSelected={setProofUri} />
+            <Pressable
+              className={twTransfer.declareBtn}
+              onPress={() => {
+                if (!proofUri || !supabase) return;
+                const next = { ...t, status: 'payment_declared', paymentProof: proofUri };
+                void supabase.from('transfers').update({ status: 'payment_declared', payment_proof: proofUri }).eq('id', t.id);
+                dispatch(upsertTransfer(next));
+              }}>
+              <Text className={twTransfer.submitBtnText}>Déclarer le paiement</Text>
+            </Pressable>
+          </View>
+        ) : null}
+        <Pressable className={twTransfer.outlineBtn} onPress={() => router.push('/disputes/create' as never)}>
+          <Text className={twTransfer.outlineBtnText}>Ouvrir une réclamation</Text>
+        </Pressable>
+        {CANCELLABLE.includes(t.status) && user?.id && (t.userId === user.id || t.senderId === user.id) ? (
+          <Pressable
+            testID="transfer-cancel"
+            className="min-h-12 items-center justify-center rounded-2xl border border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-950/30"
+            onPress={() =>
+              confirmAction(tr('transfers.detail.cancel.title'), tr('transfers.detail.cancel.description'), () => {
+                const at = new Date().toISOString();
+                const timeline = [...(Array.isArray(t.timeline) ? t.timeline : []), { status: 'cancelled', at, actorType: 'client', actorId: user.id }];
+                const next = { ...t, status: 'cancelled', updatedAt: at, timeline };
+                dispatch(upsertTransfer(next));
+                void supabase?.from('transfers').update({ status: 'cancelled', timeline }).eq('id', t.id);
+              })
+            }>
+            <Text className="text-sm font-black text-red-700 dark:text-red-300">{tr('transfers.workflow.cancelTransfer')}</Text>
+          </Pressable>
+        ) : null}
+          </>
+        ) : null}
+
+        {detailTab === 'paiement' ? (
+        <>
+        <View className={twTransfer.detailCard}>
+          <Text className={twTransfer.detailCardTitle}>Coordonnées de paiement</Text>
+          <Text className="text-sm text-app-text-muted">
+            {showPayment
+              ? t.exchanger?.paymentAccount || tr('transfers.detail.financial.confirmWithBusiness')
+              : tr('transfers.acceptance.paymentHidden')}
+          </Text>
+          {t.noteToExchanger ? (
+            <Text className="mt-2 text-sm text-app-text">Note : {String(t.noteToExchanger)}</Text>
+          ) : null}
+        </View>
         <View className={twTransfer.detailCard}>
           <View className="mb-4 flex-row items-center gap-3">
             <View className="h-9 w-9 items-center justify-center rounded-xl bg-brand-100 dark:bg-brand-950/45">
-              <Text>📄</Text>
+              <FileText size={18} color="#08705f" />
             </View>
             <Text className={twTransfer.detailCardTitle}>Résumé financier</Text>
           </View>
@@ -239,19 +464,60 @@ export default function TransferDetailScreen() {
             </View>
           ))}
           <View className="mt-4 flex-row flex-wrap gap-2">
-            {['Copier la référence', 'PDF', 'Image', 'Partager'].map((label) => (
-              <Pressable key={label} className={twTransfer.actionChip}>
-                <Text className={twTransfer.actionChipText}>{label}</Text>
-              </Pressable>
-            ))}
+            <Pressable
+              className={cn(twTransfer.actionChip, 'flex-row items-center gap-1.5')}
+              onPress={async () => {
+                await copyToClipboard(t.id);
+                showNotice('Référence copiée', t.id);
+              }}>
+              <Copy size={13} color={isDark ? '#e4e4e7' : '#334155'} />
+              <Text className={twTransfer.actionChipText}>Copier la référence</Text>
+            </Pressable>
+            <Pressable
+              className={cn(twTransfer.actionChip, 'flex-row items-center gap-1.5')}
+              onPress={() => router.push({ pathname: '/transfer/receipt', params: { id: t.id } } as never)}>
+              <FileDown size={13} color={isDark ? '#e4e4e7' : '#334155'} />
+              <Text className={twTransfer.actionChipText}>Reçu / PDF</Text>
+            </Pressable>
+            <Pressable
+              className={cn(twTransfer.actionChip, 'flex-row items-center gap-1.5')}
+              onPress={() => {
+                if (t.paymentProof || t.payment_proof) {
+                  router.push((t.paymentProof || t.payment_proof) as never);
+                } else {
+                  router.push({ pathname: '/transfer/receipt', params: { id: t.id } } as never);
+                }
+              }}>
+              <ImageIcon size={13} color={isDark ? '#e4e4e7' : '#334155'} />
+              <Text className={twTransfer.actionChipText}>Preuve / Image</Text>
+            </Pressable>
+            <Pressable
+              className={cn(twTransfer.actionChip, 'flex-row items-center gap-1.5')}
+              onPress={async () => {
+                try {
+                  await Share.share({
+                    title: `Transfert ${t.id}`,
+                    message: `Transfert MOXT ${t.id} · ${directionLabel(t.direction || '')} · Montant : ${formatMoney(amountSent, currFrom)}`,
+                  });
+                } catch {
+                  // user cancelled or share failed
+                }
+              }}>
+              <Share2 size={13} color={isDark ? '#e4e4e7' : '#334155'} />
+              <Text className={twTransfer.actionChipText}>Partager</Text>
+            </Pressable>
           </View>
         </View>
+        </>
+        ) : null}
 
+        {detailTab === 'details' ? (
+        <>
         {/* Participants */}
         <View className={twTransfer.detailCard}>
           <View className="mb-4 flex-row items-center gap-3">
             <View className="h-9 w-9 items-center justify-center rounded-xl bg-brand-100 dark:bg-brand-950/45">
-              <Text>👥</Text>
+              <Users size={18} color="#08705f" />
             </View>
             <Text className={twTransfer.detailCardTitle}>Participants</Text>
           </View>
@@ -277,61 +543,29 @@ export default function TransferDetailScreen() {
         <View className={twTransfer.detailCard}>
           <View className="mb-4 flex-row items-center gap-3">
             <View className="h-9 w-9 items-center justify-center rounded-xl bg-brand-100 dark:bg-brand-950/45">
-              <Text>🕐</Text>
+              <History size={18} color="#08705f" />
             </View>
             <Text className={twTransfer.detailCardTitle}>Chronologie</Text>
           </View>
-          <View className="flex-row gap-3">
-            <View className="h-10 w-10 items-center justify-center rounded-full bg-brand-700 dark:bg-brand-400">
-              <Text className="text-white dark:text-slate-950">🕐</Text>
-            </View>
-            <View className="flex-1">
-              <Text className="text-sm font-bold text-app-text dark:text-zinc-50">
-                Transfert créé, paiement attendu
-              </Text>
-              <Text className="mt-1 text-xs text-app-text-muted dark:text-zinc-400">
-                {t.createdAt || t.created_at ? formatTransferDate(t.createdAt || t.created_at) : '—'}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Actions */}
-        <View className={twTransfer.detailCard}>
-          <View className="mb-2 flex-row items-center gap-3">
-            <View className="h-9 w-9 items-center justify-center rounded-xl bg-brand-100 dark:bg-brand-950/45">
-              <Text>✓</Text>
-            </View>
-            <View>
-              <Text className={twTransfer.detailCardTitle}>Actions</Text>
-              <Text className="text-xs text-app-text-muted dark:text-zinc-400">
-                Chaque action est unique et la prochaine étape dépend du statut actuel.
-              </Text>
-            </View>
-          </View>
-
-          {t.status === 'pending_payment' ? (
-            <View className="gap-3">
-              <Pressable className={twTransfer.uploadZone}>
-                <Text className="text-2xl">⬆️</Text>
-                <Text className={twTransfer.uploadTitle}>Preuve de paiement</Text>
-                <Text className={twTransfer.uploadHint}>Cliquez pour ajouter une image ou un PDF</Text>
-              </Pressable>
-              <ImagePickerButton label="Photo de la preuve" currentUri={proofUri} onImageSelected={setProofUri} />
-              <Pressable className={twTransfer.declareBtn}>
-                <Text className={twTransfer.submitBtnText}>✓ Déclarer le paiement</Text>
-              </Pressable>
-            </View>
-          ) : null}
-
-          <View className="mt-3 gap-2">
-            <Pressable className={twTransfer.cancelBtn}>
-              <Text className={twTransfer.cancelBtnText}>✕ Annuler</Text>
-            </Pressable>
-            <Pressable className={twTransfer.outlineBtn} onPress={() => router.push('/disputes/create' as any)}>
-              <Text className={twTransfer.outlineBtnText}>🚩 Ouvrir une réclamation</Text>
-            </Pressable>
-          </View>
+          {(Array.isArray(t.timeline) && t.timeline.length
+            ? t.timeline
+            : [{ status: t.status, at: t.createdAt || t.created_at, label: st.label }]
+          ).map((event: { status?: string; at?: string; label?: string }, index: number) => {
+            const eventStatus = TRANSFER_STATUS_LABELS[event.status || ''] || st;
+            return (
+              <View key={`${event.status}-${event.at}-${index}`} className="mb-3 flex-row gap-3">
+                <View className="h-10 w-10 items-center justify-center rounded-full bg-brand-700 dark:bg-brand-400">
+                  <Text className="text-xs font-bold text-white dark:text-slate-950">{index + 1}</Text>
+                </View>
+                <View className="flex-1">
+                  <Text className="text-sm font-bold text-app-text">{event.label || eventStatus.label}</Text>
+                  <Text className="mt-1 text-xs text-app-text-muted">
+                    {event.at ? formatTransferDate(event.at) : '—'}
+                  </Text>
+                </View>
+              </View>
+            );
+          })}
         </View>
 
         {/* Operation info */}
@@ -339,11 +573,11 @@ export default function TransferDetailScreen() {
           <Text className={cn(twTransfer.detailCardTitle, 'mb-4')}>Informations de l'opération</Text>
           {[
             ['Référence', t.id],
-            ['Statut', 'Transfert créé, paiement attendu'],
+            ['Statut', st.label],
             ['Montant envoyé', formatMoney(amountSent, currFrom)],
             ['Montant reçu (estimé)', formatMoney(amountReceived, currTo)],
             ['Total à payer', formatMoney(totalToPay, currFrom)],
-            ['Mode', 'Estimation — aucun débit automatique'],
+            [tr('transfers.detail.info.mode'), tr('transfers.detail.info.modeValue')],
           ].map(([label, value]) => (
             <View key={label} className={twTransfer.factBlock}>
               <Text className={twTransfer.factLabel}>{label}</Text>
@@ -351,11 +585,13 @@ export default function TransferDetailScreen() {
             </View>
           ))}
         </View>
+        </>
+        ) : null}
       </ScrollView>
 
       {showToast ? (
         <View className="absolute bottom-36 left-4 right-4 flex-row items-start gap-3 rounded-2xl border-l-4 border-emerald-500 bg-white p-4 shadow-lg dark:bg-zinc-900">
-          <Text className="text-emerald-600">✓</Text>
+          <Check size={18} color="#059669" strokeWidth={2.5} />
           <View className="min-w-0 flex-1">
             <Text className="text-sm font-black text-app-text dark:text-zinc-50">Transfert créé</Text>
             <Text className="mt-0.5 text-xs text-app-text-muted dark:text-zinc-400">
@@ -363,7 +599,7 @@ export default function TransferDetailScreen() {
             </Text>
           </View>
           <Pressable onPress={() => setShowToast(false)}>
-            <Text className="text-app-text-muted">✕</Text>
+            <X size={16} color={isDark ? '#a1a1aa' : '#64748b'} />
           </Pressable>
         </View>
       ) : null}

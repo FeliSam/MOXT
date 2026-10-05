@@ -5,6 +5,7 @@ import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FeatherIcon, type FeatherName } from '@/components/chrome/icons';
+import { MobileMoreSheet } from '@/components/navigation/MobileMoreSheet';
 import { AppText } from '@/components/ui/AppText';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { withAlphaColor } from '@/theme/palette';
@@ -49,6 +50,7 @@ export function BottomNavBar({
   const inactiveColor = withAlphaColor(colors.text, L.bottomNavInactiveOpacity);
 
   const [slotWidth, setSlotWidth] = useState(0);
+  const [moreOpen, setMoreOpen] = useState(false);
   const translate = useRef(new Animated.Value(0)).current;
   const gap = 2;
 
@@ -121,10 +123,18 @@ export function BottomNavBar({
           return (
             <Pressable
               key={item.id}
+              testID={item.id === 'more' ? 'tab-more-services' : `tab-${item.id}`}
               accessibilityRole="tab"
-              accessibilityState={{ selected: focused }}
+              accessibilityState={{ selected: focused || (item.id === 'more' && moreOpen) }}
               accessibilityLabel={item.id === 'more' ? t('nav.moreServicesAria') : label}
-              onPress={() => onTabPress(item.mobileRoute)}
+              onPress={() => {
+                // Plus → bottom sheet « Tous les services » (web MobileMoreDrawer), pas la page /moxt.
+                if (item.id === 'more') {
+                  setMoreOpen(true);
+                  return;
+                }
+                onTabPress(item.mobileRoute);
+              }}
               style={({ pressed }) => ({
                 flex: 1,
                 minWidth: 0,
@@ -149,6 +159,7 @@ export function BottomNavBar({
           );
         })}
       </View>
+      <MobileMoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
     </View>
   );
 }
@@ -159,6 +170,10 @@ export function AppBottomTabBar({ activeRoute = 'transfers' }: { activeRoute?: s
     <BottomNavBar
       activeRoute={activeRoute}
       onTabPress={(route) => {
+        if (route === 'transfers') {
+          router.push('/transfer/wizard' as never);
+          return;
+        }
         router.push((route === 'index' ? '/(tabs)' : `/(tabs)/${route}`) as never);
       }}
     />

@@ -1,6 +1,8 @@
 import { Link } from 'expo-router';
 import type { ComponentProps } from 'react';
-import { Linking, Platform } from 'react-native';
+import { Platform } from 'react-native';
+
+import { openLink } from '@/utils/appLinks';
 
 export function ExternalLink(props: Omit<ComponentProps<typeof Link>, 'href'> & { href: string }) {
   return (
@@ -11,7 +13,7 @@ export function ExternalLink(props: Omit<ComponentProps<typeof Link>, 'href'> & 
       onPress={(e) => {
         if (Platform.OS !== 'web') {
           e.preventDefault();
-          Linking.openURL(props.href);
+          openLink(props.href);
         }
       }}
     />

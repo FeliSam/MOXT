@@ -42,10 +42,12 @@ export function HeaderActionButton({
   accessibilityLabel,
   transparent = false,
   size = HEADER.height,
+  testID,
 }: {
   children: ReactNode;
   onPress?: () => void;
   accessibilityLabel: string;
+  testID?: string;
   transparent?: boolean;
   size?: number;
 }) {
@@ -54,6 +56,7 @@ export function HeaderActionButton({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
+      testID={testID}
       onPress={onPress}
       style={({ pressed }) => ({
         width: size,

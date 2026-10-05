@@ -97,7 +97,7 @@ export default function ExchangersScreen() {
 
               <Pressable
                 style={[styles.viewBtn, { borderColor: colors.border }]}
-                onPress={() => router.push(`/transfer/wizard?exchangerId=${item.id}` as any)}>
+                onPress={() => router.push(`/exchangers/${item.id}` as any)}>
                 <Text style={[styles.viewBtnText, { color: brand[700] }]}>Voir la fiche</Text>
               </Pressable>
             </View>

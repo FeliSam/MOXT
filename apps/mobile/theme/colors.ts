@@ -1,13 +1,14 @@
 // Jetons de design : source unique dans packages/shared/src/design/tokens.json
 // (extraits de moxt-react/src/index.css, vérifiés par tokens.test.js).
 import {
-  boxShadowStyle,
   brandScale,
   radiusTokens,
   spacingTokens,
   themeColors,
   themeShadows,
 } from '@moxt/shared/design/index.js';
+
+import { platformShadow } from '@/theme/platformShadow';
 
 export const brand = brandScale as Readonly<Record<'50' | '100' | '200' | '300' | '400' | '500' | '600' | '700' | '800' | '900', string>>;
 
@@ -209,18 +210,18 @@ export const radii = {
 } as const;
 
 /**
- * Ombres du web (--shadow-card, --shadow-float…) en `boxShadow` CSS, pris en
- * charge par React Native (nouvelle architecture) et react-native-web.
+ * Ombres du web (--shadow-card, --shadow-float…).
+ * Expo web reçoit `boxShadow` ; iOS/Android gardent `shadow*` + elevation.
  */
 export function getShadows(isDark: boolean) {
   const set = themeShadows[isDark ? 'dark' : 'light'];
   return {
-    card: boxShadowStyle(set.card),
-    cardHover: boxShadowStyle(set.cardHover),
-    cardLg: boxShadowStyle(set.cardLg),
-    float: boxShadowStyle(set.float),
-    bottomNav: boxShadowStyle(set.bottomNav),
-    finance: boxShadowStyle(set.finance),
+    card: platformShadow(set.card),
+    cardHover: platformShadow(set.cardHover),
+    cardLg: platformShadow(set.cardLg),
+    float: platformShadow(set.float),
+    bottomNav: platformShadow(set.bottomNav),
+    finance: platformShadow(set.finance),
   } as const;
 }
 

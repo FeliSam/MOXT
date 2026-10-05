@@ -4,10 +4,10 @@ export const DIRECTIONS = {
 } as const;
 
 export const WIZARD_STEPS = [
-  { key: 'amount', label: 'Amount', icon: '⚙️' },
+  { key: 'amount', label: 'Montant', icon: '⚙️' },
   { key: 'sender', label: 'Expéditeur', icon: '👤' },
   { key: 'recipient', label: 'Destinataire', icon: '👤' },
-  { key: 'confirm', label: 'Confirm', icon: '🛡️' },
+  { key: 'confirm', label: 'Confirmer', icon: '🛡️' },
 ];
 
 export const PAYMENT_METHODS_RU = [
@@ -58,6 +58,16 @@ export const PROGRESS_STEPS = [
 ];
 
 export const RATE_RUB_XOF = 7.3953;
+
+const FLAG_ACCENT: Record<string, string> = {
+  BJ: '#FCD116',
+  RU: '#0039A6',
+};
+
+/** Couleur de drapeau du pays de destination (cartes de sens, comme le web). */
+export function flagAccent(countryCode: string) {
+  return FLAG_ACCENT[String(countryCode || '').toUpperCase()] || '#08705f';
+}
 
 export function directionInfo(direction: string, originCountry = 'BJ') {
   if (direction === DIRECTIONS.RU_TO_BJ) {

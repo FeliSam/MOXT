@@ -1,4 +1,5 @@
 import { Pressable, Text, TextInput, View } from 'react-native';
+import { User } from 'lucide-react-native';
 
 import { TransferWizardSectionTitle } from '@/components/transfers/wizard/TransferWizardSectionTitle';
 import { twTransfer } from '@/constants/transferTailwind';
@@ -34,16 +35,11 @@ export function TransferWizardPartyStep({
 
   return (
     <View className={twTransfer.card}>
-      <View className={twTransfer.sectionTitle}>
-        <View
-          className={cn(
-            twTransfer.sectionIcon,
-            isRecipient ? twTransfer.partyHeaderRecipient : twTransfer.partyHeaderSender,
-          )}>
-          <Text className="text-base">👤</Text>
-        </View>
-        <Text className={twTransfer.sectionLabel}>{title}</Text>
-      </View>
+      <TransferWizardSectionTitle
+        icon={User}
+        label={title}
+        iconClass={isRecipient ? twTransfer.partyHeaderRecipient : twTransfer.partyHeaderSender}
+      />
 
       <View className="gap-4">
         <View>

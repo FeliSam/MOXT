@@ -1,7 +1,12 @@
 import { Pressable, Text, View } from 'react-native';
+import { Check, ShieldCheck, SlidersHorizontal, User, Users } from 'lucide-react-native';
 
 import { cn } from '@/lib/cn';
 import { WIZARD_STEPS } from '@/constants/transfers';
+import { useTheme } from '@/theme/ThemeContext';
+import { brand } from '@/theme/colors';
+
+const STEP_ICONS = [SlidersHorizontal, User, Users, ShieldCheck];
 
 export function TransferWizardStepper({
   step,
@@ -10,6 +15,10 @@ export function TransferWizardStepper({
   step: number;
   onGoTo?: (s: number) => void;
 }) {
+  const { isDark } = useTheme();
+  const activeColor = isDark ? brand[400] : brand[700];
+  const mutedColor = isDark ? '#71717a' : '#94a3b8';
+
   return (
     <View className="relative overflow-hidden rounded-2xl bg-app-surface py-4 px-2 shadow-sm dark:bg-zinc-900">
       <View className="absolute left-6 right-6 top-9 h-0.5 bg-app-border dark:bg-zinc-700" />
@@ -22,6 +31,8 @@ export function TransferWizardStepper({
           const stepNumber = index + 1;
           const done = step > stepNumber;
           const active = step === stepNumber;
+          const StepIcon = STEP_ICONS[index] || SlidersHorizontal;
+
           return (
             <Pressable
               key={entry.key}
@@ -37,14 +48,11 @@ export function TransferWizardStepper({
                       ? 'border-brand-700 bg-app-surface dark:border-brand-400 dark:bg-zinc-900'
                       : 'border-app-border bg-app-surface dark:border-zinc-700 dark:bg-zinc-900',
                 )}>
-                <Text
-                  className={cn(
-                    done ? 'text-sm text-white dark:text-slate-950' : 'text-xs',
-                    !done && active && 'text-brand-700 dark:text-brand-400',
-                    !done && !active && 'text-app-text-muted dark:text-zinc-500',
-                  )}>
-                  {done ? '✓' : entry.icon}
-                </Text>
+                {done ? (
+                  <Check size={14} color={isDark ? '#020617' : '#ffffff'} strokeWidth={3} />
+                ) : (
+                  <StepIcon size={16} color={active ? activeColor : mutedColor} strokeWidth={2.2} />
+                )}
               </View>
               <Text
                 className={cn(
@@ -62,3 +70,4 @@ export function TransferWizardStepper({
     </View>
   );
 }
+

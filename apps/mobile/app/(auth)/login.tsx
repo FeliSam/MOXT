@@ -246,7 +246,7 @@ export default function LoginScreen() {
                 <FeatherIcon name="help-circle" size={15} color={colors.accent} />
                 <AppText className="text-sm font-extrabold text-app-accent">{t('auth.login.needHelp')}</AppText>
               </Pressable>
-              <Pressable accessibilityRole="link">
+              <Pressable accessibilityRole="link" onPress={() => router.push('/forgot-password' as never)}>
                 <AppText className="text-sm font-extrabold text-app-accent">{t('auth.login.forgot')}</AppText>
               </Pressable>
             </View>

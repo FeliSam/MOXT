@@ -6,22 +6,22 @@ import type { FeatherName } from '@/components/chrome/icons';
  * Page Moxt (menu « Plus ») — portage de moxt-react :
  * features/dashboard/dashboardConfig.js (coreServices, quickActions) et
  * features/moxt/moxtHubConfig.js (groupes secondaires, liens admin).
- * Images 3D : moxt-react/public/assets/services/3d (mêmes fichiers que le web).
+ * Images 3D locales (copies des fichiers web) : Metro ne doit pas indexer tout moxt-react.
  */
 const img = {
-  transfer: require('../../../moxt-react/public/assets/services/3d/service-transfer.png'),
-  marketplace: require('../../../moxt-react/public/assets/services/3d/service-marketplace.png'),
-  parcel: require('../../../moxt-react/public/assets/services/3d/service-parcel.png'),
-  job: require('../../../moxt-react/public/assets/services/3d/service-job.png'),
-  p2p: require('../../../moxt-react/public/assets/services/3d/service-p2p.png'),
-  exchangers: require('../../../moxt-react/public/assets/services/3d/service-exchangers.png'),
-  businesses: require('../../../moxt-react/public/assets/services/3d/service-businesses.png'),
-  events: require('../../../moxt-react/public/assets/services/3d/service-events.png'),
-  news: require('../../../moxt-react/public/assets/services/3d/service-news.png'),
-  quickMarketplace: require('../../../moxt-react/public/assets/services/3d/quick-marketplace.png'),
-  quickParcel: require('../../../moxt-react/public/assets/services/3d/quick-parcel.png'),
-  quickJob: require('../../../moxt-react/public/assets/services/3d/quick-job.png'),
-  quickEvent: require('../../../moxt-react/public/assets/services/3d/quick-event.png'),
+  transfer: require('../assets/services/3d/service-transfer.png'),
+  marketplace: require('../assets/services/3d/service-marketplace.png'),
+  parcel: require('../assets/services/3d/service-parcel.png'),
+  job: require('../assets/services/3d/service-job.png'),
+  p2p: require('../assets/services/3d/service-p2p.png'),
+  exchangers: require('../assets/services/3d/service-exchangers.png'),
+  businesses: require('../assets/services/3d/service-businesses.png'),
+  events: require('../assets/services/3d/service-events.png'),
+  news: require('../assets/services/3d/service-news.png'),
+  quickMarketplace: require('../assets/services/3d/quick-marketplace.png'),
+  quickParcel: require('../assets/services/3d/quick-parcel.png'),
+  quickJob: require('../assets/services/3d/quick-job.png'),
+  quickEvent: require('../assets/services/3d/quick-event.png'),
 } satisfies Record<string, ImageSourcePropType>;
 
 export type BentoSize = 'hero' | 'featured' | 'medium' | 'compact';
@@ -96,7 +96,7 @@ export const coreServices: BentoItem[] = [
     descriptionKey: 'dashboard.config.services.p2p.description',
     tagKey: 'dashboard.config.services.p2p.tag',
     path: '/p2p',
-    route: null,
+    route: '/p2p',
     image: img.p2p,
     size: 'compact',
     surface: { angle: 145, tint: '#0891b2', ratio: 0.0968, darkTint: 'rgba(8,145,178,0.194)' },
@@ -129,7 +129,7 @@ export const coreServices: BentoItem[] = [
     descriptionKey: 'dashboard.config.services.events.description',
     tagKey: 'dashboard.config.services.events.tag',
     path: '/events',
-    route: null,
+    route: '/events',
     image: img.events,
     size: 'compact',
     surface: { angle: 145, tint: '#ea580c', ratio: 0.0968, darkTint: 'rgba(234,88,12,0.194)' },
@@ -211,18 +211,18 @@ export const moxtHubSecondaryGroups: { id: string; titleKey: string; links: HubL
       { id: 'personal-info', labelKey: 'profile.links.personalInfo', path: '/profile/information', route: '/profile/edit', icon: 'user' },
       { id: 'my-publications', labelKey: 'nav.myPublications', path: '/publications/mine', route: '/listing/mine', icon: 'list' },
       { id: 'favorites', labelKey: 'nav.favorites', path: '/favorites', route: '/favorites', icon: 'heart' },
-      { id: 'activities', labelKey: 'profile.links.activities', path: '/activities', route: null, icon: 'activity' },
+      { id: 'activities', labelKey: 'profile.links.activities', path: '/activities', route: '/activities', icon: 'activity' },
       { id: 'referral', labelKey: 'nav.qrInvitation', path: '/referral', route: '/referral', icon: 'gift' },
-      { id: 'professional', labelKey: 'nav.professional', path: '/professional', route: '/organization', icon: 'grid' },
+      { id: 'professional', labelKey: 'nav.professional', path: '/professional', route: '/professional', icon: 'grid' },
     ],
   },
   {
     id: 'finance',
     titleKey: 'moxtHub.groups.finance',
     links: [
-      { id: 'contribute', labelKey: 'nav.contribute', path: '/contribute', route: null, icon: 'heart', roles: ['admin', 'superadmin'] },
+      { id: 'contribute', labelKey: 'nav.contribute', path: '/contribute', route: '/contribute', icon: 'heart', roles: ['admin', 'superadmin'] },
       { id: 'receipts', labelKey: 'profile.links.receipts', path: '/receipts', route: null, icon: 'file-text' },
-      { id: 'documents', labelKey: 'profile.links.documents', path: '/documents', route: '/export', icon: 'file-text' },
+      { id: 'documents', labelKey: 'profile.links.documents', path: '/documents', route: '/documents', icon: 'file-text' },
       { id: 'disputes', labelKey: 'profile.links.disputes', path: '/disputes', route: '/disputes', icon: 'alert-triangle' },
     ],
   },
@@ -233,8 +233,8 @@ export const moxtHubSecondaryGroups: { id: string; titleKey: string; links: HubL
       { id: 'messages', labelKey: 'nav.messages', path: '/messages', route: '/(tabs)/messages', icon: 'message-square' },
       { id: 'notifications', labelKey: 'nav.notifications', path: '/notifications', route: '/(tabs)/notifications', icon: 'bell' },
       { id: 'support', labelKey: 'profile.links.support', path: '/support', route: '/support', icon: 'help-circle' },
-      { id: 'guide', labelKey: 'nav.guide', path: '/guide', route: null, icon: 'book-open' },
-      { id: 'product-help', labelKey: 'nav.productHelp', path: '/aide', route: null, icon: 'help-circle' },
+      { id: 'guide', labelKey: 'nav.guide', path: '/guide', route: '/guide', icon: 'book-open' },
+      { id: 'product-help', labelKey: 'nav.productHelp', path: '/aide', route: '/aide', icon: 'help-circle' },
     ],
   },
   {
@@ -242,19 +242,19 @@ export const moxtHubSecondaryGroups: { id: string; titleKey: string; links: HubL
     titleKey: 'moxtHub.groups.security',
     links: [
       { id: 'verification', labelKey: 'profile.links.verification', path: '/verification', route: '/kyc', icon: 'shield' },
-      { id: 'security', labelKey: 'profile.links.security', path: '/security', route: '/settings', icon: 'shield' },
+      { id: 'security', labelKey: 'profile.links.security', path: '/security', route: '/security', icon: 'shield' },
       { id: 'settings', labelKey: 'nav.settings', path: '/settings', route: '/settings', icon: 'settings' },
     ],
   },
 ];
 
 export const moxtHubAdminLinks: HubLink[] = [
-  { id: 'contribute', labelKey: 'nav.contribute', path: '/contribute', route: null, icon: 'heart', roles: ['admin', 'superadmin'] },
-  { id: 'guide-admin', labelKey: 'nav.guideAdmin', path: '/admin/guide', route: null, icon: 'book-open', roles: ['moderator', 'admin', 'superadmin'] },
-  { id: 'moderation', labelKey: 'nav.moderationSpace', path: '/moderation', route: null, icon: 'shield', roles: ['moderator', 'admin', 'superadmin'] },
+  { id: 'contribute', labelKey: 'nav.contribute', path: '/contribute', route: '/contribute', icon: 'heart', roles: ['admin', 'superadmin'] },
+  { id: 'guide-admin', labelKey: 'nav.guideAdmin', path: '/admin/guide', route: '/admin/guide', icon: 'book-open', roles: ['moderator', 'admin', 'superadmin'] },
+  { id: 'moderation', labelKey: 'nav.moderationSpace', path: '/moderation', route: '/moderation', icon: 'shield', roles: ['moderator', 'admin', 'superadmin'] },
   { id: 'admin', labelKey: 'nav.controlCenter', path: '/admin', route: '/admin', icon: 'settings', roles: ['admin', 'superadmin'] },
-  { id: 'feature-matrix', labelKey: 'nav.featureMatrix', path: '/feature-matrix', route: null, icon: 'pie-chart', roles: ['admin', 'superadmin'] },
-  { id: 'superadmin', labelKey: 'nav.systemPilotage', path: '/superadmin', route: null, icon: 'shield', roles: ['superadmin'] },
+  { id: 'feature-matrix', labelKey: 'nav.featureMatrix', path: '/feature-matrix', route: '/feature-matrix', icon: 'pie-chart', roles: ['admin', 'superadmin'] },
+  { id: 'superadmin', labelKey: 'nav.systemPilotage', path: '/superadmin', route: '/superadmin', icon: 'shield', roles: ['superadmin'] },
 ];
 
 export function filterHubLinksByRole(links: HubLink[], role?: string | null) {

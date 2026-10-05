@@ -1,5 +1,6 @@
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { ArrowLeft, ArrowRight, Check, ShieldCheck } from 'lucide-react-native';
 
 import { formatCurrency } from '@moxt/shared/utils/formatters.js';
 
@@ -7,6 +8,7 @@ import { TransferWizardSectionTitle } from '@/components/transfers/wizard/Transf
 import { twTransfer } from '@/constants/transferTailwind';
 import { calculateTransfer } from '@/constants/transfers';
 import { cn } from '@/lib/cn';
+import { useTheme } from '@/theme/ThemeContext';
 
 export function TransferWizardConfirmStep({
   direction,
@@ -35,7 +37,7 @@ export function TransferWizardConfirmStep({
 
   return (
     <View className={twTransfer.card}>
-      <TransferWizardSectionTitle emoji="🛡️" label="Récapitulatif et confirmation" />
+      <TransferWizardSectionTitle icon={ShieldCheck} label="Récapitulatif et confirmation" />
 
       <LinearGradient
         colors={['#0d9488', '#0891b2']}
@@ -48,7 +50,7 @@ export function TransferWizardConfirmStep({
             {formatCurrency(calc.totalToPay, calc.currencyFrom)}
           </Text>
         </View>
-        <Text className="text-3xl text-white/70">→</Text>
+        <ArrowRight size={24} color="rgba(255,255,255,0.7)" />
         <View className="min-w-0 flex-1 items-end">
           <Text className="text-xs font-bold text-white/80">Le destinataire reçoit ~</Text>
           <Text className="text-2xl font-black text-white">
@@ -79,7 +81,7 @@ export function TransferWizardConfirmStep({
               ? 'border-brand-700 bg-brand-700 dark:border-brand-400 dark:bg-brand-400'
               : 'border-app-border dark:border-zinc-600',
           )}>
-          {acceptTerms ? <Text className="text-[10px] font-black text-white dark:text-slate-950">✓</Text> : null}
+          {acceptTerms ? <Check size={11} color="#ffffff" strokeWidth={3} /> : null}
         </View>
         <Text className={twTransfer.termsText}>
           Je confirme ces informations et autorise leur transmission à l'entreprise sélectionnée pour le
@@ -94,7 +96,10 @@ export function TransferWizardConfirmStep({
         {loading ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text className={twTransfer.submitBtnText}>🛡️  Créer et transmettre le transfert</Text>
+          <View className="flex-row items-center gap-2">
+            <ShieldCheck size={18} color="#fff" />
+            <Text className={twTransfer.submitBtnText}>Créer et transmettre le transfert</Text>
+          </View>
         )}
       </Pressable>
     </View>
@@ -112,16 +117,21 @@ export function TransferWizardNav({
   onBack: () => void;
   onNext: () => void;
 }) {
+  const { colors, isDark } = useTheme();
+
   return (
     <View className={twTransfer.navRow}>
       <Pressable className={twTransfer.navBack} onPress={onBack} disabled={step === 1 && loading}>
-        <Text className={twTransfer.navBackText}>← Précédent</Text>
+        <ArrowLeft size={16} color={colors.text} />
+        <Text className={twTransfer.navBackText}>Précédent</Text>
       </Pressable>
       {step < 4 ? (
         <Pressable className={cn(twTransfer.navNext, loading && 'opacity-60')} disabled={loading} onPress={onNext}>
-          <Text className={twTransfer.navNextText}>Continuer →</Text>
+          <Text className={twTransfer.navNextText}>Continuer</Text>
+          <ArrowRight size={16} color={isDark ? '#020617' : '#ffffff'} />
         </Pressable>
       ) : null}
     </View>
   );
 }
+

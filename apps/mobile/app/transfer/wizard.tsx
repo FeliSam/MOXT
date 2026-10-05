@@ -1,44 +1,69 @@
-import { useMemo, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { router } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+import { Building2, Calculator, History } from 'lucide-react-native';
 
 import { formatCurrency } from '@moxt/shared/utils/formatters.js';
 
 import { TransferCalculatorModal } from '@/components/transfers/TransferCalculatorModal';
-import { TransferPageHeader } from '@/components/transfers/TransferPageHeader';
+import { DsAlert } from '@/components/ds/Alert';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { TransferWizardStepper } from '@/components/transfers/TransferWizardStepper';
 import {
   TransferWizardConfirmStep,
   TransferWizardNav,
 } from '@/components/transfers/wizard/TransferWizardConfirmStep';
 import { TransferWizardPartyStep } from '@/components/transfers/wizard/TransferWizardPartyStep';
-import { TransferWizardStep1 } from '@/components/transfers/wizard/TransferWizardStep1';
+import { TransferWizardStep1, type WizardExchanger } from '@/components/transfers/wizard/TransferWizardStep1';
 import { AppScreen } from '@/components/ui/Card';
 import {
   DIRECTIONS,
-  FALLBACK_EXCHANGERS,
   calculateTransfer,
   directionInfo,
 } from '@/constants/transfers';
 import { twTransfer } from '@/constants/transferTailwind';
 import { supabase } from '@/services/supabase';
+import { loadBusinesses, type Business } from '@/store/account';
 import { loadCoreData } from '@/store/data';
 import { useAppDispatch, useAppSelector } from '@/store/store';
+import { useThemeColors } from '@/theme/ThemeContext';
+
+const READY = new Set(['verified', 'approved', 'active']);
+
+function toExchanger(business: Business): WizardExchanger {
+  const services = business.services;
+  const fee = Number(business.feePercent ?? 2.5);
+  return {
+    id: business.id,
+    name: business.name,
+    rating: Number(business.rating) || 0,
+    feePercent: Number.isFinite(fee) ? fee : 2.5,
+    averageDelay: '10 à 20 min',
+    city: business.city,
+    country: typeof business.country === 'string' ? business.country : undefined,
+    ...(Array.isArray(services) ? {} : {}),
+  };
+}
 
 export default function TransferWizardScreen() {
   const dispatch = useAppDispatch();
+  const params = useLocalSearchParams<{ exchangerId?: string }>();
   const user = useAppSelector((state) => state.auth.user);
+  const businesses = useAppSelector((state) => state.account.businesses);
   const originCountry = (user as any)?.originCountry || ((user as any)?.country !== 'RU' ? (user as any)?.country : 'BJ') || 'BJ';
 
   const initialDirection = (user as any)?.country === 'RU' ? DIRECTIONS.RU_TO_BJ : DIRECTIONS.BJ_TO_RU;
 
+  // Le web (NewTransferPage) est déjà un assistant en 4 étapes. L’accord
+  // « assistants multi-étapes » portait sur l’édition et la publication, pas
+  // sur un formulaire unique : on garde donc le même découpage que le web.
   const [step, setStep] = useState(1);
   const [calculatorOpen, setCalculatorOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const [direction, setDirection] = useState<(typeof DIRECTIONS)[keyof typeof DIRECTIONS]>(initialDirection);
-  const [amount, setAmount] = useState((user as any)?.country === 'RU' ? '5000' : '');
-  const [exchangerId, setExchangerId] = useState(FALLBACK_EXCHANGERS[0].id);
+  const [amount, setAmount] = useState('');
+  const [exchangerId, setExchangerId] = useState(typeof params.exchangerId === 'string' ? params.exchangerId : '');
 
   const [senderFirstName, setSenderFirstName] = useState(user?.firstName || '');
   const [senderLastName, setSenderLastName] = useState(user?.lastName || '');
@@ -51,18 +76,59 @@ export default function TransferWizardScreen() {
   const [recipientMethod, setRecipientMethod] = useState('');
   const [acceptTerms, setAcceptTerms] = useState(false);
 
+  const colors = useThemeColors();
   const info = useMemo(() => directionInfo(direction, originCountry), [direction, originCountry]);
-  const exchanger = FALLBACK_EXCHANGERS.find((e) => e.id === exchangerId)!;
+  /** Même logique que NewTransferPage.ownTransferBusiness (propriétaire + Transfert, même non prêt). */
+  const ownBusiness = useMemo(
+    () =>
+      businesses.find((business) => {
+        if (business.ownerId !== user?.id || business.deletedByUserAt) return false;
+        const services = business.services;
+        return Array.isArray(services)
+          ? services.includes('Transfert')
+          : String(services || '').includes('Transfert');
+      }) || null,
+    [businesses, user?.id],
+  );
+  const ownBusinessReady = Boolean(ownBusiness && READY.has(String(ownBusiness.status || '')));
+  const exchangers = useMemo(
+    () =>
+      businesses
+        .filter((business) => {
+          const services = business.services;
+          const offersTransfer = Array.isArray(services)
+            ? services.includes('Transfert')
+            : String(services || '').includes('Transfert');
+          return (
+            offersTransfer &&
+            READY.has(String(business.status || '')) &&
+            business.ownerId !== user?.id &&
+            !business.deletedByUserAt
+          );
+        })
+        .map(toExchanger),
+    [businesses, user?.id],
+  );
+  const exchanger = exchangers.find((item) => item.id === exchangerId) || exchangers[0];
   const numAmount = Number(amount) || 0;
-  const calc = calculateTransfer(numAmount, direction, exchanger.feePercent);
+  const calc = calculateTransfer(numAmount, direction, exchanger?.feePercent ?? 2.5);
+
+  useEffect(() => {
+    if (user?.id) dispatch(loadBusinesses(user.id));
+  }, [dispatch, user?.id]);
+
+  useEffect(() => {
+    if (!exchangers.length) return;
+    if (!exchangers.some((item) => item.id === exchangerId)) setExchangerId(exchangers[0].id);
+  }, [exchangerId, exchangers]);
 
   const goNext = () => {
     if (step === 1) {
       if (numAmount < calc.minimumRequired) {
-        Alert.alert('Montant invalide', `Minimum : ${formatCurrency(calc.minimumRequired, calc.currencyFrom)}`);
+        Alert.alert('Montant invalide', `Minimum : ${formatCurrency(calc.minimumRequired, calc.currencyFrom, 'fr-FR')}`);
         return;
       }
-      if (!exchangerId) {
+      if (!exchanger) {
         Alert.alert('Partenaire requis', 'Choisissez un échangeur.');
         return;
       }
@@ -88,22 +154,22 @@ export default function TransferWizardScreen() {
       Alert.alert('Conditions', 'Acceptez les conditions pour continuer.');
       return;
     }
-    if (!supabase) return;
+    if (!supabase || !exchanger) return;
     setLoading(true);
     try {
       const now = new Date().toISOString();
       const transferId = `MXT-${Date.now().toString(36).toUpperCase()}`;
+      const business = businesses.find((item) => item.id === exchanger.id);
       const { error } = await supabase.from('transfers').insert({
         id: transferId,
         user_id: user?.id,
+        business_id: exchanger.id,
+        business_owner_id: business?.ownerId || null,
         status: 'pending_payment',
         direction,
-        amount_sent: numAmount,
+        amount: numAmount,
         fee: calc.fees,
-        amount_received: calc.amountReceived,
-        total_to_pay: calc.totalToPay,
-        currency_from: calc.currencyFrom,
-        currency_to: calc.currencyTo,
+        received_amount: calc.amountReceived,
         rate: calc.rawRate,
         rate_source: 'Frankfurter',
         rate_date: new Date().toISOString().slice(0, 10),
@@ -119,14 +185,25 @@ export default function TransferWizardScreen() {
           phone: senderPhone.trim(),
           method: senderMethod,
         },
-        exchanger: { id: exchanger.id, name: exchanger.name, feePercent: exchanger.feePercent },
+        exchanger: { id: exchanger.id, name: exchanger.name, feePercent: exchanger.feePercent, rating: exchanger.rating },
         origin_country: originCountry,
+        timeline: [{ status: 'pending_payment', at: now }],
+        payload: {
+          amountSent: numAmount,
+          fees: calc.fees,
+          totalToPay: calc.totalToPay,
+          currencyFrom: calc.currencyFrom,
+          currencyTo: calc.currencyTo,
+          feePercent: exchanger.feePercent,
+          amountReceived: calc.amountReceived,
+          rawRate: calc.rawRate,
+        },
         created_at: now,
         updated_at: now,
       });
       if (error) throw new Error(error.message);
       await dispatch(loadCoreData());
-      router.replace(`/transfer/${transferId}` as any);
+      router.replace(`/transfer/${transferId}?created=1` as any);
     } catch (err: any) {
       Alert.alert('Erreur', err.message || 'Création impossible.');
     } finally {
@@ -141,16 +218,58 @@ export default function TransferWizardScreen() {
           contentContainerClassName={twTransfer.scroll}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
-          <TransferPageHeader
+          <PageHeader
+            className="mx-0"
             eyebrow="Transfert"
             title="Créer un transfert"
             description="Choisissez une entreprise validée. Elle recevra l'opération et suivra son traitement jusqu'à la validation."
-            actions={[
-              { label: 'Calculatrice', onPress: () => setCalculatorOpen(true) },
-              { label: 'Échangeurs', onPress: () => router.push('/exchangers' as any) },
-              { label: 'Historique', onPress: () => router.push('/(tabs)/transfers' as any) },
-            ]}
+            actions={
+              <View style={{ width: '100%', flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {[
+                  [Calculator, 'Calculatrice', () => setCalculatorOpen(true)],
+                  [Building2, 'Échangeurs', () => router.push('/exchangers' as never)],
+                  [History, 'Historique', () => router.push('/(tabs)/transfers' as never)],
+                ].map(([Icon, label, onPress]) => {
+                  const BtnIcon = Icon as typeof Calculator;
+                  return (
+                    <Pressable
+                      key={String(label)}
+                      accessibilityRole="button"
+                      accessibilityLabel={String(label)}
+                      onPress={onPress as () => void}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 6,
+                        borderRadius: 12,
+                        paddingHorizontal: 14,
+                        paddingVertical: 10,
+                        backgroundColor: colors.surface,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                      }}>
+                      <BtnIcon size={14} color={colors.textSecondary} />
+                      <Text style={{ color: colors.text, fontWeight: '700', fontSize: 13 }}>{label as string}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            }
           />
+
+          {ownBusiness ? (
+            <DsAlert
+              variant={ownBusinessReady ? 'info' : 'warning'}
+              title={
+                ownBusinessReady
+                  ? 'Votre entreprise de transfert est active'
+                  : 'Votre entreprise est en cours de validation'
+              }>
+              {ownBusinessReady
+                ? `${ownBusiness.name} est visible par les autres membres dans cette liste. En tant que propriétaire, vous ne pouvez pas l'utiliser pour créer un transfert — c'est votre activité de réception, pas un partenaire à sélectionner.`
+                : `${ownBusiness.name} n'apparaît pas encore ici : MOXT doit d'abord valider votre fiche. Une fois le statut « Vérifié », les membres pourront vous choisir comme partenaire de transfert.`}
+            </DsAlert>
+          ) : null}
 
           <TransferWizardStepper step={step} onGoTo={setStep} />
 
@@ -174,6 +293,12 @@ export default function TransferWizardScreen() {
               setAmount={setAmount}
               exchangerId={exchangerId}
               setExchangerId={setExchangerId}
+              exchangers={exchangers}
+              ownBusiness={
+                ownBusinessReady && ownBusiness
+                  ? { id: ownBusiness.id, name: ownBusiness.name }
+                  : null
+              }
               originCountry={originCountry}
             />
           ) : null}
@@ -213,8 +338,8 @@ export default function TransferWizardScreen() {
             <TransferWizardConfirmStep
               direction={direction}
               amount={numAmount}
-              feePercent={exchanger.feePercent}
-              exchangerName={exchanger.name}
+              feePercent={exchanger?.feePercent ?? 2.5}
+              exchangerName={exchanger?.name || '—'}
               senderName={`${senderFirstName} ${senderLastName}`.trim()}
               recipientName={`${recipientFirstName} ${recipientLastName}`.trim()}
               acceptTerms={acceptTerms}

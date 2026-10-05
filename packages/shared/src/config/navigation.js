@@ -97,7 +97,7 @@ export const bottomNavigationItems = [
   },
 ];
 
-/** 5e emplacement « Plus » : sur Expo il ouvre la page Moxt (grille des services, /moxt du web). */
+/** 5e emplacement « Plus » : ouvre le bottom sheet « Tous les services » (web MobileMoreDrawer). */
 export const moreNavigationItem = {
   id: 'more',
   label: 'Plus',

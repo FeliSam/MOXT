@@ -21,9 +21,13 @@ export const {
   registerWithEmailAfterSmsDenied,
   verifyEmailRegistration,
   verifyPhoneRegistration,
+  requestPhoneVerificationOtp,
+  confirmPhoneVerification,
+  requestEmailVerificationOtp,
+  confirmEmailVerification,
   updateProfile,
   restoreSession,
   logout,
 } = authModule;
 
-export const { clearAuthError, setUser } = authModule.actions;
+export const { clearAuthError, setUser, applySession } = authModule.actions;
