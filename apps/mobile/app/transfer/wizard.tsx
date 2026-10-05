@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { Building2, Calculator, History } from 'lucide-react-native';
 
 import { formatCurrency } from '@moxt/shared/utils/formatters.js';
 
@@ -225,26 +226,33 @@ export default function TransferWizardScreen() {
             actions={
               <View style={{ width: '100%', flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {[
-                  ['Calculatrice', () => setCalculatorOpen(true)],
-                  ['Échangeurs', () => router.push('/exchangers' as never)],
-                  ['Historique', () => router.push('/(tabs)/transfers' as never)],
-                ].map(([label, onPress]) => (
-                  <Pressable
-                    key={String(label)}
-                    accessibilityRole="button"
-                    accessibilityLabel={String(label)}
-                    onPress={onPress as () => void}
-                    style={{
-                      borderRadius: 12,
-                      paddingHorizontal: 14,
-                      paddingVertical: 10,
-                      backgroundColor: colors.surface,
-                      borderWidth: 1,
-                      borderColor: colors.border,
-                    }}>
-                    <Text style={{ color: colors.text, fontWeight: '700', fontSize: 13 }}>{label as string}</Text>
-                  </Pressable>
-                ))}
+                  [Calculator, 'Calculatrice', () => setCalculatorOpen(true)],
+                  [Building2, 'Échangeurs', () => router.push('/exchangers' as never)],
+                  [History, 'Historique', () => router.push('/(tabs)/transfers' as never)],
+                ].map(([Icon, label, onPress]) => {
+                  const BtnIcon = Icon as typeof Calculator;
+                  return (
+                    <Pressable
+                      key={String(label)}
+                      accessibilityRole="button"
+                      accessibilityLabel={String(label)}
+                      onPress={onPress as () => void}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 6,
+                        borderRadius: 12,
+                        paddingHorizontal: 14,
+                        paddingVertical: 10,
+                        backgroundColor: colors.surface,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                      }}>
+                      <BtnIcon size={14} color={colors.textSecondary} />
+                      <Text style={{ color: colors.text, fontWeight: '700', fontSize: 13 }}>{label as string}</Text>
+                    </Pressable>
+                  );
+                })}
               </View>
             }
           />

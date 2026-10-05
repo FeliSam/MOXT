@@ -1,31 +1,34 @@
-/**
- * Équivalent RN de moxt-react/src/components/ui/DetailBlocks.jsx
- * DetailMetrics — grille 2 col. de tuiles icône + valeur + label
- * DetailSection — Card avec titre xl font-extrabold + description
- * DetailFacts — lignes label uppercase / valeur bold sur fond muted
- * TrustPanel — panneau dégradé teal→cobalt avec liste de garanties
- * DetailTimeline — chronologie verticale avec pastilles
- */
+import type { ComponentType, ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Check, Clock, ShieldCheck } from 'lucide-react-native';
 
 import { useThemeColors, useShadows } from '@/theme/ThemeContext';
 import { fontFamilies, radii } from '@/theme/colors';
 
 /* ── DetailMetrics ── */
-export type MetricItem = { emoji: string; label: string; value: string | number };
+export type MetricItem = {
+  emoji?: string;
+  icon?: ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
+  label: string;
+  value: string | number;
+};
 
 export function DetailMetrics({ items }: { items: MetricItem[] }) {
   const colors = useThemeColors();
   const shadows = useShadows();
   return (
     <View style={sx.metricsGrid}>
-      {items.map(({ emoji, label, value }) => (
+      {items.map(({ emoji, icon: Icon, label, value }) => (
         <View
           key={label}
           style={[sx.metricCard, { backgroundColor: colors.surface, borderColor: colors.border }, shadows.card]}>
           <View style={[sx.metricIcon, { backgroundColor: colors.accentSoft }]}>
-            <Text style={{ fontSize: 16 }}>{emoji}</Text>
+            {Icon ? (
+              <Icon size={18} color={colors.accent} strokeWidth={2.2} />
+            ) : (
+              <Text style={{ fontSize: 16 }}>{emoji}</Text>
+            )}
           </View>
           <View style={{ minWidth: 0, flex: 1 }}>
             <Text style={[sx.metricValue, { color: colors.text }]} numberOfLines={2}>
@@ -41,7 +44,7 @@ export function DetailMetrics({ items }: { items: MetricItem[] }) {
 
 /* ── DetailSection ── */
 export function DetailSection({ title, description, children }: {
-  title: string; description?: string; children: React.ReactNode;
+  title: string; description?: string; children: ReactNode;
 }) {
   const colors = useThemeColors();
   const shadows = useShadows();
@@ -89,13 +92,13 @@ export function TrustPanel({ title = 'Confiance et sécurité', items }: {
       end={{ x: 1, y: 1 }}
       style={sx.trustPanel}>
       <View style={sx.trustIcon}>
-        <Text style={{ fontSize: 22 }}>🛡️</Text>
+        <ShieldCheck size={24} color="#ffffff" strokeWidth={2.2} />
       </View>
       <Text style={sx.trustTitle}>{title}</Text>
       <View style={{ marginTop: 18, gap: 10 }}>
         {items.map((item) => (
           <View key={item} style={sx.trustRow}>
-            <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13 }}>✓</Text>
+            <Check size={14} color="rgba(255,255,255,0.9)" strokeWidth={2.5} style={{ marginTop: 2 }} />
             <Text style={sx.trustRowText}>{item}</Text>
           </View>
         ))}
@@ -121,9 +124,11 @@ export function DetailTimeline({ items }: { items: TimelineItem[] }) {
             <View style={[sx.timelineDot, isLast
               ? { backgroundColor: colors.primary }
               : { backgroundColor: colors.accentSoft }]}>
-              <Text style={{ fontSize: 13, color: isLast ? colors.onPrimary : colors.primary }}>
-                {isLast ? '🕐' : '✓'}
-              </Text>
+              {isLast ? (
+                <Clock size={14} color={colors.onPrimary} />
+              ) : (
+                <Check size={14} color={colors.primary} strokeWidth={2.5} />
+              )}
             </View>
             <View style={{ flex: 1, paddingTop: 6 }}>
               <Text style={[sx.timelineLabel, { color: colors.text }]}>{label}</Text>

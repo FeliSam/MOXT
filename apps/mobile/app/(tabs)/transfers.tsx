@@ -11,6 +11,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import {
+  ArrowRightLeft,
+  Calculator,
+  ChevronRight,
+  Handshake,
+  Plus,
+  Search,
+  SlidersHorizontal,
+} from 'lucide-react-native';
 
 import { formatCurrency } from '@moxt/shared/utils/formatters.js';
 import {
@@ -85,7 +94,7 @@ function TransferHistoryCard({ transfer }: { transfer: TransferItem }) {
             Reçu : {transfer.receivedAmount ? formatTransferMoney(transfer.receivedAmount, transfer.currencyTo) : '—'}
           </Text>
         </View>
-        <Text style={[styles.arrow, { color: brand[700] }]}>→</Text>
+        <ChevronRight size={18} color={brand[700]} />
       </Pressable>
     </Card>
   );
@@ -199,10 +208,16 @@ export default function TransfersScreen() {
               description="Estimez, créez et suivez vos transferts entre le Bénin et la Russie."
               actions={
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                  <Pressable onPress={() => setCalculatorOpen(true)} style={[styles.headerLink, { backgroundColor: colors.surfaceMuted }]}>
+                  <Pressable
+                    onPress={() => setCalculatorOpen(true)}
+                    style={[styles.headerLink, { backgroundColor: colors.surfaceMuted, flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
+                    <Calculator size={14} color={colors.text} />
                     <Text style={{ color: colors.text, fontWeight: '700' }}>Calculatrice</Text>
                   </Pressable>
-                  <Pressable onPress={() => router.push('/transfer/wizard' as any)} style={[styles.headerLink, { backgroundColor: brand[700] }]}>
+                  <Pressable
+                    onPress={() => router.push('/transfer/wizard' as any)}
+                    style={[styles.headerLink, { backgroundColor: brand[700], flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
+                    <Plus size={15} color="#fff" strokeWidth={2.5} />
                     <Text style={{ color: '#fff', fontWeight: '700' }}>Nouveau transfert</Text>
                   </Pressable>
                 </View>
@@ -223,7 +238,7 @@ export default function TransfersScreen() {
             </View>
 
             <View style={[styles.searchBar, { backgroundColor: colors.inputBg }]}>
-              <Text>🔍</Text>
+              <Search size={16} color={colors.textMuted} />
               <TextInput
                 placeholder={tab === 'transfers' ? 'Référence, destinataire ou opération...' : 'Référence, contrepartie ou devise…'}
                 placeholderTextColor={colors.textFaint}
@@ -233,7 +248,8 @@ export default function TransfersScreen() {
               />
               <Pressable
                 onPress={() => setFiltersOpen((value) => !value)}
-                style={[styles.filterBtn, { backgroundColor: filtersOpen || statusFilter ? brand[700] : colors.surfaceMuted }]}>
+                style={[styles.filterBtn, { backgroundColor: filtersOpen || statusFilter ? brand[700] : colors.surfaceMuted, flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+                <SlidersHorizontal size={12} color={filtersOpen || statusFilter ? '#fff' : colors.textSecondary} />
                 <Text style={{ fontSize: 12, color: filtersOpen || statusFilter ? '#fff' : colors.textSecondary, fontWeight: '700' }}>Filtres</Text>
               </Pressable>
             </View>
@@ -295,7 +311,11 @@ export default function TransfersScreen() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <View style={[styles.emptyIcon, { backgroundColor: brand[50] }]}>
-              <Text style={{ fontSize: 32 }}>{tab === 'transfers' ? '💸' : '🤝'}</Text>
+              {tab === 'transfers' ? (
+                <ArrowRightLeft size={28} color={brand[700]} />
+              ) : (
+                <Handshake size={28} color={brand[700]} />
+              )}
             </View>
             <Text style={[styles.emptyTitle, { color: colors.text }]}>
               {tab === 'transfers' ? 'Aucun transfert' : 'Aucun échange P2P'}

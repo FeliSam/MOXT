@@ -1,5 +1,6 @@
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useMemo, useState } from 'react';
+import { ArrowRightLeft, X } from 'lucide-react-native';
 
 import { formatCurrency } from '@moxt/shared/utils/formatters.js';
 
@@ -36,7 +37,7 @@ export function TransferCalculatorModal({
                 </Text>
               </View>
               <Pressable onPress={onClose} style={[styles.closeBtn, { borderColor: colors.border }]}>
-                <Text style={{ fontSize: 16, color: colors.textMuted }}>✕</Text>
+                <X size={18} color={colors.textMuted} />
               </Pressable>
             </View>
 
@@ -57,7 +58,7 @@ export function TransferCalculatorModal({
                   <Text style={[styles.selectText, { color: colors.text }]}>
                     {calc.from} vers {calc.to}
                   </Text>
-                  <Text style={{ color: colors.textMuted }}>⇄</Text>
+                  <ArrowRightLeft size={16} color={colors.textMuted} />
                 </Pressable>
               </View>
               <View style={{ flex: 1 }}>

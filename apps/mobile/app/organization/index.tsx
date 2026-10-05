@@ -2,6 +2,22 @@ import { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import {
+  ArrowRightLeft,
+  Briefcase,
+  Building2,
+  Calendar,
+  Check,
+  ChevronRight,
+  Edit3,
+  Layers,
+  MapPin,
+  Package,
+  Plus,
+  Search,
+  Store,
+  X,
+} from 'lucide-react-native';
 
 import { businessActivityLabel } from '@moxt/shared/config/businessActivityLabels.js';
 
@@ -20,10 +36,18 @@ import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, radii, shadows, spacing, typography } from '@/theme/colors';
 
+const SERVICE_CHIPS = [
+  { key: '', label: 'Tous', icon: Layers },
+  { key: 'Transfert', label: 'Transfert', icon: ArrowRightLeft },
+  { key: 'Colis', label: 'Colis', icon: Package },
+  { key: 'Marketplace', label: 'Marketplace', icon: Store },
+  { key: 'Jobs', label: 'Jobs', icon: Briefcase },
+  { key: 'Events', label: 'Events', icon: Calendar },
+];
+
 /**
  * Entreprises (table `businesses`, comme le web) : mon entreprise + entreprises suivies
- * (`publisher_subscriptions` de type business). Remplace les anciennes « organisations »
- * mobiles (tables organizations / org_members absentes côté web).
+ * (`publisher_subscriptions` de type business).
  */
 function BusinessCard({ business, subtitle }: { business: Business; subtitle?: string }) {
   const colors = useThemeColors();
@@ -33,6 +57,8 @@ function BusinessCard({ business, subtitle }: { business: Business; subtitle?: s
     .map((w) => w[0]?.toUpperCase())
     .join('');
   const place = [business.city, business.country].filter(Boolean).join(', ');
+  const isVerified = business.verified || ['verified', 'approved', 'active'].includes(String(business.status || ''));
+
   return (
     <Pressable
       testID={`business-card-${business.id}`}
@@ -42,18 +68,29 @@ function BusinessCard({ business, subtitle }: { business: Business; subtitle?: s
         <Image source={{ uri: String(business.logoUrl) }} style={styles.avatar} />
       ) : (
         <View style={[styles.avatar, { backgroundColor: brand[700] }]}>
-          <Text style={styles.avatarText}>{initials || '🏢'}</Text>
+          {initials ? (
+            <Text style={styles.avatarText}>{initials}</Text>
+          ) : (
+            <Building2 size={22} color="#ffffff" />
+          )}
         </View>
       )}
       <View style={styles.body}>
-        <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
-          {business.name || 'Entreprise'}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
+            {business.name || 'Entreprise'}
+          </Text>
+          {isVerified ? (
+            <View style={[styles.verifiedBadge, { backgroundColor: brand[50] }]}>
+              <Check size={10} color={brand[700]} strokeWidth={3} />
+            </View>
+          ) : null}
+        </View>
         <Text style={[styles.meta, { color: colors.textMuted }]} numberOfLines={1}>
           {[subtitle, businessActivityLabel(business.primaryActivity), place].filter(Boolean).join(' · ') || '—'}
         </Text>
       </View>
-      <Text style={[styles.chevron, { color: colors.textFaint }]}>›</Text>
+      <ChevronRight size={18} color={colors.textFaint} />
     </Pressable>
   );
 }
@@ -118,50 +155,96 @@ export default function BusinessesScreen() {
       </View>
       <ScrollView
         contentContainerStyle={styles.list}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} />}>
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} tintColor={brand[700]} />}>
         <PageHeader
           className="mx-0"
           eyebrow="Annuaire"
           title="Entreprises"
           description={`${directory.length} entreprise(s) visible(s)`}
           actions={
-            <Pressable onPress={() => router.push('/organization/setup' as never)}>
-              <Text style={{ fontSize: 12, fontWeight: '700', color: brand[700] }}>
+            <Pressable
+              onPress={() => router.push('/organization/setup' as never)}
+              style={[styles.createBtn, { backgroundColor: brand[700] }]}>
+              {owned.length ? (
+                <Edit3 size={13} color="#ffffff" />
+              ) : (
+                <Plus size={14} color="#ffffff" strokeWidth={2.5} />
+              )}
+              <Text style={styles.createBtnText}>
                 {owned.length ? 'Modifier' : 'Créer'}
               </Text>
             </Pressable>
           }
         />
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Nom, ville, activité..."
-          placeholderTextColor={colors.textFaint}
-          style={{ minHeight: 44, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 12, color: colors.text, fontSize: 16 }}
-        />
-        <TextInput
-          value={city}
-          onChangeText={setCity}
-          placeholder="Ville"
-          placeholderTextColor={colors.textFaint}
-          style={{ minHeight: 44, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 12, color: colors.text, fontSize: 16 }}
-        />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-          {['', 'Transfert', 'Colis', 'Marketplace', 'Jobs', 'Events'].map((item) => {
-            const active = service === item;
+
+        {/* Search bar */}
+        <View style={[styles.searchBar, { backgroundColor: colors.inputBg, borderColor: colors.border }]}>
+          <Search size={16} color={colors.textMuted} />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Nom, activité..."
+            placeholderTextColor={colors.textFaint}
+            style={[styles.searchInput, { color: colors.text }]}
+          />
+          {query ? (
+            <Pressable onPress={() => setQuery('')} hitSlop={6}>
+              <X size={14} color={colors.textMuted} />
+            </Pressable>
+          ) : null}
+        </View>
+
+        {/* City input */}
+        <View style={[styles.cityBar, { backgroundColor: colors.surfaceMuted, borderColor: colors.border }]}>
+          <MapPin size={16} color={colors.textMuted} />
+          <TextInput
+            value={city}
+            onChangeText={setCity}
+            placeholder="Filtrer par ville..."
+            placeholderTextColor={colors.textFaint}
+            style={[styles.cityInput, { color: colors.text }]}
+          />
+          {city ? (
+            <Pressable onPress={() => setCity('')} hitSlop={6}>
+              <X size={14} color={colors.textMuted} />
+            </Pressable>
+          ) : null}
+        </View>
+
+        {/* Services filter chips */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
+          {SERVICE_CHIPS.map(({ key, label, icon: Icon }) => {
+            const active = service === key;
             return (
-              <Pressable key={item || 'all'} onPress={() => setService(item)} style={{ borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: active ? brand[700] : colors.surfaceMuted }}>
-                <Text style={{ fontSize: 12, fontWeight: '700', color: active ? '#fff' : colors.text }}>{item || 'Tous les services'}</Text>
+              <Pressable
+                key={key || 'all'}
+                onPress={() => setService(key)}
+                style={[
+                  styles.chip,
+                  {
+                    backgroundColor: active ? brand[700] : colors.surfaceMuted,
+                    borderColor: active ? brand[700] : colors.border,
+                  },
+                ]}>
+                <Icon size={12} color={active ? '#ffffff' : colors.textMuted} />
+                <Text style={[styles.chipText, { color: active ? '#ffffff' : colors.text }]}>{label}</Text>
               </Pressable>
             );
           })}
         </ScrollView>
+
         {directory.map((business) => (
           <BusinessCard key={business.id} business={business} subtitle={String(business.city || '')} />
         ))}
         {!directory.length ? (
-          <Text style={[styles.emptyText, { color: colors.textMuted }]}>Aucune entreprise dans l’annuaire.</Text>
+          <View style={styles.emptyContainer}>
+            <View style={[styles.emptyIconWrap, { backgroundColor: colors.surfaceMuted }]}>
+              <Building2 size={24} color={colors.textMuted} />
+            </View>
+            <Text style={[styles.emptyText, { color: colors.textMuted }]}>Aucune entreprise dans l’annuaire.</Text>
+          </View>
         ) : null}
+
         <PageHeader
           className="mx-0"
           eyebrow="Compte"
@@ -207,6 +290,46 @@ const styles = StyleSheet.create({
   headerWrap: { paddingHorizontal: spacing.xl, paddingTop: spacing.md },
   list: { padding: spacing.xl, gap: spacing.md },
   sectionTitle: { fontSize: 16, fontWeight: '900', marginTop: spacing.lg },
+  createBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  createBtnText: { color: '#ffffff', fontSize: 12, fontWeight: '800' },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    minHeight: 46,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+  },
+  searchInput: { flex: 1, fontSize: 15, fontWeight: '500' },
+  cityBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    minHeight: 42,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+  },
+  cityInput: { flex: 1, fontSize: 14 },
+  chipsRow: { gap: 8, paddingVertical: 2 },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderWidth: 1,
+  },
+  chipText: { fontSize: 12, fontWeight: '700' },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -217,9 +340,11 @@ const styles = StyleSheet.create({
   },
   avatar: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: '#fff', fontWeight: '800', fontSize: 16 },
+  verifiedBadge: { width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   body: { flex: 1, gap: 2 },
   name: { ...typography.label, fontSize: 15 },
   meta: { ...typography.caption },
-  chevron: { fontSize: 22 },
+  emptyContainer: { alignItems: 'center', paddingVertical: 32, gap: 10 },
+  emptyIconWrap: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   emptyText: { ...typography.body },
 });

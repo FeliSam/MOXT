@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Eye, Heart, MapPin, Package, Shield } from 'lucide-react-native';
 
 import { formatCurrency } from '@moxt/shared/utils/formatters.js';
 
@@ -344,7 +345,7 @@ export default function ListingDetailScreen() {
             width: IMAGE_WIDTH, height: IMAGE_HEIGHT, borderRadius: radii.lg,
             backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center', alignSelf: 'center',
           }}>
-            <Text style={{ fontSize: 48 }}>📦</Text>
+            <Package size={52} color={brand[700]} />
           </View>
         )}
 
@@ -362,17 +363,20 @@ export default function ListingDetailScreen() {
                 : 'Sur devis'}
             </Text>
             {listing.city ? (
-              <Text style={{ ...typography.bodySmall, color: colors.textMuted }}>
-                📍 {listing.city}{listing.address ? `, ${listing.address}` : ''}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <MapPin size={13} color={colors.textMuted} />
+                <Text style={{ ...typography.bodySmall, color: colors.textMuted }}>
+                  {listing.city}{listing.address ? `, ${listing.address}` : ''}
+                </Text>
+              </View>
             ) : null}
             {listing.status ? <StatusBadge status={listing.status} /> : null}
             <DetailMetrics
               items={[
-                { emoji: '📦', label: conditionLabel ? 'État' : 'Type', value: conditionLabel || typeLabel || '—' },
-                { emoji: '📍', label: 'Localisation', value: listing.city || '—' },
-                { emoji: '👁', label: 'Consultations', value: `${listing.views || 0} vues` },
-                { emoji: '♡', label: 'Intérêt', value: `${listing.favorites?.length || 0} favoris` },
+                { icon: Package, label: conditionLabel ? 'État' : 'Type', value: conditionLabel || typeLabel || '—' },
+                { icon: MapPin, label: 'Localisation', value: listing.city || '—' },
+                { icon: Eye, label: 'Consultations', value: `${listing.views || 0} vues` },
+                { icon: Heart, label: 'Intérêt', value: `${listing.favorites?.length || 0} favoris` },
               ]}
             />
             <Text style={{ borderRadius: 14, overflow: 'hidden', backgroundColor: colors.warningBg, color: colors.warning, padding: 12, fontSize: 12, lineHeight: 18 }}>
@@ -549,7 +553,10 @@ export default function ListingDetailScreen() {
         {isAdminViewer ? (
           <Card>
             <View style={{ gap: spacing.sm }}>
-              <Text style={{ ...typography.sectionTitle, color: colors.text }}>🛡 Actions administrateur</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Shield size={18} color={brand[700]} />
+                <Text style={{ ...typography.sectionTitle, color: colors.text }}>Actions administrateur</Text>
+              </View>
               <Text style={{ ...typography.bodySmall, color: colors.textMuted }}>
                 Modération directe de l'annonce depuis sa fiche
               </Text>

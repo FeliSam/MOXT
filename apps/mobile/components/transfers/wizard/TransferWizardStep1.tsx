@@ -1,6 +1,7 @@
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { ArrowRight, ArrowUpRight, Check, Clock, Send, Star, Zap } from 'lucide-react-native';
 
 import { formatCurrency } from '@moxt/shared/utils/formatters.js';
 
@@ -15,6 +16,7 @@ import {
 import { useExchangeRate } from '@/hooks/useExchangeRate';
 import { cn } from '@/lib/cn';
 import { useTheme } from '@/theme/ThemeContext';
+import { brand } from '@/theme/colors';
 
 export type WizardExchanger = {
   id: string;
@@ -47,7 +49,7 @@ export function TransferWizardStep1({
   ownBusiness?: { id: string; name: string } | null;
   originCountry: string;
 }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const rate = useExchangeRate('XOF');
   const exchanger = exchangers.find((e) => e.id === exchangerId) || exchangers[0];
   const numAmount = Number(amount) || 0;
@@ -78,7 +80,7 @@ export function TransferWizardStep1({
     <View className="gap-5">
       {/* Sens du transfert */}
       <View className={twTransfer.card}>
-        <TransferWizardSectionTitle emoji="⚡" label="Sens du transfert" />
+        <TransferWizardSectionTitle icon={Zap} label="Sens du transfert" />
         <View className="gap-3">
           {[DIRECTIONS.BJ_TO_RU, DIRECTIONS.RU_TO_BJ].map((dir) => {
             const cardInfo = directionInfo(dir, originCountry);
@@ -97,7 +99,7 @@ export function TransferWizardStep1({
                   <Text className={twTransfer.directionFlags}>
                     {cardInfo.fromFlag} {cardInfo.from}
                   </Text>
-                  <Text className={active ? 'text-brand-700' : 'text-app-text-muted'}>→</Text>
+                  <ArrowRight size={16} color={active ? accent : colors.textMuted} />
                   <Text className={twTransfer.directionFlags}>
                     {cardInfo.toFlag} {cardInfo.to}
                   </Text>
@@ -106,8 +108,9 @@ export function TransferWizardStep1({
                   {cardInfo.sub}
                 </Text>
                 {active ? (
-                  <View className={twTransfer.selectedPill} style={{ backgroundColor: accent }}>
-                    <Text className="text-[10px] font-bold text-white">✓ Sélectionné</Text>
+                  <View className={cn(twTransfer.selectedPill, 'flex-row items-center gap-1')} style={{ backgroundColor: accent }}>
+                    <Check size={10} color="#fff" strokeWidth={3} />
+                    <Text className="text-[10px] font-bold text-white">Sélectionné</Text>
                   </View>
                 ) : null}
               </Pressable>
@@ -118,7 +121,7 @@ export function TransferWizardStep1({
 
       {/* Montant */}
       <View className={twTransfer.card}>
-        <TransferWizardSectionTitle emoji="📤" label={`Montant à envoyer en ${calc.currencyFrom}`} />
+        <TransferWizardSectionTitle icon={Send} label={`Montant à envoyer en ${calc.currencyFrom}`} />
         <AmountField
           label={`Montant à envoyer · ${calc.currencyFrom}`}
           currency={calc.currencyFrom}
@@ -143,7 +146,7 @@ export function TransferWizardStep1({
           backgroundColor={colors.surface}
         />
         <View className={cn(twTransfer.infoBox, 'mt-4')}>
-          <Text className="text-base text-brand-700">🕐</Text>
+          <Clock size={16} color={isDark ? brand[400] : brand[700]} />
           <Text className={twTransfer.infoText}>
             Minimum :{' '}
             <Text className="font-bold">{formatCurrency(calc.minimumRequired, calc.currencyFrom)}</Text>.
@@ -157,12 +160,13 @@ export function TransferWizardStep1({
         <View className={twTransfer.partnerHeader}>
           <View className="flex-row items-center gap-3">
             <View className={twTransfer.sectionIcon}>
-              <Text className="text-base">⭐</Text>
+              <Star size={18} color="#f59e0b" fill="#f59e0b" />
             </View>
             <Text className={twTransfer.sectionLabel}>Choisir un partenaire</Text>
           </View>
-          <Pressable onPress={() => router.push('/exchangers' as any)}>
-            <Text className="text-xs font-bold text-brand-700 dark:text-brand-400">Tous les échangeurs ↗</Text>
+          <Pressable onPress={() => router.push('/exchangers' as any)} className="flex-row items-center gap-1">
+            <Text className="text-xs font-bold text-brand-700 dark:text-brand-400">Tous les échangeurs</Text>
+            <ArrowUpRight size={13} color={isDark ? brand[400] : brand[700]} />
           </Pressable>
         </View>
         {exchangers.length || ownBusiness ? (
@@ -209,6 +213,7 @@ export function TransferWizardStep1({
     </View>
   );
 }
+
 
 function AmountField({
   accent,
@@ -291,7 +296,10 @@ function PartnerCard({ ex, active, onSelect }: { ex: WizardExchanger; active: bo
           {place}
         </Text>
       ) : null}
-      <Text className={twTransfer.partnerRating}>⭐ {ex.rating.toFixed(1)}</Text>
+      <View className="flex-row items-center gap-1">
+        <Star size={11} color="#d97706" fill="#d97706" />
+        <Text className={twTransfer.partnerRating}>{ex.rating.toFixed(1)}</Text>
+      </View>
       <View className="w-full flex-row flex-wrap items-center justify-center gap-1">
         <View
           className={cn(
@@ -310,17 +318,24 @@ function PartnerCard({ ex, active, onSelect }: { ex: WizardExchanger; active: bo
           className={cn(
             twTransfer.partnerTag,
             active ? 'bg-emerald-500' : 'bg-app-surface-muted dark:bg-zinc-800',
+            'flex-row items-center gap-1',
           )}>
+          <Clock size={10} color={active ? '#ffffff' : '#64748b'} />
           <Text
             className={cn(
               'text-center text-[9px] font-bold',
               active ? 'text-white' : 'text-app-text-muted',
             )}>
-            🕐 {ex.averageDelay}
+            {ex.averageDelay}
           </Text>
         </View>
       </View>
-      {active ? <Text className={twTransfer.partnerSelected}>✓ Sélectionné</Text> : null}
+      {active ? (
+        <View className="flex-row items-center gap-1">
+          <Check size={11} color="#059669" strokeWidth={3} />
+          <Text className={twTransfer.partnerSelected}>Sélectionné</Text>
+        </View>
+      ) : null}
     </Pressable>
   );
 }
@@ -342,7 +357,7 @@ function TransferEstimateCard({
         end={{ x: 1, y: 0 }}
         className={twTransfer.simGradient}>
         <View className="mb-3 flex-row items-center gap-2">
-          <Text className="text-white/80">⚡</Text>
+          <Zap size={14} color="rgba(255,255,255,0.9)" />
           <Text className={twTransfer.simEyebrow}>ESTIMATION DU TRANSFERT</Text>
         </View>
         <View className="flex-row items-center justify-between gap-2">
@@ -352,9 +367,10 @@ function TransferEstimateCard({
               {formatCurrency(calc.totalToPay, calc.currencyFrom)}
             </Text>
           </View>
-          <View className={twTransfer.simRatePill}>
+          <View className={cn(twTransfer.simRatePill, 'flex-row items-center gap-1')}>
+            <ArrowRight size={10} color="#fff" />
             <Text className={twTransfer.simRateText} numberOfLines={1}>
-              → 1 {calc.currencyFrom} = {calc.rawRate.toFixed(5)} {calc.currencyTo}
+              1 {calc.currencyFrom} = {calc.rawRate.toFixed(5)} {calc.currencyTo}
             </Text>
           </View>
           <View className="min-w-0 flex-1 items-end">

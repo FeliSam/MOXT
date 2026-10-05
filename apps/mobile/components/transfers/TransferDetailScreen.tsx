@@ -1,8 +1,42 @@
 import { useEffect, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, usePathname, router } from 'expo-router';
-import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, Text, View } from 'react-native';
-import { Clock, Repeat, Shield, User } from 'lucide-react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, Share, Text, View } from 'react-native';
+import {
+  AlertTriangle,
+  Check,
+  Clock,
+  Copy,
+  FileDown,
+  FileText,
+  History,
+  Image as ImageIcon,
+  Repeat,
+  Share2,
+  Shield,
+  ShieldAlert,
+  UploadCloud,
+  User,
+  Users,
+  X,
+} from 'lucide-react-native';
+
+async function copyToClipboard(text: string) {
+  try {
+    if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+    const expoClipboard = await import('expo-clipboard').catch(() => null);
+    if (expoClipboard?.setStringAsync) {
+      await expoClipboard.setStringAsync(text);
+      return true;
+    }
+  } catch {
+    // fallback
+  }
+  return false;
+}
 
 import { canClientDeclareReception } from '@moxt/shared/domain/transferActionUtils.js';
 import { canRevealPaymentDetails } from '@moxt/shared/domain/transferAcceptanceUtils.js';
@@ -26,6 +60,8 @@ import { useLanguage } from '@/providers/LanguageProvider';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { idFromPath, routeParam } from '@/utils/routeParam';
 import { cn } from '@/lib/cn';
+import { useTheme } from '@/theme/ThemeContext';
+import { showNotice } from '@/utils/notice';
 
 function useCountdown(deadline?: string | null) {
   const [, setTick] = useState(0);
@@ -85,6 +121,7 @@ export default function TransferDetailScreen() {
   const justCreated = routeParam(params.created) === '1';
   const dispatch = useAppDispatch();
   const { t: tr } = useLanguage();
+  const { colors, isDark } = useTheme();
   const user = useAppSelector((state) => state.auth.user);
   const transfer = useAppSelector((state) =>
     state.transfers.items.find((item) => transferMatches(item as any, transferId)),
@@ -253,7 +290,7 @@ export default function TransferDetailScreen() {
         {/* Progression */}
         <View className={twTransfer.detailCard}>
           <View className="flex-row items-center gap-2">
-            <Text className="text-lg">🕐</Text>
+            <Clock size={18} color="#08705f" />
             <Text className={twTransfer.detailCardTitle}>Progression</Text>
           </View>
           <View className={twTransfer.progressRow}>
@@ -271,13 +308,17 @@ export default function TransferDetailScreen() {
                           ? 'border-brand-700 bg-white dark:border-brand-400 dark:bg-zinc-900'
                           : 'border-app-border bg-white dark:border-zinc-700 dark:bg-zinc-900',
                     )}>
-                    <Text
-                      className={cn(
-                        'text-[11px] font-bold',
-                        done ? 'text-white dark:text-slate-950' : active ? 'text-brand-700' : 'text-app-text-muted',
-                      )}>
-                      {done ? '✓' : idx + 1}
-                    </Text>
+                    {done ? (
+                      <Check size={12} color={isDark ? '#020617' : '#ffffff'} strokeWidth={3} />
+                    ) : (
+                      <Text
+                        className={cn(
+                          'text-[11px] font-bold',
+                          active ? 'text-brand-700 dark:text-brand-400' : 'text-app-text-muted',
+                        )}>
+                        {idx + 1}
+                      </Text>
+                    )}
                   </View>
                   <Text
                     className={cn(
@@ -294,8 +335,10 @@ export default function TransferDetailScreen() {
 
         {/* Security */}
         <View className={twTransfer.warningCard}>
-          <Text className="text-lg">🛡️</Text>
-          <Text className={cn(twTransfer.warningTitle, 'mt-2')}>⚠ Payez en toute sécurité</Text>
+          <View className="flex-row items-center gap-2">
+            <ShieldAlert size={18} color="#b45309" />
+            <Text className={twTransfer.warningTitle}>Payez en toute sécurité</Text>
+          </View>
           <Text className={twTransfer.warningText}>
             Ne payez jamais en dehors de MOXT, conservez toutes vos preuves de paiement et vérifiez les
             coordonnées du partenaire avant toute transaction.
@@ -348,8 +391,8 @@ export default function TransferDetailScreen() {
               {paymentCountdown ? ` Temps restant : ${paymentCountdown.label}.` : ''}
             </Text>
             <Pressable className={twTransfer.uploadZone}>
-              <Text className="text-2xl">⬆️</Text>
-              <Text className={twTransfer.uploadTitle}>Preuve de paiement</Text>
+              <UploadCloud size={28} color="#08705f" />
+              <Text className={cn(twTransfer.uploadTitle, 'mt-2')}>Preuve de paiement</Text>
               <Text className={twTransfer.uploadHint}>Image ou PDF</Text>
             </Pressable>
             <ImagePickerButton label="Photo de la preuve" currentUri={proofUri} onImageSelected={setProofUri} />
@@ -403,7 +446,7 @@ export default function TransferDetailScreen() {
         <View className={twTransfer.detailCard}>
           <View className="mb-4 flex-row items-center gap-3">
             <View className="h-9 w-9 items-center justify-center rounded-xl bg-brand-100 dark:bg-brand-950/45">
-              <Text>📄</Text>
+              <FileText size={18} color="#08705f" />
             </View>
             <Text className={twTransfer.detailCardTitle}>Résumé financier</Text>
           </View>
@@ -421,11 +464,48 @@ export default function TransferDetailScreen() {
             </View>
           ))}
           <View className="mt-4 flex-row flex-wrap gap-2">
-            {['Copier la référence', 'PDF', 'Image', 'Partager'].map((label) => (
-              <Pressable key={label} className={twTransfer.actionChip}>
-                <Text className={twTransfer.actionChipText}>{label}</Text>
-              </Pressable>
-            ))}
+            <Pressable
+              className={cn(twTransfer.actionChip, 'flex-row items-center gap-1.5')}
+              onPress={async () => {
+                await copyToClipboard(t.id);
+                showNotice('Référence copiée', t.id);
+              }}>
+              <Copy size={13} color={isDark ? '#e4e4e7' : '#334155'} />
+              <Text className={twTransfer.actionChipText}>Copier la référence</Text>
+            </Pressable>
+            <Pressable
+              className={cn(twTransfer.actionChip, 'flex-row items-center gap-1.5')}
+              onPress={() => router.push({ pathname: '/transfer/receipt', params: { id: t.id } } as never)}>
+              <FileDown size={13} color={isDark ? '#e4e4e7' : '#334155'} />
+              <Text className={twTransfer.actionChipText}>Reçu / PDF</Text>
+            </Pressable>
+            <Pressable
+              className={cn(twTransfer.actionChip, 'flex-row items-center gap-1.5')}
+              onPress={() => {
+                if (t.paymentProof || t.payment_proof) {
+                  router.push((t.paymentProof || t.payment_proof) as never);
+                } else {
+                  router.push({ pathname: '/transfer/receipt', params: { id: t.id } } as never);
+                }
+              }}>
+              <ImageIcon size={13} color={isDark ? '#e4e4e7' : '#334155'} />
+              <Text className={twTransfer.actionChipText}>Preuve / Image</Text>
+            </Pressable>
+            <Pressable
+              className={cn(twTransfer.actionChip, 'flex-row items-center gap-1.5')}
+              onPress={async () => {
+                try {
+                  await Share.share({
+                    title: `Transfert ${t.id}`,
+                    message: `Transfert MOXT ${t.id} · ${directionLabel(t.direction || '')} · Montant : ${formatMoney(amountSent, currFrom)}`,
+                  });
+                } catch {
+                  // user cancelled or share failed
+                }
+              }}>
+              <Share2 size={13} color={isDark ? '#e4e4e7' : '#334155'} />
+              <Text className={twTransfer.actionChipText}>Partager</Text>
+            </Pressable>
           </View>
         </View>
         </>
@@ -437,7 +517,7 @@ export default function TransferDetailScreen() {
         <View className={twTransfer.detailCard}>
           <View className="mb-4 flex-row items-center gap-3">
             <View className="h-9 w-9 items-center justify-center rounded-xl bg-brand-100 dark:bg-brand-950/45">
-              <Text>👥</Text>
+              <Users size={18} color="#08705f" />
             </View>
             <Text className={twTransfer.detailCardTitle}>Participants</Text>
           </View>
@@ -463,7 +543,7 @@ export default function TransferDetailScreen() {
         <View className={twTransfer.detailCard}>
           <View className="mb-4 flex-row items-center gap-3">
             <View className="h-9 w-9 items-center justify-center rounded-xl bg-brand-100 dark:bg-brand-950/45">
-              <Text>🕐</Text>
+              <History size={18} color="#08705f" />
             </View>
             <Text className={twTransfer.detailCardTitle}>Chronologie</Text>
           </View>
@@ -511,7 +591,7 @@ export default function TransferDetailScreen() {
 
       {showToast ? (
         <View className="absolute bottom-36 left-4 right-4 flex-row items-start gap-3 rounded-2xl border-l-4 border-emerald-500 bg-white p-4 shadow-lg dark:bg-zinc-900">
-          <Text className="text-emerald-600">✓</Text>
+          <Check size={18} color="#059669" strokeWidth={2.5} />
           <View className="min-w-0 flex-1">
             <Text className="text-sm font-black text-app-text dark:text-zinc-50">Transfert créé</Text>
             <Text className="mt-0.5 text-xs text-app-text-muted dark:text-zinc-400">
@@ -519,7 +599,7 @@ export default function TransferDetailScreen() {
             </Text>
           </View>
           <Pressable onPress={() => setShowToast(false)}>
-            <Text className="text-app-text-muted">✕</Text>
+            <X size={16} color={isDark ? '#a1a1aa' : '#64748b'} />
           </Pressable>
         </View>
       ) : null}
