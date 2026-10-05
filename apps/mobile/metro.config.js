@@ -78,6 +78,14 @@ function webShadowShim(sourceFile) {
 const bundled = withNativeWind(config, { input: './global.css' });
 const previousResolve = bundled.resolver.resolveRequest;
 bundled.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (moduleName.startsWith('lucide-react-native/')) {
+    const subpath = moduleName.slice('lucide-react-native/'.length);
+    const candidate = path.resolve(rootNodeModules, 'lucide-react-native', subpath);
+    if (fs.existsSync(candidate)) {
+      return { type: 'sourceFile', filePath: candidate };
+    }
+  }
+
   const resolved = previousResolve
     ? previousResolve(context, moduleName, platform)
     : context.resolveRequest(context, moduleName, platform);
