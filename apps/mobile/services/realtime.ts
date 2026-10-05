@@ -3,7 +3,9 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 import { subscribeToNotifications } from '@moxt/shared/services/notificationsService.js';
 
 import { notificationUpserted, type NotificationItem } from '@/store/notifications';
+import { scheduleLocalNotification } from './notifications';
 import {
+
   mapConversationRow,
   mapMessageRow,
   patchMessage,
@@ -55,8 +57,12 @@ async function ingestRemoteMessage(
     return;
   }
 
-  // Comme le web : pas de notification locale pour un message (la messagerie a son propre badge).
   dispatch(receiveMessage({ conversationId, message }));
+  void scheduleLocalNotification(
+    message.senderName || 'Nouveau message',
+    message.text || (message.attachment ? 'Pièce jointe reçue' : 'Nouveau message'),
+    { type: 'message', relatedId: conversationId },
+  );
 }
 
 export function subscribeRealtime(userId: string, dispatch: Dispatch, getState: GetState) {
@@ -64,12 +70,16 @@ export function subscribeRealtime(userId: string, dispatch: Dispatch, getState: 
   if (!supabase) return;
 
   // Notifications serveur (INSERT / UPDATE filtrés sur user_id), comme realtimeService web.
-  // Les notifications locales inventées (transferts, colis, annonces) sont supprimées :
-  // le serveur crée déjà les vraies lignes `notifications`.
   notificationsUnsubscribe = subscribeToNotifications(
     supabase,
     userId,
-    (item: NotificationItem) => dispatch(notificationUpserted(item)),
+    (item: NotificationItem) => {
+      dispatch(notificationUpserted(item));
+      void scheduleLocalNotification(item.title, item.message, {
+        type: item.type,
+        relatedId: item.link,
+      });
+    },
     { channelName: `mobile-notifications-${userId}` },
   );
 
