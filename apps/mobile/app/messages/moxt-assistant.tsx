@@ -8,9 +8,11 @@ import { ArrowLeft, Headphones, Paperclip, Send, Trash2, Zap } from 'lucide-reac
 import { HeaderActionButton, HeaderChip } from '@/components/chrome/HeaderChrome';
 import { HEADER, headerPaddingTop } from '@/components/chrome/headerTokens';
 import { MoxtiBadge } from '@/components/messages/MoxtiBadge';
+import { MoxtiResultCards, type MoxtiCard } from '@/components/messages/MoxtiResultCards';
 import { AppText } from '@/components/ui/AppText';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { askMoxti } from '@moxt/shared/services/assistantService.js';
+import { searchMoxtiCatalog } from '@moxt/shared/services/moxtiCatalogSearch.js';
 
 import { pickImageOrPdf } from '@/services/mediaUpload';
 import { supabase } from '@/services/supabase';
@@ -33,7 +35,21 @@ const SUGGESTION_KEYS = [
   'messages.assistant.suggestions.business',
 ];
 
-type AssistantEntry = { id: string; role: 'user' | 'assistant'; text: string };
+type AssistantEntry = { id: string; role: 'user' | 'assistant'; text: string; cards?: MoxtiCard[] };
+
+function asCards(value: unknown): MoxtiCard[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const cards = value.filter(
+    (card): card is MoxtiCard =>
+      Boolean(card) &&
+      typeof card === 'object' &&
+      typeof (card as MoxtiCard).id === 'string' &&
+      typeof (card as MoxtiCard).title === 'string' &&
+      typeof (card as MoxtiCard).path === 'string' &&
+      (card as MoxtiCard).path.startsWith('/'),
+  );
+  return cards.length ? cards : undefined;
+}
 
 const CARD_SHADOW = '0 8px 24px rgba(15,23,42,0.09)';
 const CHIP_SHADOW = '0 8px 24px rgba(15,23,42,0.08)';
@@ -59,7 +75,13 @@ export default function MoxtAssistantScreen() {
       .then((raw) => {
         if (!mounted || !raw) return;
         const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) setHistory(parsed as AssistantEntry[]);
+        if (Array.isArray(parsed)) {
+          setHistory(
+            parsed
+              .filter((entry) => entry && (entry.role === 'user' || entry.role === 'assistant') && typeof entry.text === 'string')
+              .map((entry) => ({ id: String(entry.id), role: entry.role, text: entry.text, cards: asCards(entry.cards) })),
+          );
+        }
       })
       .catch(() => undefined);
     return () => {
@@ -76,6 +98,19 @@ export default function MoxtAssistantScreen() {
     setQuestion('');
     setSending(true);
     try {
+      const catalog = await searchMoxtiCatalog(supabase, {
+        question: questionText,
+        language: language || 'fr',
+      }).catch(() => null);
+      if (catalog?.searched) {
+        const withReply = [
+          ...next,
+          { id: `a-${Date.now()}`, role: 'assistant' as const, text: catalog.intro, cards: catalog.cards },
+        ];
+        setHistory(withReply.slice(-30));
+        AsyncStorage.setItem(storageKey, JSON.stringify(withReply.slice(-30))).catch(() => undefined);
+        return;
+      }
       const answer = await askMoxti(supabase, {
         question: questionText,
         history: next,
@@ -171,8 +206,11 @@ export default function MoxtAssistantScreen() {
                 <View style={{ alignSelf: 'flex-end' }}>
                   <MoxtiBadge size={32} radius={12} />
                 </View>
-                <View className="bg-app-surface" style={{ flex: 1, minWidth: 0, borderRadius: 16, borderBottomLeftRadius: 6, paddingHorizontal: 16, paddingVertical: 12, boxShadow: CARD_SHADOW }}>
-                  <AppText className="text-sm leading-6 text-app-text">{entry.text}</AppText>
+                <View style={{ flex: 1, minWidth: 0, gap: 8 }}>
+                  <View className="bg-app-surface" style={{ borderRadius: 16, borderBottomLeftRadius: 6, paddingHorizontal: 16, paddingVertical: 12, boxShadow: CARD_SHADOW }}>
+                    <AppText className="text-sm leading-6 text-app-text">{entry.text}</AppText>
+                  </View>
+                  <MoxtiResultCards cards={entry.cards} />
                 </View>
               </View>
             ) : (
