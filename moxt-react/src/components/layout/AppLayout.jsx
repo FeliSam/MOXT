@@ -35,6 +35,7 @@ import { KeyboardDismissChevron } from './KeyboardDismissChevron'
 
 import { WelcomeGate } from '../onboarding/WelcomeGate'
 import { AvatarPromptGate } from '../../features/account/avatarDicebear/AvatarPromptGate'
+import { SmartOnboardingHub } from '../../features/onboarding/SmartOnboardingHub'
 
 import { PwaInstallBanner } from '../pwa/PwaInstallBanner'
 
@@ -53,6 +54,7 @@ export function AppLayout({ children }) {
   const sidebarOpen = useSelector((state) => state.ui.sidebarOpen)
 
   const isMessagesRoute = isMessagesPath(location.pathname)
+  const isMarketplaceRoute = location.pathname.startsWith('/marketplace')
   const isFeedMobileRoute =
     location.pathname === '/feed' || location.pathname === '/videos'
 
@@ -328,7 +330,9 @@ export function AppLayout({ children }) {
                 }`
               : isFeedMobileFeed
                 ? 'bg-black px-0 pt-0 pb-0 lg:bg-transparent lg:px-8 lg:py-8'
-                : 'p-4 pb-[var(--bottom-nav-clearance-loose)] sm:p-6 sm:pb-[var(--bottom-nav-clearance-loose)] lg:px-8 lg:py-8'
+                : isMarketplaceRoute
+                  ? 'px-2 py-4 pb-[var(--bottom-nav-clearance-loose)] sm:p-6 sm:pb-[var(--bottom-nav-clearance-loose)] lg:px-8 lg:py-8'
+                  : 'p-4 pb-[var(--bottom-nav-clearance-loose)] sm:p-6 sm:pb-[var(--bottom-nav-clearance-loose)] lg:px-8 lg:py-8'
           }`}
 
         >
@@ -375,6 +379,7 @@ export function AppLayout({ children }) {
 
       <WelcomeGate />
       <AvatarPromptGate />
+      {!hideAppChrome ? <SmartOnboardingHub /> : null}
 
       {hideAppChrome ? null : (
 

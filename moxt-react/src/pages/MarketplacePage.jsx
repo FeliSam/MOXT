@@ -1,5 +1,5 @@
 import { FiGrid, FiList, FiPlus, FiShoppingBag } from 'react-icons/fi'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useDispatch, useSelector, useStore } from 'react-redux'
 import { useNavigate, useOutletContext } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
@@ -18,6 +18,7 @@ import {
 import { MarketplaceListingCard } from '../features/marketplace/MarketplaceListingCard'
 import { MarketplaceDiscoveryRail } from '../features/marketplace/MarketplaceDiscoveryRail'
 import { MarketplaceVideoRail } from '../features/marketplace/MarketplaceVideoRail'
+import { MarketplaceFeedBanner } from '../features/marketplace/MarketplaceFeedBanner'
 import {
   MARKETPLACE_DISCOVER_GRID_COLUMNS,
   MARKETPLACE_DISCOVER_GRID_GAP,
@@ -489,20 +490,34 @@ return (
                   gap={MARKETPLACE_DISCOVER_GRID_GAP}
                   className="min-w-0 w-full"
                 >
-                {visibleItems.map((listing, index) => (
-                  <RevealListItem
-                    key={listing.id}
-                    index={index}
-                    className={`${MARKETPLACE_DISCOVERY_CARD_HEIGHT} min-w-0 overflow-hidden`}
-                  >
-                    <MarketplaceListingCard
-                      listing={listing}
-                      guestMode={guestMode}
-                      onGuestInteract={() => requireAccount('aimer cette annonce')}
-                      layout="rail"
-                    />
-                  </RevealListItem>
-                ))}
+                {visibleItems.map((listing, index) => {
+                  const showBanner = (index + 1) % 4 === 0
+                  const bannerSlot = Math.floor((index + 1) / 4) - 1
+
+                  return (
+                    <Fragment key={listing.id}>
+                      <RevealListItem
+                        index={index}
+                        className={`${MARKETPLACE_DISCOVERY_CARD_HEIGHT} min-w-0 overflow-hidden`}
+                      >
+                        <MarketplaceListingCard
+                          listing={listing}
+                          guestMode={guestMode}
+                          onGuestInteract={() => requireAccount('aimer cette annonce')}
+                          layout="rail"
+                        />
+                      </RevealListItem>
+
+                      {showBanner ? (
+                        <MarketplaceFeedBanner
+                          key={`feed-banner-${bannerSlot}`}
+                          bannerIndex={bannerSlot}
+                          onInteract={() => {}}
+                        />
+                      ) : null}
+                    </Fragment>
+                  )
+                })}
                 </CatalogGrid>
               </div>
 </>

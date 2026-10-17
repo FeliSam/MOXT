@@ -75,4 +75,19 @@ describe('NotificationBottomSheet', () => {
     const { container } = renderSheet({ open: false })
     expect(container.innerHTML).toBe('')
   })
+
+  it('affiche la bannière image si imageUrl est fournie', () => {
+    renderSheet({
+      notification: {
+        id: 'n2',
+        title: 'Promotion avec image',
+        message: 'Regardez notre nouvelle offre.',
+        imageUrl: 'https://example.com/promo.jpg',
+      },
+    })
+    const img = screen.getByRole('img', { name: 'Promotion avec image' })
+    expect(img).toBeTruthy()
+    expect(img.getAttribute('src')).toBe('https://example.com/promo.jpg')
+  })
 })
+

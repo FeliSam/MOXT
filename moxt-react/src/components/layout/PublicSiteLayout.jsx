@@ -1,6 +1,6 @@
 import { FaInstagram, FaTelegramPlane, FaWhatsapp } from 'react-icons/fa'
 import { FiMoon, FiSearch, FiSun } from 'react-icons/fi'
-import { Link, NavLink, Outlet } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { MOXT_SOCIAL_NETWORKS } from '../../config/socialLinks'
 import { useTheme } from '../../contexts/useTheme'
 import { useLanguage } from '../../contexts/useLanguage'
@@ -24,6 +24,8 @@ const SOCIAL_ICONS = {
 }
 
 export function PublicSiteLayout({ children }) {
+  const location = useLocation()
+  const isMarketplace = location.pathname.startsWith('/marketplace')
   const { isDark, toggleTheme } = useTheme()
   const { t } = useLanguage()
   const visible = useSmartNavbar()
@@ -87,7 +89,7 @@ export function PublicSiteLayout({ children }) {
 
       <main className="page-enter">
         {children ? (
-          <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">{children}</div>
+          <div className={`mx-auto max-w-7xl py-8 ${isMarketplace ? 'px-2 sm:px-6' : 'px-4 sm:px-6'}`}>{children}</div>
         ) : (
           <Outlet />
         )}

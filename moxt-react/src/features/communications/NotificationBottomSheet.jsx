@@ -173,6 +173,12 @@ export function NotificationBottomSheet({ notification, open, onClose, currentUs
     requestClose()
   }
 
+  const imageUrl =
+    notification.imageUrl ||
+    notification.metadata?.imageUrl ||
+    notification.metadata?.bannerUrl ||
+    null
+
   const sheet = (
     <div
       className="fixed inset-0 z-[var(--z-modal)] flex flex-col justify-end p-0 sm:grid sm:place-items-center sm:p-4"
@@ -224,6 +230,17 @@ export function NotificationBottomSheet({ notification, open, onClose, currentUs
 
         {/* Content Body */}
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-5">
+          {imageUrl ? (
+            <div className="mb-4 overflow-hidden rounded-2xl border border-[var(--app-border)] bg-slate-100 dark:bg-slate-800">
+              <img
+                src={imageUrl}
+                alt={notification.title || 'Diffusion Moxt'}
+                className="max-h-60 w-full object-cover"
+                loading="lazy"
+              />
+            </div>
+          ) : null}
+
           {hasBadge ? (
             <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-black uppercase tracking-wide">
               <span className={`size-2 rounded-full ${palette.dot}`} />

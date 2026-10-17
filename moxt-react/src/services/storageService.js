@@ -224,6 +224,31 @@ export const storageService = {
     )
   },
 
+  async uploadBroadcastImage(userId, file, { onProgress } = {}) {
+    const ownerId = String(userId || 'admin').trim()
+    return compressThenUpload(
+      file,
+      { maxPx: 1920, quality: 0.85, onProgress },
+      async (compressed) => {
+        const extension = compressed.type === 'image/png' ? 'png' : 'jpg'
+        const timestamp = Date.now()
+        const typed =
+          compressed.type && compressed.type.startsWith('image/')
+            ? compressed
+            : new File([compressed], `broadcast-${timestamp}.${extension}`, {
+                type: extension === 'png' ? 'image/png' : 'image/jpeg',
+                lastModified: Date.now(),
+              })
+        return upload(
+          'listings',
+          `broadcasts/${ownerId}/${timestamp}.${extension}`,
+          typed,
+          { onProgress },
+        )
+      },
+    )
+  },
+
   /**
    * Vidéo entreprise → Yandex `public/videos/{businessId}/{videoId}.{ext}`.
    * @returns {{ videoUrl: string, thumbnailUrl: string, objectKey: string, legacyPath: string }}

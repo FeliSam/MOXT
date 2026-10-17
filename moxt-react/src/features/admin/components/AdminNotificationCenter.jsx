@@ -3,12 +3,15 @@ import {
   FiBell,
   FiEye,
   FiGift,
+  FiImage,
   FiInfo,
   FiRefreshCw,
   FiSend,
   FiShield,
   FiStar,
   FiTag,
+  FiTrash2,
+  FiUploadCloud,
   FiUserCheck,
   FiUsers,
   FiX,
@@ -21,6 +24,7 @@ import { ConfirmDialog } from '../../../components/ui/ConfirmDialog'
 import { Tabs } from '../../../components/ui/Tabs'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { supabase } from '../../../services/supabaseClient'
+import { storageService } from '../../../services/storageService'
 import { formatDate } from '../../transfers/transferUtils'
 import { addToast } from '../../ui/uiSlice'
 import { CARD } from '../adminConfig'
@@ -69,6 +73,7 @@ export function AdminNotificationCenter() {
   const { t } = useLanguage()
   const dispatch = useDispatch()
   const allUsers = useSelector((state) => state.administration?.users || [])
+  const currentUser = useSelector((state) => state.auth?.user)
 
   const [activeTab, setActiveTab] = useState('compose')
   const [targetType, setTargetType] = useState('all')
@@ -84,6 +89,13 @@ export function AdminNotificationCenter() {
   const [priority, setPriority] = useState('normal')
   const [actionLabel, setActionLabel] = useState('')
 
+  // Image & Media
+  const [imageUrl, setImageUrl] = useState('')
+  const [imageFile, setImageFile] = useState(null)
+  const [imagePreview, setImagePreview] = useState('')
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [showInMarketplace, setShowInMarketplace] = useState(true)
+
   // Badge Customizer
   const [badgeText, setBadgeText] = useState('')
   const [badgeColor, setBadgeColor] = useState('brand')
@@ -98,6 +110,32 @@ export function AdminNotificationCenter() {
   // Submission State
   const [confirmingSend, setConfirmingSend] = useState(false)
   const [sending, setSending] = useState(false)
+
+  const previewImageSrc = imagePreview || imageUrl || ''
+
+  function handleImageSelect(event) {
+    const file = event.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      dispatch(
+        addToast({
+          title: 'Format non supporté',
+          message: 'Veuillez sélectionner un fichier image valide.',
+          tone: 'warning',
+        }),
+      )
+      return
+    }
+    setImageFile(file)
+    const objectUrl = URL.createObjectURL(file)
+    setImagePreview(objectUrl)
+  }
+
+  function handleClearImage() {
+    setImageFile(null)
+    setImagePreview('')
+    setImageUrl('')
+  }
 
   // History State
   const [historyItems, setHistoryItems] = useState([])
@@ -185,10 +223,39 @@ export function AdminNotificationCenter() {
 
     setSending(true)
     try {
+      let finalImageUrl = imageUrl.trim()
+      if (imageFile) {
+        setUploadingImage(true)
+        try {
+          finalImageUrl = await storageService.uploadBroadcastImage(currentUser?.id, imageFile)
+        } catch (uploadErr) {
+          console.error('Broadcast image upload failed:', uploadErr)
+          dispatch(
+            addToast({
+              title: 'Erreur d’image',
+              message: 'Impossible de télécharger l’image. Vérifiez votre connexion.',
+              tone: 'error',
+            }),
+          )
+          setSending(false)
+          setUploadingImage(false)
+          return
+        } finally {
+          setUploadingImage(false)
+        }
+      }
+
       const targetFilter = {}
       if (targetType === 'role') targetFilter.role = selectedRole
       if (targetType === 'country') targetFilter.country = targetCountry.trim().toUpperCase()
       if (targetType === 'custom') targetFilter.userIds = customUserIds
+      if (finalImageUrl) {
+        targetFilter.imageUrl = finalImageUrl
+        targetFilter.bannerUrl = finalImageUrl
+      }
+      if (showInMarketplace) {
+        targetFilter.showInMarketplace = true
+      }
 
       let recipientCount = 0
 
@@ -229,6 +296,9 @@ export function AdminNotificationCenter() {
       setLink('')
       setBadgeText('')
       setActionLabel('')
+      setImageUrl('')
+      setImageFile(null)
+      setImagePreview('')
       setConfirmingSend(false)
       setActiveTab('history')
     } catch (err) {
@@ -486,6 +556,84 @@ export function AdminNotificationCenter() {
                   </div>
                 </div>
 
+                {/* Image / Bannière de diffusion */}
+                <div>
+                  <label className="block text-xs font-black text-[var(--app-text)]">
+                    Image / Bannière de diffusion (optionnel)
+                  </label>
+                  <p className="mt-0.5 text-[11px] text-[var(--app-text-muted)]">
+                    Téléchargez une image ou bannière (PNG, JPG, WebP) qui s’affichera dans le tiroir d’alerte et entre les annonces de la Marketplace.
+                  </p>
+
+                  {previewImageSrc ? (
+                    <div className="relative mt-2 overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-muted)]">
+                      <img
+                        src={previewImageSrc}
+                        alt="Aperçu diffusion"
+                        className="max-h-48 w-full object-cover"
+                      />
+                      <div className="absolute top-2 right-2 flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleClearImage}
+                          className="rounded-full bg-slate-900/80 p-1.5 text-white shadow-md backdrop-blur-sm hover:bg-rose-600 transition"
+                          aria-label="Supprimer l’image"
+                        >
+                          <FiTrash2 className="text-xs" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-2 flex flex-col gap-2">
+                      <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[var(--app-border)] bg-[var(--app-surface)] p-4 text-center transition hover:border-brand-500 hover:bg-brand-50/20 dark:hover:bg-brand-950/20">
+                        <FiUploadCloud className="text-2xl text-brand-600 mb-1" />
+                        <span className="text-xs font-bold text-[var(--app-text)]">
+                          Cliquer pour choisir une image ou glisser-déposer
+                        </span>
+                        <span className="mt-0.5 text-[10px] text-[var(--app-text-muted)]">
+                          PNG, JPG, WEBP jusqu’à 10 Mo (redimensionnée et optimisée)
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageSelect}
+                          className="hidden"
+                        />
+                      </label>
+
+                      {/* URL directe optionnelle */}
+                      <input
+                        type="url"
+                        value={imageUrl}
+                        onChange={(e) => {
+                          setImageUrl(e.target.value)
+                          if (!imageFile) setImagePreview(e.target.value)
+                        }}
+                        placeholder="Ou coller une URL d’image directe (https://...)"
+                        className="w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-1.5 text-xs text-[var(--app-text)] focus:border-brand-500 focus:outline-none"
+                      />
+                    </div>
+                  )}
+
+                  {/* Toggle Insertion Marketplace */}
+                  <label className="mt-3 flex items-center justify-between rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3 cursor-pointer">
+                    <div className="pr-3">
+                      <span className="text-xs font-black text-[var(--app-text)]">
+                        Diffuser en bannière sur la Marketplace
+                      </span>
+                      <p className="text-[11px] text-[var(--app-text-muted)]">
+                        Insère automatiquement cette annonce/promotion entre les lignes d’annonces sur petit écran.
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={showInMarketplace}
+                      onChange={(e) => setShowInMarketplace(e.target.checked)}
+                      className="size-4 rounded accent-brand-600 cursor-pointer"
+                    />
+                  </label>
+                </div>
+
                 {/* Priority Selector */}
                 <div>
                   <label className="block text-xs font-black text-[var(--app-text)]">
@@ -689,6 +837,15 @@ export function AdminNotificationCenter() {
                 {previewMode === 'card' ? (
                   /* Notification Card Preview */
                   <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-sm">
+                    {previewImageSrc ? (
+                      <div className="mb-3 overflow-hidden rounded-xl border border-[var(--app-border)] bg-slate-100 dark:bg-slate-800">
+                        <img
+                          src={previewImageSrc}
+                          alt="Aperçu"
+                          className="max-h-36 w-full object-cover"
+                        />
+                      </div>
+                    ) : null}
                     <div className="flex items-start gap-3">
                       <span className={`grid size-9 shrink-0 place-items-center rounded-xl ${selectedPalette.iconBg}`}>
                         <NotificationBadgeIcon name={badgeIcon} className="text-sm" />
@@ -752,6 +909,16 @@ export function AdminNotificationCenter() {
 
                       {/* Sheet Body */}
                       <div className="py-3">
+                        {previewImageSrc ? (
+                          <div className="mb-3 overflow-hidden rounded-xl border border-[var(--app-border)] bg-slate-100 dark:bg-slate-800">
+                            <img
+                              src={previewImageSrc}
+                              alt="Aperçu"
+                              className="max-h-40 w-full object-cover"
+                            />
+                          </div>
+                        ) : null}
+
                         {badgeText ? (
                           <div className="mb-2 inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-black uppercase">
                             <span className={`size-1.5 rounded-full ${selectedPalette.dot}`} />
@@ -825,6 +992,13 @@ export function AdminNotificationCenter() {
                   const recipients = Number(item.recipient_count || item.recipientCount || 0)
                   const reads = Number(item.read_count || item.readCount || 0)
                   const rate = recipients > 0 ? Math.round((reads / recipients) * 100) : 0
+                  const itemImage =
+                    item.target_filter?.imageUrl ||
+                    item.target_filter?.bannerUrl ||
+                    item.targetFilter?.imageUrl ||
+                    item.targetFilter?.bannerUrl ||
+                    item.imageUrl ||
+                    null
 
                   return (
                     <div
@@ -832,9 +1006,20 @@ export function AdminNotificationCenter() {
                       className="flex flex-col gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-4 sm:flex-row sm:items-center sm:justify-between"
                     >
                       <div className="flex items-start gap-3 min-w-0 flex-1">
-                        <span className={`grid size-9 shrink-0 place-items-center rounded-xl ${palette.iconBg}`}>
-                          <NotificationBadgeIcon name={item.badge_icon || item.badgeIcon} className="text-sm" />
-                        </span>
+                        {itemImage ? (
+                          <div className="relative size-12 shrink-0 overflow-hidden rounded-xl border border-[var(--app-border)] bg-slate-100 dark:bg-slate-800">
+                            <img
+                              src={itemImage}
+                              alt={item.title}
+                              className="size-full object-cover"
+                              loading="lazy"
+                            />
+                          </div>
+                        ) : (
+                          <span className={`grid size-9 shrink-0 place-items-center rounded-xl ${palette.iconBg}`}>
+                            <NotificationBadgeIcon name={item.badge_icon || item.badgeIcon} className="text-sm" />
+                          </span>
+                        )}
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
                             <strong className="text-sm font-black text-[var(--app-text)]">
