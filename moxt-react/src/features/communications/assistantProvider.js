@@ -1,4 +1,5 @@
 import { translate } from '@moxt/shared/i18n/translate.js'
+import { buildAssistantContextPack } from './assistantContext'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -244,6 +245,11 @@ export const localAssistantProvider = {
     const normalized = question.toLocaleLowerCase(localeTag)
     const qClean = cleanQueryStr(question)
 
+    // Construction du pack de contexte riche si l'état Redux est fourni
+    const contextPack = state
+      ? buildAssistantContextPack({ state, question, user, searchIndex })
+      : { toolsUsed: [], searchHits: [], transfers: [], marketplaceListings: [], posts: [], exchangers: [], jobs: [], parcels: [], cards: [] }
+
     // 1. Détection : Articles / Annonces avec le même nom (Doublons ou variantes)
     const isDuplicateQuery =
       qClean.includes('meme nom') ||
@@ -278,6 +284,7 @@ export const localAssistantProvider = {
         }
         return {
           text,
+          cards: contextPack.cards?.filter((c) => c.type === 'listing') || [],
           actions: actions.slice(0, 6),
           suggestions: ['Voir le Marketplace', 'Publier une annonce', 'Mes transferts'],
           sources: duplicates.map(([_, items]) => `Marketplace: ${items[0].title}`),
@@ -285,6 +292,7 @@ export const localAssistantProvider = {
       } else {
         return {
           text: "Après vérification dans la base Marketplace, il n'y a actuellement aucun article portant le même nom. Toutes les annonces publiées ont des titres distincts.",
+          cards: [],
           actions: [{ label: 'Marketplace', path: '/marketplace' }],
           suggestions: ['Voir le Marketplace', 'Publier une annonce', 'Mes transferts'],
           sources: ['Catalogue Marketplace'],
@@ -292,17 +300,70 @@ export const localAssistantProvider = {
       }
     }
 
-    // 2. Détection : Recherche directe de transferts
+    // 2. Détection : Recherche directe du dernier transfert ou de l'historique des transferts
     const isDirectTransferQuery =
-      (qClean.includes('transfert') || qClean.includes('virement') || qClean.includes('mandat') || qClean.includes('mxt')) &&
-      (qClean.includes('dernier') || qClean.includes('effectue') || qClean.includes('liste') || qClean.includes('mes') || qClean.includes('mon') || qClean.includes('trouve') || qClean.includes('historique'))
+      (qClean.includes('transfert') || qClean.includes('virement') || qClean.includes('mandat') || qClean.includes('mxt') || qClean.includes('perevod')) &&
+      (qClean.includes('dernier') || qClean.includes('effectue') || qClean.includes('liste') || qClean.includes('mes') || qClean.includes('mon') || qClean.includes('trouve') || qClean.includes('historique') || qClean.includes('statut') || qClean.includes('en est'))
 
     if (isDirectTransferQuery) {
       const allTransfers = state?.transfers?.items || []
       const userTransfers = user?.id
         ? allTransfers.filter((t) => !t.userId || t.userId === user.id)
         : allTransfers
+
+      const isAskingForLast =
+        qClean.includes('dernier') ||
+        qClean.includes('statut') ||
+        qClean.includes('ou en est') ||
+        qClean.includes('en est')
+
       if (userTransfers.length > 0) {
+        if (isAskingForLast) {
+          const t = contextPack.latestTransfer || userTransfers[0]
+          const status = t.status === 'completed' || t.status === 'paid_out' ? 'Payé' : t.status === 'pending' || t.status === 'processing' ? 'En cours' : t.status || 'Initié'
+          const amount = t.amount || `${t.amountSent ?? t.amount ?? ''} ${t.currencyFrom || 'RUB'}`
+          const ref = t.id || 'N/A'
+          const direction = t.direction || 'Afrique'
+          const origin = t.originCountry || 'Russie'
+
+          let text = `J'ai trouvé **${userTransfers.length} transfert(s)** dans votre historique :\n\n`
+          text += `Votre dernier transfert **${amount}** (${status}) :\n`
+          text += `• Référence : \`${ref}\`\n`
+          if (t.amount && t.received) text += `• Montant : ${t.amount} ➔ **${t.received}**\n`
+          text += `• Trajet : ${origin} ➔ ${direction}\n`
+          text += `• Statut : **${t.statusFriendly || status}**\n`
+          if (t.exchanger) text += `• Changeur : ${t.exchanger}\n`
+          text += `\nRetrouvez le reçu officiel et les preuves associées ci-dessous :`
+
+          const transferCards = contextPack.cards?.filter((c) => c.type === 'transfer') || []
+          return {
+            text,
+            cards: transferCards.length ? transferCards : [
+              {
+                id: `card-${t.id}`,
+                type: 'transfer',
+                title: `Transfert #${t.id}`,
+                subtitle: `${origin} ➔ ${direction}`,
+                description: t.amount && t.received ? `${t.amount} ➔ ${t.received}` : t.amount,
+                badgeText: t.statusFriendly || status,
+                badgeColor: status === 'Payé' ? 'emerald' : 'brand',
+                meta: t.exchanger ? `Partenaire : ${t.exchanger}` : null,
+                path: `/transfers/${t.id}`,
+                actionLabel: 'Détails du transfert',
+              },
+            ],
+            actions: [
+              {
+                label: `Transfert ${amount} (${status})`,
+                path: `/transfers/${t.id}`,
+              },
+              { label: 'Tous mes transferts', path: '/transfers' },
+            ],
+            suggestions: ['Suivi de mon transfert', 'Nouveau transfert', 'Voir les changeurs'],
+            sources: userTransfers.slice(0, 4).map((tr) => `Transfert: ${tr.id}`),
+          }
+        }
+
         let text = `J'ai trouvé **${userTransfers.length} transfert(s)** dans votre historique :\n\n`
         const actions = []
         for (const t of userTransfers.slice(0, 5)) {
@@ -315,8 +376,10 @@ export const localAssistantProvider = {
             path: `/transfers/${t.id}`,
           })
         }
+        text += `\nCliquez sur un transfert pour ouvrir la timeline de validation et les preuves de paiement :`
         return {
           text,
+          cards: contextPack.cards?.filter((c) => c.type === 'transfer') || [],
           actions,
           suggestions: ['Nouveau transfert', 'Voir les changeurs', 'Reçu de transfert'],
           sources: userTransfers.slice(0, 4).map((t) => `Transfert: ${t.id}`),
@@ -324,6 +387,7 @@ export const localAssistantProvider = {
       } else {
         return {
           text: "Vous n'avez aucun transfert récent enregistré sur ce compte. Vous pouvez effectuer un nouveau transfert Afrique ↔ Russie dès maintenant.",
+          cards: [],
           actions: [{ label: 'Nouveau transfert', path: '/transfers/new' }],
           suggestions: ['Nouveau transfert', 'Voir les taux de change', 'Changeurs vérifiés'],
           sources: ['Historique des transferts'],
@@ -331,7 +395,102 @@ export const localAssistantProvider = {
       }
     }
 
-    // 3. Détection : Emplois / Jobs
+    // 3. Détection : Articles, posts et fil d'actualité
+    const isPostQuery =
+      qClean.includes('article') ||
+      qClean.includes('publication') ||
+      qClean.includes('post') ||
+      qClean.includes('actualite') ||
+      qClean.includes('news') ||
+      qClean.includes('fil d') ||
+      qClean.includes('quoi de neuf') ||
+      qClean.includes('nouvelle')
+
+    if (isPostQuery && contextPack.posts?.length > 0) {
+      const posts = contextPack.posts
+      let text = `Voici **${posts.length} article(s) et publication(s)** récents sur MOXT :\n\n`
+      for (const p of posts.slice(0, 4)) {
+        text += `• **${p.title}** (par *${p.authorName}*)\n`
+        if (p.snippet && p.snippet !== p.title) {
+          text += `  *${p.snippet}*\n`
+        }
+      }
+      text += `\nConsultez les articles complets, visuels et commentaires ci-dessous :`
+      return {
+        text,
+        cards: contextPack.cards?.filter((c) => c.type === 'post') || [],
+        actions: posts.slice(0, 4).map((p) => ({
+          label: p.title,
+          path: p.path,
+        })),
+        suggestions: ['Voir le fil d’actualité', 'Publier un article', 'Explorer les annonces'],
+        sources: posts.slice(0, 4).map((p) => `Article: ${p.title}`),
+      }
+    }
+
+    // 4. Détection : Annonces & Marketplace
+    const isMarketplaceQuery =
+      qClean.includes('annonce') ||
+      qClean.includes('marketplace') ||
+      qClean.includes('produit') ||
+      qClean.includes('vendre') ||
+      qClean.includes('acheter') ||
+      qClean.includes('achat') ||
+      qClean.includes('vente') ||
+      qClean.includes('prix') ||
+      qClean.includes('telephone') ||
+      qClean.includes('iphone') ||
+      qClean.includes('voiture') ||
+      qClean.includes('appartement') ||
+      qClean.includes('ordinateur')
+
+    if (isMarketplaceQuery && contextPack.marketplaceListings?.length > 0) {
+      const listings = contextPack.marketplaceListings
+      let text = `J'ai trouvé **${listings.length} annonce(s)** sur la Marketplace :\n\n`
+      for (const it of listings.slice(0, 4)) {
+        text += `• **${it.title}** : **${it.price}** (${it.city || 'Disponible'})\n`
+      }
+      text += `\nDécouvrez les photos, prix et fiches détaillées ci-dessous :`
+      return {
+        text,
+        cards: contextPack.cards?.filter((c) => c.type === 'listing') || [],
+        actions: listings.slice(0, 4).map((it) => ({
+          label: `${it.title} (${it.price})`,
+          path: it.path,
+        })),
+        suggestions: ['Voir le Marketplace', 'Publier une annonce', 'Rechercher un produit'],
+        sources: listings.slice(0, 4).map((it) => `Marketplace: ${it.title}`),
+      }
+    }
+
+    // 5. Détection : Changeurs et partenaires vérifiés
+    const isExchangerQuery =
+      qClean.includes('changeur') ||
+      qClean.includes('echangeur') ||
+      qClean.includes('partenaire') ||
+      qClean.includes('qui peut changer') ||
+      qClean.includes('meilleur taux')
+
+    if (isExchangerQuery && contextPack.exchangers?.length > 0) {
+      const exchangers = contextPack.exchangers
+      let text = `Voici les **changeurs partenaires vérifiés** disponibles sur MOXT :\n\n`
+      for (const ex of exchangers.slice(0, 4)) {
+        text += `• **${ex.name}** (${ex.city || ex.country || 'Russie'})${ex.rating ? ` · Note : ★ ${Number(ex.rating).toFixed(1)}` : ''}${ex.feePercent != null ? ` · Commission : ${ex.feePercent}%` : ''}\n`
+      }
+      text += `\nTous nos partenaires sont certifiés pour garantir la sécurité et la rapidité de vos virements.`
+      return {
+        text,
+        cards: contextPack.cards?.filter((c) => c.type === 'exchanger') || [],
+        actions: exchangers.slice(0, 4).map((ex) => ({
+          label: ex.name,
+          path: ex.path,
+        })),
+        suggestions: ['Faire un transfert', 'Taux de change en direct', 'Garantie de sécurité'],
+        sources: exchangers.slice(0, 4).map((ex) => `Changeur: ${ex.name}`),
+      }
+    }
+
+    // 6. Détection : Emplois / Jobs
     const isDirectJobQuery =
       qClean.includes('job') ||
       qClean.includes('emploi') ||
@@ -352,13 +511,14 @@ export const localAssistantProvider = {
       }
       return {
         text,
+        cards: contextPack.cards?.filter((c) => c.type === 'job') || [],
         actions,
         suggestions: ['Voir tous les jobs', 'Publier une offre', 'Entreprises'],
         sources: jobs.slice(0, 3).map((j) => `Emploi: ${j.title}`),
       }
     }
 
-    // 4. Détection : Colis et transport
+    // 7. Détection : Colis et transport
     const isDirectParcelQuery =
       qClean.includes('colis') ||
       qClean.includes('bagage') ||
@@ -380,6 +540,7 @@ export const localAssistantProvider = {
         }
         return {
           text,
+          cards: contextPack.cards?.filter((c) => c.type === 'parcel') || [],
           actions,
           suggestions: ['Voir tous les colis', 'Publier un voyage', 'Tarifs colis'],
           sources: parcels.slice(0, 3).map((p) => `Colis: ${p.origin} → ${p.destination}`),
@@ -404,6 +565,7 @@ export const localAssistantProvider = {
 
     return {
       text,
+      cards: contextPack.cards?.slice(0, 4) || [],
       actions: allActions,
       suggestions,
       sources: entityMatches.map((item) => `${item.typeLabel}: ${item.title}`),

@@ -92,7 +92,6 @@ export function AiAssistantPanel({
         ),
     )
     appendAssistantMessage({
-      // eslint-disable-next-line react-hooks/purity -- gestionnaire d'événement (clic), jamais appelé pendant le rendu
       id: `AI-${Date.now()}`,
       role: 'assistant',
       text: messagesText(t, 'messages.assistant.adminComposePrompt'),
@@ -142,7 +141,6 @@ export function AiAssistantPanel({
     const nextMessages = [
       ...messages,
       {
-        // eslint-disable-next-line react-hooks/purity -- gestionnaire d'événement (envoi), jamais appelé pendant le rendu
         id: `ASK-${Date.now()}`,
         role: 'user',
         text,
@@ -201,6 +199,7 @@ export function AiAssistantPanel({
           id: `AI-${Date.now()}`,
           role: 'assistant',
           text: response.text || localDraft.text,
+          cards: response.cards?.length ? response.cards : localDraft.cards || [],
           actions: response.actions?.length ? response.actions : localDraft.actions,
           sources: response.sources?.length ? response.sources : localDraft.sources,
           suggestions: response.suggestions?.length
@@ -259,6 +258,7 @@ export function AiAssistantPanel({
               <AssistantMessage
                 key={message.id}
                 text={message.text}
+                cards={message.cards}
                 actions={message.actions}
                 sources={message.sources}
                 suggestions={index === messages.length - 1 ? message.suggestions : null}
@@ -487,7 +487,110 @@ function AssistantSuggestionChips({ className = '', items, onPick }) {
   )
 }
 
+function AssistantEntityCard({ card }) {
+  const [imgError, setImgError] = useState(false)
+  const hasImage = Boolean(card.imageUrl && !imgError)
+
+  const badgeColorClass =
+    card.badgeColor === 'emerald'
+      ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+      : card.badgeColor === 'amber'
+        ? 'bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
+        : card.badgeColor === 'rose'
+          ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
+          : card.badgeColor === 'sky'
+            ? 'bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300'
+            : card.badgeColor === 'violet'
+              ? 'bg-violet-50 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300'
+              : 'bg-brand-50 text-brand-700 dark:bg-brand-950/60 dark:text-brand-300'
+
+  return (
+    <div className="group flex flex-col overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-sm transition hover:border-brand-500 hover:shadow-md">
+      {hasImage ? (
+        <div className="relative aspect-[16/9] w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+          <img
+            src={card.imageUrl}
+            alt={card.title}
+            onError={() => setImgError(true)}
+            className="size-full object-cover transition duration-300 group-hover:scale-105"
+            loading="lazy"
+          />
+          {card.badgeText ? (
+            <span className="absolute top-2 right-2 rounded-full bg-slate-900/80 px-2 py-0.5 text-[10px] font-black text-white backdrop-blur-sm">
+              {card.badgeText}
+            </span>
+          ) : null}
+        </div>
+      ) : (
+        <div className="flex items-center justify-between border-b border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-1.5">
+          <span className="text-[10px] font-black uppercase tracking-wider text-[var(--app-text-muted)]">
+            {card.type === 'transfer'
+              ? 'Transfert'
+              : card.type === 'exchanger'
+                ? 'Partenaire'
+                : card.type === 'post'
+                  ? 'Article'
+                  : card.type === 'job'
+                    ? 'Emploi'
+                    : card.type === 'parcel'
+                      ? 'Colis'
+                      : 'Marketplace'}
+          </span>
+          {card.badgeText ? (
+            <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${badgeColorClass}`}>
+              {card.badgeText}
+            </span>
+          ) : null}
+        </div>
+      )}
+
+      <div className="flex min-w-0 flex-1 flex-col p-3">
+        <h4 className="text-xs font-black text-[var(--app-text)] line-clamp-1 group-hover:text-brand-600">
+          {card.title}
+        </h4>
+        {card.subtitle ? (
+          <p className="mt-0.5 text-[11px] font-medium text-[var(--app-text-muted)] line-clamp-1">
+            {card.subtitle}
+          </p>
+        ) : null}
+        {card.description ? (
+          <p className="mt-1 text-[11px] text-[var(--app-text-muted)] line-clamp-2 leading-relaxed">
+            {card.description}
+          </p>
+        ) : null}
+        {card.meta ? (
+          <p className="mt-1 text-[10px] text-slate-400 line-clamp-1">
+            {card.meta}
+          </p>
+        ) : null}
+
+        <div className="mt-auto pt-2.5">
+          <Link
+            to={card.path}
+            className="flex w-full items-center justify-center gap-1 rounded-xl bg-[var(--app-accent-soft)] px-3 py-1.5 text-xs font-bold text-[var(--app-accent)] transition hover:bg-brand-600 hover:text-white"
+          >
+            <span>{card.actionLabel || 'Voir les détails'}</span>
+            <span aria-hidden="true">→</span>
+          </Link>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function AssistantCardsGallery({ cards }) {
+  if (!cards?.length) return null
+  return (
+    <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+      {cards.map((card) => (
+        <AssistantEntityCard key={card.id || card.title} card={card} />
+      ))}
+    </div>
+  )
+}
+
 function AssistantMessage({
+  cards,
   actions,
   sources,
   sourcesLabel,
@@ -505,6 +608,7 @@ function AssistantMessage({
         </span>
         <div className="min-w-0 rounded-2xl rounded-bl-md bg-[var(--app-surface)] px-4 py-3 text-sm leading-6 shadow-[0_8px_24px_rgb(15_23_42/0.09)]">
           <div className="prose-sm">{renderMarkdown(text)}</div>
+          {cards?.length ? <AssistantCardsGallery cards={cards} /> : null}
           {actions?.length ? (
             <div className="mt-3 flex flex-wrap gap-2">
               {actions.map((action) => (

@@ -115,6 +115,7 @@ export const llmAssistantProvider = {
 
     return {
       text: data.text,
+      cards: data.cards?.length ? data.cards : (draft?.cards || contextPack.cards || []),
       actions,
       sources: [...sources, ...citations.filter((c) => !sources.includes(c))].slice(0, 8),
       suggestions: followUps.length ? followUps : draft?.suggestions,

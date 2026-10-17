@@ -91,4 +91,94 @@ describe('localAssistantProvider', () => {
     expect(response.text).toContain('Développeur Full Stack')
     expect(response.actions[0].path).toBe('/jobs/job-1')
   })
+
+  it('recherche des articles récents et retourne les cartes avec images', async () => {
+    const state = {
+      posts: {
+        items: [
+          {
+            id: 'post-1',
+            title: 'Guide des formalités consulaires en Russie',
+            text: 'Toutes les démarches pour renouveler son visa étudiant ou de travail...',
+            authorName: 'Équipe Moxt',
+            imageUrl: 'https://cdn.moxtapp.ru/posts/visa-guide.jpg',
+            createdAt: '2026-10-15T12:00:00Z',
+          },
+        ],
+      },
+    }
+    const response = await localAssistantProvider.respond({
+      question: 'Quels sont les derniers articles du fil ?',
+      searchIndex: [],
+      state,
+    })
+    expect(response.text).toContain('formalités consulaires')
+    expect(response.cards).toBeDefined()
+    expect(response.cards[0].type).toBe('post')
+    expect(response.cards[0].imageUrl).toContain('posts/visa-guide.jpg')
+    expect(response.actions[0].path).toBe('/news?post=post-1')
+  })
+
+  it('recherche des annonces marketplace et retourne cartes avec photos et prix', async () => {
+    const state = {
+      marketplace: {
+        items: [
+          {
+            id: 'ann-1',
+            title: 'iPhone 15 Pro Max 256GB',
+            price: 105000,
+            currency: 'RUB',
+            city: 'Moscou',
+            images: ['https://cdn.moxtapp.ru/listings/iphone.jpg'],
+          },
+        ],
+      },
+    }
+    const response = await localAssistantProvider.respond({
+      question: 'Je cherche un iphone sur la marketplace',
+      searchIndex: [],
+      state,
+    })
+    expect(response.text).toContain('iPhone 15 Pro Max')
+    expect(response.cards).toBeDefined()
+    expect(response.cards[0].type).toBe('listing')
+    expect(response.cards[0].badgeText).toContain('105000')
+    expect(response.cards[0].imageUrl).toContain('listings/iphone.jpg')
+    expect(response.actions[0].path).toBe('/marketplace/ann-1')
+  })
+
+  it('retourne les détails complets et la carte pour le dernier transfert', async () => {
+    const state = {
+      transfers: {
+        items: [
+          {
+            id: 'MXT-2026',
+            userId: 'user-77',
+            amountSent: 25000,
+            currencyFrom: 'RUB',
+            amountReceived: 187500,
+            currencyTo: 'XOF',
+            direction: 'Bénin',
+            originCountry: 'Russie',
+            status: 'payment_declared',
+            exchanger: { name: 'Transfert Direct' },
+            createdAt: '2026-10-17T18:00:00Z',
+          },
+        ],
+      },
+    }
+    const response = await localAssistantProvider.respond({
+      question: 'Où en est mon dernier transfert ?',
+      searchIndex: [],
+      state,
+      user: { id: 'user-77' },
+    })
+    expect(response.text).toContain('MXT-2026')
+    expect(response.text).toContain('25000 RUB')
+    expect(response.text).toContain('187500 XOF')
+    expect(response.cards[0].type).toBe('transfer')
+    expect(response.cards[0].badgeText).toBe('Paiement déclaré')
+    expect(response.cards[0].path).toBe('/transfers/MXT-2026')
+  })
 })
+
