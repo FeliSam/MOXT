@@ -21,12 +21,7 @@ export function ResetPasswordPage() {
   const { t } = useLanguage()
   const [ready, setReady] = useState(false)
   const [invalidLink, setInvalidLink] = useState(false)
-  const [showOtpFallback, setShowOtpFallback] = useState(false)
-  const [otpEmail, setOtpEmail] = useState('')
-  const [otpCode, setOtpCode] = useState('')
-  const [otpPassword, setOtpPassword] = useState('')
-  const [otpConfirm, setOtpConfirm] = useState('')
-  const [otpSubmitting, setOtpSubmitting] = useState(false)
+  const [isSuccess, setIsSuccess] = useState(false)
   const { resetPasswordSchema } = createAuthSchemas(t)
 
   useEffect(() => {
@@ -70,69 +65,13 @@ export function ResetPasswordPage() {
     }
   }, [])
 
-  const handleOtpSubmit = async (e) => {
-    e.preventDefault()
-    if (!otpEmail.includes('@')) {
-      dispatch(addToast({ title: 'Erreur', message: 'Veuillez saisir une adresse e-mail valide.', tone: 'error' }))
-      return
-    }
-    if (!/^\d{6}$/.test(otpCode.trim())) {
-      dispatch(addToast({ title: 'Erreur', message: 'Saisissez le code à 6 chiffres reçu par e-mail.', tone: 'error' }))
-      return
-    }
-    if (otpPassword.length < 8) {
-      dispatch(addToast({ title: 'Erreur', message: t('auth.reset.passwordRules'), tone: 'error' }))
-      return
-    }
-    if (otpPassword !== otpConfirm) {
-      dispatch(addToast({ title: 'Erreur', message: t('auth.forgot.passwordMismatch') || 'Les mots de passe ne correspondent pas.', tone: 'error' }))
-      return
-    }
-
-    try {
-      setOtpSubmitting(true)
-      await authService.confirmEmailPasswordReset({
-        email: otpEmail.trim(),
-        token: otpCode.trim(),
-        password: otpPassword,
-      })
-      const { markIntentionalSignOut } = await import('../services/authSessionSync')
-      markIntentionalSignOut()
-      await supabase?.auth.signOut()
-      dispatch(clearSession())
-      dispatch(
-        addToast({
-          title: t('auth.reset.toastSuccessTitle'),
-          message: t('auth.reset.toastSuccessBody'),
-          tone: 'success',
-        }),
-      )
-      navigate('/login', {
-        replace: true,
-        state: { notice: t('auth.reset.loginNotice') },
-      })
-    } catch (error) {
-      dispatch(
-        addToast(
-          authErrorToast(
-            t('auth.reset.toastErrorTitle'),
-            error instanceof Error ? error.message : t('auth.reset.toastErrorFallback'),
-            'error',
-            t,
-          ),
-        ),
-      )
-    } finally {
-      setOtpSubmitting(false)
-    }
-  }
-
   const formik = useFormik({
     initialValues: { password: '', confirmPassword: '' },
     validationSchema: resetPasswordSchema,
     onSubmit: async (values, helpers) => {
       try {
         await authService.updatePassword(values.password)
+        setIsSuccess(true)
         const { markIntentionalSignOut } = await import('../services/authSessionSync')
         markIntentionalSignOut()
         await supabase?.auth.signOut()
@@ -167,7 +106,7 @@ export function ResetPasswordPage() {
 
   const errorFor = (field) => (formik.touched[field] ? formik.errors[field] : undefined)
 
-  if (invalidLink) {
+  if (invalidLink && !isSuccess) {
     return (
       <AuthCard
         eyebrow={t('auth.reset.eyebrow')}
@@ -178,54 +117,6 @@ export function ResetPasswordPage() {
           <Alert variant="warning">
             {t('auth.reset.invalidAlert')}
           </Alert>
-          {showOtpFallback ? (
-            <form onSubmit={handleOtpSubmit} className="grid gap-3" noValidate>
-              <input
-                type="email"
-                placeholder="Votre adresse e-mail"
-                value={otpEmail}
-                onChange={(e) => setOtpEmail(e.target.value)}
-                className="input-field rounded-xl border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
-                required
-              />
-              <input
-                type="text"
-                inputMode="numeric"
-                maxLength={6}
-                placeholder="Code à 6 chiffres"
-                value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                className="input-field rounded-xl border border-slate-300 px-3 py-2 text-sm tracking-widest dark:border-slate-700 dark:bg-slate-800"
-                required
-              />
-              <PasswordInput
-                id="otp-fallback-password"
-                placeholder="Nouveau mot de passe (8+ car.)"
-                value={otpPassword}
-                onChange={(e) => setOtpPassword(e.target.value)}
-                iconLeft={<FiLock />}
-              />
-              <PasswordInput
-                id="otp-fallback-confirm"
-                placeholder="Confirmez le mot de passe"
-                value={otpConfirm}
-                onChange={(e) => setOtpConfirm(e.target.value)}
-                iconLeft={<FiLock />}
-              />
-              <Button type="submit" loading={otpSubmitting} className="w-full">
-                Valider et changer le mot de passe
-              </Button>
-            </form>
-          ) : (
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setShowOtpFallback(true)}
-              className="w-full text-xs"
-            >
-              Vous avez reçu un code à 6 chiffres par e-mail ?
-            </Button>
-          )}
           <Link className="auth-flow-link text-center" to="/forgot-password">
             {t('auth.reset.requestNewLink')}
           </Link>

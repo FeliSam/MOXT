@@ -10,8 +10,9 @@ export function normalizeE164(phone = '') {
 
 export function phoneToSmsc(phone: string) {
   const e164 = normalizeE164(phone)
-  if (!e164.startsWith('+7') || e164.length !== 12) {
-    throw new Error('SMSC : seuls les numéros russes (+7) sont pris en charge pour l’instant.')
+  const digits = e164.replace(/\D/g, '')
+  if (!digits || digits.length < 8) {
+    throw new Error('SMSC : numéro de téléphone invalide.')
   }
-  return e164.slice(1)
+  return digits
 }
