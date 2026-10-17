@@ -11,8 +11,9 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
-import { LayoutGrid, List, Plus, Search, ShoppingBag, SlidersVertical, X } from 'lucide-react-native';
+import { LayoutGrid, List, Plus, RefreshCw, Search, ShoppingBag, SlidersVertical, X } from 'lucide-react-native';
 
+import { MarketplaceCategoriesGrid } from '@/components/marketplace/MarketplaceCategoriesGrid';
 import { MarketplaceListingCard, DISCOVERY_CARD_HEIGHT } from '@/components/marketplace/MarketplaceListingCard';
 import {
   MarketplaceDiscoveryRail,
@@ -22,6 +23,7 @@ import {
 } from '@/components/marketplace/MarketplaceRails';
 import { CATEGORIES_BY_TYPE, LISTING_TYPES_META } from '@/components/marketplace/listingMeta';
 import { buildMarketplaceDiscovery, rankMarketplaceVideos } from '@/components/marketplace/marketplaceFeed';
+import { useSmartNavbarScroll } from '@/hooks/useSmartNavbar';
 import { AppText } from '@/components/ui/AppText';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { clearSearchHistory, mergeSearchTerm, readSearchHistory, saveSearchTerm } from '@/services/searchHistory';
@@ -175,8 +177,10 @@ export default function MarketplaceScreen() {
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
+  const { onScroll: smartOnScroll, scrollEventThrottle } = useSmartNavbarScroll();
   const [contentSize, setContentSize] = useState({ width: 0, height: 0 });
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<any>(null);
   const didAutoScroll = useRef(false);
   const discoverY = useRef(0);
   const anchorY = useRef(0);
@@ -289,49 +293,29 @@ export default function MarketplaceScreen() {
           contentHeight.current = height;
           tryAutoScroll();
         }}
+        onScroll={(e) => {
+          smartOnScroll(e);
+          setScrollY(e.nativeEvent.contentOffset.y);
+        }}
+        scrollEventThrottle={scrollEventThrottle}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={brand[700]} />}
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 128 }}>
         <WarmBackground width={contentSize.width} height={contentSize.height} />
-        <View style={{ gap: 28, width: '100%', maxWidth: 960, alignSelf: 'center' }}>
-          {/* PageHeader du web ; comme useScrollToSecondSection, la page s'ouvre sur les tuiles. */}
-          <View className="gap-3 rounded-[18px] bg-app-surface/80 p-4" style={shadows.card}>
-            <AppText className="font-display text-xl text-app-text" style={{ letterSpacing: -0.4 }} numberOfLines={1}>
-              Marketplace
-            </AppText>
-            <View className="flex-row flex-wrap items-center gap-2">
-              <IslandButton icon={List} label="Mes publications" onPress={() => router.push('/listing/mine' as never)} />
-              <IslandButton icon={Plus} label="Publier une annonce" onPress={() => router.push('/listing/create' as never)} />
-            </View>
-          </View>
+        <View style={{ gap: 12, width: '100%', maxWidth: 960, alignSelf: 'center' }}>
+          {/* Nouveau menu haut de catégories conforme à la capture fournie */}
+          <MarketplaceCategoriesGrid
+            selectedType={filters.type}
+            selectedCategory={filters.category}
+            onSelect={(type, category) => update({ type, category })}
+          />
 
+          {/* Espace réduit de 60% entre le menu de catégories et la recherche */}
           <View
-            style={{ gap: 20 }}
+            style={{ gap: 8 }}
             onLayout={(e) => {
               anchorY.current = e.nativeEvent.layout.y;
               tryAutoScroll();
             }}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={{ marginHorizontal: -4 }}
-              contentContainerStyle={{ gap: 8, paddingHorizontal: 4, paddingBottom: 4, paddingTop: 1 }}>
-              <TypeChip
-                active={!filters.type}
-                icon={LayoutGrid}
-                label="Tout"
-                onPress={() => update({ type: '', category: '' })}
-              />
-              {LISTING_TYPES_META.map((option) => (
-                <TypeChip
-                  key={option.value}
-                  active={filters.type === option.value}
-                  icon={option.icon}
-                  colors={option.colors}
-                  label={option.label}
-                  onPress={() => update({ type: option.value, category: '' })}
-                />
-              ))}
-            </ScrollView>
 
             {/* CatalogSearch du web */}
             <View className="rounded-[18px] border border-app-border bg-app-surface p-4" style={[shadows.card, { borderColor: community.border }]}>
@@ -524,6 +508,34 @@ export default function MarketplaceScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Bouton d'actualisation flottant qui apparaît lors du défilement vers le bas */}
+      {scrollY > 180 ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Actualiser les annonces"
+          onPress={() => {
+            void handleRefresh();
+            scrollRef.current?.scrollTo({ y: 0, animated: true });
+          }}
+          style={{
+            position: 'absolute',
+            top: 14,
+            alignSelf: 'center',
+            zIndex: 60,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 7,
+            paddingHorizontal: 16,
+            paddingVertical: 9,
+            borderRadius: 999,
+            backgroundColor: brand[700],
+            boxShadow: '0 4px 16px rgba(13,148,136,0.4)',
+          }}>
+          <RefreshCw size={13} color="#ffffff" strokeWidth={2.5} />
+          <AppText className="text-xs font-black text-white">Actualiser</AppText>
+        </Pressable>
+      ) : null}
     </View>
   );
 }

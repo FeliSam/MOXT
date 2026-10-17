@@ -10,7 +10,7 @@ import { useTheme } from '@/theme/ThemeContext';
 
 import { HEADER } from './headerTokens';
 
-/** Pastille titre / marque (HEADER_BRAND_CHIP_CLASS) : h 3.004rem, rounded-full, surface/65. */
+/** Pastille titre / marque (HEADER_BRAND_CHIP_CLASS) : h 44px, rounded-full, surface/85 + border. */
 export function HeaderChip({ children, style }: { children: ReactNode; style?: ViewStyle }) {
   const { colors } = useTheme();
   return (
@@ -19,14 +19,17 @@ export function HeaderChip({ children, style }: { children: ReactNode; style?: V
         {
           height: HEADER.height,
           minWidth: 0,
-          flex: 1,
+          flexShrink: 1,
+          maxWidth: '52%',
           flexDirection: 'row',
           alignItems: 'center',
           gap: 8,
           borderRadius: 999,
-          backgroundColor: withAlphaColor(colors.surface, 0.65),
-          paddingLeft: 6,
-          paddingRight: 10,
+          borderWidth: 1,
+          borderColor: withAlphaColor(colors.border, 0.75),
+          backgroundColor: withAlphaColor(colors.surface, 0.88),
+          paddingLeft: 5,
+          paddingRight: 12,
         },
         style,
       ]}>
@@ -35,13 +38,43 @@ export function HeaderChip({ children, style }: { children: ReactNode; style?: V
   );
 }
 
-/** Bouton rond d'action (.header-action-btn mobile) : 3.004rem, surface/65, sans bordure. */
+/** Pastille rouge de compteur (CountBounce, maxDisplay 9). */
+export function HeaderCountBadge({ value }: { value?: number | null }) {
+  const { colors } = useTheme();
+  if (!value || value <= 0) return null;
+  return (
+    <View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        right: -3,
+        top: -3,
+        zIndex: 10,
+        minWidth: 18,
+        height: 18,
+        paddingHorizontal: 4,
+        borderRadius: 999,
+        backgroundColor: '#ef4444',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1.5,
+        borderColor: colors.surface,
+      }}>
+      <AppText style={{ fontSize: 9, lineHeight: 11, fontWeight: '700', color: '#ffffff' }}>
+        {value > 9 ? '9+' : String(value)}
+      </AppText>
+    </View>
+  );
+}
+
+/** Bouton rond d'action (.header-action-btn mobile) : 44px, surface/85 + border, centré avec badge optionnel. */
 export function HeaderActionButton({
   children,
   onPress,
   accessibilityLabel,
   transparent = false,
   size = HEADER.height,
+  badge,
   testID,
 }: {
   children: ReactNode;
@@ -50,6 +83,7 @@ export function HeaderActionButton({
   testID?: string;
   transparent?: boolean;
   size?: number;
+  badge?: number | null;
 }) {
   const { colors } = useTheme();
   return (
@@ -64,40 +98,18 @@ export function HeaderActionButton({
         borderRadius: 999,
         alignItems: 'center',
         justifyContent: 'center',
+        position: 'relative',
+        borderWidth: transparent ? 0 : 1,
+        borderColor: transparent ? 'transparent' : withAlphaColor(colors.border, 0.75),
         backgroundColor: transparent
           ? pressed
             ? withAlphaColor(colors.surfaceMuted, 0.6)
             : 'transparent'
-          : withAlphaColor(colors.surface, pressed ? 0.8 : 0.65),
+          : withAlphaColor(colors.surface, pressed ? 0.95 : 0.88),
       })}>
       {children}
+      {badge && badge > 0 ? <HeaderCountBadge value={badge} /> : null}
     </Pressable>
-  );
-}
-
-/** Pastille rouge de compteur (CountBounce, maxDisplay 9). */
-export function HeaderCountBadge({ value }: { value?: number | null }) {
-  if (!value) return null;
-  return (
-    <View
-      pointerEvents="none"
-      style={{
-        position: 'absolute',
-        right: 0,
-        top: 0,
-        zIndex: 1,
-        minWidth: 16.8,
-        paddingHorizontal: 4,
-        borderRadius: 999,
-        backgroundColor: '#ef4444',
-        alignItems: 'center',
-        justifyContent: 'center',
-        boxShadow: '0 1px 2px 0 rgba(0,0,0,0.05)',
-      }}>
-      <AppText style={{ fontSize: 9, lineHeight: 13.5, fontWeight: '700', color: '#ffffff' }}>
-        {value > 9 ? '9+' : String(value)}
-      </AppText>
-    </View>
   );
 }
 
@@ -112,14 +124,13 @@ type AvatarUser = {
 export function UserAvatar({ user, size = HEADER.avatar }: { user: AvatarUser; size?: number }) {
   const { colors } = useTheme();
   const uri = avatarDisplayUrl(user?.avatarUrl, Math.max(size * 2, 80));
-  const ring: ViewStyle | null = user?.verified
-    ? { boxShadow: `0 0 0 2px ${colors.surface}, 0 0 0 4px ${brand[500]}` }
+  const borderStyle: ViewStyle | null = user?.verified
+    ? { borderWidth: 2, borderColor: colors.teal }
     : null;
-  const shadow: ViewStyle = { boxShadow: '0 1px 2px 0 rgba(0,0,0,0.05)' };
 
   if (uri) {
     return (
-      <View style={[{ width: size, height: size, borderRadius: size / 2 }, shadow, ring]}>
+      <View style={[{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden' }, borderStyle]}>
         <Image
           source={{ uri }}
           style={{ width: size, height: size, borderRadius: size / 2 }}
@@ -130,16 +141,17 @@ export function UserAvatar({ user, size = HEADER.avatar }: { user: AvatarUser; s
     );
   }
 
-  const initials = `${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}`.toUpperCase();
+  const initials = `${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}`.toUpperCase() || 'M';
   return (
-    <View style={[{ width: size, height: size, borderRadius: size / 2 }, shadow, ring]}>
+    <View style={[{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden' }, borderStyle]}>
       <LinearGradient
         colors={[brand[700], colors.teal]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{ width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center' }}>
-        <AppText style={{ fontSize: 12, lineHeight: 16, fontWeight: '900', color: '#ffffff' }}>{initials}</AppText>
+        <AppText style={{ fontSize: 12, lineHeight: 15, fontWeight: '900', color: '#ffffff' }}>{initials}</AppText>
       </LinearGradient>
     </View>
   );
 }
+

@@ -2,19 +2,22 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
+import { ArrowLeft } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { fromRow } from '@moxt/shared/utils/remoteRowMapper.js';
 import { PUBLICATION_TABLE, updatePublicationFields } from '@moxt/shared/services/publicationMutations.js';
 
-import { AppChrome } from '@/components/chrome/AppChrome';
 import { Field, StepBar } from '@/components/publish/PublishForm';
 import { CitySelector, CurrencyChips, UploadProgressBar } from '@/components/publish/publishKit';
 import { AppText } from '@/components/ui/AppText';
 import { WEB_BUTTON_TEXT } from '@/components/ui/webButtonText';
 import type { PublicationType } from '@/components/profile/PublicationCard';
+import { useSmartNavbarScroll } from '@/hooks/useSmartNavbar';
 import { pickLibraryFile, uploadLikeWeb } from '@/services/mediaUpload';
 import { supabase } from '@/services/supabase';
 import { useAppSelector } from '@/store/store';
-import { useTheme } from '@/theme/ThemeContext';
+import { useShadows, useTheme } from '@/theme/ThemeContext';
 import { showNotice } from '@/utils/notice';
 
 type FieldDef = { key: string; label: string; multiline?: boolean; numeric?: boolean };
@@ -135,8 +138,10 @@ function asImages(value: unknown) {
 }
 
 /** Modifier une publication, mêmes étapes que la publication web. */
-export default function EditPublicationScreen() {
-  const { type, id } = useLocalSearchParams<{ type: PublicationType; id: string }>();
+export default function EditPublicationScreen({ forcedType }: { forcedType?: PublicationType } = {}) {
+  const params = useLocalSearchParams<{ type?: PublicationType; id: string }>();
+  const type = forcedType || params.type || 'listing';
+  const id = params.id;
   const user = useAppSelector((state) => state.auth.user);
   const { colors, isDark } = useTheme();
   const wizard = WIZARDS[type] || WIZARDS.listing;
@@ -261,68 +266,164 @@ export default function EditPublicationScreen() {
 
   const last = wizard.steps.length - 1;
   const fields = wizard.groups[step] || [];
+  const insets = useSafeAreaInsets();
+  const shadows = useShadows();
+  const { onScroll } = useSmartNavbarScroll();
 
   return (
-    <AppChrome pathname="/publications/edit">
-      <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 128 }}>
-        <AppText className="text-2xl font-black text-app-text">{titles[type] || 'Modifier'}</AppText>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+        style={{ flex: 1, backgroundColor: colors.background }}
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingTop: Math.max(insets.top, 12),
+          paddingBottom: Math.max(insets.bottom + 100, 140),
+          gap: 16,
+        }}>
+        {/* Header row */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <Pressable
+            accessibilityLabel="Retour"
+            onPress={() => {
+              if (step > 0) setStep(step - 1);
+              else router.back();
+            }}
+            style={[
+              {
+                height: 40,
+                width: 40,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 999,
+                borderWidth: 1,
+                borderColor: colors.border,
+                backgroundColor: colors.surface,
+              },
+              shadows.card,
+            ]}>
+            <ArrowLeft size={18} color={colors.text} strokeWidth={2.4} />
+          </Pressable>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <AppText className="text-lg font-black text-app-text" numberOfLines={1}>
+              {titles[type] || 'Modifier'}
+            </AppText>
+            <AppText className="text-xs text-app-text-muted" numberOfLines={1}>
+              Étape {step + 1} / {wizard.steps.length} : {wizard.steps[step]}
+            </AppText>
+          </View>
+        </View>
+
         <StepBar steps={wizard.steps} index={step} />
         {loading ? <ActivityIndicator color={colors.accent} /> : null}
-        {step > 0 ? (
-          <Pressable onPress={() => setStep(step - 1)}>
-            <AppText className="text-sm font-bold text-app-accent">Retour</AppText>
-          </Pressable>
-        ) : null}
-        {fields.map((field) =>
-          field.key === 'city' || field.key === 'location' ? (
-            <CitySelector
-              key={field.key}
-              label={field.label}
-              value={values[field.key] || ''}
-              onChange={(text) => setValues((prev) => ({ ...prev, [field.key]: text }))}
-            />
-          ) : field.key === 'currency' || field.key === 'fromCurrency' || field.key === 'toCurrency' ? (
-            <CurrencyChips
-              key={field.key}
-              label={field.label}
-              value={values[field.key] || 'RUB'}
-              onChange={(text) => setValues((prev) => ({ ...prev, [field.key]: text }))}
-            />
-          ) : (
-            <Field
-              key={field.key}
-              label={field.label}
-              value={values[field.key] || ''}
-              multiline={field.multiline}
-              keyboardType={field.numeric ? 'numeric' : 'default'}
-              onChangeText={(text) => setValues((prev) => ({ ...prev, [field.key]: text }))}
-            />
-          ),
-        )}
-        {wizard.photos && step === (type === 'post' ? 1 : type === 'job' || type === 'event' ? 3 : 1) ? (
-          <>
-            <Pressable onPress={() => void addPhoto()}>
-              <AppText className="text-sm font-bold text-app-accent">Ajouter une photo ({images.length}/5)</AppText>
+
+        <View
+          style={[
+            {
+              borderRadius: 18,
+              borderWidth: 1,
+              borderColor: colors.border,
+              backgroundColor: colors.surface,
+              padding: 16,
+              gap: 14,
+            },
+            shadows.card,
+          ]}>
+          {fields.map((field) =>
+            field.key === 'city' || field.key === 'location' ? (
+              <CitySelector
+                key={field.key}
+                label={field.label}
+                value={values[field.key] || ''}
+                onChange={(text) => setValues((prev) => ({ ...prev, [field.key]: text }))}
+              />
+            ) : field.key === 'currency' || field.key === 'fromCurrency' || field.key === 'toCurrency' ? (
+              <CurrencyChips
+                key={field.key}
+                label={field.label}
+                value={values[field.key] || 'RUB'}
+                onChange={(text) => setValues((prev) => ({ ...prev, [field.key]: text }))}
+              />
+            ) : (
+              <Field
+                key={field.key}
+                label={field.label}
+                value={values[field.key] || ''}
+                multiline={field.multiline}
+                keyboardType={field.numeric ? 'numeric' : 'default'}
+                onChangeText={(text) => setValues((prev) => ({ ...prev, [field.key]: text }))}
+              />
+            ),
+          )}
+
+          {wizard.photos && step === (type === 'post' ? 1 : type === 'job' || type === 'event' ? 3 : 1) ? (
+            <View style={{ gap: 8, marginTop: 4 }}>
+              <Pressable
+                onPress={() => void addPhoto()}
+                style={{
+                  minHeight: 48,
+                  borderRadius: 12,
+                  borderWidth: 1.5,
+                  borderStyle: 'dashed',
+                  borderColor: colors.primary,
+                  backgroundColor: colors.primaryLight,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingHorizontal: 14,
+                }}>
+                <AppText className="text-xs font-bold text-app-primary">
+                  Ajouter une photo ({images.length}/5)
+                </AppText>
+              </Pressable>
+              <UploadProgressBar progress={progress} />
+            </View>
+          ) : null}
+
+          {wizard.proof && step === 2 ? (
+            <Pressable
+              onPress={() => void addProof()}
+              style={{
+                minHeight: 48,
+                borderRadius: 12,
+                borderWidth: 1.5,
+                borderStyle: 'dashed',
+                borderColor: colors.primary,
+                backgroundColor: colors.primaryLight,
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingHorizontal: 14,
+              }}>
+              <AppText className="text-xs font-bold text-app-primary">
+                {proof ? 'Preuve de voyage envoyée' : 'Ajouter la preuve de voyage'}
+              </AppText>
             </Pressable>
-            <UploadProgressBar progress={progress} />
-          </>
-        ) : null}
-        {wizard.proof && step === 2 ? (
-          <Pressable onPress={() => void addProof()}>
-            <AppText className="text-sm font-bold text-app-accent">{proof ? 'Preuve de voyage envoyée' : 'Ajouter la preuve de voyage'}</AppText>
-          </Pressable>
-        ) : null}
+          ) : null}
+        </View>
+
+        {/* Bottom action button */}
         <Pressable
           accessibilityRole="button"
           disabled={saving || loading}
           onPress={() => (step < last ? setStep(step + 1) : void save())}
-          style={{ minHeight: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent, opacity: saving ? 0.7 : 1 }}>
-          <AppText className={WEB_BUTTON_TEXT} style={{ color: isDark ? '#020617' : '#ffffff' }}>
-            {step < last ? 'Continuer' : saving ? 'Enregistrement…' : 'Enregistrer'}
+          style={[
+            {
+              minHeight: 50,
+              borderRadius: 14,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: colors.accent,
+              opacity: saving ? 0.7 : 1,
+              marginTop: 4,
+            },
+            shadows.card,
+          ]}>
+          <AppText className={WEB_BUTTON_TEXT} style={{ color: isDark ? '#020617' : '#ffffff', fontSize: 15, fontWeight: '700' }}>
+            {step < last ? 'Continuer' : saving ? 'Enregistrement…' : 'Enregistrer les modifications'}
           </AppText>
         </Pressable>
-        <View />
       </ScrollView>
-    </AppChrome>
+    </View>
   );
 }

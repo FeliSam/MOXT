@@ -49,8 +49,22 @@ export function FeedVideoPlayer({
   }, [player, muted]);
 
   useEffect(() => {
-    if (active && !pausedByUser) player.play();
-    else player.pause();
+    if (active && !pausedByUser) {
+      try {
+        const res = (player as any).play?.();
+        if (res && typeof res.catch === 'function') {
+          res.catch(() => {
+            // Browser autoplay restrictions (NotAllowedError)
+          });
+        }
+      } catch {
+        // Safe fallback
+      }
+    } else {
+      try {
+        (player as any).pause?.();
+      } catch {}
+    }
   }, [player, active, pausedByUser]);
 
   const error = status === 'error';

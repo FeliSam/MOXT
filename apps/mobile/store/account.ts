@@ -62,10 +62,22 @@ export type Review = {
   replyText?: string | null;
 };
 
+export type TransferProfile = {
+  id: string;
+  userId: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  country: string;
+  method: string;
+  createdAt?: string;
+};
+
 type AccountState = {
   businesses: Business[];
   businessById: Record<string, Business>;
   subscriptions: PublisherSubscription[];
+  transferProfiles: TransferProfile[];
   reviewsReceived: Review[];
   reviewsAuthored: Review[];
   reviewsAverage: number | null;
@@ -84,6 +96,7 @@ const initialState: AccountState = {
   businesses: [],
   businessById: {},
   subscriptions: [],
+  transferProfiles: [],
   reviewsReceived: [],
   reviewsAuthored: [],
   reviewsAverage: null,
@@ -149,6 +162,29 @@ export const loadVerification = createAsyncThunk(
   },
 );
 
+export const loadTransferProfiles = createAsyncThunk(
+  'account/loadTransferProfiles',
+  async (userId: string) => {
+    if (!supabase || !userId) return [] as TransferProfile[];
+    const { data, error } = await supabase
+      .from('transfer_profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    if (error || !Array.isArray(data)) return [] as TransferProfile[];
+    return data.map((row: any) => ({
+      id: String(row.id),
+      userId: String(row.user_id || userId),
+      firstName: String(row.first_name || ''),
+      lastName: String(row.last_name || ''),
+      phone: String(row.phone || ''),
+      country: String(row.country || '').toUpperCase(),
+      method: String(row.method || ''),
+      createdAt: row.created_at ? String(row.created_at) : undefined,
+    })) as TransferProfile[];
+  },
+);
+
 function indexBusinesses(state: AccountState, items: Business[]) {
   for (const item of items) {
     if (item?.id) state.businessById[item.id] = { ...state.businessById[item.id], ...item };
@@ -176,6 +212,19 @@ const accountSlice = createSlice({
       const { userId, publisherType, publisherId } = action.payload;
       state.subscriptions = state.subscriptions.filter(
         (item) => !(item.userId === userId && item.publisherType === publisherType && item.publisherId === publisherId),
+      );
+    },
+    saveTransferProfile(state, action: PayloadAction<TransferProfile>) {
+      state.transferProfiles = state.transferProfiles || [];
+      const index = state.transferProfiles.findIndex(
+        (item) => item.id === action.payload.id || (item.userId === action.payload.userId && item.phone === action.payload.phone),
+      );
+      if (index >= 0) state.transferProfiles[index] = action.payload;
+      else state.transferProfiles.unshift(action.payload);
+    },
+    removeTransferProfile(state, action: PayloadAction<{ id: string }>) {
+      state.transferProfiles = (state.transferProfiles || []).filter(
+        (item) => item.id !== action.payload.id,
       );
     },
   },
@@ -229,11 +278,20 @@ const accountSlice = createSlice({
       })
       .addCase(loadVerification.fulfilled, (state, action) => {
         if (action.payload) state.verification = action.payload;
+      })
+      .addCase(loadTransferProfiles.fulfilled, (state, action) => {
+        state.transferProfiles = action.payload;
       });
   },
 });
 
-export const { publicBusinessesReceived, subscriptionUpserted, subscriptionRemoved } = accountSlice.actions;
+export const {
+  publicBusinessesReceived,
+  subscriptionUpserted,
+  subscriptionRemoved,
+  saveTransferProfile,
+  removeTransferProfile,
+} = accountSlice.actions;
 export const accountReducer = accountSlice.reducer;
 
 /** Mes abonnements (web selectUserSubscriptions). */

@@ -258,7 +258,7 @@ function AmountField({
           placeholderTextColor={placeholderColor}
           value={value}
           onChangeText={onChangeText}
-          style={{ flex: 1, minHeight: 36, fontSize: 22, fontWeight: '800', color: textColor }}
+          style={{ flex: 1, minHeight: 36, fontSize: 22, fontWeight: '800', color: textColor, outlineStyle: 'none' as any }}
         />
         <Text className="text-sm font-bold text-app-text-muted">{currency}</Text>
       </View>

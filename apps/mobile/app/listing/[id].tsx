@@ -3,6 +3,7 @@ import { useLocalSearchParams, usePathname, router } from 'expo-router';
 import {
   Dimensions,
   Image,
+  Modal,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
@@ -11,8 +12,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Eye, Heart, MapPin, Package, Shield } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ArrowLeft, Eye, Heart, MapPin, Package, Shield, Star, X } from 'lucide-react-native';
 
 import { formatCurrency } from '@moxt/shared/utils/formatters.js';
 
@@ -37,11 +38,12 @@ import { loadListingById, upsertListing, type ListingItem } from '@/store/market
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { normalizeListingImages } from '@/utils/mediaUrl';
 import { showNotice } from '@/utils/notice';
+import { useSmartNavbarScroll } from '@/hooks/useSmartNavbar';
 import { idFromPath, routeParam } from '@/utils/routeParam';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const IMAGE_WIDTH = SCREEN_WIDTH - 40;
-const IMAGE_HEIGHT = 260;
+const IMAGE_WIDTH = SCREEN_WIDTH;
+const IMAGE_HEIGHT = 416; // +60% (260 * 1.6 = 416)
 
 const CONDITION_LABELS: Record<string, string> = {
   new: 'Neuf',
@@ -78,7 +80,10 @@ export default function ListingDetailScreen() {
   const pathnameId = idFromPath(usePathname());
   const id = routeParam(params.id) || pathnameId;
   const dispatch = useAppDispatch();
+  const insets = useSafeAreaInsets();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [descExpanded, setDescExpanded] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
   const [detailTab, setDetailTab] = useState<(typeof DETAIL_TABS)[number][0]>('description');
   const [pending, setPending] = useState(true);
   const [galleryOpen, setGalleryOpen] = useState(false);
@@ -86,8 +91,9 @@ export default function ListingDetailScreen() {
   const [question, setQuestion] = useState('');
   const [answerDrafts, setAnswerDrafts] = useState<Record<string, string>>({});
   const [questions, setQuestions] = useState<NonNullable<ListingItem['questions']>>([]);
-  const scrollRef = useRef<ScrollView>(null);
-  const fetched = useRef(false);
+  const scrollRef = useRef<any>(null);
+  const fetchedId = useRef<string | null>(null);
+  const { onScroll: onSmartScroll, scrollEventThrottle } = useSmartNavbarScroll();
 
   const listing = useAppSelector((state) =>
     state.marketplace.items.find((l) => l.id === id),
@@ -104,8 +110,15 @@ export default function ListingDetailScreen() {
             item.status === 'active' &&
             (item.category === listing?.category || item.city === listing?.city),
         )
-        .slice(0, 3),
+        .slice(0, 4),
     [catalog, id, listing?.category, listing?.city],
+  );
+  const discoverListings = useMemo(
+    () =>
+      catalog
+        .filter((item) => item.id !== id && item.status === 'active')
+        .slice(0, 6),
+    [catalog, id],
   );
 
   useEffect(() => {
@@ -113,11 +126,12 @@ export default function ListingDetailScreen() {
       setPending(false);
       return;
     }
-    if (listing || fetched.current) {
+    if (listing) {
       setPending(false);
       return;
     }
-    fetched.current = true;
+    if (fetchedId.current === id) return;
+    fetchedId.current = id;
     dispatch(loadListingById(id))
       .finally(() => setPending(false))
       .catch(() => undefined);
@@ -158,15 +172,15 @@ export default function ListingDetailScreen() {
 
   if (!listing) {
     if (pending) {
-      return <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} />;
+      return <View style={{ flex: 1, backgroundColor: colors.background }} />;
     }
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg }}>
           <Text style={{ ...typography.sectionTitle, color: colors.text }}>Annonce introuvable</Text>
           <Button variant="primary" onPress={() => router.back()}>Retour</Button>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -245,40 +259,78 @@ export default function ListingDetailScreen() {
     .join(' · ');
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentContainerStyle={{ padding: spacing.xl, paddingBottom: 120, gap: spacing.lg }}>
-        <Text numberOfLines={1} style={{ fontSize: 12, fontFamily: fontFamilies.regular, color: colors.textMuted }}>
-          Marketplace / {categoryLabel} / <Text style={{ color: colors.text, fontFamily: fontFamilies.semibold }}>{listing.title}</Text>
-        </Text>
-        <PageHeader className="mx-0" title={listing.title} />
-        {/* Images Carousel */}
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      {/* Bouton retour en « goutte » flottant */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Retour"
+        onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/marketplace' as never))}
+        style={{
+          position: 'absolute',
+          top: Math.max(14, insets.top + 6),
+          left: 16,
+          width: 42,
+          height: 42,
+          borderRadius: 21,
+          backgroundColor: 'rgba(0,0,0,0.52)',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 50,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+        }}
+      >
+        <ArrowLeft size={22} color="#ffffff" strokeWidth={2.5} />
+      </Pressable>
+
+      <ScrollView
+        onScroll={onSmartScroll}
+        scrollEventThrottle={scrollEventThrottle}
+        contentContainerStyle={{ paddingBottom: 130 }}
+      >
+        {/* Full-width 100% Image (+60% height: 416px) */}
         {images.length > 0 ? (
-          <View style={{ width: IMAGE_WIDTH, height: IMAGE_HEIGHT + 30, alignSelf: 'center' }}>
+          <View style={{ width: SCREEN_WIDTH, height: IMAGE_HEIGHT, position: 'relative', backgroundColor: '#000000' }}>
             <ScrollView
               ref={scrollRef}
               horizontal
               pagingEnabled
               showsHorizontalScrollIndicator={false}
               decelerationRate="fast"
-              snapToInterval={IMAGE_WIDTH}
+              snapToInterval={SCREEN_WIDTH}
               snapToAlignment="start"
               onScroll={handleScroll}
               scrollEventThrottle={16}
-              style={{ width: IMAGE_WIDTH, height: IMAGE_HEIGHT, borderRadius: radii.lg, overflow: 'hidden' }}>
+              style={{ width: SCREEN_WIDTH, height: IMAGE_HEIGHT }}
+            >
               {images.map((uri, idx) => (
-                <Pressable key={idx} accessibilityLabel="Ouvrir la galerie" onPress={() => { setActiveImageIndex(idx); setGalleryOpen(true); }} style={{ width: IMAGE_WIDTH, height: IMAGE_HEIGHT, borderRadius: radii.lg, overflow: 'hidden', backgroundColor: colors.surfaceMuted }}>
-                  <Image source={{ uri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                <Pressable
+                  key={idx}
+                  accessibilityLabel="Ouvrir la photo"
+                  onPress={() => {
+                    setActiveImageIndex(idx);
+                    setGalleryOpen(true);
+                  }}
+                  style={{ width: SCREEN_WIDTH, height: IMAGE_HEIGHT, backgroundColor: '#000000' }}
+                >
+                  <Image source={{ uri }} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
                 </Pressable>
               ))}
             </ScrollView>
 
             {images.length > 1 && (
-              <View style={{
-                position: 'absolute', top: 12, right: 12,
-                backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: radii.md,
-                paddingHorizontal: 10, paddingVertical: 4,
-              }}>
-                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
+              <View
+                style={{
+                  position: 'absolute',
+                  top: Math.max(16, insets.top + 10),
+                  right: 16,
+                  backgroundColor: 'rgba(0,0,0,0.65)',
+                  borderRadius: radii.md,
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                  zIndex: 10,
+                }}
+              >
+                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>
                   {activeImageIndex + 1} / {images.length}
                 </Text>
               </View>
@@ -288,307 +340,265 @@ export default function ListingDetailScreen() {
               <>
                 {activeImageIndex > 0 && (
                   <Pressable
-                    style={{ position: 'absolute', top: IMAGE_HEIGHT / 2 - 20, left: 10, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' }}
-                    onPress={() => goToImage(activeImageIndex - 1)}>
+                    style={{
+                      position: 'absolute',
+                      top: IMAGE_HEIGHT / 2 - 20,
+                      left: 12,
+                      width: 40,
+                      height: 40,
+                      borderRadius: 20,
+                      backgroundColor: 'rgba(0,0,0,0.55)',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      zIndex: 10,
+                    }}
+                    onPress={() => goToImage(activeImageIndex - 1)}
+                  >
                     <Text style={{ color: '#fff', fontSize: 26, fontWeight: '700', marginTop: -2 }}>‹</Text>
                   </Pressable>
                 )}
                 {activeImageIndex < images.length - 1 && (
                   <Pressable
-                    style={{ position: 'absolute', top: IMAGE_HEIGHT / 2 - 20, right: 10, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' }}
-                    onPress={() => goToImage(activeImageIndex + 1)}>
+                    style={{
+                      position: 'absolute',
+                      top: IMAGE_HEIGHT / 2 - 20,
+                      right: 12,
+                      width: 40,
+                      height: 40,
+                      borderRadius: 20,
+                      backgroundColor: 'rgba(0,0,0,0.55)',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      zIndex: 10,
+                    }}
+                    onPress={() => goToImage(activeImageIndex + 1)}
+                  >
                     <Text style={{ color: '#fff', fontSize: 26, fontWeight: '700', marginTop: -2 }}>›</Text>
                   </Pressable>
                 )}
               </>
             )}
-
-            {images.length > 1 ? (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingTop: 10 }}>
-                {images.map((uri, idx) => (
-                  <Pressable
-                    key={`thumb-${idx}`}
-                    onPress={() => goToImage(idx)}
-                    style={{
-                      width: 56,
-                      height: 56,
-                      borderRadius: 10,
-                      overflow: 'hidden',
-                      borderWidth: idx === activeImageIndex ? 2 : 1,
-                      borderColor: idx === activeImageIndex ? colors.primary : colors.border,
-                    }}>
-                    <Image source={{ uri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-                  </Pressable>
-                ))}
-              </ScrollView>
-            ) : null}
-
-            {images.length > 1 && (
-              <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 10 }}>
-                {images.map((_, idx) => (
-                  <Pressable
-                    key={idx}
-                    onPress={() => goToImage(idx)}
-                    style={{
-                      width: idx === activeImageIndex ? 24 : 8,
-                      height: 8,
-                      borderRadius: 4,
-                      backgroundColor: idx === activeImageIndex ? colors.primary : colors.border,
-                    }}
-                  />
-                ))}
-              </View>
-            )}
           </View>
         ) : (
-          <View style={{
-            width: IMAGE_WIDTH, height: IMAGE_HEIGHT, borderRadius: radii.lg,
-            backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center', alignSelf: 'center',
-          }}>
-            <Package size={52} color={brand[700]} />
+          <View
+            style={{
+              width: SCREEN_WIDTH,
+              height: IMAGE_HEIGHT,
+              backgroundColor: colors.surfaceMuted,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Package size={64} color={brand[700]} />
           </View>
         )}
 
-        {/* Title + price */}
-        <Card>
-          <View style={{ gap: spacing.sm }}>
-            <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
-              {typeLabel ? <Badge tone="brand">{typeLabel}</Badge> : null}
-              {listing.category ? <Badge tone="neutral">{listing.category}</Badge> : null}
-              {conditionLabel ? <Badge tone="success">{conditionLabel}</Badge> : null}
-            </View>
-            <Text style={{ fontSize: 30, fontFamily: fontFamilies.semibold, color: brand[700] }}>
-              {listing.price
-                ? formatCurrency(listing.price, listing.currency || 'RUB')
-                : 'Sur devis'}
-            </Text>
-            {listing.city ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <MapPin size={13} color={colors.textMuted} />
-                <Text style={{ ...typography.bodySmall, color: colors.textMuted }}>
-                  {listing.city}{listing.address ? `, ${listing.address}` : ''}
-                </Text>
-              </View>
-            ) : null}
-            {listing.status ? <StatusBadge status={listing.status} /> : null}
-            <DetailMetrics
-              items={[
-                { icon: Package, label: conditionLabel ? 'État' : 'Type', value: conditionLabel || typeLabel || '—' },
-                { icon: MapPin, label: 'Localisation', value: listing.city || '—' },
-                { icon: Eye, label: 'Consultations', value: `${listing.views || 0} vues` },
-                { icon: Heart, label: 'Intérêt', value: `${listing.favorites?.length || 0} favoris` },
-              ]}
-            />
-            <Text style={{ borderRadius: 14, overflow: 'hidden', backgroundColor: colors.warningBg, color: colors.warning, padding: 12, fontSize: 12, lineHeight: 18 }}>
-              Paiement via MOXT. Vérifiez le produit avant toute transaction.
-            </Text>
-          </View>
-        </Card>
-
-        <Card>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
-            {DETAIL_TABS.map(([key, label]) => {
-              const active = detailTab === key;
-              return (
-                <Pressable key={key} onPress={() => setDetailTab(key)} style={{ minHeight: 40, alignItems: 'center', justifyContent: 'center', borderBottomWidth: 2, borderBottomColor: active ? colors.primary : 'transparent', paddingHorizontal: 4 }}>
-                  <Text style={{ fontWeight: '800', color: active ? colors.text : colors.textMuted }}>{label}</Text>
-                </Pressable>
-              );
-            })}
+        {/* Miniatures des photos restantes : ouvre le bodysheet au clic */}
+        {images.length > 1 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 8, paddingHorizontal: 16, paddingTop: 10 }}
+          >
+            {images.map((uri, idx) => (
+              <Pressable
+                key={`thumb-${idx}`}
+                onPress={() => {
+                  goToImage(idx);
+                }}
+                style={{
+                  width: 58,
+                  height: 58,
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                  borderWidth: idx === activeImageIndex ? 2.5 : 1,
+                  borderColor: idx === activeImageIndex ? brand[600] : colors.border,
+                }}
+              >
+                <Image source={{ uri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+              </Pressable>
+            ))}
           </ScrollView>
-          <View style={{ marginTop: 16, gap: 8 }}>
-            {detailTab === 'description' ? (
-              <>
-                <Text style={{ fontSize: 20, fontFamily: fontFamilies.display, letterSpacing: -0.3, color: colors.text }}>À propos de cette annonce</Text>
-                <Text style={{ ...typography.body, color: colors.textSecondary, lineHeight: 22 }}>
-                  {listing.description || 'Aucune description.'}
-                </Text>
-              </>
-            ) : null}
-            {detailTab === 'details' ? (
-              [
-                ['Catégorie', categoryLabel || '—'],
-                ['Type', typeLabel || '—'],
-                ['Marque', listing.brand || '—'],
-                ['Modèle', listing.model || '—'],
-                ['Couleur', listing.color || '—'],
-                ['État', conditionLabel || '—'],
-                ['Quartier', listing.district || '—'],
-                ['Localisation', [listing.city, listing.address].filter(Boolean).join(', ') || '—'],
-              ].map(([label, value]) => (
-                <View key={label} style={{ borderRadius: 12, backgroundColor: colors.surfaceMuted, padding: 12 }}>
-                  <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textMuted }}>{label}</Text>
-                  <Text style={{ marginTop: 4, fontWeight: '700', color: colors.text }}>{value}</Text>
-                </View>
-              ))
-            ) : null}
-            {detailTab === 'delivery' ? (
-              [
-                ['Modes de remise', deliveryModes],
-                ...(carriers ? [['Transporteurs', carriers] as const] : []),
-                ['Frais de livraison', listing.deliveryFee ? formatCurrency(listing.deliveryFee, listing.currency || 'RUB', 'fr-FR') : 'Gratuit ou à convenir'],
-                ['Délai', listing.deliveryDelay || '—'],
-                ['Garantie', listing.warranty || '—'],
-                ['Politique de retour', listing.returnPolicy || '—'],
-                ['Paiements acceptés', listing.paymentMethods?.length ? listing.paymentMethods.join(', ') : 'À convenir'],
-              ].map(([label, value]) => (
-                <View key={label} style={{ borderRadius: 12, backgroundColor: colors.surfaceMuted, padding: 12 }}>
-                  <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textMuted }}>{String(label)}</Text>
-                  <Text style={{ marginTop: 4, fontWeight: '700', color: colors.text }}>{value}</Text>
-                </View>
-              ))
-            ) : null}
-            {detailTab === 'questions' ? (
-              <View style={{ gap: 12 }}>
-                {questions.length ? (
-                  questions.map((item, index) => (
-                    <View key={item.id || String(index)} style={{ gap: 4 }}>
-                      <Text style={{ fontWeight: '800', color: colors.text }}>{item.authorName || 'Membre'}</Text>
-                      <Text style={{ color: colors.textSecondary }}>{item.text}</Text>
-                      {item.answer ? <Text style={{ color: colors.textMuted }}>Réponse du vendeur : {item.answer}</Text> : <Text style={{ color: colors.textFaint }}>En attente de réponse du vendeur.</Text>}
-                      {isOwner && !item.answer && item.id ? (
-                        <View style={{ gap: 8, marginTop: 6 }}>
-                          <TextInput
-                            value={answerDrafts[item.id] || ''}
-                            onChangeText={(value) => setAnswerDrafts((current) => ({ ...current, [item.id!]: value }))}
-                            placeholder="Répondre publiquement"
-                            placeholderTextColor={colors.textFaint}
-                            style={{ minHeight: 44, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceMuted, paddingHorizontal: 12, color: colors.text }}
-                          />
-                          <Button variant="secondary" onPress={() => void publishAnswer(item.id!)}>Publier la réponse</Button>
-                        </View>
-                      ) : null}
-                    </View>
-                  ))
-                ) : (
-                  <Text style={{ color: colors.textMuted }}>Aucune question publique.</Text>
-                )}
-                {!isOwner ? (
-                  <View style={{ gap: 8 }}>
-                    <Text style={{ fontWeight: '800', color: colors.text }}>Poser une question publique</Text>
-                    <TextInput
-                      value={question}
-                      onChangeText={setQuestion}
-                      placeholder="Demandez une précision sur l’état, la livraison ou la disponibilité..."
-                      placeholderTextColor={colors.textFaint}
-                      multiline
-                      style={{ minHeight: 88, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceMuted, padding: 12, color: colors.text, textAlignVertical: 'top' }}
-                    />
-                    <Button variant="primary" onPress={() => void publishQuestion()}>Publier la question</Button>
-                  </View>
-                ) : null}
-              </View>
-            ) : null}
-            {detailTab === 'history' ? (
-              (listing.history || []).length ? (
-                listing.history!.map((entry, index) => (
-                  <Text key={`${entry.at || index}`} style={{ color: colors.text }}>
-                    {entry.status || '—'}{entry.at ? ` · ${entry.at}` : ''}
-                  </Text>
-                ))
-              ) : (
-                <Text style={{ color: colors.textMuted }}>Aucun historique.</Text>
-              )
-            ) : null}
-          </View>
-        </Card>
+        )}
 
-        {/* Seller */}
-        <Card>
-          <View style={{ gap: spacing.sm }}>
-            <Text style={{ ...typography.sectionTitle, color: colors.text }}>Vendeur</Text>
-            {listing.sellerName ? (
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 2 }}>
-                <Text style={{ ...typography.body, color: colors.textMuted }}>Nom</Text>
-                <Text style={{ ...typography.body, fontWeight: '600', color: colors.text }}>{listing.sellerName}</Text>
-              </View>
-            ) : null}
-            <ContactButton
-              ownerId={listing.ownerId}
-              relatedType="listing"
-              relatedId={listing.id}
-              relatedPath={`/marketplace/${listing.id}`}
-              relatedTitle={listing.title}
-              subtitle={listing.city}
-              badge="Annonce"
-            />
-            <FavoriteButton
-              relatedId={listing.id}
-              relatedType="listing"
-              title={listing.title}
-              subtitle={listing.city}
-              path={`/marketplace/${listing.id}`}
-            />
-          </View>
-        </Card>
-
-        <PublisherBlock profile={publisherProfile} currentId={listing.id} limit={5} />
-
-        <DetailFacts
-          items={[
-            { label: 'Catégorie', value: categoryLabel },
-            { label: 'Type', value: typeLabel },
-            { label: 'Marque', value: listing.brand },
-            { label: 'État', value: conditionLabel },
-            { label: 'Ville', value: listing.city },
-          ]}
-        />
-
-        {similar.length ? (
-          <View style={{ gap: spacing.sm }}>
-            <Text style={{ ...typography.sectionTitle, color: colors.text }}>Annonces similaires</Text>
-            <Text style={{ ...typography.bodySmall, color: colors.textMuted }}>Même catégorie ou même zone géographique.</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
-              {similar.map((item) => (
-                <MarketplaceListingCard key={item.id} listing={item} width={220} height={280} />
-              ))}
-            </ScrollView>
-          </View>
-        ) : null}
-
-        {user?.id && !isOwner ? (
-          <Button variant="danger" onPress={() => setReportOpen(true)}>Signaler</Button>
-        ) : null}
-
-        {isAdminViewer ? (
+        {/* Corps du contenu */}
+        <View style={{ paddingHorizontal: 16, paddingTop: 16, gap: 14 }}>
+          {/* Titre & Prix (épuré sans puces superflues) */}
           <Card>
-            <View style={{ gap: spacing.sm }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Shield size={18} color={brand[700]} />
-                <Text style={{ ...typography.sectionTitle, color: colors.text }}>Actions administrateur</Text>
-              </View>
-              <Text style={{ ...typography.bodySmall, color: colors.textMuted }}>
-                Modération directe de l'annonce depuis sa fiche
+            <View style={{ gap: 8 }}>
+              <Text style={{ fontSize: 22, fontWeight: '800', color: colors.text, lineHeight: 28 }}>
+                {listing.title}
               </Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                {(
-                  [
-                    ['active', 'Publier', 'primary'],
-                    ['sold', 'Marquer vendu', 'secondary'],
-                    ['archived', 'Archiver', 'danger'],
-                  ] as const
-                ).map(([status, label, variant]) => (
-                  <Button
-                    key={status}
-                    variant={variant}
-                    onPress={async () => {
-                      if (!supabase) return;
-                      const { error } = await supabase.from('listings').update({ status }).eq('id', listing.id);
-                      if (error) {
-                        showNotice('Modération', error.message);
-                        return;
-                      }
-                      dispatch(upsertListing({ ...listing, status }));
-                      showNotice('Modération', `Statut « ${label} » appliqué.`);
-                    }}>
-                    {label}
-                  </Button>
+              <Text style={{ fontSize: 26, fontWeight: '900', color: brand[700] }}>
+                {listing.price
+                  ? formatCurrency(listing.price, listing.currency || 'RUB')
+                  : 'Sur devis'}
+              </Text>
+              {listing.city ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
+                  <MapPin size={14} color={colors.textMuted} />
+                  <Text style={{ fontSize: 13, color: colors.textMuted, fontWeight: '500' }}>
+                    {listing.city}{listing.address ? `, ${listing.address}` : ''}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          </Card>
+
+          {/* Description limitée à 4 lignes avec bouton « Voir plus » */}
+          <Card>
+            <View style={{ gap: 8 }}>
+              <Text style={{ fontSize: 17, fontWeight: '800', color: colors.text }}>
+                Description
+              </Text>
+              <Text
+                numberOfLines={descExpanded ? undefined : 4}
+                style={{ fontSize: 14, color: colors.textSecondary, lineHeight: 22 }}
+              >
+                {listing.description || 'Aucune description fournie.'}
+              </Text>
+              {listing.description && listing.description.length > 110 ? (
+                <Pressable
+                  onPress={() => setDescExpanded((v) => !v)}
+                  style={{ alignSelf: 'flex-start', paddingTop: 2 }}
+                >
+                  <Text style={{ fontSize: 13, fontWeight: '800', color: brand[700] }}>
+                    {descExpanded ? 'Voir moins' : 'Voir plus'}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+          </Card>
+
+          {/* Bloc Vendeur compact (logo, nom cliquable, note étoile, nb annonces, s'abonner) */}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: 14,
+              borderRadius: 18,
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <Pressable
+              onPress={() => router.push((publisherProfile?.businessProfilePath || (listing.ownerId ? `/users/${listing.ownerId}` : '/organization')) as never)}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}
+            >
+              {publisherProfile?.business?.logoUrl ? (
+                <Image
+                  source={{ uri: publisherProfile.business.logoUrl }}
+                  style={{ width: 44, height: 44, borderRadius: 22 }}
+                />
+              ) : (
+                <View
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    backgroundColor: brand[700],
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>
+                    {((publisherProfile?.publisherName || listing.sellerName || 'M')[0] || 'M').toUpperCase()}
+                  </Text>
+                </View>
+              )}
+              <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                <Text numberOfLines={1} style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>
+                  {publisherProfile?.publisherName || listing.sellerName || 'Vendeur'}
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                    <Star size={12} color="#f59e0b" fill="#f59e0b" />
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: colors.text }}>
+                      {(publisherProfile?.rating?.average || 5).toFixed(1)}
+                    </Text>
+                  </View>
+                  <Text style={{ fontSize: 11, color: colors.textMuted }}>
+                    · {publisherProfile?.publicationCount || 1} annonce{(publisherProfile?.publicationCount || 1) > 1 ? 's' : ''}
+                  </Text>
+                </View>
+              </View>
+            </Pressable>
+
+            <Pressable
+              onPress={() => setIsSubscribed((v) => !v)}
+              style={{
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                borderRadius: 12,
+                backgroundColor: isSubscribed ? colors.surfaceMuted : brand[700],
+                borderWidth: isSubscribed ? 1 : 0,
+                borderColor: colors.border,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 12,
+                  fontWeight: '800',
+                  color: isSubscribed ? colors.text : '#ffffff',
+                }}
+              >
+                {isSubscribed ? 'Abonné' : "S'abonner"}
+              </Text>
+            </Pressable>
+          </View>
+
+          {/* Livraison & Modalités */}
+          <Card>
+            <View style={{ gap: 8 }}>
+              <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text }}>Livraison & Retrait</Text>
+              <Text style={{ fontSize: 13, color: colors.textSecondary }}>
+                Modes : {deliveryModes || 'Remise en main propre'}
+              </Text>
+              {listing.deliveryFee ? (
+                <Text style={{ fontSize: 13, color: colors.textSecondary }}>
+                  Frais : {formatCurrency(listing.deliveryFee, listing.currency || 'RUB')}
+                </Text>
+              ) : null}
+            </View>
+          </Card>
+
+          {/* Annonces similaires */}
+          {similar.length ? (
+            <View style={{ gap: 10, marginTop: 4 }}>
+              <Text style={{ fontSize: 17, fontWeight: '800', color: colors.text }}>Annonces similaires</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+                {similar.map((item) => (
+                  <MarketplaceListingCard key={item.id} listing={item} width={190} height={250} />
+                ))}
+              </ScrollView>
+            </View>
+          ) : null}
+
+          {/* Découvrir d'autres annonces */}
+          {discoverListings.length ? (
+            <View style={{ gap: 10, marginTop: 4 }}>
+              <Text style={{ fontSize: 17, fontWeight: '800', color: colors.text }}>Découvrir</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                {discoverListings.map((item) => (
+                  <MarketplaceListingCard
+                    key={item.id}
+                    listing={item}
+                    width={(SCREEN_WIDTH - 42) / 2}
+                    height={250}
+                  />
                 ))}
               </View>
             </View>
-          </Card>
-        ) : null}
+          ) : null}
+
+          {user?.id && !isOwner ? (
+            <Button variant="danger" onPress={() => setReportOpen(true)}>Signaler cette annonce</Button>
+          ) : null}
+        </View>
       </ScrollView>
+
       <DetailFloatingActions
         relatedId={listing.id}
         title={listing.title}
@@ -616,6 +626,6 @@ export default function ListingDetailScreen() {
         userName={[user?.firstName, user?.lastName].filter(Boolean).join(' ')}
         onClose={() => setReportOpen(false)}
       />
-    </SafeAreaView>
+    </View>
   );
 }

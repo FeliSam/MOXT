@@ -65,9 +65,35 @@ async function ingestRemoteMessage(
   );
 }
 
+let authListenerSubscription: { unsubscribe: () => void } | null = null;
+
+async function syncRealtimeAuth() {
+  if (!supabase) return;
+  try {
+    const { data } = await supabase.auth.getSession();
+    const token = data?.session?.access_token;
+    if (token) {
+      await supabase.realtime.setAuth(token);
+    }
+  } catch (err) {
+    console.warn('[realtime] Échec sync auth token realtime:', err);
+  }
+}
+
 export function subscribeRealtime(userId: string, dispatch: Dispatch, getState: GetState) {
   unsubscribeRealtime();
   if (!supabase) return;
+
+  void syncRealtimeAuth();
+
+  if (!authListenerSubscription) {
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.access_token) {
+        supabase?.realtime.setAuth(session.access_token).catch(() => {});
+      }
+    });
+    authListenerSubscription = data.subscription;
+  }
 
   // Notifications serveur (INSERT / UPDATE filtrés sur user_id), comme realtimeService web.
   notificationsUnsubscribe = subscribeToNotifications(
@@ -139,4 +165,6 @@ export function unsubscribeRealtime() {
   channels = [];
   notificationsUnsubscribe?.();
   notificationsUnsubscribe = null;
+  authListenerSubscription?.unsubscribe();
+  authListenerSubscription = null;
 }

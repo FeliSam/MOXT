@@ -14,6 +14,8 @@ import { loadDashboardData, type DashboardEvent } from '@/store/dashboard';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useTheme } from '@/theme/ThemeContext';
 
+import { useSmartNavbarScroll } from '@/hooks/useSmartNavbar';
+
 const CATEGORIES = ['networking', 'training', 'culture', 'business', 'community'] as const;
 
 /** Catalogue événements (EventsPage) : recherche, cartes, badge vérifié, archives. */
@@ -21,6 +23,7 @@ export default function EventsScreen() {
   const dispatch = useAppDispatch();
   const { t } = useLanguage();
   const { colors } = useTheme();
+  const { onScroll, scrollEventThrottle } = useSmartNavbarScroll();
   const user = useAppSelector((state) => state.auth.user);
   const userId = user?.id;
   const events = useAppSelector((state) => state.dashboard.events);
@@ -54,25 +57,42 @@ export default function EventsScreen() {
 
   return (
     <AppChrome pathname="/events">
-      <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 128 }}>
-        <PageHeader
-          className="mx-0"
-          title={t('events.browse.title')}
-          actions={
-            <View style={{ gap: 8, alignItems: 'flex-end' }}>
-              {userId ? (
-                <Pressable onPress={() => setShowMine((value) => !value)}>
-                  <AppText className="text-xs font-bold" style={{ color: colors.accent }}>
-                    {showMine ? t('events.browse.showAll') : t('events.browse.showMine')}
-                  </AppText>
-                </Pressable>
-              ) : null}
-              <Pressable onPress={() => router.push('/publish/event' as never)}>
-                <AppText className="text-xs font-bold" style={{ color: colors.accent }}>{t('events.browse.create')}</AppText>
+      <ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={scrollEventThrottle}
+        style={{ flex: 1, backgroundColor: colors.background }}
+        contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 130 }}
+      >
+        {/* Modern Top Header Row */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingTop: 4 }}>
+          <View style={{ flex: 1 }}>
+            <AppText className="text-[10px] font-black uppercase tracking-wider text-brand-700 dark:text-brand-400">
+              AGENDA & RENCONTRES
+            </AppText>
+            <AppText className="text-xl font-black text-app-text" numberOfLines={1}>
+              {t('events.browse.title')}
+            </AppText>
+            <AppText className="text-xs font-semibold text-app-text-muted" numberOfLines={1}>
+              {visible.length} événement(s) disponible(s)
+            </AppText>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            {userId ? (
+              <Pressable
+                onPress={() => setShowMine((value) => !value)}
+                style={{ height: 42, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: showMine ? colors.accentSoft : colors.surface }}>
+                <AppText className="text-xs font-bold" style={{ color: colors.accent }}>
+                  {showMine ? 'Tous' : 'Mes événements'}
+                </AppText>
               </Pressable>
-            </View>
-          }
-        />
+            ) : null}
+            <Pressable
+              onPress={() => router.push('/publish/event' as never)}
+              style={{ height: 42, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.accent, flexDirection: 'row', gap: 6 }}>
+              <AppText className="text-xs font-bold text-white">+ Créer</AppText>
+            </Pressable>
+          </View>
+        </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <TextInput
             value={query}

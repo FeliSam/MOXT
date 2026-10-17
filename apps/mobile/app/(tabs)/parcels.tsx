@@ -26,6 +26,7 @@ import { splitBrowseParcels } from '@moxt/shared/domain/parcelRules.js';
 import { loadCoreData } from '@/store/data';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import type { ParcelItem } from '@/store/parcels';
+import { useSmartNavbarScroll } from '@/hooks/useSmartNavbar';
 
 /** resolveParcelProofStatus + parcelProofTone du web. */
 function proofStatus(parcel: ParcelItem) {
@@ -208,6 +209,8 @@ export default function ParcelsScreen() {
   const activeCount = browse.active.length;
   const archivedCount = browse.archived.length;
 
+  const { onScroll, scrollEventThrottle } = useSmartNavbarScroll();
+
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     await dispatch(loadCoreData());
@@ -222,102 +225,120 @@ export default function ParcelsScreen() {
     );
   }
 
+  const totalKg = visibleParcels.reduce((sum, parcel) => sum + Number(parcel.remainingKg ?? parcel.capacityKg ?? 0), 0);
+
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={[]}>
-      <View style={styles.header}>
-        <PageHeader
-          className="mx-0"
-          title={t('parcels.browse.title')}
-          stats={[
-            { label: t('parcels.browse.stats.availableTrips'), value: visibleParcels.length },
-            {
-              label: t('parcels.browse.stats.availableKg'),
-              value: t('parcels.browse.stats.availableKgValue', {
-                kg: visibleParcels.reduce((sum, parcel) => sum + Number(parcel.remainingKg ?? parcel.capacityKg ?? 0), 0),
-              }),
-            },
-          ]}
-          actions={
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <Pressable
-                accessibilityLabel={showMine ? t('parcels.browse.actions.allParcels') : t('parcels.browse.actions.myParcels')}
-                onPress={() => setShowMine((value) => !value)}
-                style={{ height: 44, width: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: showMine ? colors.accentSoft : colors.surface }}>
-                <User size={16} color={brand[700]} strokeWidth={2} />
-              </Pressable>
-              <Pressable
-                accessibilityLabel={t('parcels.browse.actions.publish')}
-                onPress={() => router.push('/publish/parcel' as never)}
-                style={{ height: 44, width: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}>
-                <Plus size={16} color={brand[700]} strokeWidth={2} />
-              </Pressable>
-            </View>
-          }
-        />
-
-        <View style={[styles.searchBar, { backgroundColor: colors.inputBg }]}>
-          <Text style={{ fontSize: 14 }}>🔍</Text>
-          <TextInput
-            placeholder={t('parcels.browse.search.placeholder')}
-            placeholderTextColor={colors.textFaint}
-            style={[styles.searchInput, { color: colors.text, fontSize: 16 }]}
-            value={query}
-            onChangeText={setQuery}
-          />
-          <Pressable
-            accessibilityLabel={advanced ? 'Masquer' : 'Filtres'}
-            onPress={() => setAdvanced((value) => !value)}
-            style={{ height: 40, width: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}>
-            <SlidersHorizontal size={16} color={brand[700]} strokeWidth={2} />
-          </Pressable>
-        </View>
-        {advanced ? (
-          <View style={{ gap: 8 }}>
-            <TextInput
-              value={origin}
-              onChangeText={setOrigin}
-              placeholder={t('parcels.browse.filters.origin')}
-              placeholderTextColor={colors.textFaint}
-              style={[styles.searchBar, { color: colors.text, fontSize: 16, backgroundColor: colors.surface }]}
-            />
-            <TextInput
-              value={destination}
-              onChangeText={setDestination}
-              placeholder={t('parcels.browse.filters.destination')}
-              placeholderTextColor={colors.textFaint}
-              style={[styles.searchBar, { color: colors.text, fontSize: 16, backgroundColor: colors.surface }]}
-            />
-          </View>
-        ) : null}
-
-        {/* Web : CatalogArchiveTabs — Voyages actifs / Archives (avec compteurs) */}
-        <View style={styles.tabsUnderline}>
-          {([['active', t('parcels.browse.tabs.active'), activeCount], ['archived', t('parcels.browse.tabs.archived'), archivedCount]] as const).map(
-            ([key, label, count]) => (
-              <Pressable key={key} style={styles.tabUnderlineBtn} onPress={() => setTab(key)}>
-                <View style={styles.tabUnderlineRow}>
-                  <Text style={[styles.tabUnderlineText, { color: tab === key ? colors.text : colors.textMuted }]}>
-                    {label}
-                  </Text>
-                  <View style={[styles.tabCount, { backgroundColor: tab === key ? brand[700] : colors.surfaceMuted }]}>
-                    <Text style={[styles.tabCountText, { color: tab === key ? '#fff' : colors.textMuted }]}>
-                      {count}
-                    </Text>
-                  </View>
-                </View>
-                {tab === key ? <View style={[styles.tabUnderlineBar, { backgroundColor: brand[700] }]} /> : null}
-              </Pressable>
-            ),
-          )}
-        </View>
-      </View>
-
       <FlatList
         contentContainerStyle={styles.listContent}
         data={visibleParcels}
         keyExtractor={(item) => item.id}
+        onScroll={onScroll}
+        scrollEventThrottle={scrollEventThrottle}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={brand[700]} />
+        }
+        ListHeaderComponent={
+          <View style={{ gap: 12, marginBottom: 8 }}>
+            {/* Sleek Top Header Row */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 4 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 10, fontWeight: '900', letterSpacing: 1, textTransform: 'uppercase', color: brand[700] }}>
+                  TRANSPORT & LIVRAISON
+                </Text>
+                <Text style={{ fontSize: 22, fontWeight: '900', color: colors.text }}>
+                  {t('parcels.browse.title')}
+                </Text>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textMuted }}>
+                  {visibleParcels.length} trajet(s) · {totalKg} kg disponible(s)
+                </Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Pressable
+                  accessibilityLabel={showMine ? t('parcels.browse.actions.allParcels') : t('parcels.browse.actions.myParcels')}
+                  onPress={() => setShowMine((value) => !value)}
+                  style={{ height: 42, width: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: showMine ? colors.accentSoft : colors.surface }}>
+                  <User size={16} color={brand[700]} strokeWidth={2} />
+                </Pressable>
+                <Pressable
+                  accessibilityLabel={t('parcels.browse.actions.publish')}
+                  onPress={() => router.push('/publish/parcel' as never)}
+                  style={{ height: 42, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: brand[700], flexDirection: 'row', gap: 6 }}>
+                  <Plus size={15} color="#fff" strokeWidth={2.5} />
+                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>Publier</Text>
+                </Pressable>
+              </View>
+            </View>
+
+            {/* Search and Filters */}
+            <View style={[styles.searchBar, { backgroundColor: colors.inputBg }]}>
+              <Text style={{ fontSize: 14 }}>🔍</Text>
+              <TextInput
+                placeholder={t('parcels.browse.search.placeholder')}
+                placeholderTextColor={colors.textFaint}
+                style={[styles.searchInput, { color: colors.text, fontSize: 16 }]}
+                value={query}
+                onChangeText={setQuery}
+              />
+              <Pressable
+                accessibilityLabel={advanced ? 'Masquer' : 'Filtres'}
+                onPress={() => setAdvanced((value) => !value)}
+                style={{ height: 36, width: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}>
+                <SlidersHorizontal size={15} color={brand[700]} strokeWidth={2} />
+              </Pressable>
+            </View>
+            {advanced ? (
+              <View style={{ gap: 8 }}>
+                <TextInput
+                  value={origin}
+                  onChangeText={setOrigin}
+                  placeholder={t('parcels.browse.filters.origin')}
+                  placeholderTextColor={colors.textFaint}
+                  style={[styles.searchBar, { color: colors.text, fontSize: 16, backgroundColor: colors.surface }]}
+                />
+                <TextInput
+                  value={destination}
+                  onChangeText={setDestination}
+                  placeholder={t('parcels.browse.filters.destination')}
+                  placeholderTextColor={colors.textFaint}
+                  style={[styles.searchBar, { color: colors.text, fontSize: 16, backgroundColor: colors.surface }]}
+                />
+              </View>
+            ) : null}
+
+            {/* Segmented Control: Active vs Archived */}
+            <View style={{ flexDirection: 'row', gap: 4, borderRadius: 16, backgroundColor: colors.surfaceMuted, padding: 4 }}>
+              {([['active', t('parcels.browse.tabs.active'), activeCount], ['archived', t('parcels.browse.tabs.archived'), archivedCount]] as const).map(
+                ([key, label, count]) => {
+                  const active = tab === key;
+                  return (
+                    <Pressable
+                      key={key}
+                      onPress={() => setTab(key)}
+                      style={{
+                        flex: 1,
+                        minHeight: 40,
+                        borderRadius: 12,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 6,
+                        backgroundColor: active ? colors.surface : 'transparent',
+                      }}>
+                      <Text style={{ fontSize: 13, fontWeight: '800', color: active ? colors.text : colors.textMuted }}>
+                        {label}
+                      </Text>
+                      <View style={{ borderRadius: 999, paddingHorizontal: 6, paddingVertical: 1, backgroundColor: active ? brand[700] : colors.surface }}>
+                        <Text style={{ fontSize: 11, fontWeight: '800', color: active ? '#fff' : colors.textMuted }}>
+                          {count}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  );
+                },
+              )}
+            </View>
+          </View>
         }
         renderItem={({ item }) => <ParcelCard parcel={item} archived={tab === 'archived'} />}
         ListEmptyComponent={

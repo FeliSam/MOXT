@@ -62,7 +62,7 @@ function RailShell({
   count: number;
   children: ReactNode;
 }) {
-  const ref = useRef<ScrollView>(null);
+  const ref = useRef<any>(null);
   const [offset, setOffset] = useState(0);
   const [size, setSize] = useState({ content: 0, view: 0 });
   const max = size.content - size.view;

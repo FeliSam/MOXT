@@ -41,6 +41,8 @@ import type { TransferItem } from '@/store/transfers';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, radii, spacing } from '@/theme/colors';
 
+import { useSmartNavbarScroll } from '@/hooks/useSmartNavbar';
+
 /** Même format que le web en français : espace de milliers et virgule (`15 450,00`). */
 function formatTransferMoney(amount: unknown, currency?: string) {
   return String(formatCurrency(amount, currency, 'fr-FR') ?? '').replace(/[\u202f\u00a0]/g, ' ');
@@ -142,6 +144,7 @@ export default function TransfersScreen() {
   const [tab, setTab] = useState<'transfers' | 'p2p'>('transfers');
   const [refreshing, setRefreshing] = useState(false);
   const [calculatorOpen, setCalculatorOpen] = useState(false);
+  const { onScroll, scrollEventThrottle } = useSmartNavbarScroll();
 
   const visibleTransfers = useMemo(() => {
     if (!user?.id) return [];
@@ -196,53 +199,67 @@ export default function TransfersScreen() {
         contentContainerStyle={styles.listContent}
         data={(tab === 'transfers' ? visibleTransfers : myP2pOrders) as { id: string }[]}
         keyExtractor={(item) => item.id}
+        onScroll={onScroll}
+        scrollEventThrottle={scrollEventThrottle}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={brand[700]} />
         }
         ListHeaderComponent={
           <>
-            <PageHeader
-              className="mx-0"
-              eyebrow="Historique"
-              title={translateLabel('Transferts')}
-              description="Estimez, créez et suivez vos transferts entre le Bénin et la Russie."
-              actions={
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                  <Pressable
-                    onPress={() => setCalculatorOpen(true)}
-                    style={[styles.headerLink, { backgroundColor: colors.surfaceMuted, flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
-                    <Calculator size={14} color={colors.text} />
-                    <Text style={{ color: colors.text, fontWeight: '700' }}>Calculatrice</Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() => router.push('/transfer/wizard' as any)}
-                    style={[styles.headerLink, { backgroundColor: brand[700], flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
-                    <Plus size={15} color="#fff" strokeWidth={2.5} />
-                    <Text style={{ color: '#fff', fontWeight: '700' }}>Nouveau transfert</Text>
-                  </Pressable>
-                </View>
-              }
-            />
-
-            <View style={styles.sectionHead}>
-              <View>
-                <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: 'Manrope_700Bold' }]}>
-                  {tab === 'transfers' ? 'Historique' : 'Échanges P2P'}
+            {/* Modern Top Header Row */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14, marginTop: 4 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 10, fontWeight: '900', letterSpacing: 1, textTransform: 'uppercase', color: brand[700] }}>
+                  HISTORIQUE & OPÉRATIONS
                 </Text>
-                <Text style={[styles.sectionSub, { color: colors.textMuted }]}>
-                  {tab === 'transfers'
-                    ? `${visibleTransfers.length} opération(s)`
-                    : `${myP2pOrders.length} échange(s) P2P`}
+                <Text style={{ fontSize: 22, fontWeight: '900', color: colors.text }}>
+                  {translateLabel('Transferts')}
+                </Text>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textMuted }}>
+                  {tab === 'transfers' ? `${visibleTransfers.length} opération(s)` : `${myP2pOrders.length} échange(s) P2P`}
                 </Text>
               </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Pressable
+                  onPress={() => setCalculatorOpen(true)}
+                  hitSlop={8}
+                  style={{ height: 42, width: 42, borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' }}>
+                  <Calculator size={16} color={colors.text} />
+                </Pressable>
+                <Pressable
+                  onPress={() => router.push('/transfer/wizard' as any)}
+                  hitSlop={8}
+                  style={{ height: 42, paddingHorizontal: 14, borderRadius: 14, backgroundColor: brand[700], flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Plus size={15} color="#fff" strokeWidth={2.5} />
+                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>Nouveau</Text>
+                </Pressable>
+              </View>
+            </View>
+
+            {/* Segmented Switcher for transfers vs p2p */}
+            <View style={{ flexDirection: 'row', gap: 4, borderRadius: 16, backgroundColor: colors.surfaceMuted, padding: 4, marginBottom: 12 }}>
+              <Pressable
+                onPress={() => setTab('transfers')}
+                style={{ flex: 1, minHeight: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: tab === 'transfers' ? colors.surface : 'transparent' }}>
+                <Text style={{ fontSize: 13, fontWeight: '800', color: tab === 'transfers' ? colors.text : colors.textMuted }}>
+                  Transferts ({visibleTransfers.length})
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setTab('p2p')}
+                style={{ flex: 1, minHeight: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: tab === 'p2p' ? colors.surface : 'transparent' }}>
+                <Text style={{ fontSize: 13, fontWeight: '800', color: tab === 'p2p' ? colors.text : colors.textMuted }}>
+                  P2P ({myP2pOrders.length})
+                </Text>
+              </Pressable>
             </View>
 
             <View style={[styles.searchBar, { backgroundColor: colors.inputBg }]}>
               <Search size={16} color={colors.textMuted} />
               <TextInput
-                placeholder={tab === 'transfers' ? 'Référence, destinataire ou opération...' : 'Référence, contrepartie ou devise…'}
+                placeholder={tab === 'transfers' ? 'Référence, destinataire...' : 'Référence, devise…'}
                 placeholderTextColor={colors.textFaint}
-                style={[styles.searchInput, { color: colors.text }]}
+                style={[styles.searchInput, { color: colors.text, fontSize: 16 }]}
                 value={query}
                 onChangeText={setQuery}
               />

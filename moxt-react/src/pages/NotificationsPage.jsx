@@ -70,7 +70,25 @@ export function NotificationsPage() {
   useEffect(() => {
     if (!user?.id) return undefined
     dispatch(refreshNotifications())
-    return undefined
+
+    const interval = setInterval(() => {
+      dispatch(refreshNotifications())
+    }, 12_000)
+
+    const onVisibleOrFocus = () => {
+      if (document.visibilityState === 'visible') {
+        dispatch(refreshNotifications())
+      }
+    }
+
+    window.addEventListener('focus', onVisibleOrFocus)
+    document.addEventListener('visibilitychange', onVisibleOrFocus)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('focus', onVisibleOrFocus)
+      document.removeEventListener('visibilitychange', onVisibleOrFocus)
+    }
   }, [dispatch, user?.id])
 
   function openNotification(notification) {

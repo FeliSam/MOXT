@@ -25,6 +25,7 @@ import { Button, Card, Input, PageHeader } from '@/components/ui';
 import { DetailFacts, DetailMetrics, DetailSection, TrustPanel } from '@/components/ui/DetailBlocks';
 import { ImageGalleryViewer } from '@/components/ui/ImageGalleryViewer';
 import { ReportSheet } from '@/components/ui/ReportSheet';
+import { useSmartNavbarScroll } from '@/hooks/useSmartNavbar';
 import { supabase } from '@/services/supabase';
 import { useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
@@ -128,9 +129,15 @@ export default function JobDetailScreen() {
   const images = imageList(job.images);
   const isOwner = Boolean(user?.id && job.ownerId === user.id);
 
+  const { onScroll, scrollEventThrottle } = useSmartNavbarScroll();
+
   return (
     <SafeAreaView style={[sx.container, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 120, gap: spacing.lg }}>
+      <ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={scrollEventThrottle}
+        contentContainerStyle={{ paddingBottom: 130, gap: spacing.lg }}
+      >
         {/* ── Web : PageHeader eyebrow = secteur, titre du poste ── */}
         <PageHeader
           eyebrow={job.sector || contract || 'Opportunité'}

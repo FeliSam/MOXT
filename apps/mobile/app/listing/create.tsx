@@ -2,18 +2,21 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { router } from 'expo-router';
+import { ArrowLeft, Camera, Check, Plus, Trash2, X } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { formatCurrency } from '@moxt/shared/utils/formatters.js';
 
-import { AppChrome } from '@/components/chrome/AppChrome';
 import {
   BusinessPublishNotice,
   CitySelector,
@@ -23,59 +26,84 @@ import {
   ShareToFeedModal,
   UploadProgressBar,
 } from '@/components/publish/publishKit';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { Input } from '@/components/ui/Input';
-import { ImagePickerButton } from '@/components/ImagePickerButton';
-import { useThemeColors } from '@/theme/ThemeContext';
-import { brand, radii, shadows, spacing, typography } from '@/theme/colors';
-import { uploadLikeWeb } from '@/services/mediaUpload';
+import { useSmartNavbarScroll } from '@/hooks/useSmartNavbar';
+import { pickLibraryFile, uploadLikeWeb, type UploadFile } from '@/services/mediaUpload';
 import { supabase } from '@/services/supabase';
 import { selectOwnedBusinesses } from '@/store/account';
 import { loadListings } from '@/store/marketplace';
 import { useAppDispatch, useAppSelector } from '@/store/store';
+import { useShadows, useTheme } from '@/theme/ThemeContext';
 
 type Step = 'type' | 'info' | 'photos' | 'confirm';
 
+const STEPS: { key: Step; label: string }[] = [
+  { key: 'type', label: 'Catégorie' },
+  { key: 'info', label: 'Détails' },
+  { key: 'photos', label: 'Photos' },
+  { key: 'confirm', label: 'Confirmation' },
+];
+
 const LISTING_TYPES = [
-  { key: 'product', label: 'Produit', icon: '🛍️' },
-  { key: 'service', label: 'Service', icon: '💼' },
-  { key: 'rental', label: 'Location', icon: '🏠' },
-  { key: 'vehicle', label: 'Véhicule', icon: '🚗' },
-  { key: 'food', label: 'Alimentation', icon: '🍛' },
-  { key: 'digital', label: 'Numérique', icon: '💻' },
-  { key: 'real_estate', label: 'Immobilier', icon: '🏢' },
-  { key: 'other', label: 'Autre', icon: '📦' },
+  { key: 'product', label: 'Produit', icon: '🛍️', desc: 'Vêtements, électronique, déco...' },
+  { key: 'service', label: 'Service', icon: '💼', desc: 'Prestations, réparations, cours...' },
+  { key: 'rental', label: 'Location', icon: '🏠', desc: 'Appartement, matériel, chambre...' },
+  { key: 'vehicle', label: 'Véhicule', icon: '🚗', desc: 'Voiture, moto, vélo, pièces...' },
+  { key: 'food', label: 'Alimentation', icon: '🍛', desc: 'Plats cuisinés, épicerie, bio...' },
+  { key: 'digital', label: 'Numérique', icon: '💻', desc: 'Logiciels, templates, ebooks...' },
+  { key: 'real_estate', label: 'Immobilier', icon: '🏢', desc: 'Vente de maison, terrain, bail...' },
+  { key: 'other', label: 'Autre', icon: '📦', desc: 'Toute autre catégorie...' },
+];
+
+const CONDITIONS = [
+  { key: 'new', label: 'Neuf' },
+  { key: 'like_new', label: 'Comme neuf' },
+  { key: 'good', label: 'Bon état' },
+  { key: 'used', label: 'État correct' },
 ];
 
 export default function CreateListingScreen() {
-  const colors = useThemeColors();
+  const { colors, isDark } = useTheme();
+  const shadows = useShadows();
+  const insets = useSafeAreaInsets();
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user);
+  const { onScroll } = useSmartNavbarScroll();
 
   const [step, setStep] = useState<Step>('type');
   const [type, setType] = useState('product');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
-  const [city, setCity] = useState('Moscou');
+  const [condition, setCondition] = useState('good');
+  const [city, setCity] = useState(user?.city || 'Moscou');
   const [currency, setCurrency] = useState('RUB');
   const [formula, setFormula] = useState('standard');
   const [contact, setContact] = useState(user?.phone || '');
-  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<UploadFile[]>([]);
   const [progress, setProgress] = useState<number | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [publishedImage, setPublishedImage] = useState<string | undefined>();
   const [loading, setLoading] = useState(false);
   const business = useAppSelector((state) => selectOwnedBusinesses(state.account.businesses, user?.id)[0]);
 
+  const stepIndex = STEPS.findIndex((s) => s.key === step);
+
   const goNext = () => {
-    if (step === 'type') setStep('info');
-    else if (step === 'info') {
-      if (!title.trim()) { Alert.alert('Titre requis'); return; }
-      if (!price) { Alert.alert('Prix requis'); return; }
+    if (step === 'type') {
+      setStep('info');
+    } else if (step === 'info') {
+      if (!title.trim()) {
+        Alert.alert('Information requise', 'Veuillez saisir un titre pour votre annonce.');
+        return;
+      }
+      if (!price.trim()) {
+        Alert.alert('Information requise', 'Veuillez définir un prix.');
+        return;
+      }
       setStep('photos');
-    } else if (step === 'photos') setStep('confirm');
+    } else if (step === 'photos') {
+      setStep('confirm');
+    }
   };
 
   const goBack = () => {
@@ -85,24 +113,52 @@ export default function CreateListingScreen() {
     else router.back();
   };
 
+  const handleAddPhoto = async () => {
+    if (photos.length >= 8) {
+      Alert.alert('Limite atteinte', 'Vous pouvez ajouter au maximum 8 photos.');
+      return;
+    }
+    try {
+      const file = await pickLibraryFile('images');
+      if (file) {
+        setPhotos((prev) => [...prev, file]);
+      }
+    } catch (err: any) {
+      Alert.alert('Galerie', err.message || 'Impossible de sélectionner la photo.');
+    }
+  };
+
+  const handleRemovePhoto = (index: number) => {
+    setPhotos((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handlePublish = async () => {
-    if (!supabase) return;
+    if (!supabase || !user) return;
     setLoading(true);
+    setProgress(0.1);
     try {
       const now = new Date().toISOString();
       const listingId = `ANN-${Date.now().toString(36).toUpperCase()}`;
-      let imageUrl = imageUri;
-      if (imageUri && user?.id && !imageUri.startsWith('http')) {
-        setProgress(0.35);
-        const uploaded = await uploadLikeWeb(
-          'listings',
-          `${user.id}/listings/${listingId}.jpg`,
-          { uri: imageUri, name: 'photo.jpg', type: 'image/jpeg' },
-          'public',
-        );
-        imageUrl = uploaded.url;
-        setProgress(1);
+      const uploadedUrls: string[] = [];
+
+      for (let i = 0; i < photos.length; i++) {
+        const photo = photos[i];
+        if (photo.uri.startsWith('http')) {
+          uploadedUrls.push(photo.uri);
+        } else {
+          setProgress(0.1 + ((i + 1) / (photos.length || 1)) * 0.7);
+          const uploaded = await uploadLikeWeb(
+            'listings',
+            `${user.id}/listings/${listingId}_${i + 1}.jpg`,
+            photo,
+            'public',
+          );
+          if (uploaded.url) uploadedUrls.push(uploaded.url);
+        }
       }
+
+      setProgress(0.9);
+
       const { error } = await supabase.from('listings').insert({
         id: listingId,
         title: title.trim(),
@@ -113,27 +169,30 @@ export default function CreateListingScreen() {
         currency,
         country: 'RU',
         city: city.trim(),
-        images: imageUrl ? [imageUrl] : [],
-        owner_id: user?.id,
-        seller_name: `${user?.firstName} ${user?.lastName}`,
+        images: uploadedUrls,
+        owner_id: user.id,
+        seller_name: `${user.firstName} ${user.lastName}`.trim(),
         payload: {
           title: title.trim(),
           description: description.trim(),
           type,
+          condition,
           price: Number(price),
           currency,
           formula,
           city: city.trim(),
           contact,
-          sellerName: `${user?.firstName} ${user?.lastName}`,
+          sellerName: `${user.firstName} ${user.lastName}`.trim(),
         },
         created_at: now,
         updated_at: now,
         expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       });
+
       if (error) throw new Error(error.message);
+
       await dispatch(loadListings());
-      setPublishedImage(imageUrl || undefined);
+      setPublishedImage(uploadedUrls[0]);
       setShareOpen(true);
     } catch (err: any) {
       Alert.alert('Erreur', err.message || 'Publication impossible.');
@@ -143,151 +202,472 @@ export default function CreateListingScreen() {
     }
   };
 
-  const stepIndex = ['type', 'info', 'photos', 'confirm'].indexOf(step);
-  const typeLabel = LISTING_TYPES.find((t) => t.key === type)?.label || type;
+  const typeMeta = LISTING_TYPES.find((t) => t.key === type) || LISTING_TYPES[0];
 
   return (
     <SecurityGate kind="publish" pathname="/listing/create">
-    <AppChrome pathname="/listing/create">
-      <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.background }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={{ padding: spacing.xl, gap: spacing.lg }}>
-          {/* Progress */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            {['Type', 'Infos', 'Photos', 'Publier'].map((label, idx) => (
-              <View key={label} style={{ alignItems: 'center', gap: spacing.xs, flex: 1 }}>
-                <View style={{
-                  width: 10, height: 10, borderRadius: 5,
-                  backgroundColor: idx <= stepIndex ? colors.primary : colors.border,
-                }} />
-                <Text style={{
-                  fontSize: 10,
-                  color: idx <= stepIndex ? colors.primary : colors.textFaint,
-                  fontWeight: idx <= stepIndex ? '700' : '400',
-                }}>{label}</Text>
+      <KeyboardAvoidingView
+        style={{ flex: 1, backgroundColor: colors.background }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
+          <ScrollView
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{
+              paddingHorizontal: 16,
+              paddingTop: Math.max(insets.top, 12),
+              paddingBottom: Math.max(insets.bottom + 100, 140),
+              gap: 18,
+            }}>
+            {/* Header row */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <Pressable
+                accessibilityLabel="Retour"
+                onPress={goBack}
+                style={[
+                  {
+                    height: 40,
+                    width: 40,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: 999,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    backgroundColor: colors.surface,
+                  },
+                  shadows.card,
+                ]}>
+                <ArrowLeft size={18} color={colors.text} strokeWidth={2.4} />
+              </Pressable>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={{ fontSize: 18, fontWeight: '800', color: colors.text }}>
+                  Publier une annonce
+                </Text>
+                <Text style={{ fontSize: 11, fontWeight: '600', color: colors.textMuted }}>
+                  Étape {stepIndex + 1} sur 4 : {STEPS[stepIndex].label}
+                </Text>
               </View>
-            ))}
-          </View>
+            </View>
 
-          {/* Step: Type */}
-          {step === 'type' ? (
-            <Card>
-              <View style={{ gap: spacing.md }}>
-                <Text style={{ ...typography.sectionTitle, color: colors.text }}>Type d'annonce</Text>
+            {/* Stepper progress */}
+            <View style={{ flexDirection: 'row', gap: 6 }}>
+              {STEPS.map((s, idx) => (
+                <View key={s.key} style={{ flex: 1, gap: 4 }}>
+                  <View
+                    style={{
+                      height: 4,
+                      borderRadius: 99,
+                      backgroundColor:
+                        idx === stepIndex
+                          ? colors.accent
+                          : idx < stepIndex
+                            ? colors.primary
+                            : colors.border,
+                    }}
+                  />
+                </View>
+              ))}
+            </View>
+
+            {/* Step 1 : Catégorie */}
+            {step === 'type' ? (
+              <View style={{ gap: 12 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8, color: colors.textMuted }}>
+                  Sélectionnez le type d'annonce
+                </Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-                  {LISTING_TYPES.map((t) => (
-                    <Pressable
-                      key={t.key}
+                  {LISTING_TYPES.map((t) => {
+                    const isSelected = type === t.key;
+                    return (
+                      <Pressable
+                        key={t.key}
+                        onPress={() => setType(t.key)}
+                        style={[
+                          {
+                            width: '48%',
+                            borderRadius: 16,
+                            borderWidth: 1.5,
+                            borderColor: isSelected ? colors.primary : colors.border,
+                            backgroundColor: isSelected ? colors.primaryLight : colors.surface,
+                            padding: 14,
+                            gap: 6,
+                          },
+                          shadows.card,
+                        ]}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <Text style={{ fontSize: 24 }}>{t.icon}</Text>
+                          {isSelected ? (
+                            <View style={{ height: 18, width: 18, borderRadius: 9, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
+                              <Check size={11} color="#fff" strokeWidth={3} />
+                            </View>
+                          ) : null}
+                        </View>
+                        <Text style={{ fontSize: 14, fontWeight: '700', color: isSelected ? colors.primary : colors.text }}>
+                          {t.label}
+                        </Text>
+                        <Text numberOfLines={2} style={{ fontSize: 11, color: colors.textMuted, lineHeight: 14 }}>
+                          {t.desc}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            ) : null}
+
+            {/* Step 2 : Détails */}
+            {step === 'info' ? (
+              <View style={{ gap: 14 }}>
+                <View
+                  style={[
+                    {
+                      borderRadius: 18,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      backgroundColor: colors.surface,
+                      padding: 16,
+                      gap: 14,
+                    },
+                    shadows.card,
+                  ]}>
+                  <View style={{ gap: 6 }}>
+                    <Text style={{ fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8, color: colors.textMuted }}>
+                      Titre de l'annonce *
+                    </Text>
+                    <TextInput
+                      value={title}
+                      onChangeText={setTitle}
+                      placeholder="Ex: iPhone 15 Pro 128Go débloqué..."
+                      placeholderTextColor={colors.textFaint}
                       style={{
-                        width: '47%',
+                        minHeight: 48,
+                        borderRadius: 12,
                         borderWidth: 1,
-                        borderColor: type === t.key ? colors.primary : colors.borderMd,
-                        borderRadius: radii.md,
-                        padding: 14,
-                        alignItems: 'center',
-                        gap: spacing.xs,
-                        backgroundColor: type === t.key ? colors.primaryLight : colors.surface,
+                        borderColor: colors.border,
+                        backgroundColor: colors.surfaceMuted,
+                        paddingHorizontal: 14,
+                        fontSize: 16,
+                        color: colors.text,
                       }}
-                      onPress={() => setType(t.key)}>
-                      <Text style={{ fontSize: 24 }}>{t.icon}</Text>
-                      <Text style={{
-                        fontSize: 12, fontWeight: '700',
-                        color: type === t.key ? colors.primary : colors.textMuted,
-                      }}>{t.label}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-            </Card>
-          ) : null}
-
-          {/* Step: Info */}
-          {step === 'info' ? (
-            <Card>
-              <View style={{ gap: spacing.md }}>
-                <Text style={{ ...typography.sectionTitle, color: colors.text }}>Informations</Text>
-                <Input placeholder="Titre de l'annonce *" value={title} onChangeText={setTitle} autoFocus />
-                <Input placeholder="Description" value={description} onChangeText={setDescription} multiline style={{ height: 80, textAlignVertical: 'top' }} />
-                <Input placeholder="Prix *" value={price} onChangeText={setPrice} keyboardType="numeric" />
-                <CurrencyChips label="Devise" value={currency} onChange={setCurrency} />
-                <CitySelector value={city} onChange={setCity} />
-                <Input placeholder="Téléphone de contact" value={contact} onChangeText={setContact} keyboardType="phone-pad" />
-              </View>
-            </Card>
-          ) : null}
-
-          {/* Step: Photos */}
-          {step === 'photos' ? (
-            <Card>
-              <View style={{ gap: spacing.md }}>
-                <Text style={{ ...typography.sectionTitle, color: colors.text }}>Photo (optionnel)</Text>
-                <ImagePickerButton label="Ajouter une photo" currentUri={imageUri} onImageSelected={setImageUri} />
-                <UploadProgressBar progress={progress} />
-              </View>
-            </Card>
-          ) : null}
-
-          {/* Step: Confirm */}
-          {step === 'confirm' ? (
-            <Card>
-              <View style={{ gap: spacing.sm }}>
-                <Text style={{ ...typography.sectionTitle, color: colors.text }}>Résumé</Text>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
-                  <Text style={{ ...typography.body, color: colors.textMuted }}>Type</Text>
-                  <Text style={{ ...typography.body, fontWeight: '600', color: colors.text }}>{typeLabel}</Text>
-                </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
-                  <Text style={{ ...typography.body, color: colors.textMuted }}>Titre</Text>
-                  <Text style={{ ...typography.body, fontWeight: '600', color: colors.text, maxWidth: '60%', textAlign: 'right' }}>{title}</Text>
-                </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
-                  <Text style={{ ...typography.body, color: colors.textMuted }}>Prix</Text>
-                  <Text style={{ ...typography.body, fontWeight: '600', color: colors.primary }}>{formatCurrency(Number(price), currency)}</Text>
-                </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
-                  <Text style={{ ...typography.body, color: colors.textMuted }}>Ville</Text>
-                  <Text style={{ ...typography.body, fontWeight: '600', color: colors.text }}>{city}</Text>
-                </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
-                  <Text style={{ ...typography.body, color: colors.textMuted }}>Contact</Text>
-                  <Text style={{ ...typography.body, fontWeight: '600', color: colors.text }}>{contact}</Text>
-                </View>
-                {imageUri ? (
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
-                    <Text style={{ ...typography.body, color: colors.textMuted }}>Photo</Text>
-                    <Text style={{ ...typography.body, fontWeight: '600', color: colors.text }}>1 image jointe</Text>
+                    />
                   </View>
-                ) : null}
-                <BusinessPublishNotice business={business as { status?: string; services?: string[] }} contentType="listing" />
-                <PublishFormulaSheet value={formula} onChange={setFormula} />
-              </View>
-            </Card>
-          ) : null}
 
-          {/* Nav */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: spacing.md }}>
-            <View style={{ flex: 1 }}>
-              <Button variant="secondary" size="lg" onPress={goBack}>← Retour</Button>
+                  <View style={{ gap: 6 }}>
+                    <Text style={{ fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8, color: colors.textMuted }}>
+                      Description
+                    </Text>
+                    <TextInput
+                      value={description}
+                      onChangeText={setDescription}
+                      placeholder="Décrivez l'article, ses caractéristiques, accessoires inclus..."
+                      placeholderTextColor={colors.textFaint}
+                      multiline
+                      style={{
+                        minHeight: 90,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        backgroundColor: colors.surfaceMuted,
+                        paddingHorizontal: 14,
+                        paddingVertical: 12,
+                        fontSize: 16,
+                        color: colors.text,
+                        textAlignVertical: 'top',
+                      }}
+                    />
+                  </View>
+
+                  <View style={{ gap: 6 }}>
+                    <Text style={{ fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8, color: colors.textMuted }}>
+                      Prix de vente *
+                    </Text>
+                    <TextInput
+                      value={price}
+                      onChangeText={setPrice}
+                      placeholder="0"
+                      keyboardType="numeric"
+                      placeholderTextColor={colors.textFaint}
+                      style={{
+                        minHeight: 48,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        backgroundColor: colors.surfaceMuted,
+                        paddingHorizontal: 14,
+                        fontSize: 16,
+                        fontWeight: '700',
+                        color: colors.primary,
+                      }}
+                    />
+                  </View>
+
+                  <CurrencyChips label="Devise" value={currency} onChange={setCurrency} />
+
+                  <View style={{ gap: 6 }}>
+                    <Text style={{ fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8, color: colors.textMuted }}>
+                      État de l'objet
+                    </Text>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                      {CONDITIONS.map((c) => {
+                        const active = condition === c.key;
+                        return (
+                          <Pressable
+                            key={c.key}
+                            onPress={() => setCondition(c.key)}
+                            style={{
+                              paddingHorizontal: 12,
+                              paddingVertical: 8,
+                              borderRadius: 10,
+                              borderWidth: 1,
+                              borderColor: active ? colors.primary : colors.border,
+                              backgroundColor: active ? colors.primaryLight : colors.surfaceMuted,
+                            }}>
+                            <Text style={{ fontSize: 12, fontWeight: '700', color: active ? colors.primary : colors.text }}>
+                              {c.label}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </View>
+
+                  <CitySelector value={city} onChange={setCity} />
+
+                  <View style={{ gap: 6 }}>
+                    <Text style={{ fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8, color: colors.textMuted }}>
+                      Téléphone ou WhatsApp
+                    </Text>
+                    <TextInput
+                      value={contact}
+                      onChangeText={setContact}
+                      placeholder="+7 900 000-00-00"
+                      keyboardType="phone-pad"
+                      placeholderTextColor={colors.textFaint}
+                      style={{
+                        minHeight: 48,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        backgroundColor: colors.surfaceMuted,
+                        paddingHorizontal: 14,
+                        fontSize: 16,
+                        color: colors.text,
+                      }}
+                    />
+                  </View>
+                </View>
+              </View>
+            ) : null}
+
+            {/* Step 3 : Photos */}
+            {step === 'photos' ? (
+              <View style={{ gap: 14 }}>
+                <View
+                  style={[
+                    {
+                      borderRadius: 18,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      backgroundColor: colors.surface,
+                      padding: 16,
+                      gap: 14,
+                    },
+                    shadows.card,
+                  ]}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>
+                      Galerie photos ({photos.length}/8)
+                    </Text>
+                    <Text style={{ fontSize: 12, color: colors.textMuted }}>
+                      {photos.length === 0 ? 'Optionnel' : `${photos.length} sélectionnée(s)`}
+                    </Text>
+                  </View>
+
+                  {/* Add button */}
+                  {photos.length < 8 ? (
+                    <Pressable
+                      onPress={handleAddPhoto}
+                      style={{
+                        minHeight: 110,
+                        borderRadius: 16,
+                        borderWidth: 1.5,
+                        borderColor: colors.primary,
+                        borderStyle: 'dashed',
+                        backgroundColor: colors.primaryLight,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                      }}>
+                      <View style={{ height: 42, width: 42, borderRadius: 21, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' }}>
+                        <Camera size={20} color={colors.primary} />
+                      </View>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: colors.primary }}>
+                        Ajouter des photos
+                      </Text>
+                    </Pressable>
+                  ) : null}
+
+                  {/* Photos Grid */}
+                  {photos.length > 0 ? (
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                      {photos.map((photo, index) => (
+                        <View
+                          key={photo.uri + index}
+                          style={{
+                            width: '48%',
+                            aspectRatio: 1,
+                            borderRadius: 14,
+                            overflow: 'hidden',
+                            position: 'relative',
+                            borderWidth: 1,
+                            borderColor: colors.border,
+                          }}>
+                          <Image source={{ uri: photo.uri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                          {index === 0 ? (
+                            <View style={{ position: 'absolute', bottom: 6, left: 6, backgroundColor: 'rgba(0,0,0,0.7)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                              <Text style={{ fontSize: 9, fontWeight: '800', color: '#fff' }}>Principale</Text>
+                            </View>
+                          ) : null}
+                          <Pressable
+                            accessibilityLabel="Supprimer la photo"
+                            onPress={() => handleRemovePhoto(index)}
+                            style={{
+                              position: 'absolute',
+                              top: 6,
+                              right: 6,
+                              height: 26,
+                              width: 26,
+                              borderRadius: 13,
+                              backgroundColor: 'rgba(0,0,0,0.65)',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}>
+                            <X size={14} color="#fff" strokeWidth={2.5} />
+                          </Pressable>
+                        </View>
+                      ))}
+                    </View>
+                  ) : null}
+
+                  <UploadProgressBar progress={progress} />
+                </View>
+              </View>
+            ) : null}
+
+            {/* Step 4 : Confirmation */}
+            {step === 'confirm' ? (
+              <View style={{ gap: 14 }}>
+                <View
+                  style={[
+                    {
+                      borderRadius: 18,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      backgroundColor: colors.surface,
+                      padding: 16,
+                      gap: 12,
+                    },
+                    shadows.card,
+                  ]}>
+                  <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text }}>
+                    Récapitulatif de votre annonce
+                  </Text>
+
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
+                    <Text style={{ fontSize: 13, color: colors.textMuted }}>Type</Text>
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: colors.text }}>{typeMeta.label}</Text>
+                  </View>
+
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
+                    <Text style={{ fontSize: 13, color: colors.textMuted }}>Titre</Text>
+                    <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: '700', color: colors.text, maxWidth: '65%' }}>{title}</Text>
+                  </View>
+
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
+                    <Text style={{ fontSize: 13, color: colors.textMuted }}>Prix</Text>
+                    <Text style={{ fontSize: 14, fontWeight: '800', color: colors.primary }}>
+                      {formatCurrency(Number(price) || 0, currency)}
+                    </Text>
+                  </View>
+
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
+                    <Text style={{ fontSize: 13, color: colors.textMuted }}>Ville</Text>
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: colors.text }}>{city}</Text>
+                  </View>
+
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
+                    <Text style={{ fontSize: 13, color: colors.textMuted }}>Photos</Text>
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: colors.text }}>
+                      {photos.length} photo(s)
+                    </Text>
+                  </View>
+
+                  <BusinessPublishNotice business={business as { status?: string; services?: string[] }} contentType="listing" />
+                  <PublishFormulaSheet value={formula} onChange={setFormula} />
+                </View>
+              </View>
+            ) : null}
+
+            {/* Navigation buttons */}
+            <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
+              <Pressable
+                onPress={goBack}
+                style={[
+                  {
+                    flex: 1,
+                    minHeight: 50,
+                    borderRadius: 14,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    backgroundColor: colors.surface,
+                  },
+                  shadows.card,
+                ]}>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>
+                  {step === 'type' ? 'Annuler' : 'Précédent'}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={step === 'confirm' ? handlePublish : goNext}
+                disabled={loading}
+                style={[
+                  {
+                    flex: 2,
+                    minHeight: 50,
+                    borderRadius: 14,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: colors.accent,
+                    opacity: loading ? 0.7 : 1,
+                  },
+                  shadows.card,
+                ]}>
+                {loading ? (
+                  <ActivityIndicator color={isDark ? '#020617' : '#fff'} />
+                ) : (
+                  <Text style={{ fontSize: 15, fontWeight: '800', color: isDark ? '#020617' : '#ffffff' }}>
+                    {step === 'confirm' ? 'Publier mon annonce' : 'Continuer'}
+                  </Text>
+                )}
+              </Pressable>
             </View>
-            <View style={{ flex: 1 }}>
-              {step === 'confirm' ? (
-                <Button variant="primary" size="lg" loading={loading} onPress={handlePublish}>Publier</Button>
-              ) : (
-                <Button variant="primary" size="lg" onPress={goNext}>Suivant →</Button>
-              )}
-            </View>
-          </View>
-        </ScrollView>
+          </ScrollView>
+        </View>
       </KeyboardAvoidingView>
-    </AppChrome>
-    <ShareToFeedModal
-      visible={shareOpen}
-      message={`${title} — ${city}`}
-      imageUrl={publishedImage}
-      onClose={() => {
-        setShareOpen(false);
-        router.back();
-      }}
-    />
+
+      <ShareToFeedModal
+        visible={shareOpen}
+        message={`${title} — ${city}`}
+        imageUrl={publishedImage}
+        onClose={() => {
+          setShareOpen(false);
+          router.replace('/(tabs)/marketplace');
+        }}
+      />
     </SecurityGate>
   );
 }

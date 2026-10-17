@@ -121,7 +121,7 @@ export async function scheduleLocalNotification(
         sound: true,
         data,
         channelId: 'default',
-      },
+      } as any,
       trigger: null,
     });
   } catch (error) {

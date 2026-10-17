@@ -475,31 +475,34 @@ export const loadConversationMessages = createAsyncThunk(
       ? participantKey(localConversation.participantIds)
       : null;
 
-    const { data: row, error: rowError } = await supabase
-      .from('conversations')
-      .select('id, participant_key')
-      .eq('id', conversationId)
-      .maybeSingle();
-    if (rowError) throw new Error(rowError.message);
-
-    if (row) {
-      conversationIds.add(String(row.id));
-      canonicalId = String(row.id);
-      participantKeyValue ||= String(row.participant_key || '');
-    }
-
-    if (participantKeyValue) {
-      const { data: siblings, error: siblingsError } = await supabase
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(conversationId);
+    if (!isUuid || !localConversation) {
+      const { data: row, error: rowError } = await supabase
         .from('conversations')
-        .select('id, updated_at')
-        .eq('participant_key', participantKeyValue)
-        .order('updated_at', { ascending: false });
-      if (siblingsError) throw new Error(siblingsError.message);
-      for (const sibling of siblings || []) {
-        conversationIds.add(String(sibling.id));
+        .select('id, participant_key')
+        .eq('id', conversationId)
+        .maybeSingle();
+      if (rowError) throw new Error(rowError.message);
+
+      if (row) {
+        conversationIds.add(String(row.id));
+        canonicalId = String(row.id);
+        participantKeyValue ||= String(row.participant_key || '');
       }
-      if (siblings?.[0]?.id) {
-        canonicalId = String(siblings[0].id);
+
+      if (participantKeyValue) {
+        const { data: siblings, error: siblingsError } = await supabase
+          .from('conversations')
+          .select('id, updated_at')
+          .eq('participant_key', participantKeyValue)
+          .order('updated_at', { ascending: false });
+        if (siblingsError) throw new Error(siblingsError.message);
+        for (const sibling of siblings || []) {
+          conversationIds.add(String(sibling.id));
+        }
+        if (siblings?.[0]?.id) {
+          canonicalId = String(siblings[0].id);
+        }
       }
     }
 
@@ -508,7 +511,7 @@ export const loadConversationMessages = createAsyncThunk(
       .select('*')
       .in('conversation_id', [...conversationIds])
       .order('created_at', { ascending: true })
-      .limit(200);
+      .limit(60);
     if (error) throw new Error(error.message);
 
     const messagesById = new Map<string, Message>();

@@ -1,4 +1,4 @@
-import { View, type ViewStyle } from 'react-native';
+import { View, type StyleProp, type ViewStyle } from 'react-native';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 
@@ -11,7 +11,7 @@ interface CardProps {
   children: React.ReactNode;
   variant?: CardVariant;
   className?: string;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 // Même carte que le web : surface + bordure + ombre du thème (clair et sombre).
@@ -51,7 +51,7 @@ interface AppScreenProps {
   children: React.ReactNode;
   edges?: Edge[];
   className?: string;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   padded?: boolean;
 }
 
@@ -62,7 +62,7 @@ export function AppScreen({ children, edges = ['top'], className, style, padded 
   return (
     <SafeAreaView
       className={cn('flex-1 bg-app-bg dark:bg-[#0c0c0e]', padded && 'px-5', className)}
-      style={[{ flex: 1, backgroundColor: colors.background }, style]}
+      style={[{ flex: 1, backgroundColor: colors.background }, style] as any}
       edges={edges}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       {children}

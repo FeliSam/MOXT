@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Bell, Check, MessageSquare, Star, Zap } from 'lucide-react-native';
 
 import { AppText } from '@/components/ui/AppText';
@@ -40,9 +40,22 @@ export default function NotificationsTabScreen() {
   const unreadCount = useAppSelector(selectUnreadNotificationCount);
   const loading = useAppSelector((state) => state.notifications.status === 'loading');
 
-  useEffect(() => {
-    if (userId) dispatch(loadNotifications(userId));
-  }, [dispatch, userId]);
+  useFocusEffect(
+    useCallback(() => {
+      if (userId) {
+        dispatch(loadNotifications(userId));
+      }
+
+      // Synchronisation automatique en continu pendant la consultation de l'écran (toutes les 10s)
+      const interval = setInterval(() => {
+        if (userId) {
+          dispatch(loadNotifications(userId));
+        }
+      }, 10_000);
+
+      return () => clearInterval(interval);
+    }, [dispatch, userId])
+  );
 
   function open(item: NotificationItem) {
     if (!item.read) dispatch(markAsRead(item.id));
@@ -54,7 +67,7 @@ export default function NotificationsTabScreen() {
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{ padding: 16, paddingBottom: 120, gap: 12 }}
-      refreshControl={<RefreshControl refreshing={loading} onRefresh={() => userId && dispatch(loadNotifications(userId))} tintColor={colors.accent} />}>
+      refreshControl={<RefreshControl refreshing={loading} onRefresh={() => { if (userId) dispatch(loadNotifications(userId)); }} tintColor={colors.accent} />}>
       <AppText className="text-xs font-black uppercase text-app-accent" style={{ letterSpacing: 1.2 }}>
         {t('notifications.eyebrow') === 'notifications.eyebrow' ? 'Activité' : t('notifications.eyebrow')}
       </AppText>

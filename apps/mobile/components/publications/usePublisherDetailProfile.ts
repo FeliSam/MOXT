@@ -89,12 +89,14 @@ export function usePublisherDetailProfile(entity: Record<string, unknown> | null
   const events = useAppSelector((state) => state.dashboard.events);
   const offers = useAppSelector((state) => state.dashboard.p2pOffers);
   const businesses = useAppSelector((state) => state.account.businesses);
-  const storedReviews = useAppSelector((state) => [
-    ...state.account.reviewsReceived,
-    ...state.account.reviewsAuthored,
-    ...state.dashboard.reviews,
-    ...state.dashboard.businessReviews,
-  ]);
+  const reviewsReceived = useAppSelector((state) => state.account.reviewsReceived);
+  const reviewsAuthored = useAppSelector((state) => state.account.reviewsAuthored);
+  const dashboardReviews = useAppSelector((state) => state.dashboard.reviews);
+  const businessReviews = useAppSelector((state) => state.dashboard.businessReviews);
+  const storedReviews = useMemo(
+    () => [...reviewsReceived, ...reviewsAuthored, ...dashboardReviews, ...businessReviews],
+    [reviewsReceived, reviewsAuthored, dashboardReviews, businessReviews],
+  );
   const user = useAppSelector((state) => state.auth.user);
   const ownerId = entity?.ownerId ? String(entity.ownerId) : '';
   const businessId = entity?.businessId ? String(entity.businessId) : '';

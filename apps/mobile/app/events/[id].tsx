@@ -18,6 +18,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { DetailFacts, DetailMetrics, DetailSection, TrustPanel } from '@/components/ui/DetailBlocks';
 import { ImageGalleryViewer } from '@/components/ui/ImageGalleryViewer';
 import { ReportSheet } from '@/components/ui/ReportSheet';
+import { useSmartNavbarScroll } from '@/hooks/useSmartNavbar';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { supabase } from '@/services/supabase';
 import { mapConversationRow, receiveRemoteConversation, sendMessage } from '@/store/messages';
@@ -144,9 +145,17 @@ export default function EventDetailScreen() {
     }
   }
 
+  const { onScroll, scrollEventThrottle } = useSmartNavbarScroll();
+
   return (
     <AppChrome pathname="/events">
-      <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 16 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        onScroll={onScroll}
+        scrollEventThrottle={scrollEventThrottle}
+        style={{ flex: 1, backgroundColor: colors.background }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 130, gap: 16 }}
+      >
         <PageHeader className="mx-0" title={String(event.title || 'Événement')} />
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           <View style={{ borderRadius: 999, backgroundColor: colors.surfaceMuted, paddingHorizontal: 10, paddingVertical: 4 }}>

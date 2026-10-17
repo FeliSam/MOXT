@@ -32,7 +32,6 @@ export default function TabLayout() {
   return (
     <PublishMenuProvider>
     <Tabs
-      initialRouteName="index"
       tabBar={(props) => <FloatingTabBar {...props} />}
       screenOptions={({ route }) => ({
         headerShown: true,

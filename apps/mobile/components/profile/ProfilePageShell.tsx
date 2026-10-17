@@ -4,6 +4,7 @@ import { ScrollView, View } from 'react-native';
 import { AppHeader } from '@/components/chrome/AppHeader';
 import { AppBottomTabBar } from '@/components/navigation/BottomNavBar';
 
+import { useSmartNavbarScroll } from '@/hooks/useSmartNavbar';
 import { ThemeScope } from './identity';
 
 /**
@@ -21,14 +22,18 @@ export function ProfilePageShell({
   gap?: number;
   children: ReactNode;
 }) {
+  const { onScroll } = useSmartNavbarScroll();
+
   return (
     <View style={{ flex: 1 }}>
       <AppHeader pathname={pathname} />
       <ThemeScope scope={scope}>
         <ScrollView
+          onScroll={onScroll}
+          scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 128, gap }}>
+          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 130, gap }}>
           {children}
         </ScrollView>
       </ThemeScope>

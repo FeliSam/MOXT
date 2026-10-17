@@ -19,8 +19,8 @@ export const twTransfer = {
   selectedPillText: 'text-[10px] font-bold text-white',
 
   fieldLabel: 'mb-1.5 text-[10px] font-black uppercase tracking-wider text-app-text-faint',
-  amountInput: 'min-h-14 rounded-2xl bg-app-surface-muted px-4 text-2xl font-black text-app-text',
-  fieldInput: 'min-h-14 rounded-2xl bg-app-surface-muted px-4 text-base font-bold text-app-text',
+  amountInput: 'min-h-14 rounded-2xl bg-app-surface-muted px-4 text-2xl font-black text-app-text outline-none focus:outline-none',
+  fieldInput: 'min-h-14 rounded-2xl bg-app-surface-muted px-4 text-base font-bold text-app-text outline-none focus:outline-none',
   infoBox: 'flex-row items-start gap-3 rounded-2xl bg-brand-100 p-4 dark:bg-brand-950/30',
   infoText: 'flex-1 text-sm text-app-text-muted',
 

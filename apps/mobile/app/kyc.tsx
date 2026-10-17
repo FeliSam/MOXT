@@ -1,8 +1,27 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Switch, TextInput, View } from 'react-native';
+import { router } from 'expo-router';
+import {
+  AlertCircle,
+  ArrowLeft,
+  Camera,
+  Check,
+  CheckCircle,
+  ChevronRight,
+  FileCheck,
+  FileText,
+  Home,
+  Mail,
+  Phone,
+  Shield,
+  ShieldAlert,
+  ShieldCheck,
+  Upload,
+  UserCheck,
+} from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { isEmailVerified, isPhoneVerified, verificationRequestIsStale } from '@moxt/shared/auth/userSecurity.js';
-import { router } from 'expo-router';
 import {
   buildPersonalDocument,
   buildPersonalDocumentPath,
@@ -10,19 +29,19 @@ import {
   submitVerificationRequest,
 } from '@moxt/shared/services/accountWrites.js';
 
-import { AppChrome } from '@/components/chrome/AppChrome';
+import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { PageHeader } from '@/components/ui/PageHeader';
-import { useLanguage } from '@/providers/LanguageProvider';
+import { useSmartNavbarScroll } from '@/hooks/useSmartNavbar';
 import { cn } from '@/lib/cn';
+import { useLanguage } from '@/providers/LanguageProvider';
 import { pickImageOrPdf, uploadLikeWeb, type UploadFile } from '@/services/mediaUpload';
 import { supabase } from '@/services/supabase';
 import { loadVerification } from '@/store/account';
 import { authService, setUser } from '@/store/auth';
 import type { AuthUser } from '@/store/types';
 import { useAppDispatch, useAppSelector } from '@/store/store';
-import { useThemeColors } from '@/theme/ThemeContext';
+import { useShadows, useTheme, useThemeColors } from '@/theme/ThemeContext';
 
 type Level = 'identity' | 'enhanced';
 type DocKey = 'identity' | 'selfie' | 'residence' | 'address';
@@ -35,18 +54,18 @@ const ID_TYPES = [
 ];
 
 const RESIDENCE_TYPES = [
-  { value: 'visa', label: 'Visa' },
-  { value: 'vnj', label: 'ВНЖ (VNJ)' },
-  { value: 'rvp', label: 'РВП (RVP)' },
-  { value: 'rvpo', label: 'РВПО (RVPO)' },
+  { value: 'visa', label: 'Visa de séjour' },
+  { value: 'vnj', label: 'ВНЖ (Permis de séjour permanent)' },
+  { value: 'rvp', label: 'РВП (Séjour temporaire)' },
+  { value: 'rvpo', label: 'РВПО (Séjour pour étudiants)' },
 ];
 
 const LEVEL_LABEL: Record<Level, string> = {
-  identity: 'Identité',
+  identity: 'Identité standard',
   enhanced: 'Renforcée',
 };
 
-function ChoiceRow({
+function ChoiceList({
   options,
   value,
   onChange,
@@ -55,21 +74,42 @@ function ChoiceRow({
   value: string;
   onChange: (value: string) => void;
 }) {
+  const colors = useThemeColors();
   return (
-    <View className="gap-2">
+    <View style={{ gap: 8 }}>
       {options.map((option) => {
         const active = option.value === value;
         return (
           <Pressable
             key={option.value}
             onPress={() => onChange(option.value)}
-            className={cn(
-              'rounded-2xl border px-3 py-3',
-              active ? 'border-brand-700 bg-brand-50 dark:border-brand-400 dark:bg-brand-950/30' : 'border-app-border',
-            )}>
-            <Text className={cn('text-sm font-bold', active ? 'text-brand-700 dark:text-brand-300' : 'text-app-text')}>
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              borderRadius: 14,
+              borderWidth: 1,
+              padding: 12,
+              backgroundColor: active ? colors.accentSoft : colors.surface,
+              borderColor: active ? colors.accent : colors.border,
+            }}>
+            <AppText
+              className={cn(
+                'text-sm font-bold flex-1 pr-3',
+                active ? 'text-app-accent' : 'text-app-text',
+              )}>
               {option.label}
-            </Text>
+            </AppText>
+            <View
+              style={{
+                height: 18,
+                width: 18,
+                borderRadius: 9,
+                borderWidth: active ? 5 : 2,
+                borderColor: active ? colors.accent : colors.border,
+                backgroundColor: colors.surface,
+              }}
+            />
           </Pressable>
         );
       })}
@@ -77,35 +117,87 @@ function ChoiceRow({
   );
 }
 
-function OtpField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+function DocUploader({
+  label,
+  description,
+  file,
+  onPick,
+  icon: Icon = FileText,
+}: {
+  label: string;
+  description: string;
+  file?: UploadFile;
+  onPick: () => void;
+  icon?: any;
+}) {
   const colors = useThemeColors();
+  const shadows = useShadows();
+
   return (
-    <TextInput
-      value={value}
-      onChangeText={onChange}
-      keyboardType="number-pad"
-      placeholder="Code reçu"
-      placeholderTextColor={colors.textFaint}
-      style={{
-        minHeight: 48,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: colors.border,
-        backgroundColor: colors.surface,
-        paddingHorizontal: 14,
-        color: colors.text,
-      }}
-    />
+    <View style={{ gap: 8 }}>
+      <AppText className="text-xs text-app-text-muted">{description}</AppText>
+      {file ? (
+        <View
+          style={[
+            {
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              borderRadius: 14,
+              borderWidth: 1,
+              borderColor: colors.accent,
+              backgroundColor: colors.accentSoft,
+              padding: 12,
+              gap: 10,
+            },
+            shadows.card,
+          ]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+            <FileCheck size={20} color={colors.accent} />
+            <View style={{ flex: 1 }}>
+              <AppText className="text-xs font-bold text-app-text" numberOfLines={1}>
+                {file.name}
+              </AppText>
+              <AppText className="text-[10px] text-app-accent">Fichier sélectionné et prêt</AppText>
+            </View>
+          </View>
+          <Button variant="ghost" size="sm" onPress={onPick}>
+            Changer
+          </Button>
+        </View>
+      ) : (
+        <Pressable
+          onPress={onPick}
+          style={[
+            {
+              borderRadius: 14,
+              borderWidth: 1.5,
+              borderStyle: 'dashed',
+              borderColor: colors.border,
+              backgroundColor: colors.surfaceMuted,
+              paddingVertical: 18,
+              paddingHorizontal: 16,
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+            },
+          ]}>
+          <Icon size={22} color={colors.accent} />
+          <AppText className="text-xs font-bold text-app-accent">{label}</AppText>
+          <AppText className="text-[10px] text-app-text-muted">Formats acceptés : JPG, PNG, PDF</AppText>
+        </Pressable>
+      )}
+    </View>
   );
 }
 
-/**
- * Même parcours que VerificationPage : téléphone, e-mail, pièce (PDF ou photo),
- * selfie, séjour, domicile si renforcée, puis confirmation.
- */
 export default function KycScreen() {
-  const dispatch = useAppDispatch();
+  const insets = useSafeAreaInsets();
   const colors = useThemeColors();
+  const shadows = useShadows();
+  const { onScroll } = useSmartNavbarScroll();
+  const { isDark } = useTheme();
+  const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user);
   const verification = useAppSelector((state) => state.account.verification);
   const { t } = useLanguage();
@@ -173,8 +265,9 @@ export default function KycScreen() {
       if (sent?.user) {
         dispatch(setUser(sent.user as AuthUser));
         Alert.alert('Téléphone', 'Ce numéro est déjà confirmé.');
+      } else {
+        Alert.alert('Code envoyé', 'Saisissez le code reçu par SMS.');
       }
-      else Alert.alert('Code envoyé', 'Saisissez le code reçu par SMS.');
     } catch (error: any) {
       Alert.alert('Téléphone', error?.message || String(error) || 'Envoi impossible.');
     } finally {
@@ -203,8 +296,9 @@ export default function KycScreen() {
       if ('user' in sent && sent.user) {
         dispatch(setUser(sent.user as AuthUser));
         Alert.alert('E-mail', 'Cette adresse est déjà confirmée.');
+      } else {
+        Alert.alert('Code envoyé', 'Saisissez le code reçu par e-mail.');
       }
-      else Alert.alert('Code envoyé', 'Saisissez le code reçu par e-mail.');
     } catch (error: any) {
       Alert.alert('E-mail', error?.message || String(error) || 'Envoi impossible.');
     } finally {
@@ -265,7 +359,6 @@ export default function KycScreen() {
 
   const requestLevel = (verification.level === 'enhanced' ? 'enhanced' : 'identity') as Level;
   const requestHeading = verification.status ? `Demande ${LEVEL_LABEL[requestLevel] || LEVEL_LABEL[level]}` : null;
-  const isDark = colors.background === '#0c0c0e';
   const requestStale = verificationRequestIsStale({ status: verification.status, createdAt: verification.requestedAt });
   const statusTone =
     verification.status === 'rejected'
@@ -275,233 +368,539 @@ export default function KycScreen() {
         : { label: 'En vérification', bg: isDark ? 'rgba(120,53,15,0.5)' : '#fef3c7', fg: isDark ? '#fcd34d' : '#b45309' };
 
   return (
-    <AppChrome pathname="/verification">
-      <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerClassName="p-5 gap-4 pb-32">
-        <PageHeader
-          title="Vérification"
-          className="px-0"
-          actions={
-            <Pressable
-              onPress={() => (router.canGoBack() ? router.back() : router.replace('/' as never))}
-              style={{ minHeight: 40, paddingHorizontal: 14, borderRadius: 14, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface }}>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: colors.text }}>← Retour</Text>
-            </Pressable>
-          }
-        />
-
-        {phoneOk ? (
-          <View style={{ borderRadius: 16, borderWidth: 1, padding: 14, borderColor: isDark ? 'rgba(16,185,129,0.4)' : '#a7f3d0', backgroundColor: isDark ? 'rgba(6,78,59,0.35)' : '#ecfdf5' }}>
-            <Text style={{ fontWeight: '900', color: isDark ? '#6ee7b7' : '#065f46' }}>{t('security.phone.verifiedTitle')}</Text>
-            <Text style={{ marginTop: 4, fontSize: 13, color: isDark ? '#a7f3d0' : '#047857' }}>
-              {t('security.phone.verifiedBody', { phone: user?.phone || '' })}
-            </Text>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingTop: Math.max(insets.top, 12),
+          paddingBottom: Math.max(insets.bottom + 100, 140),
+          gap: 16,
+        }}>
+        {/* Header Row */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <Pressable
+            accessibilityLabel="Retour"
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/profile' as never))}
+            style={[
+              {
+                height: 40,
+                width: 40,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 999,
+                borderWidth: 1,
+                borderColor: colors.border,
+                backgroundColor: colors.surface,
+              },
+              shadows.card,
+            ]}>
+            <ArrowLeft size={18} color={colors.text} strokeWidth={2.4} />
+          </Pressable>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <AppText className="text-lg font-black text-app-text" numberOfLines={1}>
+              Vérification d’identité
+            </AppText>
+            <AppText className="text-xs text-app-text-muted" numberOfLines={1}>
+              Niveau KYC et documents officiels
+            </AppText>
           </View>
-        ) : null}
+        </View>
 
-        {requestStale ? (
-          <View style={{ borderRadius: 16, borderWidth: 1, padding: 14, borderColor: isDark ? 'rgba(245,158,11,0.4)' : '#fcd34d', backgroundColor: isDark ? 'rgba(120,53,15,0.35)' : '#fffbeb' }}>
-            <Text style={{ fontWeight: '900', color: isDark ? '#fcd34d' : '#92400e' }}>{t('verification.overdue.title')}</Text>
-            <Text style={{ marginTop: 4, fontSize: 13, color: isDark ? '#fde68a' : '#78350f' }}>
-              {t('verification.overdue.before')}{' '}
-              <Text onPress={() => router.push('/support' as never)} style={{ fontWeight: '800', color: colors.accent }}>
-                {t('verification.overdue.link')}
-              </Text>
-              .
-            </Text>
-          </View>
-        ) : null}
-
+        {/* Existing Status Banner */}
         {requestHeading ? (
           <Card>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text className="text-base font-black text-app-text">{requestHeading}</Text>
-                <Text className="mt-1 text-sm text-app-text-muted">
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <View style={{ flex: 1 }}>
+                <AppText className="text-sm font-black text-app-text">{requestHeading}</AppText>
+                <AppText className="text-xs text-app-text-muted mt-0.5">
                   {t('verification.request.docs', { count: verification.documentCount ?? 0 })}
-                </Text>
+                </AppText>
               </View>
               <View style={{ borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: statusTone.bg }}>
-                <Text style={{ fontSize: 11, fontWeight: '900', color: statusTone.fg }}>{statusTone.label}</Text>
+                <AppText style={{ fontSize: 11, fontWeight: '900', color: statusTone.fg }}>{statusTone.label}</AppText>
               </View>
             </View>
             {verification.status === 'rejected' ? (
-              <View style={{ marginTop: 12, borderRadius: 14, borderWidth: 1, padding: 12, borderColor: isDark ? 'rgba(239,68,68,0.4)' : '#fca5a5', backgroundColor: isDark ? 'rgba(127,29,29,0.35)' : '#fef2f2' }}>
-                <Text style={{ fontWeight: '900', color: isDark ? '#fca5a5' : '#991b1b' }}>{t('verification.rejected.title')}</Text>
-                <Text style={{ marginTop: 4, fontSize: 13, color: isDark ? '#fecaca' : '#7f1d1d' }}>
+              <View
+                style={{
+                  marginTop: 10,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  padding: 12,
+                  borderColor: isDark ? 'rgba(239,68,68,0.4)' : '#fca5a5',
+                  backgroundColor: isDark ? 'rgba(127,29,29,0.35)' : '#fef2f2',
+                }}>
+                <AppText style={{ fontWeight: '900', color: isDark ? '#fca5a5' : '#991b1b', fontSize: 13 }}>
+                  {t('verification.rejected.title')}
+                </AppText>
+                <AppText style={{ marginTop: 4, fontSize: 12, color: isDark ? '#fecaca' : '#7f1d1d' }}>
                   {verification.reviewNote
                     ? t('verification.rejected.reason', { note: verification.reviewNote })
                     : t('verification.rejected.fallback')}
-                </Text>
-                <Text style={{ marginTop: 6, fontSize: 13, color: isDark ? '#fecaca' : '#7f1d1d' }}>{t('verification.rejected.hint')}</Text>
+                </AppText>
               </View>
             ) : null}
           </Card>
         ) : null}
 
+        {/* Phone Verification Status Banner */}
+        {phoneOk ? (
+          <View
+            style={[
+              {
+                borderRadius: 14,
+                borderWidth: 1,
+                padding: 12,
+                borderColor: isDark ? 'rgba(16,185,129,0.4)' : '#a7f3d0',
+                backgroundColor: isDark ? 'rgba(6,78,59,0.25)' : '#ecfdf5',
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 10,
+              },
+              shadows.card,
+            ]}>
+            <CheckCircle size={18} color="#059669" />
+            <View style={{ flex: 1 }}>
+              <AppText className="text-xs font-black" style={{ color: isDark ? '#6ee7b7' : '#065f46' }}>
+                Téléphone certifié : {user?.phone || ''}
+              </AppText>
+              <AppText className="text-[11px]" style={{ color: isDark ? '#a7f3d0' : '#047857' }}>
+                Numéro confirmé par SMS pour les transferts
+              </AppText>
+            </View>
+          </View>
+        ) : null}
+
+        {/* Stale request notice */}
+        {requestStale ? (
+          <View
+            style={[
+              {
+                borderRadius: 14,
+                borderWidth: 1,
+                padding: 12,
+                borderColor: isDark ? 'rgba(245,158,11,0.4)' : '#fcd34d',
+                backgroundColor: isDark ? 'rgba(120,53,15,0.25)' : '#fffbeb',
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 10,
+              },
+              shadows.card,
+            ]}>
+            <AlertCircle size={18} color="#d97706" />
+            <View style={{ flex: 1 }}>
+              <AppText className="text-xs font-black" style={{ color: isDark ? '#fcd34d' : '#92400e' }}>
+                {t('verification.overdue.title')}
+              </AppText>
+              <AppText className="text-[11px] mt-0.5" style={{ color: isDark ? '#fde68a' : '#78350f' }}>
+                Votre demande prend plus de temps que prévu.{' '}
+                <AppText onPress={() => router.push('/support' as never)} style={{ fontWeight: '800', color: colors.accent }}>
+                  Contacter le support
+                </AppText>
+              </AppText>
+            </View>
+          </View>
+        ) : null}
+
+        {/* ── Stepper Indicator ── */}
         <Card>
-          <Text className="text-xs font-black uppercase text-brand-700">
-            Étape {step + 1}/{steps.length} · {current.label}
-          </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="mt-3 flex-row items-center gap-2">
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <AppText className="text-xs font-black uppercase text-app-accent">
+              Étape {step + 1} sur {steps.length}
+            </AppText>
+            <AppText className="text-xs font-bold text-app-text">{current.label}</AppText>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             {steps.map((item, index) => {
               const done = step > index;
               const active = step === index;
               return (
-                <View key={item.key} className="flex-row items-center gap-2">
-                  <View
-                    className={cn(
-                      'h-8 w-8 items-center justify-center rounded-full',
-                      done ? 'bg-emerald-500' : active ? 'bg-brand-700' : 'bg-app-surface-muted',
-                    )}>
-                    <Text className={cn('text-xs font-black', done || active ? 'text-white' : 'text-app-text-muted')}>
+                <View key={item.key} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Pressable
+                    onPress={() => done && setStep(index)}
+                    style={{
+                      height: 28,
+                      minWidth: 28,
+                      borderRadius: 14,
+                      paddingHorizontal: 8,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: done ? '#059669' : active ? colors.accent : colors.surfaceMuted,
+                    }}>
+                    <AppText style={{ fontSize: 11, fontWeight: '900', color: done || active ? '#ffffff' : colors.textMuted }}>
                       {done ? '✓' : index + 1}
-                    </Text>
-                  </View>
-                  {index < steps.length - 1 ? <View className="h-px w-4 bg-app-border" /> : null}
+                    </AppText>
+                  </Pressable>
+                  {index < steps.length - 1 ? (
+                    <View style={{ height: 2, width: 14, backgroundColor: done ? '#059669' : colors.border }} />
+                  ) : null}
                 </View>
               );
             })}
           </ScrollView>
         </Card>
 
+        {/* ── Step 0: Choisir le niveau ── */}
         {current.key === 'level' ? (
           <Card>
-            <Text className="text-base font-black text-app-text mb-3">Choisissez votre niveau</Text>
-            <Text className="mb-3 text-sm text-app-text-muted">{t('verification.chooseLevelHint')}</Text>
-            <ChoiceRow
-              value={level}
-              onChange={(value) => setLevel(value as Level)}
-              options={[
-                { value: 'identity', label: 'Identité — pièce, selfie et visa / ВНЖ / РВП / РВПО' },
-                { value: 'enhanced', label: 'Renforcée — identité et justificatif de domicile' },
-              ]}
-            />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <Shield size={17} color={colors.accent} strokeWidth={2.2} />
+              <AppText className="text-sm font-black text-app-text">Sélectionnez le niveau KYC</AppText>
+            </View>
+            <AppText className="text-xs leading-5 text-app-text-muted mb-3">
+              Le niveau détermine le plafond de vos transferts et la visibilité de votre profil.
+            </AppText>
+
+            <View style={{ gap: 10 }}>
+              <Pressable
+                onPress={() => setLevel('identity')}
+                style={{
+                  borderRadius: 14,
+                  borderWidth: 1.5,
+                  padding: 14,
+                  backgroundColor: level === 'identity' ? colors.accentSoft : colors.surface,
+                  borderColor: level === 'identity' ? colors.accent : colors.border,
+                  gap: 4,
+                }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <AppText className={cn('text-sm font-black', level === 'identity' ? 'text-app-accent' : 'text-app-text')}>
+                    Niveau 1 — Identité standard
+                  </AppText>
+                  <View
+                    style={{
+                      height: 18,
+                      width: 18,
+                      borderRadius: 9,
+                      borderWidth: level === 'identity' ? 5 : 2,
+                      borderColor: level === 'identity' ? colors.accent : colors.border,
+                      backgroundColor: colors.surface,
+                    }}
+                  />
+                </View>
+                <AppText className="text-xs text-app-text-muted mt-1 leading-5">
+                  Pièce d’identité officielle, selfie et statut de séjour en Russie (visa, ВНЖ, РВП, РВПО).
+                </AppText>
+              </Pressable>
+
+              <Pressable
+                onPress={() => setLevel('enhanced')}
+                style={{
+                  borderRadius: 14,
+                  borderWidth: 1.5,
+                  padding: 14,
+                  backgroundColor: level === 'enhanced' ? colors.accentSoft : colors.surface,
+                  borderColor: level === 'enhanced' ? colors.accent : colors.border,
+                  gap: 4,
+                }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <AppText className={cn('text-sm font-black', level === 'enhanced' ? 'text-app-accent' : 'text-app-text')}>
+                    Niveau 2 — Vérification renforcée
+                  </AppText>
+                  <View
+                    style={{
+                      height: 18,
+                      width: 18,
+                      borderRadius: 9,
+                      borderWidth: level === 'enhanced' ? 5 : 2,
+                      borderColor: level === 'enhanced' ? colors.accent : colors.border,
+                      backgroundColor: colors.surface,
+                    }}
+                  />
+                </View>
+                <AppText className="text-xs text-app-text-muted mt-1 leading-5">
+                  Tout le niveau 1 + un justificatif de domicile récent (enregistrement, bail, quittance). Plafonds de transfert débloqués.
+                </AppText>
+              </Pressable>
+            </View>
           </Card>
         ) : null}
 
+        {/* ── Step: Téléphone ── */}
         {current.key === 'phone' ? (
           <Card>
-            <Text className="text-base font-black text-app-text mb-1">Téléphone</Text>
-            <Text className="text-sm text-app-text-muted mb-3">Numéro russe au format +7, confirmé par code.</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <Phone size={17} color={colors.accent} strokeWidth={2.2} />
+              <AppText className="text-sm font-black text-app-text">Confirmation du téléphone</AppText>
+            </View>
+            <AppText className="text-xs text-app-text-muted mb-3">
+              Indiquez votre numéro en Russie (+7...). Vous recevrez un code SMS à 6 chiffres.
+            </AppText>
             <TextInput
               value={phone}
               onChangeText={setPhone}
               keyboardType="phone-pad"
-              style={{ minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: colors.border, color: colors.text, paddingHorizontal: 14, marginBottom: 8 }}
+              placeholder="+7XXXXXXXXXX"
+              placeholderTextColor={colors.textFaint}
+              style={{
+                fontSize: 16,
+                minHeight: 48,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: colors.border,
+                color: colors.text,
+                backgroundColor: colors.surface,
+                paddingHorizontal: 14,
+                marginBottom: 8,
+              }}
             />
             <Button variant="secondary" loading={otpBusy} onPress={() => void sendPhone()}>
-              Envoyer le code
+              Recevoir un code SMS
             </Button>
-            <View className="mt-3">
-              <OtpField value={phoneCode} onChange={setPhoneCode} />
+            <View style={{ marginTop: 12, gap: 8 }}>
+              <AppText className="text-xs font-bold text-app-text">Code de confirmation</AppText>
+              <TextInput
+                value={phoneCode}
+                onChangeText={setPhoneCode}
+                keyboardType="number-pad"
+                placeholder="Code à 6 chiffres"
+                placeholderTextColor={colors.textFaint}
+                style={{
+                  fontSize: 16,
+                  minHeight: 48,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: colors.surface,
+                  paddingHorizontal: 14,
+                  color: colors.text,
+                }}
+              />
+              <Button loading={otpBusy} onPress={() => void confirmPhone()} disabled={!phoneCode.trim()}>
+                Valider le numéro
+              </Button>
             </View>
-            <Button className="mt-3" loading={otpBusy} onPress={() => void confirmPhone()}>
-              Confirmer le téléphone
-            </Button>
           </Card>
         ) : null}
 
+        {/* ── Step: E-mail ── */}
         {current.key === 'email' ? (
           <Card>
-            <Text className="text-base font-black text-app-text mb-1">E-mail</Text>
-            <Text className="text-sm text-app-text-muted mb-3">Confirmez l’adresse du compte avec le code reçu.</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <Mail size={17} color={colors.accent} strokeWidth={2.2} />
+              <AppText className="text-sm font-black text-app-text">Confirmation de l'e-mail</AppText>
+            </View>
+            <AppText className="text-xs text-app-text-muted mb-3">
+              Confirmez l’adresse e-mail associée à votre compte MOXT.
+            </AppText>
             <TextInput
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
-              style={{ minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: colors.border, color: colors.text, paddingHorizontal: 14, marginBottom: 8 }}
+              placeholder="votre@email.com"
+              placeholderTextColor={colors.textFaint}
+              style={{
+                fontSize: 16,
+                minHeight: 48,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: colors.border,
+                color: colors.text,
+                backgroundColor: colors.surface,
+                paddingHorizontal: 14,
+                marginBottom: 8,
+              }}
             />
             <Button variant="secondary" loading={otpBusy} onPress={() => void sendEmail()}>
-              Envoyer le code
+              Recevoir le code par e-mail
             </Button>
-            <View className="mt-3">
-              <OtpField value={emailCode} onChange={setEmailCode} />
+            <View style={{ marginTop: 12, gap: 8 }}>
+              <AppText className="text-xs font-bold text-app-text">Code de confirmation</AppText>
+              <TextInput
+                value={emailCode}
+                onChangeText={setEmailCode}
+                keyboardType="number-pad"
+                placeholder="Code à 6 chiffres"
+                placeholderTextColor={colors.textFaint}
+                style={{
+                  fontSize: 16,
+                  minHeight: 48,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: colors.surface,
+                  paddingHorizontal: 14,
+                  color: colors.text,
+                }}
+              />
+              <Button loading={otpBusy} onPress={() => void confirmEmail()} disabled={!emailCode.trim()}>
+                Valider l'e-mail
+              </Button>
             </View>
-            <Button className="mt-3" loading={otpBusy} onPress={() => void confirmEmail()}>
-              Confirmer l’e-mail
-            </Button>
           </Card>
         ) : null}
 
+        {/* ── Step: Identité ── */}
         {current.key === 'identity' ? (
           <Card>
-            <Text className="text-base font-black text-app-text mb-1">Demande d’identité</Text>
-            <Text className="text-sm text-app-text-muted mb-3">
-              Pièce au nom de {[user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'votre compte'}. Photo ou PDF.
-            </Text>
-            <ChoiceRow options={ID_TYPES} value={idType} onChange={setIdType} />
-            <Button className="mt-3" variant="secondary" onPress={() => void pick('identity')}>
-              {docs.identity ? docs.identity.name : 'Photo ou PDF de la pièce'}
-            </Button>
-          </Card>
-        ) : null}
-
-        {current.key === 'selfie' ? (
-          <Card>
-            <Text className="text-base font-black text-app-text mb-1">Selfie de vérification</Text>
-            <Text className="text-sm text-app-text-muted mb-3">Une photo de vous tenant votre pièce.</Text>
-            <Button variant="secondary" onPress={() => void pick('selfie')}>
-              {docs.selfie ? docs.selfie.name : 'Ajouter un selfie'}
-            </Button>
-          </Card>
-        ) : null}
-
-        {current.key === 'residence' ? (
-          <Card>
-            <Text className="text-base font-black text-app-text mb-1">Visa, ВНЖ, РВП ou РВПО</Text>
-            <Text className="text-sm text-app-text-muted mb-3">Document de séjour en Russie, dates visibles. Photo ou PDF.</Text>
-            <ChoiceRow options={RESIDENCE_TYPES} value={residenceType} onChange={setResidenceType} />
-            <Button className="mt-3" variant="secondary" onPress={() => void pick('residence')}>
-              {docs.residence ? docs.residence.name : 'Photo ou PDF du document'}
-            </Button>
-          </Card>
-        ) : null}
-
-        {current.key === 'address' ? (
-          <Card>
-            <Text className="text-base font-black text-app-text mb-1">Justificatif de domicile</Text>
-            <Text className="text-sm text-app-text-muted mb-3">Enregistrement, bail ou facture de moins de 3 mois. Photo ou PDF.</Text>
-            <Button variant="secondary" onPress={() => void pick('address')}>
-              {docs.address ? docs.address.name : 'Ajouter un justificatif'}
-            </Button>
-          </Card>
-        ) : null}
-
-        {current.key === 'review' ? (
-          <Card>
-            <Text className="text-base font-black text-app-text mb-2">Confirmation</Text>
-            <Text className="text-sm text-app-text-muted">Niveau : {LEVEL_LABEL[level]}</Text>
-            <Text className="text-sm text-app-text-muted">Téléphone : {phoneOk ? 'confirmé' : 'à confirmer'}</Text>
-            <Text className="text-sm text-app-text-muted">E-mail : {emailOk ? 'confirmé' : 'à confirmer'}</Text>
-            <Text className="text-sm text-app-text-muted">Pièce : {docs.identity?.name || '—'}</Text>
-            <Text className="text-sm text-app-text-muted">Selfie : {docs.selfie?.name || '—'}</Text>
-            <Text className="text-sm text-app-text-muted">Séjour : {docs.residence?.name || '—'}</Text>
-            {level === 'enhanced' ? <Text className="text-sm text-app-text-muted">Domicile : {docs.address?.name || '—'}</Text> : null}
-            <View className="mt-4 flex-row items-center gap-3">
-              <Switch value={consent} onValueChange={setConsent} trackColor={{ true: '#0b8975' }} />
-              <Text className="flex-1 text-sm text-app-text">J’accepte le traitement de ces pièces pour la vérification MOXT.</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <UserCheck size={17} color={colors.accent} strokeWidth={2.2} />
+              <AppText className="text-sm font-black text-app-text">Pièce d'identité</AppText>
+            </View>
+            <AppText className="text-xs text-app-text-muted mb-3">
+              La pièce doit être au nom de {[user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'votre profil'}.
+            </AppText>
+            <ChoiceList options={ID_TYPES} value={idType} onChange={setIdType} />
+            <View style={{ marginTop: 14 }}>
+              <DocUploader
+                label={docs.identity ? 'Changer la pièce' : 'Importer la pièce d’identité'}
+                description="Assurez-vous que les 4 coins et le numéro sont parfaitement lisibles."
+                file={docs.identity}
+                onPick={() => void pick('identity')}
+              />
             </View>
           </Card>
         ) : null}
 
-        <View className="flex-row gap-2">
+        {/* ── Step: Selfie ── */}
+        {current.key === 'selfie' ? (
+          <Card>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <Camera size={17} color={colors.accent} strokeWidth={2.2} />
+              <AppText className="text-sm font-black text-app-text">Selfie de contrôle</AppText>
+            </View>
+            <DocUploader
+              label={docs.selfie ? 'Changer le selfie' : 'Prendre ou importer un selfie'}
+              description="Tenez votre pièce d’identité à côté de votre visage, bien éclairé et sans lunettes de soleil."
+              file={docs.selfie}
+              icon={Camera}
+              onPick={() => void pick('selfie')}
+            />
+          </Card>
+        ) : null}
+
+        {/* ── Step: Statut de séjour ── */}
+        {current.key === 'residence' ? (
+          <Card>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <ShieldCheck size={17} color={colors.accent} strokeWidth={2.2} />
+              <AppText className="text-sm font-black text-app-text">Titre de séjour en Russie</AppText>
+            </View>
+            <AppText className="text-xs text-app-text-muted mb-3">
+              Document officiel valide avec dates de validité visibles.
+            </AppText>
+            <ChoiceList options={RESIDENCE_TYPES} value={residenceType} onChange={setResidenceType} />
+            <View style={{ marginTop: 14 }}>
+              <DocUploader
+                label={docs.residence ? 'Changer le document de séjour' : 'Importer le justificatif de séjour'}
+                description="Photo ou PDF de votre visa, carte de séjour ou titre étudiant."
+                file={docs.residence}
+                onPick={() => void pick('residence')}
+              />
+            </View>
+          </Card>
+        ) : null}
+
+        {/* ── Step: Justificatif de domicile (renforcé) ── */}
+        {current.key === 'address' ? (
+          <Card>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <Home size={17} color={colors.accent} strokeWidth={2.2} />
+              <AppText className="text-sm font-black text-app-text">Justificatif de domicile</AppText>
+            </View>
+            <DocUploader
+              label={docs.address ? 'Changer le justificatif' : 'Importer un justificatif de domicile'}
+              description="Enregistrement officiel (регистрация), contrat de bail ou facture de services de moins de 3 mois."
+              file={docs.address}
+              icon={Home}
+              onPick={() => void pick('address')}
+            />
+          </Card>
+        ) : null}
+
+        {/* ── Step: Récapitulatif et validation ── */}
+        {current.key === 'review' ? (
+          <Card>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <FileCheck size={17} color={colors.accent} strokeWidth={2.2} />
+              <AppText className="text-sm font-black text-app-text">Récapitulatif de votre dossier</AppText>
+            </View>
+
+            <View style={{ gap: 8, backgroundColor: colors.surfaceMuted, borderRadius: 14, padding: 12 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <AppText className="text-xs text-app-text-muted">Niveau demandé :</AppText>
+                <AppText className="text-xs font-bold text-app-accent">{LEVEL_LABEL[level]}</AppText>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <AppText className="text-xs text-app-text-muted">Téléphone :</AppText>
+                <AppText className="text-xs font-bold" style={{ color: phoneOk ? '#059669' : colors.warning }}>
+                  {phoneOk ? 'Certifié ✓' : 'À confirmer'}
+                </AppText>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <AppText className="text-xs text-app-text-muted">E-mail :</AppText>
+                <AppText className="text-xs font-bold" style={{ color: emailOk ? '#059669' : colors.warning }}>
+                  {emailOk ? 'Certifié ✓' : 'À confirmer'}
+                </AppText>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <AppText className="text-xs text-app-text-muted">Pièce d'identité :</AppText>
+                <AppText className="text-xs font-bold text-app-text" numberOfLines={1}>
+                  {docs.identity?.name || '—'}
+                </AppText>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <AppText className="text-xs text-app-text-muted">Selfie :</AppText>
+                <AppText className="text-xs font-bold text-app-text" numberOfLines={1}>
+                  {docs.selfie?.name || '—'}
+                </AppText>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <AppText className="text-xs text-app-text-muted">Séjour en Russie :</AppText>
+                <AppText className="text-xs font-bold text-app-text" numberOfLines={1}>
+                  {docs.residence?.name || '—'}
+                </AppText>
+              </View>
+              {level === 'enhanced' ? (
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <AppText className="text-xs text-app-text-muted">Domicile :</AppText>
+                  <AppText className="text-xs font-bold text-app-text" numberOfLines={1}>
+                    {docs.address?.name || '—'}
+                  </AppText>
+                </View>
+              ) : null}
+            </View>
+
+            <View style={{ marginTop: 14, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Switch value={consent} onValueChange={setConsent} trackColor={{ true: colors.accent }} />
+              <AppText className="flex-1 text-xs leading-4 text-app-text">
+                J’atteste sur l’honneur l’authenticité des pièces et consens à leur traitement pour la vérification de mon compte MOXT.
+              </AppText>
+            </View>
+          </Card>
+        ) : null}
+
+        {/* ── Wizard Navigation Buttons ── */}
+        <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
           {step > 0 ? (
-            <Button variant="secondary" className="flex-1" onPress={() => setStep((value) => Math.max(0, value - 1))}>
-              Retour
+            <Button
+              variant="secondary"
+              style={{ flex: 1 }}
+              onPress={() => setStep((value) => Math.max(0, value - 1))}>
+              Précédent
             </Button>
           ) : null}
           {current.key === 'review' ? (
-            <Button className="flex-1" loading={sending} disabled={!canContinue} onPress={() => void submit()}>
-              Envoyer le dossier
+            <Button
+              style={{ flex: 1 }}
+              loading={sending}
+              disabled={!canContinue}
+              onPress={() => void submit()}>
+              Transmettre le dossier
             </Button>
           ) : (
-            <Button className="flex-1" disabled={!canContinue} onPress={() => setStep((value) => Math.min(steps.length - 1, value + 1))}>
+            <Button
+              style={{ flex: 1 }}
+              disabled={!canContinue}
+              onPress={() => setStep((value) => Math.min(steps.length - 1, value + 1))}>
               Continuer
             </Button>
           )}
         </View>
       </ScrollView>
-    </AppChrome>
+    </View>
   );
 }

@@ -168,6 +168,8 @@ export function AiAssistantPanel({
         searchIndex: searchIndex || [],
         language,
         t,
+        state: rootState,
+        user,
       })
       let response
       let usedFallback = false

@@ -1,4 +1,6 @@
 import { useEffect, type ReactNode } from 'react';
+import { AppState, type AppStateStatus } from 'react-native';
+import * as Notifications from 'expo-notifications';
 
 import {
   registerForPushNotifications,
@@ -55,7 +57,35 @@ export function DataSync({ children }: { children: ReactNode }) {
       subscribeRealtime(userId, dispatch, () => store.getState());
       subscribePresence(userId);
 
+      // Polling périodique en arrière-plan (toutes les 25s) pour synchroniser les notifications automatiquement
+      const NOTIF_POLL_INTERVAL_MS = 25_000;
+      const pollTimer = setInterval(() => {
+        if (AppState.currentState === 'active') {
+          dispatch(loadNotifications(userId));
+        }
+      }, NOTIF_POLL_INTERVAL_MS);
+
+      // Rafraîchissement automatique lors du retour au premier plan (sortie de veille / multitâche)
+      const appStateSubscription = AppState.addEventListener('change', (nextState: AppStateStatus) => {
+        if (nextState === 'active') {
+          dispatch(loadNotifications(userId));
+          dispatch(loadConversations(userId));
+        }
+      });
+
+      // Rafraîchissement automatique à la réception d'une notification push
+      const notifReceivedSub = Notifications.addNotificationReceivedListener(() => {
+        dispatch(loadNotifications(userId));
+      });
+      const notifResponseSub = Notifications.addNotificationResponseReceivedListener(() => {
+        dispatch(loadNotifications(userId));
+      });
+
       return () => {
+        clearInterval(pollTimer);
+        appStateSubscription.remove();
+        notifReceivedSub.remove();
+        notifResponseSub.remove();
         unsubscribeRealtime();
         unsubscribePresence();
       };

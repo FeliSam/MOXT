@@ -22,6 +22,7 @@ export type FeedItem = {
   title: string;
   caption: string;
   image: string;
+  images?: string[];
   videoUrl: string;
   stats: { views: number; likes: number; comments: number; shares: number };
   /** L'utilisateur connecté a aimé (vidéos, annonces, posts). */
@@ -120,6 +121,7 @@ export function buildFeedItems(src: {
       title: l.title || '',
       caption: [price, l.city].filter(Boolean).join(' · '),
       image: (l.images || [])[0] || '',
+      images: l.images || [],
       videoUrl: '',
       stats: { views: Number(l.views) || 0, likes: count(l.likes), comments: count(l.comments), shares: 0 },
       liked: likedBy(l.likes, src.userId),
@@ -144,6 +146,7 @@ export function buildFeedItems(src: {
   }
   for (const j of src.jobs || []) {
     if (!j?.id || j.status !== 'active') continue;
+    const jobImgs = Array.isArray(j.images) ? j.images : [];
     items.push({
       id: `job:${j.id}`,
       kind: 'job',
@@ -152,7 +155,8 @@ export function buildFeedItems(src: {
       publisher: j.businessId ? businessPublisher(byId.get(j.businessId), j.businessName) : userPublisher(j.ownerId, j.ownerName || j.businessName),
       title: j.title || '',
       caption: [j.city, j.contractType].filter(Boolean).join(' · '),
-      image: (Array.isArray(j.images) && j.images[0]) || '',
+      image: jobImgs[0] || '',
+      images: jobImgs,
       videoUrl: '',
       stats: { views: 0, likes: 0, comments: 0, shares: 0 },
       route: `/jobs/${j.id}`,
@@ -160,6 +164,7 @@ export function buildFeedItems(src: {
   }
   for (const e of src.events) {
     if (!e?.id || e.status !== 'published') continue;
+    const evImgs = e.images || (e.imageUrl ? [e.imageUrl] : e.coverUrl ? [e.coverUrl] : []);
     items.push({
       id: `event:${e.id}`,
       kind: 'event',
@@ -168,7 +173,8 @@ export function buildFeedItems(src: {
       publisher: e.businessId ? businessPublisher(byId.get(e.businessId), e.organizerName) : userPublisher(e.ownerId, e.organizerName),
       title: e.title || '',
       caption: [e.city, e.format === 'online' ? 'En ligne' : null].filter(Boolean).join(' · '),
-      image: e.coverUrl || e.imageUrl || (e.images || [])[0] || '',
+      image: e.coverUrl || e.imageUrl || evImgs[0] || '',
+      images: evImgs,
       videoUrl: '',
       stats: { views: 0, likes: count(e.likes), comments: count(e.comments), shares: 0 },
       route: `/events/${e.id}`,
@@ -179,6 +185,7 @@ export function buildFeedItems(src: {
     // Post lié à une fiche catalogue : le web ne l'affiche pas comme onglet « Posts ».
     const sourceType = String(p.sourceType || '').trim();
     if (p.sourceId && sourceType && sourceType !== 'free') continue;
+    const postImgs = collectPostImages(p);
     items.push({
       id: `post:${p.id}`,
       kind: 'post',
@@ -187,7 +194,8 @@ export function buildFeedItems(src: {
       publisher: userPublisher(p.authorId, p.authorName, p.authorAvatarUrl || ''),
       title: p.title || '',
       caption: p.message || p.text || p.content || '',
-      image: collectPostImages(p)[0] || '',
+      image: postImgs[0] || '',
+      images: postImgs,
       videoUrl: '',
       stats: { views: 0, likes: count(p.likes), comments: count(p.comments), shares: 0 },
       liked: likedBy(p.likes, src.userId),

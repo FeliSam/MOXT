@@ -13,6 +13,8 @@ web-build/
 .env.*.local
 moxt-react/.env.production
 scripts/phase2.env
+scripts/phase2.*.env
+*.bundle
 scripts/.html-to-figma-out/
 scripts/.cloud-init-libretranslate.generated.yaml
 scripts/phase2.supabase-secrets.env

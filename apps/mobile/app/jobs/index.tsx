@@ -1,25 +1,45 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  FlatList,
   Pressable,
   RefreshControl,
-  StyleSheet,
+  ScrollView,
   Text,
+  TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import {
+  Briefcase,
+  Building2,
+  Calendar,
+  CheckCircle,
+  ChevronRight,
+  Clock,
+  FileText,
+  MapPin,
+  Plus,
+  Search,
+  UserCheck,
+  Users,
+  X,
+} from 'lucide-react-native';
 
 import { formatShortDate } from '@moxt/shared/utils/formatters.js';
 
-import { Input, PageHeader } from '@/components/ui';
-import { ListCard } from '@/components/ui/ListCard';
+import { AppChrome } from '@/components/chrome/AppChrome';
+import { AppText } from '@/components/ui/AppText';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { VerifiedIcon } from '@/components/ui/VerifiedIcon';
+import { useLanguage } from '@/providers/LanguageProvider';
 import { supabase } from '@/services/supabase';
 import { useAppSelector } from '@/store/store';
-import { useThemeColors } from '@/theme/ThemeContext';
-import { brand, radii, shadows, spacing, typography } from '@/theme/colors';
+import { brand } from '@/theme/palette';
+import { useTheme } from '@/theme/ThemeContext';
+import { useSmartNavbarScroll } from '@/hooks/useSmartNavbar';
 
 type JobItem = {
   id: string;
@@ -29,41 +49,70 @@ type JobItem = {
   city?: string;
   location?: string;
   type?: string;
+  contractType?: string;
+  salary?: string | number;
+  currency?: string;
+  sector?: string;
   status?: string;
   businessId?: string | null;
   created_at?: string;
   createdAt?: string;
 };
 
+const CONTRACT_FILTERS = [
+  { key: '', label: 'Tous' },
+  { key: 'cdi', label: 'CDI' },
+  { key: 'cdd', label: 'CDD' },
+  { key: 'freelance', label: 'Freelance' },
+  { key: 'stage', label: 'Stage' },
+  { key: 'temps_partiel', label: 'Temps partiel' },
+];
+
 export default function JobsScreen() {
-  const colors = useThemeColors();
-  const authStatus = useAppSelector((state) => state.auth.status);
+  const { t } = useLanguage();
+  const { colors, isDark } = useTheme();
+  const user = useAppSelector((state) => state.auth.user);
+
   const [jobs, setJobs] = useState<JobItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [query, setQuery] = useState('');
   const [tab, setTab] = useState<'active' | 'archived'>('active');
-  const [refreshing, setRefreshing] = useState(false);
+  const [contractFilter, setContractFilter] = useState('');
 
   const fetchJobs = useCallback(async () => {
     if (!supabase) return;
     setLoading(true);
     const { data } = await supabase
       .from('jobs')
-      .select('id, title, company, city, type, status, business_id, created_at')
+      .select('id, title, company, publisher_name, city, location, type, contract_type, salary, currency, sector, status, business_id, created_at')
       .order('created_at', { ascending: false })
-      .limit(50);
+      .limit(60);
+
     setJobs(
-      ((data as (JobItem & { business_id?: string | null })[]) || []).map((row) => ({
-        ...row,
+      ((data as any[]) || []).map((row) => ({
+        id: row.id,
+        title: row.title,
+        company: row.company || row.publisher_name,
+        publisherName: row.publisher_name,
+        city: row.city || row.location,
+        location: row.location || row.city,
+        type: row.type || row.contract_type,
+        contractType: row.contract_type || row.type,
+        salary: row.salary,
+        currency: row.currency || 'RUB',
+        sector: row.sector,
+        status: row.status || 'active',
         businessId: row.business_id,
+        created_at: row.created_at,
       })),
     );
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    if (authStatus === 'authenticated') fetchJobs();
-  }, [authStatus, fetchJobs]);
+    fetchJobs();
+  }, [fetchJobs]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -71,160 +120,229 @@ export default function JobsScreen() {
     setRefreshing(false);
   }, [fetchJobs]);
 
-  const filtered = useMemo(() => {
+  const activeJobs = useMemo(() => jobs.filter((j) => j.status === 'active'), [jobs]);
+  const archivedJobs = useMemo(() => jobs.filter((j) => j.status !== 'active'), [jobs]);
+
+  const displayedJobs = useMemo(() => {
+    const list = tab === 'active' ? activeJobs : archivedJobs;
     const q = query.trim().toLowerCase();
-    return jobs.filter((job) => {
-      const archived = job.status !== 'active';
-      if (tab === 'active' ? archived : !archived) return false;
+    const cf = contractFilter.toLowerCase();
+
+    return list.filter((job) => {
+      if (cf && !String(job.contractType || '').toLowerCase().includes(cf)) {
+        return false;
+      }
       if (!q) return true;
-      return `${job.title} ${job.company || ''} ${job.publisherName || ''} ${job.city || ''} ${job.location || ''}`
-        .toLowerCase()
-        .includes(q);
+      const haystack = `${job.title} ${job.company || ''} ${job.city || ''} ${job.sector || ''}`.toLowerCase();
+      return haystack.includes(q);
     });
-  }, [jobs, query, tab]);
-  const activeCount = jobs.filter((job) => job.status === 'active').length;
-  const archivedCount = jobs.length - activeCount;
+  }, [activeJobs, archivedJobs, contractFilter, query, tab]);
+
+  const { onScroll, scrollEventThrottle } = useSmartNavbarScroll();
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.headerWrap}>
-        <Pressable style={styles.backRow} onPress={() => router.back()}>
-          <Text style={[styles.backArrow, { color: colors.primary }]}>←</Text>
-          <Text style={[styles.backLabel, { color: colors.primary }]}>Accueil</Text>
-        </Pressable>
-      </View>
-      <PageHeader
-        eyebrow="Recrutement"
-        title="Jobs"
-        description={`${activeCount} offre(s) active(s)`}
-      />
-      <View style={styles.tabs}>
-        {(
-          [
-            { key: 'active' as const, label: 'Actives', count: activeCount },
-            { key: 'archived' as const, label: 'Archives', count: archivedCount },
-          ]
-        ).map((item) => {
-          const on = tab === item.key;
-          return (
+    <AppChrome pathname="/jobs">
+      <ScrollView
+        style={{ flex: 1, backgroundColor: colors.background }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 130, gap: 14 }}
+        onScroll={onScroll}
+        scrollEventThrottle={scrollEventThrottle}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={brand[700]} />}
+      >
+        {/* Modern Top Header Row */}
+        <View className="flex-row items-center justify-between gap-3 pt-1">
+          <View className="flex-1">
+            <Text className="text-[10px] font-black uppercase tracking-wider text-brand-700 dark:text-brand-400">
+              RECRUTEMENT & MISSIONS
+            </Text>
+            <Text className="text-xl font-black text-app-text" numberOfLines={1}>
+              Jobs & Emplois
+            </Text>
+            <Text className="text-xs font-semibold text-app-text-muted" numberOfLines={1}>
+              {activeJobs.length} offre(s) active(s)
+            </Text>
+          </View>
+          <View className="flex-row items-center gap-2">
             <Pressable
-              key={item.key}
-              onPress={() => setTab(item.key)}
-              style={[styles.tab, { backgroundColor: on ? brand[700] : colors.surfaceMuted }]}>
-              <Text style={{ color: on ? '#fff' : colors.text, fontWeight: '800', fontSize: 13 }}>
-                {item.label} · {item.count}
-              </Text>
+              onPress={() => router.push('/jobs/applications' as never)}
+              className="min-h-[42px] px-3.5 items-center justify-center rounded-2xl border border-app-border bg-app-surface shadow-sm">
+              <Text className="text-xs font-bold text-app-text">Candidatures</Text>
             </Pressable>
-          );
-        })}
-      </View>
-      <View style={styles.searchWrap}>
-        <Input
-          placeholder="Rechercher titre, entreprise, ville..."
-          value={query}
-          onChangeText={setQuery}
-        />
-      </View>
-
-      {loading && jobs.length === 0 ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={brand[700]} />
+            <Pressable
+              onPress={() => router.push('/publish/job' as never)}
+              className="min-h-[42px] px-4 items-center justify-center rounded-2xl bg-brand-700 dark:bg-brand-500 shadow-sm flex-row gap-1.5">
+              <Plus size={15} color="#fff" strokeWidth={2.5} />
+              <Text className="text-xs font-bold text-white">Publier</Text>
+            </Pressable>
+          </View>
         </View>
-      ) : (
-        <FlatList
-          data={filtered}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={brand[700]} />
-          }
-          renderItem={({ item }) => (
-            <ListCard
-              className="relative overflow-hidden pr-28"
-              onPress={() => router.push(`/jobs/${item.id}` as any)}>
-              {/* Web : badge type absolu top-right */}
-              <View style={[styles.typeBadge, {
-                backgroundColor: item.company ? '#ecfdf8' : '#fff7ed',
-              }]}>
-                <Text style={[styles.typeBadgeText, {
-                  color: item.company ? '#08705f' : '#b45309',
-                }]}>
-                  {item.company ? 'ENTREPRISE' : 'PARTICULIER'}
+
+        {/* Active vs Archived Segmented Tabs */}
+        <View className="flex-row items-center rounded-2xl bg-app-surface border border-app-border p-1">
+          <Pressable
+            onPress={() => setTab('active')}
+            className={`flex-1 py-2 rounded-xl items-center ${
+              tab === 'active'
+                ? 'bg-brand-600 dark:bg-brand-500'
+                : 'bg-transparent'
+            }`}
+          >
+            <Text
+              className={`text-xs font-bold ${
+                tab === 'active' ? 'text-white' : 'text-app-text-muted'
+              }`}
+            >
+              Offres actives ({activeJobs.length})
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => setTab('archived')}
+            className={`flex-1 py-2 rounded-xl items-center ${
+              tab === 'archived'
+                ? 'bg-brand-600 dark:bg-brand-500'
+                : 'bg-transparent'
+            }`}
+          >
+            <Text
+              className={`text-xs font-bold ${
+                tab === 'archived' ? 'text-white' : 'text-app-text-muted'
+              }`}
+            >
+              Archives ({archivedJobs.length})
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* Search Bar */}
+        <View className="flex-row items-center gap-2.5 px-3.5 min-h-[46px] rounded-2xl border border-app-border bg-app-surface">
+          <Search size={16} color={colors.textMuted} />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Poste, entreprise, ville ou secteur..."
+            placeholderTextColor={colors.textFaint}
+            style={{ fontSize: 16 }}
+            className="flex-1 text-sm font-medium text-app-text"
+          />
+          {query ? (
+            <Pressable onPress={() => setQuery('')} hitSlop={8}>
+              <X size={15} color={colors.textMuted} />
+            </Pressable>
+          ) : null}
+        </View>
+
+        {/* Contract Type Chips */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 8, paddingHorizontal: 2 }}
+        >
+          {CONTRACT_FILTERS.map(({ key, label }) => {
+            const active = contractFilter === key;
+            return (
+              <Pressable
+                key={key || 'all'}
+                onPress={() => setContractFilter(key)}
+                className={`px-3 py-1.5 rounded-full border ${
+                  active
+                    ? 'bg-brand-600 border-brand-600 dark:bg-brand-500 dark:border-brand-500'
+                    : 'bg-app-surface border-app-border'
+                }`}
+              >
+                <Text
+                  className={`text-xs font-bold ${
+                    active ? 'text-white' : 'text-app-text'
+                  }`}
+                >
+                  {label}
                 </Text>
-              </View>
-              {tab === 'archived' ? (
-                <Text style={[styles.typeBadgeText, { color: colors.textMuted }]}>Archivé</Text>
-              ) : null}
-              <View style={styles.cardBody}>
-                <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={2}>
-                  {item.title}
-                </Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <Text style={[styles.cardCompany, { color: colors.primary }]} numberOfLines={1}>
-                    {item.company || item.publisherName || 'Particulier'}
-                  </Text>
-                  {item.businessId ? <VerifiedIcon size={14} /> : null}
-                </View>
-                <Text style={[styles.cardMeta, { color: colors.textMuted }]}>
-                  {item.city || item.location || 'Russie'}
-                  {item.created_at || item.createdAt ? ` · ${formatShortDate(item.created_at || item.createdAt)}` : ''}
-                </Text>
-              </View>
-            </ListCard>
-          )}
-          ListEmptyComponent={
-            <View style={styles.empty}>
-              <Text style={{ fontSize: 40 }}>💼</Text>
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>Aucune offre</Text>
-              <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-                Les offres d'emploi apparaîtront ici.
-              </Text>
-            </View>
-          }
-        />
-      )}
-    </SafeAreaView>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+
+        {/* Jobs List */}
+        <View className="gap-3.5">
+          {displayedJobs.map((job) => {
+            const dateStr = job.created_at ? formatShortDate(job.created_at) : '';
+            const salaryStr = job.salary
+              ? `${job.salary} ${job.currency || 'RUB'}`
+              : 'Salaire à convenir';
+
+            return (
+              <Pressable
+                key={job.id}
+                onPress={() => router.push(`/jobs/${job.id}` as never)}
+              >
+                <Card variant="verified" className="p-4 gap-3">
+                  <View className="flex-row items-start justify-between gap-2">
+                    <View className="flex-1 min-w-0">
+                      <AppText numberOfLines={2} className="text-base font-black text-app-text">
+                        {job.title}
+                      </AppText>
+                      {job.company ? (
+                        <View className="flex-row items-center gap-1.5 mt-1">
+                          <Building2 size={13} color={colors.textMuted} />
+                          <AppText numberOfLines={1} className="text-xs font-semibold text-app-text-muted">
+                            {job.company}
+                          </AppText>
+                          {job.businessId ? <VerifiedIcon size={12} /> : null}
+                        </View>
+                      ) : null}
+                    </View>
+
+                    <Badge tone={job.status === 'active' ? 'brand' : 'neutral'}>
+                      {job.contractType || 'Job'}
+                    </Badge>
+                  </View>
+
+                  <View className="flex-row flex-wrap items-center gap-2 pt-1 border-t border-app-border/40">
+                    {job.city ? (
+                      <View className="flex-row items-center gap-1">
+                        <MapPin size={12} color={colors.textMuted} />
+                        <Text className="text-xs text-app-text-muted">{job.city}</Text>
+                      </View>
+                    ) : null}
+
+                    <View className="flex-row items-center gap-1">
+                      <Briefcase size={12} color={colors.textMuted} />
+                      <Text className="text-xs font-bold text-teal-700 dark:text-teal-300">
+                        {salaryStr}
+                      </Text>
+                    </View>
+
+                    {dateStr ? (
+                      <View className="flex-row items-center gap-1 ml-auto">
+                        <Clock size={11} color={colors.textFaint} />
+                        <Text className="text-[11px] text-app-text-faint">{dateStr}</Text>
+                      </View>
+                    ) : null}
+                  </View>
+
+                  <View className="flex-row items-center justify-between pt-1">
+                    <Text className="text-xs font-bold text-brand-600 dark:text-brand-400">
+                      Voir l'offre & postuler
+                    </Text>
+                    <ChevronRight size={15} color={brand[600]} />
+                  </View>
+                </Card>
+              </Pressable>
+            );
+          })}
+
+          {!displayedJobs.length ? (
+            <EmptyState
+              title="Aucune offre d'emploi"
+              description={
+                tab === 'active'
+                  ? 'Aucun job actif ne correspond à vos filtres. Modifiez votre recherche ou publiez une offre !'
+                  : 'Aucune offre archivée trouvée.'
+              }
+            />
+          ) : null}
+        </View>
+      </ScrollView>
+    </AppChrome>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  headerWrap: { paddingHorizontal: spacing.xl, paddingTop: spacing.md },
-  backRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.xs },
-  backArrow: { fontSize: 20 },
-  backLabel: { fontSize: 16, fontWeight: '600' },
-  tabs: { flexDirection: 'row', gap: 8, paddingHorizontal: spacing.xl, marginBottom: spacing.sm },
-  tab: { flex: 1, minHeight: 40, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
-  searchWrap: { paddingHorizontal: spacing.xl, marginBottom: spacing.sm },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  list: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xl, gap: spacing.sm },
-  card: {
-    position: 'relative',
-    borderRadius: radii.lg,
-    padding: spacing.lg,
-    paddingRight: 110,
-    overflow: 'hidden',
-  },
-  typeBadge: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    zIndex: 1,
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  typeBadgeText: { fontSize: 9, fontWeight: '900', letterSpacing: 0.5 },
-  cardBody: { gap: spacing.xs },
-  cardTitle: { ...typography.label },
-  cardCompany: { fontSize: 13, fontWeight: '600' },
-  cardMeta: { ...typography.caption },
-  empty: { paddingVertical: 60, alignItems: 'center', gap: spacing.sm },
-  emptyTitle: { fontSize: 18, fontWeight: '700' },
-  emptyText: {
-    textAlign: 'center',
-    paddingHorizontal: spacing['3xl'],
-    lineHeight: 20,
-    ...typography.body,
-  },
-});

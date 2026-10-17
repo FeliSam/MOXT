@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Pressable, Share, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Pencil, Plus, Share2, X } from 'lucide-react-native';
 
@@ -35,10 +36,12 @@ export function DetailFloatingActions({
   subtitle?: string;
   editTo?: string;
 }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
   const path = relatedPath || `/marketplace/${relatedId}`;
   const favoriteType = FAVORITE_TYPES.has(relatedType as FavoriteType) ? (relatedType as FavoriteType) : 'listing';
+  const bottomMargin = Math.max(insets.bottom + 16, 24);
 
   async function onShare() {
     await Share.share({ message: `${title}\n${path}` }).catch(() => undefined);
@@ -56,7 +59,16 @@ export function DetailFloatingActions({
   };
 
   return (
-    <View pointerEvents="box-none" style={{ position: 'absolute', right: 16, bottom: 24, alignItems: 'flex-end', gap: 8, zIndex: 30 }}>
+    <View
+      pointerEvents="box-none"
+      style={{
+        position: 'absolute',
+        right: 16,
+        bottom: bottomMargin,
+        alignItems: 'flex-end',
+        gap: 8,
+        zIndex: 30,
+      }}>
       {open ? (
         <View style={{ alignItems: 'flex-end', gap: 8 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>

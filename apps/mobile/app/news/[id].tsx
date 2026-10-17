@@ -21,7 +21,7 @@ export default function PostDetailScreen() {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const imageWidth = Math.max(280, width - 32);
-  const galleryRef = useRef<ScrollView>(null);
+  const galleryRef = useRef<any>(null);
   const [imageIndex, setImageIndex] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const user = useAppSelector((state) => state.auth.user);

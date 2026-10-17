@@ -11,6 +11,8 @@ import { useLanguage } from '@/providers/LanguageProvider';
 import { useAppSelector } from '@/store/store';
 import { useTheme } from '@/theme/ThemeContext';
 
+import { useSmartNavbarScroll } from '@/hooks/useSmartNavbar';
+
 const CURRENCIES = ['XOF', 'RUB', 'EUR', 'USD'];
 
 const CHECKLIST = [
@@ -33,6 +35,7 @@ function CurrencyChip({ label, active, onPress }: { label: string; active: boole
 export default function P2PScreen() {
   const { t } = useLanguage();
   const { colors, isDark } = useTheme();
+  const { onScroll, scrollEventThrottle } = useSmartNavbarScroll();
   const user = useAppSelector((state) => state.auth.user);
   const offers = useAppSelector((state) => state.dashboard.p2pOffers);
   const orders = useAppSelector((state) => state.dashboard.p2pOrders);
@@ -66,17 +69,31 @@ export default function P2PScreen() {
 
   return (
     <AppChrome pathname="/p2p">
-      <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 128 }}>
-        <PageHeader
-          className="mx-0"
-          eyebrow={t('p2p.page.eyebrow')}
-          title={t('p2p.page.title')}
-          actions={
-            <Pressable onPress={() => router.push('/p2p/publish' as never)}>
-              <AppText className="text-xs font-bold" style={{ color: colors.accent }}>{t('p2p.page.proposeOffer')}</AppText>
-            </Pressable>
-          }
-        />
+      <ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={scrollEventThrottle}
+        style={{ flex: 1, backgroundColor: colors.background }}
+        contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 130 }}
+      >
+        {/* Modern Top Header Row */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingTop: 4 }}>
+          <View style={{ flex: 1 }}>
+            <AppText className="text-[10px] font-black uppercase tracking-wider text-brand-700 dark:text-brand-400">
+              {t('p2p.page.eyebrow')}
+            </AppText>
+            <AppText className="text-xl font-black text-app-text" numberOfLines={1}>
+              {t('p2p.page.title')}
+            </AppText>
+            <AppText className="text-xs font-semibold text-app-text-muted" numberOfLines={1}>
+              {visible.length} offre(s) disponible(s)
+            </AppText>
+          </View>
+          <Pressable
+            onPress={() => router.push('/p2p/publish' as never)}
+            style={{ height: 42, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.accent }}>
+            <AppText className="text-xs font-bold text-white">{t('p2p.page.proposeOffer')}</AppText>
+          </Pressable>
+        </View>
         <View style={{ borderRadius: 16, borderWidth: 1, borderColor: isDark ? '#155e75' : '#a5f3fc', backgroundColor: isDark ? 'rgba(8,51,68,0.55)' : '#ecfeff', padding: 14 }}>
           <AppText className="text-sm leading-5 text-app-text">{t('p2p.noEscrowBanner')}</AppText>
         </View>

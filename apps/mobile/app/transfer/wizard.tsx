@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Building2, Calculator, History } from 'lucide-react-native';
+import { ArrowLeft, Building2, Calculator, History } from 'lucide-react-native';
 
 import { formatCurrency } from '@moxt/shared/utils/formatters.js';
 
 import { TransferCalculatorModal } from '@/components/transfers/TransferCalculatorModal';
 import { DsAlert } from '@/components/ds/Alert';
-import { PageHeader } from '@/components/ui/PageHeader';
 import { TransferWizardStepper } from '@/components/transfers/TransferWizardStepper';
 import {
   TransferWizardConfirmStep,
@@ -23,10 +22,12 @@ import {
 } from '@/constants/transfers';
 import { twTransfer } from '@/constants/transferTailwind';
 import { supabase } from '@/services/supabase';
-import { loadBusinesses, type Business } from '@/store/account';
+import { loadBusinesses, loadTransferProfiles, type Business } from '@/store/account';
 import { loadCoreData } from '@/store/data';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
+import { useSmartNavbarScroll } from '@/hooks/useSmartNavbar';
+import { phoneError, phonePrefix, validatePhone } from '@/constants/phone';
 
 const READY = new Set(['verified', 'approved', 'active']);
 
@@ -53,6 +54,7 @@ export default function TransferWizardScreen() {
   const originCountry = (user as any)?.originCountry || ((user as any)?.country !== 'RU' ? (user as any)?.country : 'BJ') || 'BJ';
 
   const initialDirection = (user as any)?.country === 'RU' ? DIRECTIONS.RU_TO_BJ : DIRECTIONS.BJ_TO_RU;
+  const initialInfo = useMemo(() => directionInfo(initialDirection, originCountry), [initialDirection, originCountry]);
 
   // Le web (NewTransferPage) est déjà un assistant en 4 étapes. L’accord
   // « assistants multi-étapes » portait sur l’édition et la publication, pas
@@ -67,12 +69,14 @@ export default function TransferWizardScreen() {
 
   const [senderFirstName, setSenderFirstName] = useState(user?.firstName || '');
   const [senderLastName, setSenderLastName] = useState(user?.lastName || '');
-  const [senderPhone, setSenderPhone] = useState((user as any)?.phone || (user as any)?.russianPhone || '+229');
+  const [senderPhone, setSenderPhone] = useState(
+    (user as any)?.phone || (user as any)?.russianPhone || phonePrefix(initialInfo.sourceCountry),
+  );
   const [senderMethod, setSenderMethod] = useState('');
 
   const [recipientFirstName, setRecipientFirstName] = useState('');
   const [recipientLastName, setRecipientLastName] = useState('');
-  const [recipientPhone, setRecipientPhone] = useState('+7');
+  const [recipientPhone, setRecipientPhone] = useState(phonePrefix(initialInfo.destinationCountry));
   const [recipientMethod, setRecipientMethod] = useState('');
   const [acceptTerms, setAcceptTerms] = useState(false);
 
@@ -114,7 +118,10 @@ export default function TransferWizardScreen() {
   const calc = calculateTransfer(numAmount, direction, exchanger?.feePercent ?? 2.5);
 
   useEffect(() => {
-    if (user?.id) dispatch(loadBusinesses(user.id));
+    if (user?.id) {
+      dispatch(loadBusinesses(user.id));
+      dispatch(loadTransferProfiles(user.id));
+    }
   }, [dispatch, user?.id]);
 
   useEffect(() => {
@@ -133,13 +140,41 @@ export default function TransferWizardScreen() {
         return;
       }
     }
-    if (step === 2 && !senderFirstName.trim()) {
-      Alert.alert('Expéditeur requis', 'Renseignez le prénom.');
-      return;
+    if (step === 2) {
+      if (!senderFirstName.trim()) {
+        Alert.alert('Expéditeur requis', "Renseignez le prénom de l'expéditeur.");
+        return;
+      }
+      if (!senderLastName.trim()) {
+        Alert.alert('Expéditeur requis', "Renseignez le nom de famille de l'expéditeur.");
+        return;
+      }
+      if (!validatePhone(senderPhone, info.sourceCountry)) {
+        Alert.alert('Numéro invalide', phoneError(info.sourceCountry));
+        return;
+      }
+      if (!senderMethod) {
+        Alert.alert('Moyen requis', "Sélectionnez le réseau ou la banque d'envoi.");
+        return;
+      }
     }
-    if (step === 3 && !recipientFirstName.trim()) {
-      Alert.alert('Destinataire requis', 'Renseignez le prénom.');
-      return;
+    if (step === 3) {
+      if (!recipientFirstName.trim()) {
+        Alert.alert('Destinataire requis', 'Renseignez le prénom du destinataire.');
+        return;
+      }
+      if (!recipientLastName.trim()) {
+        Alert.alert('Destinataire requis', 'Renseignez le nom de famille du destinataire.');
+        return;
+      }
+      if (!validatePhone(recipientPhone, info.destinationCountry)) {
+        Alert.alert('Numéro invalide', phoneError(info.destinationCountry));
+        return;
+      }
+      if (!recipientMethod) {
+        Alert.alert('Moyen requis', 'Sélectionnez le réseau ou la banque de réception.');
+        return;
+      }
     }
     if (step < 4) setStep(step + 1);
   };
@@ -211,51 +246,45 @@ export default function TransferWizardScreen() {
     }
   };
 
+  const { onScroll, scrollEventThrottle } = useSmartNavbarScroll();
+
   return (
-    <AppScreen edges={['top']}>
+    <AppScreen edges={[]}>
       <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
-          contentContainerClassName={twTransfer.scroll}
+          contentContainerClassName="gap-5 px-4 pb-36 pt-2"
           keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}>
-          <PageHeader
-            className="mx-0"
-            eyebrow="Transfert"
-            title="Créer un transfert"
-            description="Choisissez une entreprise validée. Elle recevra l'opération et suivra son traitement jusqu'à la validation."
-            actions={
-              <View style={{ width: '100%', flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                {[
-                  [Calculator, 'Calculatrice', () => setCalculatorOpen(true)],
-                  [Building2, 'Échangeurs', () => router.push('/exchangers' as never)],
-                  [History, 'Historique', () => router.push('/(tabs)/transfers' as never)],
-                ].map(([Icon, label, onPress]) => {
-                  const BtnIcon = Icon as typeof Calculator;
-                  return (
-                    <Pressable
-                      key={String(label)}
-                      accessibilityRole="button"
-                      accessibilityLabel={String(label)}
-                      onPress={onPress as () => void}
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 6,
-                        borderRadius: 12,
-                        paddingHorizontal: 14,
-                        paddingVertical: 10,
-                        backgroundColor: colors.surface,
-                        borderWidth: 1,
-                        borderColor: colors.border,
-                      }}>
-                      <BtnIcon size={14} color={colors.textSecondary} />
-                      <Text style={{ color: colors.text, fontWeight: '700', fontSize: 13 }}>{label as string}</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            }
-          />
+          showsVerticalScrollIndicator={false}
+          onScroll={onScroll}
+          scrollEventThrottle={scrollEventThrottle}>
+          {/* Subheader / Step & Calculator Row */}
+          <View className="flex-row items-center justify-between gap-3 rounded-2xl border border-app-border bg-app-surface p-3.5 shadow-sm">
+            {step > 1 ? (
+              <Pressable
+                onPress={() => setStep(step - 1)}
+                hitSlop={8}
+                accessibilityLabel="Étape précédente"
+                className="h-10 w-10 items-center justify-center rounded-xl border border-app-border bg-app-surface-muted">
+                <ArrowLeft size={18} color={colors.text} />
+              </Pressable>
+            ) : null}
+            <View className="flex-1">
+              <Text className="text-[10px] font-black uppercase tracking-wider text-brand-700 dark:text-brand-400">
+                Transfert d'argent
+              </Text>
+              <Text className="text-sm font-black text-app-text" numberOfLines={1}>
+                Étape {step} sur 4 · Partenaire vérifié
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => setCalculatorOpen(true)}
+              hitSlop={8}
+              accessibilityLabel="Ouvrir le calculateur"
+              className="flex-row items-center gap-1.5 rounded-xl border border-app-border bg-app-surface-muted px-3 py-2">
+              <Calculator size={15} color={colors.text} />
+              <Text className="text-xs font-bold text-app-text">Calculateur</Text>
+            </Pressable>
+          </View>
 
           {ownBusiness ? (
             <DsAlert
@@ -279,13 +308,9 @@ export default function TransferWizardScreen() {
               onDirectionChange={(d) => {
                 const next = d as (typeof DIRECTIONS)[keyof typeof DIRECTIONS];
                 setDirection(next);
-                if (next === DIRECTIONS.RU_TO_BJ) {
-                  setSenderPhone('+7');
-                  setRecipientPhone('+229');
-                } else {
-                  setSenderPhone('+229');
-                  setRecipientPhone('+7');
-                }
+                const nextInfo = directionInfo(next, originCountry);
+                setSenderPhone(phonePrefix(nextInfo.sourceCountry));
+                setRecipientPhone(phonePrefix(nextInfo.destinationCountry));
                 setSenderMethod('');
                 setRecipientMethod('');
               }}
@@ -315,6 +340,7 @@ export default function TransferWizardScreen() {
               setPhone={setSenderPhone}
               method={senderMethod}
               setMethod={setSenderMethod}
+              userId={user?.id}
             />
           ) : null}
 
@@ -331,6 +357,7 @@ export default function TransferWizardScreen() {
               setPhone={setRecipientPhone}
               method={recipientMethod}
               setMethod={setRecipientMethod}
+              userId={user?.id}
             />
           ) : null}
 

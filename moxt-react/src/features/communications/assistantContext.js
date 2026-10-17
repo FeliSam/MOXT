@@ -128,11 +128,39 @@ export function buildAssistantContextPack({ state, question, user, searchIndex =
     }
   }
 
+  let jobs = []
+  if (/job|emploi|travail|recrut|stage/i.test(q)) {
+    const jobList = state?.jobs?.items || []
+    jobs = jobList.slice(0, 6).map((j) => ({
+      id: j.id,
+      title: j.title || 'Offre d’emploi',
+      company: j.company || 'Entreprise',
+      city: j.city || 'Russie',
+      salary: j.salary || null,
+      path: `/jobs/${j.id}`,
+    }))
+  }
+
+  let parcels = []
+  if (/colis|bagage|kilo|voyage/i.test(q)) {
+    const parcelList = (state?.parcels?.items || []).filter((p) => !p.status || p.status === 'active')
+    parcels = parcelList.slice(0, 6).map((p) => ({
+      id: p.id,
+      origin: p.origin || 'Afrique',
+      destination: p.destination || 'Russie',
+      remainingKg: p.remainingKg ?? p.capacityKg ?? 10,
+      pricePerKg: p.pricePerKg || null,
+      path: `/parcels/${p.id}`,
+    }))
+  }
+
   const toolsUsed = []
   if (searchHits.length || pageHits.length) toolsUsed.push('search_content')
   if (transfers.length || focusedTransfer) toolsUsed.push('list_my_transfers')
   if (focusedTransfer) toolsUsed.push('get_transfer')
   if (exchangers.length) toolsUsed.push('list_exchangers')
+  if (jobs.length) toolsUsed.push('list_jobs')
+  if (parcels.length) toolsUsed.push('list_parcels')
 
   return {
     toolsUsed,
@@ -140,6 +168,8 @@ export function buildAssistantContextPack({ state, question, user, searchIndex =
     transfers,
     focusedTransfer,
     exchangers,
+    jobs,
+    parcels,
   }
 }
 
@@ -169,6 +199,22 @@ export function buildTransferCandidates(contextPack) {
       label: exchanger.name,
       path: exchanger.path,
       typeLabel: 'Échangeur',
+    })
+  }
+  for (const job of contextPack?.jobs || []) {
+    out.push({
+      id: `job-${job.id}`,
+      label: `${job.title} (${job.city})`,
+      path: job.path,
+      typeLabel: 'Emploi',
+    })
+  }
+  for (const parcel of contextPack?.parcels || []) {
+    out.push({
+      id: `parcel-${parcel.id}`,
+      label: `${parcel.origin} → ${parcel.destination}`,
+      path: parcel.path,
+      typeLabel: 'Colis',
     })
   }
   return out

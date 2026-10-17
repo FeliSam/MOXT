@@ -227,15 +227,168 @@ function resolveDomainContent(domain, t, language) {
   return { texts, actions, suggestions }
 }
 
+function cleanQueryStr(str) {
+  return String(str || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+}
+
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export const localAssistantProvider = {
-  async respond({ question, searchIndex, t, language } = {}) {
+  async respond({ question = '', searchIndex = [], t, language = 'fr', state = null, user = null } = {}) {
     const lang = LOCALE_TAGS[language] ? language : 'fr'
     const localeTag = LOCALE_TAGS[lang]
     const normalized = question.toLocaleLowerCase(localeTag)
+    const qClean = cleanQueryStr(question)
 
-    const entityMatches = searchIndex
+    // 1. Détection : Articles / Annonces avec le même nom (Doublons ou variantes)
+    const isDuplicateQuery =
+      qClean.includes('meme nom') ||
+      qClean.includes('meme titre') ||
+      qClean.includes('en double') ||
+      qClean.includes('doublon') ||
+      ((qClean.includes('identique') || qClean.includes('pareil') || qClean.includes('similaire')) &&
+        (qClean.includes('article') || qClean.includes('annonce') || qClean.includes('produit') || qClean.includes('item')))
+
+    if (isDuplicateQuery) {
+      const listings = state?.marketplace?.items || []
+      const titleGroups = {}
+      for (const item of listings) {
+        const norm = cleanQueryStr(item.title)
+        if (!norm) continue
+        if (!titleGroups[norm]) titleGroups[norm] = []
+        titleGroups[norm].push(item)
+      }
+      const duplicates = Object.entries(titleGroups).filter(([_, items]) => items.length > 1)
+      if (duplicates.length > 0) {
+        const total = duplicates.reduce((acc, [_, items]) => acc + items.length, 0)
+        let text = `J'ai analysé le catalogue Marketplace : **${duplicates.length} groupe(s)** d'articles partagent exactement le même nom (total de ${total} annonces).\n\n`
+        const actions = []
+        for (const [_title, items] of duplicates) {
+          text += `• **${items[0].title}** : ${items.length} annonces disponibles\n`
+          for (const it of items.slice(0, 3)) {
+            actions.push({
+              label: `${it.title} (${it.price ? `${it.price} ${it.currency || '₽'}` : 'Sur demande'})`,
+              path: `/marketplace/${it.id}`,
+            })
+          }
+        }
+        return {
+          text,
+          actions: actions.slice(0, 6),
+          suggestions: ['Voir le Marketplace', 'Publier une annonce', 'Mes transferts'],
+          sources: duplicates.map(([_, items]) => `Marketplace: ${items[0].title}`),
+        }
+      } else {
+        return {
+          text: "Après vérification dans la base Marketplace, il n'y a actuellement aucun article portant le même nom. Toutes les annonces publiées ont des titres distincts.",
+          actions: [{ label: 'Marketplace', path: '/marketplace' }],
+          suggestions: ['Voir le Marketplace', 'Publier une annonce', 'Mes transferts'],
+          sources: ['Catalogue Marketplace'],
+        }
+      }
+    }
+
+    // 2. Détection : Recherche directe de transferts
+    const isDirectTransferQuery =
+      (qClean.includes('transfert') || qClean.includes('virement') || qClean.includes('mandat') || qClean.includes('mxt')) &&
+      (qClean.includes('dernier') || qClean.includes('effectue') || qClean.includes('liste') || qClean.includes('mes') || qClean.includes('mon') || qClean.includes('trouve') || qClean.includes('historique'))
+
+    if (isDirectTransferQuery) {
+      const allTransfers = state?.transfers?.items || []
+      const userTransfers = user?.id
+        ? allTransfers.filter((t) => !t.userId || t.userId === user.id)
+        : allTransfers
+      if (userTransfers.length > 0) {
+        let text = `J'ai trouvé **${userTransfers.length} transfert(s)** dans votre historique :\n\n`
+        const actions = []
+        for (const t of userTransfers.slice(0, 5)) {
+          const status = t.status === 'completed' || t.status === 'paid_out' ? 'Payé' : t.status === 'pending' || t.status === 'processing' ? 'En cours' : t.status || 'Initié'
+          const amount = t.amountSent ?? t.amount
+          const cur = t.currencyFrom || 'RUB'
+          text += `• Transfert **${amount ? `${amount} ${cur}` : t.id}** (${status})\n`
+          actions.push({
+            label: `Transfert ${amount ? `${amount} ${cur}` : t.id.slice(0, 8)} (${status})`,
+            path: `/transfers/${t.id}`,
+          })
+        }
+        return {
+          text,
+          actions,
+          suggestions: ['Nouveau transfert', 'Voir les changeurs', 'Reçu de transfert'],
+          sources: userTransfers.slice(0, 4).map((t) => `Transfert: ${t.id}`),
+        }
+      } else {
+        return {
+          text: "Vous n'avez aucun transfert récent enregistré sur ce compte. Vous pouvez effectuer un nouveau transfert Afrique ↔ Russie dès maintenant.",
+          actions: [{ label: 'Nouveau transfert', path: '/transfers/new' }],
+          suggestions: ['Nouveau transfert', 'Voir les taux de change', 'Changeurs vérifiés'],
+          sources: ['Historique des transferts'],
+        }
+      }
+    }
+
+    // 3. Détection : Emplois / Jobs
+    const isDirectJobQuery =
+      qClean.includes('job') ||
+      qClean.includes('emploi') ||
+      qClean.includes('travail') ||
+      qClean.includes('recrutement') ||
+      qClean.includes('stage')
+
+    if (isDirectJobQuery && state?.jobs?.items?.length) {
+      const jobs = state.jobs.items
+      let text = `Voici **${jobs.length} offre(s) d’emploi** actuellement disponibles sur MOXT :\n\n`
+      const actions = []
+      for (const j of jobs.slice(0, 5)) {
+        text += `• **${j.title || 'Offre d’emploi'}** (${j.company || 'Entreprise'} · ${j.city || 'Russie'})\n`
+        actions.push({
+          label: `${j.title} (${j.city || 'Moscou'})`,
+          path: `/jobs/${j.id}`,
+        })
+      }
+      return {
+        text,
+        actions,
+        suggestions: ['Voir tous les jobs', 'Publier une offre', 'Entreprises'],
+        sources: jobs.slice(0, 3).map((j) => `Emploi: ${j.title}`),
+      }
+    }
+
+    // 4. Détection : Colis et transport
+    const isDirectParcelQuery =
+      qClean.includes('colis') ||
+      qClean.includes('bagage') ||
+      qClean.includes('kilo') ||
+      qClean.includes('voyageur')
+
+    if (isDirectParcelQuery && state?.parcels?.items?.length) {
+      const parcels = state.parcels.items.filter((p) => !p.status || p.status === 'active')
+      if (parcels.length > 0) {
+        let text = `Voici **${parcels.length} voyage(s)** disponible(s) pour transporter vos colis :\n\n`
+        const actions = []
+        for (const p of parcels.slice(0, 5)) {
+          const route = `${p.origin || 'Afrique'} → ${p.destination || 'Russie'}`
+          text += `• **${route}** (reste ${p.remainingKg ?? p.capacityKg ?? 10} kg)\n`
+          actions.push({
+            label: route,
+            path: `/parcels/${p.id}`,
+          })
+        }
+        return {
+          text,
+          actions,
+          suggestions: ['Voir tous les colis', 'Publier un voyage', 'Tarifs colis'],
+          sources: parcels.slice(0, 3).map((p) => `Colis: ${p.origin} → ${p.destination}`),
+        }
+      }
+    }
+
+    // Fallback standard par domaine
+    const entityMatches = (searchIndex || [])
       .filter((item) => {
         const haystack = `${item.title} ${item.subtitle} ${item.typeLabel}`.toLocaleLowerCase(localeTag)
         return normalized.split(/\s+/).some((word) => word.length > 3 && haystack.includes(word))
@@ -261,3 +414,4 @@ export const localAssistantProvider = {
 export function createAssistantProvider(provider = localAssistantProvider) {
   return provider
 }
+

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Image, Platform, Pressable, ScrollView, Share, View, useWindowDimensions, type ViewToken } from 'react-native';
+import { FlatList, Image, Modal, Platform, Pressable, ScrollView, Share, View, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,8 +7,11 @@ import {
   ArrowLeft,
   Briefcase,
   Calendar,
+  Copy,
+  Edit2,
   ExternalLink,
   Eye,
+  Flag,
   Heart,
   House,
   MessageCircle,
@@ -21,18 +24,20 @@ import {
   UserPlus,
   Volume2,
   VolumeX,
+  X,
 } from 'lucide-react-native';
 
 import { usePublisherSubscription } from '@/components/account/SubscribeButton';
 import { StarsGiftButton } from '@/components/feed/StarsGiftButton';
 import { usePublishMenu } from '@/components/chrome/PublishMenuSheet';
-import { StatusRail } from '@/components/dashboard/StatusRail';
+import { FeedAnnouncementCard } from '@/components/feed/FeedAnnouncementCard';
 import { FeedCommentsSheet } from '@/components/feed/FeedCommentsSheet';
 import { FeedMedia } from '@/components/feed/FeedMedia';
 import { buildFeedItems, FEED_TYPE_FILTERS, type FeedItem, type FeedKind } from '@/components/feed/feedItems';
 import { AppText } from '@/components/ui/AppText';
 import { VerifiedIcon } from '@/components/ui/VerifiedIcon';
 import { brand } from '@/theme/palette';
+import { showNotice } from '@/utils/notice';
 import { hydratePublicFeed } from '@/services/publicFeed';
 import { supabase } from '@/services/supabase';
 import { applyFeedPlaybackDefaults, getVideoFeedMuted, setVideoFeedMuted, subscribeFeedMuted } from '@/services/feedAudio';
@@ -154,6 +159,7 @@ function FeedSlide({
   const icon = { size: 19.7, color: '#ffffff', strokeWidth: 2 } as const;
   const iconSm = { size: 18.4, color: '#ffffff', strokeWidth: 2 } as const;
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const [optionsOpen, setOptionsOpen] = useState(false);
   const social = SOCIAL_KINDS.includes(item.kind as EngagementKind) ? (item.kind as EngagementKind) : null;
   const { isSubscribed, subscribe } = usePublisherSubscription(item.publisher.type, item.publisher.id, item.publisher.name);
   const OpenIcon = OPEN_ICON[item.kind] || ExternalLink;
@@ -171,27 +177,43 @@ function FeedSlide({
   }
 
   function onShare() {
-    Share.share({ message: `${item.title} — MOXT` })
+    Share.share({ message: `${item.title} — MOXT\nhttps://moxtapp.ru${item.route}` })
       .then((result) => {
         if (item.kind === 'video' && result.action === Share.sharedAction) dispatch(shareVideo(item.entityId)).catch(() => undefined);
       })
       .catch(() => undefined);
   }
 
+  const isAnnouncement = ['parcel', 'job', 'event', 'p2p'].includes(item.kind);
+
   return (
     <View testID="feed-slide" style={{ height, width: '100%', backgroundColor: '#000', overflow: 'hidden' }}>
-      {item.image || item.videoUrl ? (
-        <FeedMedia image={item.image} videoUrl={item.videoUrl} active={active} muted={muted} />
+      {item.image || (item.images && item.images.length > 0) || item.videoUrl ? (
+        <FeedMedia image={item.image} images={item.images} videoUrl={item.videoUrl} active={active} muted={muted} />
       ) : (
         // FeedNeutralPanel : fond dégradé de marque pour les contenus sans visuel.
         <LinearGradient
-          colors={[brand[800], brand[600], colors.cobalt]}
+          colors={
+            item.kind === 'parcel'
+              ? ['#0369a1', '#1e3a8a', '#020617']
+              : item.kind === 'job'
+              ? ['#047857', '#115e59', '#022c22']
+              : item.kind === 'event'
+              ? ['#6d28d9', '#581c87', '#1e1b4b']
+              : item.kind === 'p2p'
+              ? ['#b45309', '#78350f', '#451a03']
+              : [brand[800], brand[600], colors.cobalt]
+          }
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
-          <AppText className="text-center text-2xl font-black text-white">{item.title}</AppText>
-        </LinearGradient>
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        />
       )}
+
+      {/* Styled Announcement Card for parcel, job, event, p2p */}
+      {isAnnouncement ? (
+        <FeedAnnouncementCard item={item} topOffset={chromeTop + 20} />
+      ) : null}
 
       {item.kind === 'video' ? (
         <Pressable
@@ -298,7 +320,7 @@ function FeedSlide({
         <RailButton label="Partager" count={item.kind === 'video' ? item.stats.shares : undefined} onPress={onShare}>
           <Share2 {...iconSm} />
         </RailButton>
-        <RailButton label="Plus d’options">
+        <RailButton label="Plus d’options" onPress={() => setOptionsOpen(true)}>
           <MoreHorizontal {...iconSm} />
         </RailButton>
         <Pressable
@@ -326,6 +348,96 @@ function FeedSlide({
       {social && commentsOpen ? (
         <FeedCommentsSheet kind={social} entityId={item.entityId} open={commentsOpen} onClose={() => setCommentsOpen(false)} />
       ) : null}
+
+      {/* Options Action Sheet Modal */}
+      <Modal
+        visible={optionsOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setOptionsOpen(false)}
+      >
+        <Pressable
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}
+          onPress={() => setOptionsOpen(false)}
+        >
+          <View
+            style={{
+              backgroundColor: '#0f172a',
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.15)',
+              padding: 20,
+              paddingBottom: Math.max(bottomInset, 24) + 12,
+              gap: 10,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <AppText className="text-base font-black text-white">Options de publication</AppText>
+              <Pressable onPress={() => setOptionsOpen(false)} hitSlop={10}>
+                <X size={18} color="rgba(255,255,255,0.7)" />
+              </Pressable>
+            </View>
+
+            <Pressable
+              onPress={() => {
+                setOptionsOpen(false);
+                onShare();
+              }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 }}
+            >
+              <Share2 size={18} color="#fff" />
+              <AppText className="text-sm font-bold text-white">Partager</AppText>
+            </Pressable>
+
+            <Pressable
+              onPress={() => {
+                setOptionsOpen(false);
+                showNotice('Lien copié', 'Le lien de la publication a été copié.');
+              }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 }}
+            >
+              <Copy size={18} color="#fff" />
+              <AppText className="text-sm font-bold text-white">Copier le lien</AppText>
+            </Pressable>
+
+            <Pressable
+              onPress={() => {
+                setOptionsOpen(false);
+                router.push(item.route as never);
+              }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 }}
+            >
+              <ExternalLink size={18} color="#fff" />
+              <AppText className="text-sm font-bold text-white">{OPEN_LABEL[item.kind] || 'Voir la fiche complète'}</AppText>
+            </Pressable>
+
+            {isOwner && (
+              <Pressable
+                onPress={() => {
+                  setOptionsOpen(false);
+                  router.push(`/publications/edit?id=${item.entityId}&type=${item.kind}` as never);
+                }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 }}
+              >
+                <Edit2 size={18} color="#38bdf8" />
+                <AppText className="text-sm font-bold text-sky-400">Modifier la publication</AppText>
+              </Pressable>
+            )}
+
+            <Pressable
+              onPress={() => {
+                setOptionsOpen(false);
+                showNotice('Signalement reçu', 'Merci de votre vigilance.');
+              }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 }}
+            >
+              <Flag size={18} color="#ef4444" />
+              <AppText className="text-sm font-bold text-red-500">Signaler cette publication</AppText>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -431,7 +543,7 @@ export default function FeedTab() {
     return () => clearTimeout(timer);
   }, [activeIndex, dispatch, items, userId]);
 
-  const onViewable = useCallback(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+  const onViewable = useCallback(({ viewableItems }: { viewableItems: Array<{ isViewable: boolean; index?: number | null }> }) => {
     const first = viewableItems.find((v) => v.isViewable);
     if (first?.index != null) setActiveIndex(first.index);
   }, []);
@@ -522,9 +634,6 @@ export default function FeedTab() {
           style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
           <Plus size={18} color="#000" strokeWidth={2} />
         </Pressable>
-      </View>
-      <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, top: Math.max(8, insets.top) + 44, zIndex: 19 }}>
-        <StatusRail tone="feed" onAdd={openPublish} />
       </View>
     </View>
   );

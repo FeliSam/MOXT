@@ -5,7 +5,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Search, X, UserRound, Settings } from 'lucide-react-native';
 
 import {
-  badgeForItem,
   moreServicesExcludedPaths,
   filterNavigationGroups,
   navigationGroups,
@@ -13,6 +12,7 @@ import {
 } from '@/constants/moreServices';
 import { cn } from '@/lib/cn';
 import { useLanguage } from '@/providers/LanguageProvider';
+import { selectUnreadMessageCount } from '@/store/messages';
 import { useAppSelector } from '@/store/store';
 import { useTheme, useThemeCssVars } from '@/theme/ThemeContext';
 
@@ -90,7 +90,8 @@ export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () 
   const { colors, isDark } = useTheme();
   const { translateLabel } = useLanguage();
   const user = useAppSelector((s) => s.auth.user);
-  const state = useAppSelector((s) => s);
+  const unreadNotifications = useAppSelector((s) => s.notifications.items.filter((n) => !n.read).length);
+  const unreadMessages = useAppSelector((s) => selectUnreadMessageCount(s.messages.conversations, s.auth.user?.id));
   const [query, setQuery] = useState('');
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -195,7 +196,13 @@ export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () 
                     <View key={item.path} style={{ width: tileWidth }}>
                       <MoreServiceTile
                         item={item}
-                        badge={badgeForItem(item, state)}
+                        badge={
+                          item.badgeSelector === 'notifications'
+                            ? unreadNotifications
+                            : item.badgeSelector === 'messages'
+                              ? unreadMessages
+                              : 0
+                        }
                         onNavigate={handleClose}
                         translateLabel={translateLabel}
                         surface={colors.surface}

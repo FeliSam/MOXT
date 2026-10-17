@@ -39,6 +39,12 @@ export async function resolveMessageLoadScope(conversationId, conversation, opti
     return { canonicalId, conversationIds: [...conversationIds], remoteRow }
   }
 
+  // Si la conversation est déjà connue en mémoire avec un ID persistant (UUID) et skipSiblings,
+  // éviter l'aller-retour réseau inutile sur 'conversations' avant de charger les messages.
+  if (conversation && isPersistedConversationId(conversationId) && options?.skipSiblings) {
+    return { canonicalId, conversationIds: [conversationId], remoteRow: null }
+  }
+
   const { data: row, error } = await supabase
     .from('conversations')
     .select(CONVERSATION_SELECT_COLUMNS)

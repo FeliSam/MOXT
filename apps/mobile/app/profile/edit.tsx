@@ -1,8 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Image, Modal, Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
-import { Flag, Image as ImageIcon, Mail, MapPin, Smile, User } from 'lucide-react-native';
+import { ArrowLeft, Flag, Image as ImageIcon, Mail, MapPin, Smile, User } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { updateAccountPreferences } from '@moxt/shared/services/accountWrites.js';
 
@@ -13,11 +14,12 @@ import { defaultCoverStyleForPersonal, resolveCoverStyleId, type CoverStyleId } 
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { useSmartNavbarScroll } from '@/hooks/useSmartNavbar';
 import { supabase } from '@/services/supabase';
 import { uploadLikeWeb } from '@/services/mediaUpload';
 import { updateProfile } from '@/store/auth';
 import { useAppDispatch, useAppSelector } from '@/store/store';
-import { useThemeColors } from '@/theme/ThemeContext';
+import { useShadows, useTheme, useThemeColors } from '@/theme/ThemeContext';
 import { showNotice } from '@/utils/notice';
 
 const COUNTRIES = [
@@ -34,10 +36,11 @@ const CITIES = ['Moscou', 'Saint-Pétersbourg', 'Kazan', 'Novossibirsk', 'Ekater
 
 function Section({ title, icon: Icon, children }: { title: string; icon?: LucideIcon; children: ReactNode }) {
   const colors = useThemeColors();
+  const shadows = useShadows();
   return (
-    <View style={{ borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 16, gap: 12 }}>
+    <View style={[{ borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 16, gap: 14 }, shadows.card]}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        {Icon ? <Icon size={16} color={colors.text} /> : null}
+        {Icon ? <Icon size={16} color={colors.accent} strokeWidth={2.2} /> : null}
         <AppText className="text-sm font-black text-app-text">{title}</AppText>
       </View>
       {children}
@@ -139,12 +142,52 @@ export default function EditProfileScreen() {
   }
 
   const originLabel = COUNTRIES.find((item) => item.code === originCountry)?.label || originCountry;
+  const insets = useSafeAreaInsets();
+  const shadows = useShadows();
+  const { onScroll } = useSmartNavbarScroll();
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 48 }}>
-      <Pressable onPress={() => router.back()}>
-        <AppText className="font-bold" style={{ color: colors.primary }}>← Retour</AppText>
-      </Pressable>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+        style={{ flex: 1, backgroundColor: colors.background }}
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingTop: Math.max(insets.top, 12),
+          paddingBottom: Math.max(insets.bottom + 100, 140),
+          gap: 16,
+        }}>
+        {/* Header Row */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 4 }}>
+          <Pressable
+            accessibilityLabel="Retour"
+            onPress={() => router.back()}
+            style={[
+              {
+                height: 40,
+                width: 40,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 999,
+                borderWidth: 1,
+                borderColor: colors.border,
+                backgroundColor: colors.surface,
+              },
+              shadows.card,
+            ]}>
+            <ArrowLeft size={18} color={colors.text} strokeWidth={2.4} />
+          </Pressable>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <AppText className="text-lg font-black text-app-text" numberOfLines={1}>
+              Informations personnelles
+            </AppText>
+            <AppText className="text-xs text-app-text-muted" numberOfLines={1}>
+              Modifiez vos coordonnées et apparence
+            </AppText>
+          </View>
+        </View>
 
       <Section title="Photo" icon={ImageIcon}>
         <ImagePickerButton label="Choisir une photo" currentUri={avatarUrl || null} onImageSelected={setAvatarUrl} />
@@ -268,5 +311,6 @@ export default function EditProfileScreen() {
         }}
       />
     </ScrollView>
+    </View>
   );
 }

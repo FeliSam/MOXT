@@ -24,6 +24,7 @@ import { loadCoreData } from '@/store/data';
 import { loadParcelById } from '@/store/parcels';
 import { mapConversationRow, receiveRemoteConversation, sendMessage } from '@/store/messages';
 import { useAppDispatch, useAppSelector } from '@/store/store';
+import { useSmartNavbarScroll } from '@/hooks/useSmartNavbar';
 import { useShadows, useThemeColors } from '@/theme/ThemeContext';
 import { brand, fontFamilies, radii, spacing, typography } from '@/theme/colors';
 import { asStringList } from '@/utils/stringList';
@@ -48,6 +49,7 @@ export default function ParcelDetailScreen() {
   const colors = useThemeColors();
   const shadows = useShadows();
   const dispatch = useAppDispatch();
+  const { onScroll, scrollEventThrottle } = useSmartNavbarScroll();
   const { id } = useLocalSearchParams<{ id: string }>();
   const user = useAppSelector((state) => state.auth.user);
   const parcel = useAppSelector((state) =>
@@ -162,7 +164,12 @@ export default function ParcelDetailScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 40, gap: spacing.lg }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        onScroll={onScroll}
+        scrollEventThrottle={scrollEventThrottle}
+        contentContainerStyle={{ paddingBottom: 130, gap: spacing.lg }}
+      >
         <PageHeader
           title={`${parcel.origin || '?'} vers ${parcel.destination || '?'}`}
           actions={

@@ -26,6 +26,8 @@ import { store } from '@/store/store';
 import { AppThemeProvider, ThemeRoot, useTheme } from '@/theme/ThemeContext';
 import { getNavigationTheme } from '@/theme/navigationTheme';
 
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
 initMonitoring();
 
 export { ErrorBoundary } from 'expo-router';
@@ -48,17 +50,19 @@ export default function RootLayout() {
   if (!loaded) return null;
 
   return (
-    <SentryErrorBoundary>
-      <Provider store={store}>
-        <AppThemeProvider>
-          <LanguageProvider>
-            <AuthBootstrap fontsLoaded={loaded}>
-              <RootLayoutNav />
-            </AuthBootstrap>
-          </LanguageProvider>
-        </AppThemeProvider>
-      </Provider>
-    </SentryErrorBoundary>
+    <SafeAreaProvider>
+      <SentryErrorBoundary>
+        <Provider store={store}>
+          <AppThemeProvider>
+            <LanguageProvider>
+              <AuthBootstrap fontsLoaded={loaded}>
+                <RootLayoutNav />
+              </AuthBootstrap>
+            </LanguageProvider>
+          </AppThemeProvider>
+        </Provider>
+      </SentryErrorBoundary>
+    </SafeAreaProvider>
   );
 }
 
@@ -68,11 +72,8 @@ export default function RootLayout() {
  * propre BackHeader (plus de doublon « ← Retour » / en-tête natif).
  */
 const STACK_HEADER_TITLES: Record<string, string> = {
-  'parcel/[id]': 'Détail colis',
-  'listing/[id]': 'Détail annonce',
   'jobs/index': 'Emplois',
   'jobs/[id]': "Offre d'emploi",
-  'profile/edit': 'Mon profil',
   admin: 'Admin',
   'admin/stats': 'Statistiques',
 };
