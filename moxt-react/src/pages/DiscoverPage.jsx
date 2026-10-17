@@ -9,12 +9,14 @@ import { DISCOVERY_TYPES } from '../config/publicContent'
 import { searchTypeMeta } from '../config/searchTypes'
 import { useLanguage } from '../contexts/useLanguage'
 import { filterSearchIndex, selectSearchIndex } from '../features/searchSelectors'
+import { MarketplaceFeedBanner } from '../features/marketplace/MarketplaceFeedBanner'
 import { phase3Text } from '../i18n/phase3I18n'
 import { clearSearchHistory, readSearchHistory, saveSearchTerm } from '../services/searchHistory'
 
 export function DiscoverPage() {
   const { t } = useLanguage()
   const p3 = (key, vars) => phase3Text(t, key, vars)
+  const user = useSelector((state) => state.auth?.user)
   const index = useSelector(selectSearchIndex)
   const [searchParams, setSearchParams] = useSearchParams()
   const query = searchParams.get('q') || ''
@@ -109,6 +111,8 @@ export function DiscoverPage() {
         </div>
       ) : null}
 
+      <MarketplaceFeedBanner bannerIndex={0} onInteract={() => {}} />
+
       <p className="text-sm font-bold text-[var(--app-text-muted)]">
         {results.length > 1
           ? p3('discover.resultsPlural', { count: results.length })
@@ -118,16 +122,23 @@ export function DiscoverPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {results.map((item) => {
             const meta = searchTypeMeta(item.type, p3, item.typeLabel)
+            const targetPath = user ? item.path : (item.publicPath || item.path || '/login')
+            const ctaLabel = user
+              ? (item.type === 'video' ? 'Regarder la vidéo' : 'Consulter')
+              : p3('discover.loginCta')
+
             return (
-              <Card key={item.id || `${item.type}-${item.title}`} className="h-full">
-                <Badge tone={meta.tone}>{meta.label}</Badge>
-                <h2 className="mt-4 text-lg font-black">{item.title}</h2>
-                <p className="mt-2 text-sm text-[var(--app-text-muted)]">{item.subtitle}</p>
+              <Card key={item.id || `${item.type}-${item.title}`} className="h-full flex flex-col justify-between">
+                <div>
+                  <Badge tone={meta.tone}>{meta.label}</Badge>
+                  <h2 className="mt-4 text-lg font-black">{item.title}</h2>
+                  <p className="mt-2 text-sm text-[var(--app-text-muted)]">{item.subtitle}</p>
+                </div>
                 <Link
-                  to="/login"
-                  className="mt-5 inline-flex text-sm font-bold text-brand-700 dark:text-brand-300"
+                  to={targetPath}
+                  className="mt-5 inline-flex items-center text-sm font-bold text-brand-700 hover:text-brand-600 dark:text-brand-300 transition"
                 >
-                  {p3('discover.loginCta')}
+                  {ctaLabel} &rarr;
                 </Link>
               </Card>
             )

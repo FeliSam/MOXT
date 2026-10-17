@@ -17,6 +17,80 @@ function formatDuration(ms) {
   return `${minutes}:${String(seconds).padStart(2, '0')}`
 }
 
+export function MarketplaceVideoCard({ video, badgeLabel, className = '' }) {
+  const { t } = useLanguage()
+  const mt = (key, vars) => marketplaceText(t, key, vars)
+  const storedPoster = video.thumbnailUrl || ''
+  const [framePoster, setFramePoster] = useState('')
+  const poster = framePoster || storedPoster
+  const views = Number(video.viewCount) || 0
+
+  useEffect(() => {
+    const src = video.videoUrl
+    if (!src) return undefined
+    let cancelled = false
+    captureVideoFrameAtSeconds(src, 5).then((url) => {
+      if (!cancelled && url) setFramePoster(url)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [video.videoUrl])
+
+  return (
+    <Link
+      to={videoFeedPath(video.id)}
+      className={`group relative block h-full w-full overflow-hidden rounded-[1.35rem] shadow-[var(--shadow-card)] border border-white/10 transition-transform active:scale-[0.985] ${className}`}
+    >
+      <div className="relative h-full w-full overflow-hidden bg-gradient-to-br from-slate-900 to-slate-950">
+        {poster ? (
+          <img
+            src={poster}
+            alt={video.title || ''}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
+            draggable={false}
+          />
+        ) : (
+          <div className="grid h-full w-full place-items-center text-white/80">
+            <FiPlay className="text-4xl" aria-hidden />
+          </div>
+        )}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-3/4 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
+        <span className="absolute left-2.5 top-2.5 z-[2] inline-flex items-center gap-1 rounded-full bg-brand-600/90 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white backdrop-blur-md shadow-md">
+          <FiPlay className="text-xs" aria-hidden />
+          <span>{badgeLabel || mt('marketplace.page.feed.badgeVideo')}</span>
+        </span>
+        <span className="absolute right-2.5 top-2.5 z-[2] grid size-8 place-items-center rounded-full bg-black/50 text-white shadow-md backdrop-blur-sm transition-transform group-hover:scale-110">
+          <FiPlay className="ml-0.5 text-sm" aria-hidden />
+        </span>
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] flex flex-col justify-end px-3 pb-2 pt-10 sm:px-3.5 sm:pb-3">
+          <div className="flex h-5 shrink-0 items-center gap-1">
+            <span className="rounded-full bg-white/20 px-2 py-0.5 text-[9px] font-black leading-none text-white backdrop-blur-sm sm:text-[10px]">
+              {mt('marketplace.page.feed.badgeVideo')}
+            </span>
+            <span className="rounded-full bg-white/15 px-2 py-0.5 text-[9px] font-black leading-none text-white/80 backdrop-blur-sm sm:text-[10px]">
+              {video.durationMs ? formatDuration(video.durationMs) : '0:00'}
+            </span>
+          </div>
+          <h2 className="mt-1 min-h-5 line-clamp-2 text-xs sm:text-sm font-black leading-tight text-white drop-shadow">
+            {video.title || video.caption || ''}
+          </h2>
+          <div className="mt-1 flex h-4 shrink-0 items-center justify-between gap-2">
+            <strong className="min-w-0 truncate text-[11px] font-black leading-none text-white drop-shadow">
+              {video.businessName || '\u00a0'}
+            </strong>
+            <p className="flex shrink-0 items-center gap-1 text-[11px] leading-none text-white/75">
+              <FiEye className="shrink-0 text-[12px]" aria-hidden />
+              <span className="tabular-nums">{views}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </Link>
+  )
+}
+
 function VideoRailCard({ video, badgeLabel }) {
   const { t } = useLanguage()
   const mt = (key, vars) => marketplaceText(t, key, vars)

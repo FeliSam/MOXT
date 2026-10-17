@@ -47,6 +47,7 @@ export const DISCOVERY_TYPES = [
   { value: 'all', label: 'Tout' },
   { value: 'business', label: 'Entreprises' },
   { value: 'listing', label: 'Marketplace' },
+  { value: 'video', label: 'Vidéos' },
   { value: 'parcel', label: 'Colis' },
   { value: 'job', label: 'Jobs' },
   { value: 'event', label: 'Événements' },

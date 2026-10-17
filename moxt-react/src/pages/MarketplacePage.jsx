@@ -1,4 +1,4 @@
-import { FiGrid, FiList, FiPlus, FiShoppingBag } from 'react-icons/fi'
+import { FiGrid, FiPlus, FiShoppingBag } from 'react-icons/fi'
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useDispatch, useSelector, useStore } from 'react-redux'
 import { useNavigate, useOutletContext } from 'react-router-dom'
@@ -7,7 +7,6 @@ import { CatalogSearch } from '../components/ui/CatalogSearch'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Input } from '../components/ui/Input'
-import { HeaderIslandButton, PageHeader } from '../components/ui/PageHeader'
 import { RevealListItem } from '../components/ui/RevealListItem'
 import { Select } from '../components/ui/Select'
 import {
@@ -17,7 +16,7 @@ import {
 } from '../config/listingConfig'
 import { MarketplaceListingCard } from '../features/marketplace/MarketplaceListingCard'
 import { MarketplaceDiscoveryRail } from '../features/marketplace/MarketplaceDiscoveryRail'
-import { MarketplaceVideoRail } from '../features/marketplace/MarketplaceVideoRail'
+import { MarketplaceVideoCard, MarketplaceVideoRail } from '../features/marketplace/MarketplaceVideoRail'
 import { MarketplaceFeedBanner } from '../features/marketplace/MarketplaceFeedBanner'
 import {
   MARKETPLACE_DISCOVER_GRID_COLUMNS,
@@ -204,7 +203,70 @@ export function MarketplacePage() {
   )
   const visible = feed.discover
 
-  const visibleItems = visible
+  const availableVideos = videoRail?.length > 0 ? videoRail : videos
+
+  // Interleave videos into the discover feed stream in an arranged, pseudo-random organic rhythm
+  const discoverFeedStream = useMemo(() => {
+    const stream = []
+    const videoPool = availableVideos || []
+    let videoIndex = 0
+    let nextVideoInterval = 5
+    let listingsSinceVideo = 0
+
+    for (let i = 0; i < visible.length; i++) {
+      stream.push({ kind: 'listing', data: visible[i], id: `listing-${visible[i].id}` })
+      listingsSinceVideo++
+
+      if (
+        videoPool.length > 0 &&
+        listingsSinceVideo >= nextVideoInterval &&
+        i < visible.length - 1
+      ) {
+        const video = videoPool[videoIndex % videoPool.length]
+        stream.push({ kind: 'video', data: video, id: `video-${video.id}-${videoIndex}` })
+        videoIndex++
+        listingsSinceVideo = 0
+        // Pseudo-random organic interval: cycles 5, 6, 7
+        nextVideoInterval = 5 + ((i * 7 + 3) % 3)
+      }
+    }
+
+    return stream
+  }, [visible, availableVideos])
+
+  const INITIAL_PAGE_SIZE = 16
+  const PAGE_INCREMENT = 12
+  const [displayCount, setDisplayCount] = useState(INITIAL_PAGE_SIZE)
+  const sentinelRef = useRef(null)
+
+  // Reset pagination when search query or filters change
+  useEffect(() => {
+    setDisplayCount(INITIAL_PAGE_SIZE)
+  }, [filters.query, filters.type, filters.category, filters.city, filters.min, filters.max, filters.sort])
+
+  const totalStreamItems = discoverFeedStream.length
+  const renderedItems = useMemo(
+    () => discoverFeedStream.slice(0, displayCount),
+    [discoverFeedStream, displayCount]
+  )
+  const hasMore = displayCount < totalStreamItems
+
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el || !hasMore) return undefined
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setDisplayCount((prev) => Math.min(prev + PAGE_INCREMENT, totalStreamItems))
+        }
+      },
+      { rootMargin: '400px' }
+    )
+
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [hasMore, totalStreamItems])
 
   // Cache-first: hydrate immediately from local IndexedDB if Redux is empty on mount.
   useEffect(() => {
@@ -275,61 +337,43 @@ export function MarketplacePage() {
   }, [dispatch])
 
   useEffect(() => {
-    prefetchListingCovers(visibleItems.slice(0, MARKETPLACE_COVER_PRELOAD))
-  }, [visibleItems])
+    const covers = renderedItems
+      .filter((item) => item.kind === 'listing')
+      .map((item) => item.data)
+      .slice(0, MARKETPLACE_COVER_PRELOAD)
+    prefetchListingCovers(covers)
+  }, [renderedItems])
 
   function scrollToDiscover() {
     discoverRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
-return (
-    <div className="community-warm-bg grid gap-7 rounded-[var(--radius-card-lg)]">
-      <PageHeader
-        title={mt('marketplace.common.name')}
-        stats={[
-          { label: mt('marketplace.page.stats.activeListings'), value: feed.total },
-          { label: mt('marketplace.page.stats.categories'), value: LISTING_TYPES_META.length },
-        ]}
-        actions={
-          <>
-            <HeaderIslandButton
-              icon={FiList}
-              label={mt('marketplace.page.myPublications')}
-              to="/publications/mine"
-              onClick={(event) => {
-                if (requireAccount(mt('marketplace.page.myPublications').toLowerCase())) {
-                  event.preventDefault()
-                }
-              }}
-            />
-            <HeaderIslandButton
-              icon={FiPlus}
-              label={mt('marketplace.page.publishListing')}
-              onClick={() => {
-                if (requireAccount(mt('marketplace.page.publishListing').toLowerCase())) return
-                navigate('/marketplace/publish')
-              }}
-            />
-          </>
-        }
-      />
+
+  return (
+    <div className="community-warm-bg grid gap-5 rounded-[var(--radius-card-lg)]">
       <ScrollSectionAnchor className="scroll-mt-24 grid gap-5 lg:scroll-mt-28">
         <nav
           aria-label={mt('marketplace.common.type')}
-          className="scrollbar-hidden -mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-1 touch-pan-x"
+          className="scrollbar-hidden -mx-1 grid grid-rows-2 grid-flow-col auto-cols-[135px] sm:auto-cols-[155px] gap-2.5 overflow-x-auto px-1 pb-1.5 touch-pan-x snap-x snap-mandatory"
         >
-          <MarketplaceTypeChip
+          <MarketplaceBentoTile
+            featured
             active={!filters.type}
             icon={FiGrid}
             label={mt('marketplace.common.all')}
+            hint="Tout le catalogue"
+            surface={BENTO_SURFACES.all}
+            iconColor="from-brand-600 to-teal-500"
             onClick={() => dispatch(setMarketplaceFilters({ type: '', category: '' }))}
           />
           {LISTING_TYPES_META.map((option) => (
-            <MarketplaceTypeChip
+            <MarketplaceBentoTile
               key={option.value}
               active={filters.type === option.value}
               icon={option.icon}
               label={listingOptionLabel(t, option)}
-              color={option.color}
+              hint={option.hint}
+              surface={BENTO_SURFACES[option.value] || BENTO_SURFACES.other}
+              iconColor={option.color}
               onClick={() =>
                 dispatch(setMarketplaceFilters({ type: option.value, category: '' }))
               }
@@ -490,22 +534,29 @@ return (
                   gap={MARKETPLACE_DISCOVER_GRID_GAP}
                   className="min-w-0 w-full"
                 >
-                {visibleItems.map((listing, index) => {
+                {renderedItems.map((item, index) => {
                   const showBanner = (index + 1) % 4 === 0
                   const bannerSlot = Math.floor((index + 1) / 4) - 1
 
                   return (
-                    <Fragment key={listing.id}>
+                    <Fragment key={item.id}>
                       <RevealListItem
                         index={index}
                         className={`${MARKETPLACE_DISCOVERY_CARD_HEIGHT} min-w-0 overflow-hidden`}
                       >
-                        <MarketplaceListingCard
-                          listing={listing}
-                          guestMode={guestMode}
-                          onGuestInteract={() => requireAccount('aimer cette annonce')}
-                          layout="rail"
-                        />
+                        {item.kind === 'video' ? (
+                          <MarketplaceVideoCard
+                            video={item.data}
+                            badgeLabel={mt('marketplace.page.feed.badgeVideo')}
+                          />
+                        ) : (
+                          <MarketplaceListingCard
+                            listing={item.data}
+                            guestMode={guestMode}
+                            onGuestInteract={() => requireAccount('aimer cette annonce')}
+                            layout="rail"
+                          />
+                        )}
                       </RevealListItem>
 
                       {showBanner ? (
@@ -519,6 +570,22 @@ return (
                   )
                 })}
                 </CatalogGrid>
+
+                {hasMore ? (
+                  <div ref={sentinelRef} className="col-span-full flex justify-center py-6">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() =>
+                        setDisplayCount((prev) => Math.min(prev + PAGE_INCREMENT, totalStreamItems))
+                      }
+                      className="opacity-80 hover:opacity-100 cursor-pointer shadow-sm"
+                    >
+                      {mt('marketplace.page.feed.loadMore') || 'Charger plus d’annonces...'}
+                    </Button>
+                  </div>
+                ) : null}
               </div>
 </>
           ) : (
@@ -546,31 +613,87 @@ return (
   )
 }
 
-function MarketplaceTypeChip({ active, icon: Icon, label, color, onClick }) {
+const BENTO_SURFACES = {
+  all: 'bg-[linear-gradient(135deg,rgba(14,165,233,0.12)_0%,var(--app-surface)_100%)] dark:bg-[linear-gradient(135deg,rgba(14,165,233,0.22)_0%,var(--app-surface)_100%)]',
+  product: 'bg-[linear-gradient(135deg,rgba(59,130,246,0.12)_0%,var(--app-surface)_100%)] dark:bg-[linear-gradient(135deg,rgba(59,130,246,0.22)_0%,var(--app-surface)_100%)]',
+  service: 'bg-[linear-gradient(135deg,rgba(168,85,247,0.12)_0%,var(--app-surface)_100%)] dark:bg-[linear-gradient(135deg,rgba(168,85,247,0.22)_0%,var(--app-surface)_100%)]',
+  rental: 'bg-[linear-gradient(135deg,rgba(245,158,11,0.12)_0%,var(--app-surface)_100%)] dark:bg-[linear-gradient(135deg,rgba(245,158,11,0.22)_0%,var(--app-surface)_100%)]',
+  vehicle: 'bg-[linear-gradient(135deg,rgba(100,116,139,0.12)_0%,var(--app-surface)_100%)] dark:bg-[linear-gradient(135deg,rgba(100,116,139,0.22)_0%,var(--app-surface)_100%)]',
+  digital: 'bg-[linear-gradient(135deg,rgba(16,185,129,0.12)_0%,var(--app-surface)_100%)] dark:bg-[linear-gradient(135deg,rgba(16,185,129,0.22)_0%,var(--app-surface)_100%)]',
+  real_estate: 'bg-[linear-gradient(135deg,rgba(244,63,94,0.12)_0%,var(--app-surface)_100%)] dark:bg-[linear-gradient(135deg,rgba(244,63,94,0.22)_0%,var(--app-surface)_100%)]',
+  food: 'bg-[linear-gradient(135deg,rgba(132,204,22,0.12)_0%,var(--app-surface)_100%)] dark:bg-[linear-gradient(135deg,rgba(132,204,22,0.22)_0%,var(--app-surface)_100%)]',
+  other: 'bg-[linear-gradient(135deg,rgba(120,113,108,0.12)_0%,var(--app-surface)_100%)] dark:bg-[linear-gradient(135deg,rgba(120,113,108,0.22)_0%,var(--app-surface)_100%)]',
+}
+
+function MarketplaceBentoTile({
+  active,
+  featured,
+  icon: Icon,
+  label,
+  hint,
+  surface,
+  iconColor,
+  onClick,
+}) {
+  if (featured) {
+    return (
+      <button
+        type="button"
+        title={label}
+        aria-pressed={active}
+        onClick={onClick}
+        className={`group relative flex row-span-2 h-[132px] w-[105px] sm:w-[125px] shrink-0 snap-start flex-col justify-between overflow-hidden rounded-[1.3rem] p-3 text-left transition-all duration-200 active:scale-[0.98] cursor-pointer ${surface} ${
+          active
+            ? 'ring-2 ring-brand-500 shadow-md border-transparent bg-brand-500/20 text-brand-900 dark:text-brand-100'
+            : 'border border-[var(--app-border)]/70 hover:border-brand-500/40 text-[var(--app-text)] shadow-sm'
+        }`}
+      >
+        <span
+          className={`grid size-9 shrink-0 place-items-center rounded-xl text-white shadow-sm transition-transform group-hover:scale-105 ${
+            active
+              ? 'bg-brand-600'
+              : `bg-gradient-to-br ${iconColor || 'from-brand-600 to-teal-500'}`
+          }`}
+        >
+          <Icon className="size-[1.125rem]" aria-hidden="true" />
+        </span>
+        <div className="mt-2 min-w-0">
+          <p className="line-clamp-1 text-xs font-black tracking-tight">{label}</p>
+          <p className="mt-0.5 line-clamp-1 text-[10px] font-medium text-[var(--app-text-muted)]">
+            {hint || 'Toutes les offres'}
+          </p>
+        </div>
+      </button>
+    )
+  }
+
   return (
     <button
       type="button"
       title={label}
       aria-pressed={active}
       onClick={onClick}
-      className={`flex h-[5.35rem] w-[5rem] shrink-0 snap-start flex-col items-center justify-center gap-1.5 rounded-[1.1rem] px-1.5 transition duration-[var(--transition-fast)] ${
+      className={`group relative flex h-[61px] w-[138px] sm:w-[155px] shrink-0 snap-start items-center gap-2.5 overflow-hidden rounded-[1.2rem] px-3 transition-all duration-200 active:scale-[0.98] cursor-pointer ${surface} ${
         active
-          ? 'bg-brand-700 text-white shadow-sm dark:bg-brand-600'
-          : 'bg-[var(--app-surface)] text-[var(--app-text-muted)] shadow-sm ring-1 ring-[var(--app-border)] hover:text-[var(--app-text)]'
+          ? 'ring-2 ring-brand-500 shadow-md border-transparent bg-brand-500/20 text-brand-900 dark:text-brand-100'
+          : 'border border-[var(--app-border)]/70 hover:border-brand-500/40 text-[var(--app-text)] shadow-sm'
       }`}
     >
       <span
-        className={`grid size-9 shrink-0 place-items-center rounded-xl leading-none ${
+        className={`grid size-8 shrink-0 place-items-center rounded-lg text-white shadow-sm transition-transform group-hover:scale-105 ${
           active
-            ? 'bg-white/20 text-white'
-            : `bg-gradient-to-br text-white ${color || 'from-brand-500 to-teal-500'}`
+            ? 'bg-brand-600'
+            : `bg-gradient-to-br ${iconColor || 'from-brand-500 to-teal-500'}`
         }`}
       >
-        <Icon aria-hidden="true" className="block size-[1.125rem] shrink-0" />
+        <Icon className="size-4" aria-hidden="true" />
       </span>
-      <span className="flex h-[1.7rem] w-full items-center justify-center text-center text-[10px] font-black leading-tight tracking-wide">
-        <span className="line-clamp-2">{label}</span>
-      </span>
+      <div className="min-w-0 flex-1 text-left">
+        <p className="truncate text-xs font-black tracking-tight leading-snug">{label}</p>
+        <p className="truncate text-[9.5px] font-medium text-[var(--app-text-muted)] leading-tight">
+          {hint}
+        </p>
+      </div>
     </button>
   )
 }

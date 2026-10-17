@@ -2,8 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   FiArrowRight,
   FiBriefcase,
+  FiCalendar,
   FiDownload,
   FiExternalLink,
+  FiPackage,
+  FiPlay,
   FiPlus,
   FiShare,
   FiShield,
@@ -139,16 +142,30 @@ export function MarketplaceFeedBanner({ bannerIndex = 0, onInteract }) {
     // 2. Business promotion (for users or professionals)
     variants.push('business_create')
 
-    // 3. Avatar customization
+    // 3. Colis & Bagages Express
+    variants.push('parcels_promo')
+
+    // 4. Moxt transfers & devises
+    variants.push('transfers_promo')
+
+    // 5. Avatar customization
     variants.push('avatar_customize')
 
-    // 4. Moxt transfers
-    variants.push('transfers_promo')
+    // 6. Moxt Jobs & Emploi
+    variants.push('jobs_promo')
+
+    // 7. Événements & Billetterie
+    variants.push('events_promo')
+
+    // 8. Vidéos & Démonstrations en direct
+    variants.push('videos_promo')
 
     return variants[bannerIndex % variants.length] || 'business_create'
   }, [installed, platform, bannerIndex])
 
-  function handleActionClick(link, defaultAction) {
+  function handleActionClick(link, defaultAction, event) {
+    event?.preventDefault?.()
+    event?.stopPropagation?.()
     onInteract?.()
     if (link) {
       if (link.startsWith('http://') || link.startsWith('https://')) {
@@ -173,14 +190,14 @@ export function MarketplaceFeedBanner({ bannerIndex = 0, onInteract }) {
 
     return (
       <div className="col-span-2 md:col-span-3 xl:col-span-4 my-2">
-        <div className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-md transition-all hover:shadow-lg">
+        <div className="group relative overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-md transition-all hover:shadow-lg">
           <div className={`grid ${imageUrl ? 'md:grid-cols-12' : 'grid-cols-1'} items-center`}>
             {imageUrl ? (
               <div className="relative h-44 sm:h-52 md:h-full md:min-h-[170px] md:col-span-5 overflow-hidden bg-slate-900/10">
                 <img
                   src={imageUrl}
                   alt={currentBroadcast.title}
-                  className="size-full object-cover transition-transform duration-500 hover:scale-105"
+                  className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
                   loading="lazy"
                 />
                 <div className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full border border-white/20 bg-black/60 px-2.5 py-1 text-[11px] font-black tracking-wide text-white backdrop-blur-md">
@@ -214,11 +231,12 @@ export function MarketplaceFeedBanner({ bannerIndex = 0, onInteract }) {
                 </span>
 
                 <Button
+                  type="button"
                   variant="primary"
                   size="sm"
                   icon={FiExternalLink}
-                  onClick={() => handleActionClick(currentBroadcast.link)}
-                  className="shadow-sm"
+                  onClick={(e) => handleActionClick(currentBroadcast.link, null, e)}
+                  className="shadow-sm active:scale-95 cursor-pointer"
                 >
                   {actionLabel}
                 </Button>
@@ -236,21 +254,25 @@ export function MarketplaceFeedBanner({ bannerIndex = 0, onInteract }) {
   if (builtInVariant === 'install_android') {
     return (
       <div className="col-span-2 md:col-span-3 xl:col-span-4 my-2">
-        <div className="relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent p-4 sm:p-5 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/15 via-teal-500/10 to-[var(--app-surface)] p-4 sm:p-5 shadow-sm">
+          <div className="pointer-events-none absolute -right-6 -bottom-6 size-36 sm:size-48 opacity-25 dark:opacity-30 select-none">
+            <img src="/assets/services/quick-marketplace.png" alt="" className="size-full object-contain" />
+          </div>
+
+          <div className="relative z-[1] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-start gap-3.5">
               <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-emerald-500 text-white shadow-md shadow-emerald-500/20">
                 <FiSmartphone className="text-xl" />
               </span>
               <div>
-                <div className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300 mb-1">
+                <div className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300 mb-1">
                   <LuSparkles className="text-xs" />
                   <span>Application Officielle Android</span>
                 </div>
                 <h3 className="text-sm sm:text-base font-black text-[var(--app-text)]">
                   Téléchargez Moxt pour Android (.APK)
                 </h3>
-                <p className="mt-0.5 text-xs text-[var(--app-text-muted)] leading-relaxed">
+                <p className="mt-0.5 text-xs text-[var(--app-text-muted)] leading-relaxed max-w-xl">
                   Profitez d’une rapidité maximale, des notifications instantanées et d’une navigation fluide sans quitter votre écran.
                 </p>
               </div>
@@ -260,15 +282,17 @@ export function MarketplaceFeedBanner({ bannerIndex = 0, onInteract }) {
               <a
                 href={apkDownloadUrl}
                 download="Moxt.apk"
-                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-black text-white shadow-md shadow-emerald-600/30 transition hover:bg-emerald-500 active:scale-95"
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-black text-white shadow-md shadow-emerald-600/30 transition hover:bg-emerald-500 active:scale-95 cursor-pointer"
               >
                 <FiDownload className="text-sm" />
                 <span>Télécharger l’APK</span>
               </a>
               <Button
+                type="button"
                 variant="secondary"
                 size="sm"
-                onClick={() => navigate('/install')}
+                onClick={(e) => handleActionClick('/install', null, e)}
               >
                 Détails
               </Button>
@@ -283,31 +307,39 @@ export function MarketplaceFeedBanner({ bannerIndex = 0, onInteract }) {
   if (builtInVariant === 'install_ios') {
     return (
       <div className="col-span-2 md:col-span-3 xl:col-span-4 my-2">
-        <div className="relative overflow-hidden rounded-2xl border border-sky-500/30 bg-gradient-to-br from-sky-500/10 via-brand-500/5 to-transparent p-4 sm:p-5 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="relative overflow-hidden rounded-2xl border border-sky-500/30 bg-gradient-to-br from-sky-500/15 via-brand-500/10 to-[var(--app-surface)] p-4 sm:p-5 shadow-sm">
+          <div className="pointer-events-none absolute -right-6 -bottom-6 size-36 sm:size-48 opacity-25 dark:opacity-30 select-none">
+            <img src="/assets/install/iphone-add-home-fr.png" alt="" className="size-full object-contain" />
+          </div>
+
+          <div className="relative z-[1] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-start gap-3.5">
               <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-sky-500 text-white shadow-md shadow-sky-500/20">
                 <FiSmartphone className="text-xl" />
               </span>
               <div>
-                <div className="inline-flex items-center gap-1 rounded-full bg-sky-500/15 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-sky-700 dark:text-sky-300 mb-1">
+                <div className="inline-flex items-center gap-1 rounded-full bg-sky-500/20 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-sky-700 dark:text-sky-300 mb-1">
                   <span>iPhone & iPad (iOS)</span>
                 </div>
                 <h3 className="text-sm sm:text-base font-black text-[var(--app-text)]">
                   Installez Moxt sur votre écran d’accueil
                 </h3>
-                <p className="mt-0.5 text-xs text-[var(--app-text-muted)] leading-relaxed">
+                <p className="mt-0.5 text-xs text-[var(--app-text-muted)] leading-relaxed max-w-xl">
                   Accédez à vos annonces en plein écran en 2 clics avec Safari : Partager 📤 puis « Sur l’écran d’accueil ➕ ».
                 </p>
               </div>
             </div>
 
             <Button
+              type="button"
               variant="primary"
               size="sm"
               icon={FiShare}
-              onClick={() => setIosModalOpen(true)}
-              className="self-end sm:self-center shrink-0"
+              onClick={(e) => {
+                e.stopPropagation()
+                setIosModalOpen(true)
+              }}
+              className="self-end sm:self-center shrink-0 cursor-pointer"
             >
               Guide d’installation
             </Button>
@@ -356,8 +388,9 @@ export function MarketplaceFeedBanner({ bannerIndex = 0, onInteract }) {
             </div>
 
             <Button
+              type="button"
               variant="primary"
-              className="w-full justify-center mt-2"
+              className="w-full justify-center mt-2 cursor-pointer"
               onClick={() => setIosModalOpen(false)}
             >
               Compris !
@@ -372,31 +405,36 @@ export function MarketplaceFeedBanner({ bannerIndex = 0, onInteract }) {
   if (builtInVariant === 'business_create') {
     return (
       <div className="col-span-2 md:col-span-3 xl:col-span-4 my-2">
-        <div className="relative overflow-hidden rounded-2xl border border-brand-500/30 bg-gradient-to-r from-brand-500/10 via-amber-500/5 to-transparent p-4 sm:p-5 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="relative overflow-hidden rounded-2xl border border-brand-500/30 bg-gradient-to-r from-brand-500/15 via-amber-500/10 to-[var(--app-surface)] p-4 sm:p-5 shadow-sm">
+          <div className="pointer-events-none absolute -right-6 -bottom-6 size-36 sm:size-48 opacity-25 dark:opacity-30 select-none">
+            <img src="/assets/services/service-businesses.png" alt="" className="size-full object-contain" />
+          </div>
+
+          <div className="relative z-[1] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-start gap-3.5">
               <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-brand-600 text-white shadow-md shadow-brand-600/20">
                 <FiBriefcase className="text-xl" />
               </span>
               <div>
-                <div className="inline-flex items-center gap-1 rounded-full bg-brand-500/15 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-brand-700 dark:text-brand-300 mb-1">
+                <div className="inline-flex items-center gap-1 rounded-full bg-brand-500/20 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-brand-700 dark:text-brand-300 mb-1">
                   <span>Moxt Business</span>
                 </div>
                 <h3 className="text-sm sm:text-base font-black text-[var(--app-text)]">
                   Vous avez un commerce ou une boutique ?
                 </h3>
-                <p className="mt-0.5 text-xs text-[var(--app-text-muted)] leading-relaxed">
+                <p className="mt-0.5 text-xs text-[var(--app-text-muted)] leading-relaxed max-w-xl">
                   Créez gratuitement votre vitrine d’entreprise sur Moxt, publiez votre catalogue et touchez des milliers de clients locaux et internationaux.
                 </p>
               </div>
             </div>
 
             <Button
+              type="button"
               variant="primary"
               size="sm"
               icon={FiPlus}
-              onClick={() => navigate('/businesses/new')}
-              className="self-end sm:self-center shrink-0 shadow-sm"
+              onClick={(e) => handleActionClick('/businesses/new', null, e)}
+              className="self-end sm:self-center shrink-0 shadow-sm cursor-pointer"
             >
               Créer ma page Pro
             </Button>
@@ -406,35 +444,215 @@ export function MarketplaceFeedBanner({ bannerIndex = 0, onInteract }) {
     )
   }
 
-  // 4. Avatar Customization
+  // 4. Parcels & Baggage Transport Promo
+  if (builtInVariant === 'parcels_promo') {
+    return (
+      <div className="col-span-2 md:col-span-3 xl:col-span-4 my-2">
+        <div className="relative overflow-hidden rounded-2xl border border-teal-500/30 bg-gradient-to-r from-teal-500/15 via-cyan-500/10 to-[var(--app-surface)] p-4 sm:p-5 shadow-sm">
+          <div className="pointer-events-none absolute -right-6 -bottom-6 size-36 sm:size-48 opacity-25 dark:opacity-30 select-none">
+            <img src="/assets/services/quick-parcel.png" alt="" className="size-full object-contain" />
+          </div>
+
+          <div className="relative z-[1] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-teal-600 text-white shadow-md shadow-teal-600/20">
+                <FiPackage className="text-xl" />
+              </span>
+              <div>
+                <div className="inline-flex items-center gap-1 rounded-full bg-teal-500/20 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-teal-700 dark:text-teal-300 mb-1">
+                  <span>Colis & Livraisons Express</span>
+                </div>
+                <h3 className="text-sm sm:text-base font-black text-[var(--app-text)]">
+                  Envoyez vos colis et valises entre villes et pays
+                </h3>
+                <p className="mt-0.5 text-xs text-[var(--app-text-muted)] leading-relaxed max-w-xl">
+                  Faites voyager vos colis en toute sérénité grâce à notre réseau de voyageurs vérifiés et de transporteurs partenaires certifiés.
+                </p>
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              icon={FiArrowRight}
+              onClick={(e) => handleActionClick('/parcels', null, e)}
+              className="self-end sm:self-center shrink-0 shadow-sm cursor-pointer"
+            >
+              Expédier un colis
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // 5. Jobs & Recruitment Promo
+  if (builtInVariant === 'jobs_promo') {
+    return (
+      <div className="col-span-2 md:col-span-3 xl:col-span-4 my-2">
+        <div className="relative overflow-hidden rounded-2xl border border-indigo-500/30 bg-gradient-to-r from-indigo-500/15 via-blue-500/10 to-[var(--app-surface)] p-4 sm:p-5 shadow-sm">
+          <div className="pointer-events-none absolute -right-6 -bottom-6 size-36 sm:size-48 opacity-25 dark:opacity-30 select-none">
+            <img src="/assets/services/quick-job.png" alt="" className="size-full object-contain" />
+          </div>
+
+          <div className="relative z-[1] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-indigo-600 text-white shadow-md shadow-indigo-600/20">
+                <FiBriefcase className="text-xl" />
+              </span>
+              <div>
+                <div className="inline-flex items-center gap-1 rounded-full bg-indigo-500/20 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-indigo-700 dark:text-indigo-300 mb-1">
+                  <span>Emploi & Recrutement</span>
+                </div>
+                <h3 className="text-sm sm:text-base font-black text-[var(--app-text)]">
+                  Trouvez un job ou recrutez des talents qualifiés
+                </h3>
+                <p className="mt-0.5 text-xs text-[var(--app-text-muted)] leading-relaxed max-w-xl">
+                  Découvrez les opportunités d'emploi récentes ou publiez votre offre pour attirer les meilleurs profils de votre communauté.
+                </p>
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              icon={FiArrowRight}
+              onClick={(e) => handleActionClick('/jobs', null, e)}
+              className="self-end sm:self-center shrink-0 shadow-sm cursor-pointer"
+            >
+              Voir les offres
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // 6. Events & Community Promo
+  if (builtInVariant === 'events_promo') {
+    return (
+      <div className="col-span-2 md:col-span-3 xl:col-span-4 my-2">
+        <div className="relative overflow-hidden rounded-2xl border border-fuchsia-500/30 bg-gradient-to-r from-fuchsia-500/15 via-purple-500/10 to-[var(--app-surface)] p-4 sm:p-5 shadow-sm">
+          <div className="pointer-events-none absolute -right-6 -bottom-6 size-36 sm:size-48 opacity-25 dark:opacity-30 select-none">
+            <img src="/assets/services/quick-event.png" alt="" className="size-full object-contain" />
+          </div>
+
+          <div className="relative z-[1] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-fuchsia-600 text-white shadow-md shadow-fuchsia-600/20">
+                <FiCalendar className="text-xl" />
+              </span>
+              <div>
+                <div className="inline-flex items-center gap-1 rounded-full bg-fuchsia-500/20 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-fuchsia-700 dark:text-fuchsia-300 mb-1">
+                  <span>Événements & Billetterie</span>
+                </div>
+                <h3 className="text-sm sm:text-base font-black text-[var(--app-text)]">
+                  Concerts, salons et événements communautaires
+                </h3>
+                <p className="mt-0.5 text-xs text-[var(--app-text-muted)] leading-relaxed max-w-xl">
+                  Ne manquez aucun événement près de chez vous. Réservez vos entrées ou annoncez votre propre rencontre d’affaires.
+                </p>
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              icon={FiArrowRight}
+              onClick={(e) => handleActionClick('/events', null, e)}
+              className="self-end sm:self-center shrink-0 shadow-sm cursor-pointer"
+            >
+              Découvrir les événements
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // 7. Video Reels Promo
+  if (builtInVariant === 'videos_promo') {
+    return (
+      <div className="col-span-2 md:col-span-3 xl:col-span-4 my-2">
+        <div className="relative overflow-hidden rounded-2xl border border-rose-500/30 bg-gradient-to-r from-rose-500/15 via-pink-500/10 to-[var(--app-surface)] p-4 sm:p-5 shadow-sm">
+          <div className="pointer-events-none absolute -right-6 -bottom-6 size-36 sm:size-48 opacity-25 dark:opacity-30 select-none">
+            <img src="/assets/services/service-community.png" alt="" className="size-full object-contain" />
+          </div>
+
+          <div className="relative z-[1] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-rose-600 text-white shadow-md shadow-rose-600/20">
+                <FiPlay className="text-xl" />
+              </span>
+              <div>
+                <div className="inline-flex items-center gap-1 rounded-full bg-rose-500/20 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-rose-700 dark:text-rose-300 mb-1">
+                  <span>Vidéos & Reels Produits</span>
+                </div>
+                <h3 className="text-sm sm:text-base font-black text-[var(--app-text)]">
+                  Découvrez les articles en démonstration vidéo
+                </h3>
+                <p className="mt-0.5 text-xs text-[var(--app-text-muted)] leading-relaxed max-w-xl">
+                  Regardez les produits en situation réelle, posés et essayés par les vendeurs, pour acheter en totale confiance.
+                </p>
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              icon={FiPlay}
+              onClick={(e) => handleActionClick('/feed?type=video', null, e)}
+              className="self-end sm:self-center shrink-0 shadow-sm cursor-pointer"
+            >
+              Regarder les vidéos
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // 8. Avatar Customization
   if (builtInVariant === 'avatar_customize') {
     return (
       <div className="col-span-2 md:col-span-3 xl:col-span-4 my-2">
-        <div className="relative overflow-hidden rounded-2xl border border-violet-500/30 bg-gradient-to-r from-violet-500/10 via-rose-500/5 to-transparent p-4 sm:p-5 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="relative overflow-hidden rounded-2xl border border-violet-500/30 bg-gradient-to-r from-violet-500/15 via-rose-500/10 to-[var(--app-surface)] p-4 sm:p-5 shadow-sm">
+          <div className="pointer-events-none absolute -right-6 -bottom-6 size-36 sm:size-48 opacity-25 dark:opacity-30 select-none">
+            <img src="/assets/welcome-moxt-launch.png" alt="" className="size-full object-contain" />
+          </div>
+
+          <div className="relative z-[1] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-start gap-3.5">
               <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-violet-600 text-white shadow-md shadow-violet-600/20">
                 <LuSparkles className="text-xl" />
               </span>
               <div>
-                <div className="inline-flex items-center gap-1 rounded-full bg-violet-500/15 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-violet-700 dark:text-violet-300 mb-1">
+                <div className="inline-flex items-center gap-1 rounded-full bg-violet-500/20 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-violet-700 dark:text-violet-300 mb-1">
                   <span>Profil & Confiance</span>
                 </div>
                 <h3 className="text-sm sm:text-base font-black text-[var(--app-text)]">
                   Donnez du style à votre profil avec un Avatar unique
                 </h3>
-                <p className="mt-0.5 text-xs text-[var(--app-text-muted)] leading-relaxed">
+                <p className="mt-0.5 text-xs text-[var(--app-text-muted)] leading-relaxed max-w-xl">
                   Choisissez parmi nos portraits photoréalistes ou créez un avatar illustré personnalisé pour inspirer confiance à vos acheteurs.
                 </p>
               </div>
             </div>
 
             <Button
+              type="button"
               variant="secondary"
               size="sm"
               icon={FiUser}
-              onClick={() => setAvatarModalOpen(true)}
-              className="self-end sm:self-center shrink-0"
+              onClick={(e) => {
+                e.stopPropagation()
+                setAvatarModalOpen(true)
+              }}
+              className="self-end sm:self-center shrink-0 cursor-pointer"
             >
               Personnaliser mon avatar
             </Button>
@@ -452,34 +670,39 @@ export function MarketplaceFeedBanner({ bannerIndex = 0, onInteract }) {
     )
   }
 
-  // 5. Moxt Transfers
+  // 9. Moxt Transfers
   return (
     <div className="col-span-2 md:col-span-3 xl:col-span-4 my-2">
-      <div className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-brand-500/5 to-transparent p-4 sm:p-5 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/15 via-brand-500/10 to-[var(--app-surface)] p-4 sm:p-5 shadow-sm">
+        <div className="pointer-events-none absolute -right-6 -bottom-6 size-36 sm:size-48 opacity-25 dark:opacity-30 select-none">
+          <img src="/assets/services/service-transfer.png" alt="" className="size-full object-contain" />
+        </div>
+
+        <div className="relative z-[1] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-start gap-3.5">
             <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-amber-500 text-white shadow-md shadow-amber-500/20">
               <FiZap className="text-xl" />
             </span>
             <div>
-              <div className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-800 dark:text-amber-200 mb-1">
+              <div className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-800 dark:text-amber-200 mb-1">
                 <span>Transferts & Devises</span>
               </div>
               <h3 className="text-sm sm:text-base font-black text-[var(--app-text)]">
                 Besoin d’envoyer ou échanger de l’argent ?
               </h3>
-              <p className="mt-0.5 text-xs text-[var(--app-text-muted)] leading-relaxed">
+              <p className="mt-0.5 text-xs text-[var(--app-text-muted)] leading-relaxed max-w-xl">
                 Comparez les taux de change en direct et réalisez vos transferts avec nos échangeurs certifiés et sécurisés.
               </p>
             </div>
           </div>
 
           <Button
+            type="button"
             variant="primary"
             size="sm"
             icon={FiArrowRight}
-            onClick={() => navigate('/transfers')}
-            className="self-end sm:self-center shrink-0"
+            onClick={(e) => handleActionClick('/transfers', null, e)}
+            className="self-end sm:self-center shrink-0 cursor-pointer"
           >
             Faire un transfert
           </Button>

@@ -8,13 +8,12 @@ import { useLanguage } from '../../contexts/useLanguage'
 import { phase3Text } from '../../i18n/phase3I18n'
 import { StatusComposer } from '../statuses/StatusComposer'
 import { StatusRail } from '../statuses/StatusRail'
-import { NewsFeedHeader } from './NewsFeedHeader'
 import { NewsFilterTabs } from './NewsFilterTabs'
 import { useNewsFeed } from './useNewsFeed'
 import { useNewsPublishActions } from './useNewsPublishActions'
 
 /**
- * Module fil d’actualité : en-tête, statuts, filtres, liste de posts.
+ * Module fil d’actualité : statuts, filtres, liste de posts.
  * La page `/news` n’est qu’un hôte mince.
  */
 export function NewsFeedModule() {
@@ -28,18 +27,11 @@ export function NewsFeedModule() {
     setShowShareModal,
     statusComposerOpen,
     setStatusComposerOpen,
-    openStatusComposer,
     openComposer,
   } = useNewsPublishActions()
 
   return (
-    <div className="grid min-w-0 max-w-full gap-7 overflow-x-clip">
-      <NewsFeedHeader
-        user={user}
-        onAddStatus={openStatusComposer}
-        onWritePost={openComposer}
-      />
-
+    <div className="grid min-w-0 max-w-full gap-5 overflow-x-clip">
       <div className="mx-auto grid w-full min-w-0 max-w-3xl gap-5">
         <StatusRail
           composerOpen={statusComposerOpen}
