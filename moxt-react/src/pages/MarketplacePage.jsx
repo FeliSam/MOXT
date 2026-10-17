@@ -329,39 +329,40 @@ export function MarketplacePage() {
   }
 
   return (
-    <div className="community-warm-bg grid gap-5 rounded-[var(--radius-card-lg)]">
-      <ScrollSectionAnchor className="scroll-mt-24 grid gap-5 lg:scroll-mt-28">
-        <nav
-          aria-label={mt('marketplace.common.type')}
-          className="scrollbar-hidden -mx-1 flex items-stretch gap-2.5 overflow-x-auto px-1 pb-1.5 touch-pan-x snap-x snap-mandatory"
-        >
-          <MarketplaceBentoTile
-            featured
-            active={!filters.type}
-            icon={FiGrid}
-            label={mt('marketplace.common.all')}
-            hint="Tout le catalogue"
-            surface={BENTO_SURFACES.all}
-            iconColor="from-brand-600 to-teal-500"
-            onClick={() => dispatch(setMarketplaceFilters({ type: '', category: '' }))}
-          />
-          <div className="grid grid-rows-2 grid-flow-col auto-cols-[142px] sm:auto-cols-[158px] gap-2">
-            {LISTING_TYPES_META.map((option) => (
-              <MarketplaceBentoTile
-                key={option.value}
-                active={filters.type === option.value}
-                icon={option.icon}
-                label={listingOptionLabel(t, option)}
-                hint={option.hint}
-                surface={BENTO_SURFACES[option.value] || BENTO_SURFACES.other}
-                iconColor={option.color}
-                onClick={() =>
-                  dispatch(setMarketplaceFilters({ type: option.value, category: '' }))
-                }
-              />
-            ))}
-          </div>
-        </nav>
+    <div className="bg-white dark:bg-transparent grid gap-4 sm:gap-5 rounded-[var(--radius-card-lg)]">
+      <ScrollSectionAnchor className="scroll-mt-24 grid gap-4 lg:scroll-mt-28">
+        <div className="rounded-2xl bg-white dark:bg-slate-900/90 p-2 sm:p-2.5 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <nav
+            aria-label={mt('marketplace.common.type')}
+            className="scrollbar-hidden flex items-stretch gap-2 overflow-x-auto touch-pan-x snap-x snap-mandatory lg:w-full"
+          >
+            <MarketplaceBentoTile
+              featured
+              active={!filters.type}
+              icon={FiGrid}
+              label={mt('marketplace.common.all')}
+              hint="Tout le catalogue"
+              typeKey="all"
+              onClick={() => dispatch(setMarketplaceFilters({ type: '', category: '' }))}
+            />
+            <div className="grid grid-rows-2 grid-flow-col auto-cols-[142px] sm:auto-cols-[158px] lg:auto-cols-fr lg:flex-1 gap-2">
+              {LISTING_TYPES_META.map((option) => (
+                <MarketplaceBentoTile
+                  key={option.value}
+                  active={filters.type === option.value}
+                  icon={option.icon}
+                  label={listingOptionLabel(t, option)}
+                  hint={option.hint}
+                  typeKey={option.value}
+                  iconColor={option.color}
+                  onClick={() =>
+                    dispatch(setMarketplaceFilters({ type: option.value, category: '' }))
+                  }
+                />
+              ))}
+            </div>
+          </nav>
+        </div>
 
         <CatalogSearch
           advancedOpen={advancedOpen}
@@ -595,16 +596,61 @@ export function MarketplacePage() {
   )
 }
 
-const BENTO_SURFACES = {
-  all: 'bg-[linear-gradient(135deg,rgba(14,165,233,0.12)_0%,var(--app-surface)_100%)] dark:bg-[linear-gradient(135deg,rgba(14,165,233,0.22)_0%,var(--app-surface)_100%)]',
-  product: 'bg-[linear-gradient(135deg,rgba(59,130,246,0.12)_0%,var(--app-surface)_100%)] dark:bg-[linear-gradient(135deg,rgba(59,130,246,0.22)_0%,var(--app-surface)_100%)]',
-  service: 'bg-[linear-gradient(135deg,rgba(168,85,247,0.12)_0%,var(--app-surface)_100%)] dark:bg-[linear-gradient(135deg,rgba(168,85,247,0.22)_0%,var(--app-surface)_100%)]',
-  rental: 'bg-[linear-gradient(135deg,rgba(245,158,11,0.12)_0%,var(--app-surface)_100%)] dark:bg-[linear-gradient(135deg,rgba(245,158,11,0.22)_0%,var(--app-surface)_100%)]',
-  vehicle: 'bg-[linear-gradient(135deg,rgba(100,116,139,0.12)_0%,var(--app-surface)_100%)] dark:bg-[linear-gradient(135deg,rgba(100,116,139,0.22)_0%,var(--app-surface)_100%)]',
-  digital: 'bg-[linear-gradient(135deg,rgba(16,185,129,0.12)_0%,var(--app-surface)_100%)] dark:bg-[linear-gradient(135deg,rgba(16,185,129,0.22)_0%,var(--app-surface)_100%)]',
-  real_estate: 'bg-[linear-gradient(135deg,rgba(244,63,94,0.12)_0%,var(--app-surface)_100%)] dark:bg-[linear-gradient(135deg,rgba(244,63,94,0.22)_0%,var(--app-surface)_100%)]',
-  food: 'bg-[linear-gradient(135deg,rgba(132,204,22,0.12)_0%,var(--app-surface)_100%)] dark:bg-[linear-gradient(135deg,rgba(132,204,22,0.22)_0%,var(--app-surface)_100%)]',
-  other: 'bg-[linear-gradient(135deg,rgba(120,113,108,0.12)_0%,var(--app-surface)_100%)] dark:bg-[linear-gradient(135deg,rgba(120,113,108,0.22)_0%,var(--app-surface)_100%)]',
+const BENTO_THEMES = {
+  all: {
+    bg: 'bg-emerald-50/95 hover:bg-emerald-100/80 dark:bg-emerald-950/40 dark:hover:bg-emerald-950/60',
+    border: 'border-emerald-300/90 dark:border-emerald-700/70',
+    activeRing: 'ring-2 ring-emerald-600 border-emerald-500 bg-emerald-100/90 dark:bg-emerald-900/60 shadow-md',
+    iconGradient: 'from-emerald-600 to-teal-500 shadow-emerald-500/25',
+  },
+  product: {
+    bg: 'bg-blue-50/95 hover:bg-blue-100/80 dark:bg-blue-950/40 dark:hover:bg-blue-950/60',
+    border: 'border-blue-300/90 dark:border-blue-700/70',
+    activeRing: 'ring-2 ring-blue-600 border-blue-500 bg-blue-100/90 dark:bg-blue-900/60 shadow-md',
+    iconGradient: 'from-blue-600 to-cyan-500 shadow-blue-500/25',
+  },
+  service: {
+    bg: 'bg-purple-50/95 hover:bg-purple-100/80 dark:bg-purple-950/40 dark:hover:bg-purple-950/60',
+    border: 'border-purple-300/90 dark:border-purple-700/70',
+    activeRing: 'ring-2 ring-purple-600 border-purple-500 bg-purple-100/90 dark:bg-purple-900/60 shadow-md',
+    iconGradient: 'from-purple-600 to-indigo-500 shadow-purple-500/25',
+  },
+  rental: {
+    bg: 'bg-amber-50/95 hover:bg-amber-100/80 dark:bg-amber-950/40 dark:hover:bg-amber-950/60',
+    border: 'border-amber-300/90 dark:border-amber-700/70',
+    activeRing: 'ring-2 ring-amber-600 border-amber-500 bg-amber-100/90 dark:bg-amber-900/60 shadow-md',
+    iconGradient: 'from-amber-500 to-orange-500 shadow-amber-500/25',
+  },
+  vehicle: {
+    bg: 'bg-slate-100/95 hover:bg-slate-200/80 dark:bg-slate-800/70 dark:hover:bg-slate-800/90',
+    border: 'border-slate-350 dark:border-slate-600',
+    activeRing: 'ring-2 ring-slate-600 border-slate-500 bg-slate-200/90 dark:bg-slate-700/60 shadow-md',
+    iconGradient: 'from-slate-600 to-slate-800 shadow-slate-500/25',
+  },
+  digital: {
+    bg: 'bg-teal-50/95 hover:bg-teal-100/80 dark:bg-teal-950/40 dark:hover:bg-teal-950/60',
+    border: 'border-teal-300/90 dark:border-teal-700/70',
+    activeRing: 'ring-2 ring-teal-600 border-teal-500 bg-teal-100/90 dark:bg-teal-900/60 shadow-md',
+    iconGradient: 'from-teal-600 to-emerald-500 shadow-teal-500/25',
+  },
+  real_estate: {
+    bg: 'bg-rose-50/95 hover:bg-rose-100/80 dark:bg-rose-950/40 dark:hover:bg-rose-950/60',
+    border: 'border-rose-300/90 dark:border-rose-700/70',
+    activeRing: 'ring-2 ring-rose-600 border-rose-500 bg-rose-100/90 dark:bg-rose-900/60 shadow-md',
+    iconGradient: 'from-rose-500 to-pink-600 shadow-rose-500/25',
+  },
+  food: {
+    bg: 'bg-lime-50/95 hover:bg-lime-100/80 dark:bg-lime-950/40 dark:hover:bg-lime-950/60',
+    border: 'border-lime-300/90 dark:border-lime-700/70',
+    activeRing: 'ring-2 ring-lime-600 border-lime-500 bg-lime-100/90 dark:bg-lime-900/60 shadow-md',
+    iconGradient: 'from-lime-600 to-green-600 shadow-lime-500/25',
+  },
+  other: {
+    bg: 'bg-stone-100/95 hover:bg-stone-200/80 dark:bg-stone-800/70 dark:hover:bg-stone-800/90',
+    border: 'border-stone-350 dark:border-stone-600',
+    activeRing: 'ring-2 ring-stone-600 border-stone-500 bg-stone-200/90 dark:bg-stone-700/60 shadow-md',
+    iconGradient: 'from-stone-500 to-stone-700 shadow-stone-500/25',
+  },
 }
 
 function MarketplaceBentoTile({
@@ -613,10 +659,13 @@ function MarketplaceBentoTile({
   icon: Icon,
   label,
   hint,
-  surface,
+  typeKey = 'other',
   iconColor,
   onClick,
 }) {
+  const theme = BENTO_THEMES[typeKey] || BENTO_THEMES.other
+  const gradient = iconColor || theme.iconGradient
+
   if (featured) {
     return (
       <button
@@ -624,24 +673,26 @@ function MarketplaceBentoTile({
         title={label}
         aria-pressed={active}
         onClick={onClick}
-        className={`group relative flex h-[132px] w-[112px] sm:w-[128px] shrink-0 snap-start flex-col justify-between overflow-hidden rounded-[1.3rem] p-3 text-left transition-all duration-200 active:scale-[0.98] cursor-pointer ${surface} ${
+        className={`group relative flex h-[132px] w-[110px] sm:w-[124px] lg:w-[136px] xl:w-[152px] shrink-0 snap-start flex-col justify-between overflow-hidden rounded-2xl p-3 text-left transition-all duration-200 active:scale-[0.98] cursor-pointer shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-md border ${
           active
-            ? 'ring-2 ring-brand-500 shadow-md border-transparent bg-brand-500/20 text-brand-900 dark:text-brand-100'
-            : 'border border-[var(--app-border)]/70 hover:border-brand-500/40 text-[var(--app-text)] shadow-sm'
+            ? theme.activeRing
+            : `${theme.bg} ${theme.border}`
         }`}
       >
         <span
-          className={`grid size-9 shrink-0 place-items-center rounded-xl text-white shadow-sm transition-transform group-hover:scale-105 ${
+          className={`grid size-9 shrink-0 place-items-center rounded-xl text-white shadow-md transition-transform group-hover:scale-105 ${
             active
-              ? 'bg-brand-600'
-              : `bg-gradient-to-br ${iconColor || 'from-brand-600 to-teal-500'}`
+              ? 'bg-emerald-600'
+              : `bg-gradient-to-br ${gradient}`
           }`}
         >
           <Icon className="size-[1.125rem]" aria-hidden="true" />
         </span>
         <div className="mt-2 min-w-0">
-          <p className="line-clamp-1 text-xs font-black tracking-tight">{label}</p>
-          <p className="mt-0.5 line-clamp-1 text-[10px] font-medium text-[var(--app-text-muted)]">
+          <p className="line-clamp-1 text-xs sm:text-[13px] font-black tracking-tight text-slate-900 dark:text-white">
+            {label}
+          </p>
+          <p className="mt-0.5 line-clamp-1 text-[10px] sm:text-[10.5px] font-semibold text-slate-600 dark:text-slate-300">
             {hint || 'Toutes les offres'}
           </p>
         </div>
@@ -655,24 +706,26 @@ function MarketplaceBentoTile({
       title={label}
       aria-pressed={active}
       onClick={onClick}
-      className={`group relative flex h-[62px] w-[142px] sm:w-[158px] shrink-0 snap-start items-center gap-2.5 overflow-hidden rounded-[1.2rem] px-3 transition-all duration-200 active:scale-[0.98] cursor-pointer ${surface} ${
+      className={`group relative flex h-[62px] w-[142px] sm:w-[158px] lg:w-full shrink-0 lg:shrink snap-start items-center gap-2.5 overflow-hidden rounded-xl px-3 transition-all duration-200 active:scale-[0.98] cursor-pointer shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-md border ${
         active
-          ? 'ring-2 ring-brand-500 shadow-md border-transparent bg-brand-500/20 text-brand-900 dark:text-brand-100'
-          : 'border border-[var(--app-border)]/70 hover:border-brand-500/40 text-[var(--app-text)] shadow-sm'
+          ? theme.activeRing
+          : `${theme.bg} ${theme.border}`
       }`}
     >
       <span
-        className={`grid size-8 shrink-0 place-items-center rounded-lg text-white shadow-sm transition-transform group-hover:scale-105 ${
+        className={`grid size-8 shrink-0 place-items-center rounded-lg text-white shadow-md transition-transform group-hover:scale-105 ${
           active
             ? 'bg-brand-600'
-            : `bg-gradient-to-br ${iconColor || 'from-brand-500 to-teal-500'}`
+            : `bg-gradient-to-br ${gradient}`
         }`}
       >
         <Icon className="size-4" aria-hidden="true" />
       </span>
       <div className="min-w-0 flex-1 text-left">
-        <p className="truncate text-xs font-black tracking-tight leading-snug">{label}</p>
-        <p className="truncate text-[9.5px] font-medium text-[var(--app-text-muted)] leading-tight">
+        <p className="truncate text-xs sm:text-[13px] font-black tracking-tight leading-snug text-slate-900 dark:text-white">
+          {label}
+        </p>
+        <p className="truncate text-[9.5px] sm:text-[10px] font-semibold text-slate-600 dark:text-slate-300 leading-tight">
           {hint}
         </p>
       </div>
