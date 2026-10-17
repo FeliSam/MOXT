@@ -17,6 +17,10 @@ import {
   writeBusinessPreviewToIdb,
   writeUserPreviewToIdb,
 } from '../publications/publicPreviewIdb'
+import {
+  readListingsFromIdb,
+  writeListingsToIdb,
+} from '../marketplace/marketplaceListingsIdb'
 
 function toBusinessState(preview, { loading = false, error = null } = {}) {
   return {
@@ -147,14 +151,27 @@ export function useGuestMarketplaceListings(enabled = false) {
     }
 
     let cancelled = false
-    setState((current) => ({ ...current, loading: true }))
+
+    // Cache-first: hydrate immediately from local IndexedDB
+    void readListingsFromIdb().then((cached) => {
+      if (cancelled || !cached?.length) return
+      setState((current) => ({
+        ...current,
+        loading: false,
+        listings: cached,
+      }))
+    })
 
     fetchGuestMarketplaceListings().then((result) => {
       if (cancelled) return
+      const nextListings = result.listings || []
       setState({
         loading: false,
-        listings: result.listings || [],
+        listings: nextListings,
       })
+      if (nextListings.length) {
+        void writeListingsToIdb(nextListings)
+      }
     })
 
     return () => {

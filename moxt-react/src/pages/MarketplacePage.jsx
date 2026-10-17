@@ -33,6 +33,7 @@ import { loadFeedBoosts } from '../features/stars/starsSlice'
 import {
   resetMarketplaceFilters,
   setMarketplaceFilters,
+  setAll,
 } from '../features/marketplace/marketplaceSlice'
 import {
   listingOptionLabel,
@@ -40,6 +41,8 @@ import {
 } from '../features/marketplace/marketplaceI18n'
 import { countrySortRank, resolveUserCountryCode } from '@moxt/shared/utils/countryPriority.js'
 import { resolveListingCountry } from '../features/marketplace/listingCatalogUtils'
+import { resolveMediaDisplayUrl } from '../services/media/mediaUrlUtils'
+import { readListingsFromIdb } from '../features/marketplace/marketplaceListingsIdb'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
 import { useLanguage } from '../contexts/useLanguage'
@@ -51,8 +54,10 @@ const MARKETPLACE_COVER_PRELOAD = 40
 function prefetchListingCovers(listings = []) {
   if (typeof window === 'undefined' || typeof Image === 'undefined') return
   for (const listing of listings) {
-    const url = listing?.images?.[0]
-    if (!url || typeof url !== 'string') continue
+    const raw = listing?.images?.[0]
+    if (!raw || typeof raw !== 'string') continue
+    const url = resolveMediaDisplayUrl(raw) || raw
+    if (!url) continue
     const img = new Image()
     img.decoding = 'async'
     img.src = url
@@ -200,14 +205,30 @@ export function MarketplacePage() {
 
   const visibleItems = visible
 
+  // Cache-first: hydrate immediately from local IndexedDB if Redux is empty on mount.
+  useEffect(() => {
+    if (guestMode || reduxListings.length > 0) return
+    let cancelled = false
+    void readListingsFromIdb().then((cached) => {
+      if (cancelled || !cached?.length) return
+      const current = store.getState()?.marketplace?.items || []
+      if (cached.length > current.length) {
+        dispatch(setAll({ items: cached }))
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [dispatch, guestMode, reduxListings.length, store])
+
   // Mount + incompleteness: scheduleCatalogSync auto-forces when Redux looks thinner
   // than the last successful sync (cooldown inside catalogSync).
   useEffect(() => {
     if (!user?.id || guestMode) return
     import('../app/catalogSync.js').then(({ scheduleCatalogSync }) => {
-      void scheduleCatalogSync(store, { skipIfFresh: true })
+      void scheduleCatalogSync(store, { skipIfFresh: reduxListings.length > 0 })
     })
-  }, [store, user?.id, guestMode])
+  }, [store, user?.id, guestMode, reduxListings.length])
 
   // When the displayed catalog shrinks (or stays thin after hydrate), re-check.
   useEffect(() => {

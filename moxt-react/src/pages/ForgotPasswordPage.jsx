@@ -17,6 +17,7 @@ import { useLanguage } from '../contexts/useLanguage'
 import { authErrorToast } from '../features/auth/authErrorMessages'
 import { authService } from '../features/auth/authService'
 import { createAuthSchemas } from '../features/auth/authSchemas'
+import { clearSession } from '../features/auth/authSlice'
 import { addToast } from '../features/ui/uiSlice'
 
 const MODES = [
@@ -31,6 +32,8 @@ export function ForgotPasswordPage() {
   const initialMode = searchParams.get('mode') === 'phone' ? 'phone' : 'email'
   const [mode, setMode] = useState(initialMode)
   const [sent, setSent] = useState(false)
+  const [emailStep, setEmailStep] = useState('request') // request | confirm | done
+  const [pendingEmail, setPendingEmail] = useState('')
   const [phoneStep, setPhoneStep] = useState('request') // request | confirm | done
   const [cooldown, setCooldown] = useState(0)
   const [pendingPhone, setPendingPhone] = useState('')
@@ -49,6 +52,7 @@ export function ForgotPasswordPage() {
     onSubmit: async (values, helpers) => {
       try {
         await authService.requestPasswordReset(values.email)
+        setPendingEmail(values.email)
         setSent(true)
         setCooldown(OTP_RESEND_COOLDOWN_SECONDS)
         dispatch(
@@ -64,6 +68,58 @@ export function ForgotPasswordPage() {
             authErrorToast(
               t('auth.forgot.toastErrorTitle'),
               error instanceof Error ? error.message : t('auth.forgot.toastErrorFallback'),
+              'error',
+              t,
+            ),
+          ),
+        )
+      } finally {
+        helpers.setSubmitting(false)
+      }
+    },
+  })
+
+  const emailConfirmFormik = useFormik({
+    initialValues: { code: '', password: '', confirmPassword: '' },
+    onSubmit: async (values, helpers) => {
+      if (values.password !== values.confirmPassword) {
+        helpers.setFieldError('confirmPassword', t('auth.forgot.passwordMismatch'))
+        helpers.setSubmitting(false)
+        return
+      }
+      if (String(values.password || '').length < 8) {
+        helpers.setFieldError('password', t('auth.reset.passwordRules'))
+        helpers.setSubmitting(false)
+        return
+      }
+      if (!/^\d{6}$/.test(String(values.code || '').trim())) {
+        helpers.setFieldError('code', 'Saisissez le code à 6 chiffres reçu par e-mail.')
+        helpers.setSubmitting(false)
+        return
+      }
+      try {
+        await authService.confirmEmailPasswordReset({
+          email: pendingEmail || emailFormik.values.email,
+          token: values.code.trim(),
+          password: values.password,
+        })
+        const { markIntentionalSignOut } = await import('../services/authSessionSync')
+        markIntentionalSignOut()
+        dispatch(clearSession())
+        setEmailStep('done')
+        dispatch(
+          addToast({
+            title: t('auth.reset.toastSuccessTitle'),
+            message: t('auth.reset.toastSuccessBody'),
+            tone: 'success',
+          }),
+        )
+      } catch (error) {
+        dispatch(
+          addToast(
+            authErrorToast(
+              t('auth.reset.toastErrorTitle'),
+              error instanceof Error ? error.message : t('auth.reset.toastErrorFallback'),
               'error',
               t,
             ),
@@ -137,6 +193,9 @@ export function ForgotPasswordPage() {
           token: values.code.trim(),
           password: values.password,
         })
+        const { markIntentionalSignOut } = await import('../services/authSessionSync')
+        markIntentionalSignOut()
+        dispatch(clearSession())
         setPhoneStep('done')
         dispatch(
           addToast({
@@ -165,6 +224,8 @@ export function ForgotPasswordPage() {
   function switchMode(next) {
     setMode(next)
     setSent(false)
+    setEmailStep('request')
+    setPendingEmail('')
     setPhoneStep('request')
     setPendingPhone('')
     setCooldown(0)
@@ -208,7 +269,90 @@ export function ForgotPasswordPage() {
       </div>
 
       {mode === 'email' ? (
-        sent ? (
+        emailStep === 'done' ? (
+          <div className="auth-flow-panel mt-4 grid gap-4">
+            <Alert variant="success" title={t('auth.reset.toastSuccessTitle')}>
+              {t('auth.forgot.phoneDoneBody')}
+            </Alert>
+            <Link className="auth-flow-link text-center" to="/login">
+              {t('auth.forgot.backToLogin')}
+            </Link>
+          </div>
+        ) : emailStep === 'confirm' ? (
+          <form
+            className="auth-flow-panel mt-4 grid gap-4"
+            onSubmit={emailConfirmFormik.handleSubmit}
+            noValidate
+          >
+            <Alert variant="info" title="Code à 6 chiffres">
+              Saisissez le code reçu par e-mail ainsi que votre nouveau mot de passe.
+            </Alert>
+            <Input
+              id="forgot-email-code"
+              label="Code reçu par e-mail"
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              placeholder="123456"
+              value={emailConfirmFormik.values.code}
+              onChange={(e) =>
+                emailConfirmFormik.setFieldValue(
+                  'code',
+                  e.target.value.replace(/\D/g, '').slice(0, 6),
+                )
+              }
+              onBlur={emailConfirmFormik.handleBlur}
+              error={
+                emailConfirmFormik.touched.code ? emailConfirmFormik.errors.code : undefined
+              }
+            />
+            <PasswordInput
+              id="forgot-email-password"
+              label={t('auth.reset.password')}
+              autoComplete="new-password"
+              iconLeft={<FiLock />}
+              {...emailConfirmFormik.getFieldProps('password')}
+              error={
+                emailConfirmFormik.touched.password
+                  ? emailConfirmFormik.errors.password
+                  : undefined
+              }
+            />
+            <PasswordInput
+              id="forgot-email-password-confirm"
+              label={t('auth.reset.confirmPassword')}
+              autoComplete="new-password"
+              iconLeft={<FiLock />}
+              {...emailConfirmFormik.getFieldProps('confirmPassword')}
+              error={
+                emailConfirmFormik.touched.confirmPassword
+                  ? emailConfirmFormik.errors.confirmPassword
+                  : undefined
+              }
+            />
+            <Button
+              className="w-full"
+              type="submit"
+              disabled={emailConfirmFormik.isSubmitting}
+            >
+              {emailConfirmFormik.isSubmitting
+                ? t('auth.reset.submitting')
+                : t('auth.reset.submit')}
+            </Button>
+            <div className="flex items-center justify-between text-xs">
+              <button
+                type="button"
+                className="auth-flow-link"
+                onClick={() => setEmailStep('request')}
+              >
+                Retour au lien e-mail
+              </button>
+              <Link className="auth-flow-link-muted" to="/login">
+                {t('auth.forgot.backToLogin')}
+              </Link>
+            </div>
+          </form>
+        ) : sent ? (
           <div className="auth-flow-panel mt-4 grid gap-4">
             <Alert variant="success" title={t('auth.forgot.sentTitle')}>
               {t('auth.forgot.sentBody')}
@@ -216,6 +360,14 @@ export function ForgotPasswordPage() {
             <p className="auth-flow-hint text-sm text-[var(--app-text-muted)]">
               {t('auth.forgot.sentHint')}
             </p>
+            <Button
+              className="w-full"
+              variant="secondary"
+              type="button"
+              onClick={() => setEmailStep('confirm')}
+            >
+              Saisir le code à 6 chiffres reçu par e-mail
+            </Button>
             <Button
               className="w-full"
               variant="secondary"

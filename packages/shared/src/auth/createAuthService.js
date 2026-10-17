@@ -2358,11 +2358,53 @@ export function createAuthService(supabase, redirects = {}) {
         throw new Error('Le mot de passe doit contenir au moins 8 caractères.')
       }
       const otp = String(nonce || '').trim()
+      if (otp) {
+        if (!/^\d{6}$/.test(otp)) {
+          throw new Error('Saisissez le code à 6 chiffres reçu par e-mail.')
+        }
+        const { error } = await supabase.auth.updateUser({ password, nonce: otp })
+        if (error) throw new Error(translateAuthError(error, { channel: 'email', intent: 'password_change' }))
+        return true
+      }
+      const { error } = await supabase.auth.updateUser({ password })
+      if (error) throw new Error(translateAuthError(error, { channel: 'email', intent: 'password_change' }))
+      return true
+    },
+
+    /**
+     * Vérifie l'OTP reçu par e-mail (code à 6 chiffres) puis définit le nouveau mot de passe.
+     * Déconnecte ensuite pour forcer une connexion propre.
+     */
+    async confirmEmailPasswordReset({ email, token, password }) {
+      if (!supabase) throw new Error('Supabase non configuré.')
+      const normalizedEmail = String(email || '').trim().toLowerCase()
+      const otp = String(token || '').trim()
+      const nextPassword = String(password || '').trim()
+      if (!normalizedEmail.includes('@')) {
+        throw new Error('Adresse e-mail invalide.')
+      }
       if (!/^\d{6}$/.test(otp)) {
         throw new Error('Saisissez le code à 6 chiffres reçu par e-mail.')
       }
-      const { error } = await supabase.auth.updateUser({ password, nonce: otp })
-      if (error) throw new Error(translateAuthError(error, { channel: 'email', intent: 'password_change' }))
+      if (nextPassword.length < 8) {
+        throw new Error('Le mot de passe doit contenir au moins 8 caractères.')
+      }
+
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        email: normalizedEmail,
+        token: otp,
+        type: 'recovery',
+      })
+      if (verifyError) {
+        throw new Error(translateAuthError(verifyError, { channel: 'email', intent: 'otp_verify' }))
+      }
+
+      const { error: updateError } = await supabase.auth.updateUser({ password: nextPassword })
+      if (updateError) {
+        throw new Error(translateAuthError(updateError, { channel: 'email', intent: 'password_change' }))
+      }
+
+      await supabase.auth.signOut()
       return true
     },
 

@@ -611,7 +611,7 @@ function Gallery({
     <Card className="overflow-hidden p-4 sm:p-4">
       <div
         ref={imageRef}
-        className="group relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-cyan-700 to-blue-600 text-white"
+        className="group relative overflow-hidden rounded-[1.5rem] bg-slate-900 text-white"
         {...imageSwipeHandlers}
       >
         <div className="relative flex h-[486px] w-full items-center justify-center lg:h-[583px]">
