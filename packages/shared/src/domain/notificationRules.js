@@ -19,6 +19,12 @@ export function notificationFromRemoteRow(row) {
     priority: row.priority || 'normal',
     read: row.read === true,
     archived: row.archived === true,
+    badgeText: row.badgeText ?? row.badge_text ?? null,
+    badgeColor: row.badgeColor ?? row.badge_color ?? null,
+    badgeIcon: row.badgeIcon ?? row.badge_icon ?? null,
+    displayMode: row.displayMode ?? row.display_mode ?? 'standard',
+    actionLabel: row.actionLabel ?? row.action_label ?? null,
+    metadata: row.metadata ?? {},
     createdAt: row.createdAt ?? row.created_at ?? null,
   }
 }

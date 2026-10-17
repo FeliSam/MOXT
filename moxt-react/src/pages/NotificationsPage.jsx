@@ -1,5 +1,5 @@
 import { FiArchive, FiBell, FiCheck, FiMessageSquare, FiStar, FiZap } from 'react-icons/fi'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
@@ -8,6 +8,10 @@ import { Card } from '../components/ui/Card'
 import { LinkifiedText } from '../components/ui/LinkifiedText'
 import { PageHeader } from '../components/ui/PageHeader'
 import { useLanguage } from '../contexts/useLanguage'
+import {
+  BADGE_PALETTES,
+  NotificationBottomSheet,
+} from '../features/communications/NotificationBottomSheet'
 import {
   archiveNotification,
   markAllNotificationsRead,
@@ -91,9 +95,16 @@ export function NotificationsPage() {
     }
   }, [dispatch, user?.id])
 
+  const [sheetNotification, setSheetNotification] = useState(null)
+
   function openNotification(notification) {
     if (!notification.read) {
       dispatch(markNotificationRead(notification.id))
+    }
+
+    if (notification.displayMode === 'sheet') {
+      setSheetNotification(notification)
+      return
     }
 
     const target = resolveNotificationTarget(notification, conversations)
@@ -125,9 +136,12 @@ export function NotificationsPage() {
           notifications.map((notification) => {
             const messageAlert = isMessageNotification(notification)
             const target = resolveNotificationTarget(notification, conversations)
-            const canOpen = Boolean(target)
+            const isSheet = notification.displayMode === 'sheet'
+            const canOpen = isSheet || Boolean(target)
             const priority = notificationPriority(notification)
             const styles = PRIORITY_STYLES[priority] || PRIORITY_STYLES.normal
+            const paletteKey = notification.badgeColor || 'brand'
+            const palette = BADGE_PALETTES[paletteKey] || BADGE_PALETTES.brand
 
             return (
               <Card
@@ -163,6 +177,14 @@ export function NotificationsPage() {
                     <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                       <strong className="min-w-0 break-words leading-snug">{notification.title}</strong>
                       <div className="flex shrink-0 flex-wrap gap-2 self-start">
+                        {notification.badgeText ? (
+                          <span
+                            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-black uppercase tracking-wider ${palette.badge}`}
+                          >
+                            <span className={`size-1.5 rounded-full ${palette.dot}`} />
+                            {notification.badgeText}
+                          </span>
+                        ) : null}
                         {!notification.read ? (
                           <Badge tone={styles.badge}>{p3(styles.labelKey)}</Badge>
                         ) : null}
@@ -194,7 +216,8 @@ export function NotificationsPage() {
                         >
                           {messageAlert
                             ? p3('notifications.openConversation')
-                            : p3('notifications.open')}
+                            : notification.actionLabel ||
+                              (isSheet ? 'Voir l’alerte' : p3('notifications.open'))}
                         </Button>
                       ) : null}
                       {!notification.read ? (
@@ -230,6 +253,13 @@ export function NotificationsPage() {
           </Card>
         )}
       </div>
+
+      <NotificationBottomSheet
+        notification={sheetNotification}
+        open={Boolean(sheetNotification)}
+        onClose={() => setSheetNotification(null)}
+        currentUserId={user?.id}
+      />
     </div>
   )
 }

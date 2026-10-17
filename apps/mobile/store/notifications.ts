@@ -29,6 +29,12 @@ export type NotificationItem = {
   read: boolean;
   archived: boolean;
   createdAt: string | null;
+  badgeText?: string | null;
+  badgeColor?: string | null;
+  badgeIcon?: string | null;
+  displayMode?: string;
+  actionLabel?: string | null;
+  metadata?: Record<string, unknown>;
 };
 
 type NotificationsState = {

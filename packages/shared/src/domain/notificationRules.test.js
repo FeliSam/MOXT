@@ -13,6 +13,41 @@ describe('notificationRules', () => {
   it('mappe une ligne Supabase avec les défauts du web', () => {
     expect(notificationFromRemoteRow({ id: 'n1', user_id: uid, title: 'T', message: 'M', created_at: 'x' })).toMatchObject({
       userId: uid, message: 'M', priority: 'normal', read: false, archived: false, createdAt: 'x',
+      badgeText: null, badgeColor: null, badgeIcon: null, displayMode: 'standard', actionLabel: null, metadata: {},
+    })
+  })
+
+  it('mappe les attributs de diffusion et badge personnalisé', () => {
+    const row = {
+      id: 'b1',
+      user_id: uid,
+      title: 'Alerte',
+      body: 'Message important',
+      badge_text: 'PROMO',
+      badge_color: 'amber',
+      badge_icon: 'gift',
+      display_mode: 'sheet',
+      action_label: 'Voir l offre',
+      metadata: { promoCode: 'MOXT2026' },
+      created_at: '2026-10-17T12:00:00Z',
+    }
+    expect(notificationFromRemoteRow(row)).toEqual({
+      id: 'b1',
+      userId: uid,
+      title: 'Alerte',
+      message: 'Message important',
+      type: 'system',
+      link: null,
+      priority: 'normal',
+      read: false,
+      archived: false,
+      badgeText: 'PROMO',
+      badgeColor: 'amber',
+      badgeIcon: 'gift',
+      displayMode: 'sheet',
+      actionLabel: 'Voir l offre',
+      metadata: { promoCode: 'MOXT2026' },
+      createdAt: '2026-10-17T12:00:00Z',
     })
   })
 

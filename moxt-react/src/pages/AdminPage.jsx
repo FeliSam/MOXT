@@ -18,6 +18,7 @@ import { AdminAuditPanel } from '../features/admin/components/AdminAuditPanel'
 import { AdminContentPanel } from '../features/admin/components/AdminContentPanel'
 import { AdminDetailPanel } from '../features/admin/components/AdminDetailPanel'
 import { AdminModulesPanel } from '../features/admin/components/AdminModulesPanel'
+import { AdminNotificationCenter } from '../features/admin/components/AdminNotificationCenter'
 import { AdminStoreLocalesPanel } from '../features/admin/components/AdminStoreLocalesPanel'
 import { AdminFeedPlaybackPanel } from '../features/admin/components/AdminFeedPlaybackPanel'
 import { AdminAvatarPanel } from '../features/admin/components/AdminAvatarPanel'
@@ -100,7 +101,7 @@ export function AdminPage() {
 
   const confirmName = `${confirmUser?.firstName || ''} ${confirmUser?.lastName || ''}`.trim()
   const purgeName = `${purgeUser?.firstName || ''} ${purgeUser?.lastName || ''}`.trim()
-  const auditFullWidth = (view === 'audit' || view === 'stars') && !selected
+  const auditFullWidth = (view === 'audit' || view === 'stars' || view === 'notifications') && !selected
   const showDetailPanel = !auditFullWidth || selected
 
   return (
@@ -167,6 +168,7 @@ export function AdminPage() {
               transfers={allTransfers}
             />
           )}
+          {view === 'notifications' && <AdminNotificationCenter />}
           {view === 'modules' && <AdminModulesPanel />}
           {view === 'stores' && <AdminStoreLocalesPanel />}
           {view === 'feed' && <AdminFeedPlaybackPanel />}
