@@ -15,6 +15,8 @@ import { formatMoney } from '../transfers/transferUtils'
 import { listingOptionLabel, marketplaceText } from './marketplaceI18n'
 import { resolveMediaDisplayUrl } from '../../services/media/mediaUrlUtils'
 
+export const GLOBAL_LOADED_IMAGES = new Set()
+
 function MarketplaceListingCardComponent({
   listing,
   linked = true,
@@ -31,7 +33,16 @@ function MarketplaceListingCardComponent({
   const mt = (key, vars) => marketplaceText(t, key, vars)
   const user = useSelector((state) => state.auth.user)
   const [failedSrc, setFailedSrc] = useState(() => new Set())
-  const [loadedSrc, setLoadedSrc] = useState(() => new Set())
+  const [loadedSrc, setLoadedSrc] = useState(() => {
+    const initial = new Set()
+    const listImgs = listing?.images || []
+    for (const src of listImgs) {
+      if (typeof src === 'string' && GLOBAL_LOADED_IMAGES.has(src)) {
+        initial.add(src)
+      }
+    }
+    return initial
+  })
   const [slide, setSlide] = useState(0)
   const scrollRef = useHorizontalScroll()
   const liked = useSelector((state) =>
@@ -131,7 +142,7 @@ function MarketplaceListingCardComponent({
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
             {images.map((src, index) => {
-              const isLoaded = loadedSrc.has(src)
+              const isLoaded = loadedSrc.has(src) || GLOBAL_LOADED_IMAGES.has(src)
               const img = (
                 <div className="relative h-full w-full">
                   {!isLoaded && (
@@ -144,8 +155,10 @@ function MarketplaceListingCardComponent({
                       isLoaded ? 'opacity-100' : 'opacity-0'
                     } ${isRail ? '' : 'md:transition-transform md:duration-500 md:ease-out md:group-hover:scale-[1.05]'}`}
                     loading={index === 0 ? 'eager' : 'lazy'}
+                    decoding="async"
                     draggable={false}
                     onLoad={() => {
+                      GLOBAL_LOADED_IMAGES.add(src)
                       setLoadedSrc((current) => {
                         const next = new Set(current)
                         next.add(src)

@@ -14,7 +14,8 @@ import {
   LISTING_TYPES_META,
   listingSpecificDetails,
 } from '../config/listingConfig'
-import { MarketplaceListingCard } from '../features/marketplace/MarketplaceListingCard'
+import { MarketplaceListingCard, GLOBAL_LOADED_IMAGES } from '../features/marketplace/MarketplaceListingCard'
+import { syncMarketplaceCatalog } from '../features/marketplace/marketplaceSync'
 import { MarketplaceDiscoveryRail } from '../features/marketplace/MarketplaceDiscoveryRail'
 import { MarketplaceVideoCard, MarketplaceVideoRail } from '../features/marketplace/MarketplaceVideoRail'
 import { MarketplaceFeedBanner } from '../features/marketplace/MarketplaceFeedBanner'
@@ -58,8 +59,12 @@ function prefetchListingCovers(listings = []) {
     if (!raw || typeof raw !== 'string') continue
     const url = resolveMediaDisplayUrl(raw) || raw
     if (!url) continue
+    if (GLOBAL_LOADED_IMAGES.has(url)) continue
     const img = new Image()
     img.decoding = 'async'
+    img.onload = () => {
+      GLOBAL_LOADED_IMAGES.add(url)
+    }
     img.src = url
   }
 }
@@ -261,7 +266,7 @@ export function MarketplacePage() {
           setDisplayCount((prev) => Math.min(prev + PAGE_INCREMENT, totalStreamItems))
         }
       },
-      { rootMargin: '400px' }
+      { rootMargin: '600px' }
     )
 
     observer.observe(el)
@@ -276,7 +281,7 @@ export function MarketplacePage() {
       if (cancelled || !cached?.length) return
       const current = store.getState()?.marketplace?.items || []
       if (cached.length > current.length) {
-        dispatch(setAll({ items: cached }))
+        dispatch(setAll({ items: cached, mode: 'merge' }))
       }
     })
     return () => {
@@ -284,42 +289,17 @@ export function MarketplacePage() {
     }
   }, [dispatch, guestMode, reduxListings.length, store])
 
-  // Mount + incompleteness: scheduleCatalogSync auto-forces when Redux looks thinner
-  // than the last successful sync (cooldown inside catalogSync).
+  // Delta catalog sync on mount: fetches only items updated since last cached timestamp.
   useEffect(() => {
     if (!user?.id || guestMode) return
-    import('../app/catalogSync.js').then(({ scheduleCatalogSync }) => {
-      void scheduleCatalogSync(store, { skipIfFresh: reduxListings.length > 0 })
-    })
-  }, [store, user?.id, guestMode, reduxListings.length])
+    void syncMarketplaceCatalog(dispatch, store, { force: false })
+  }, [dispatch, store, user?.id, guestMode])
 
-  // When the displayed catalog shrinks (or stays thin after hydrate), re-check.
-  useEffect(() => {
-    if (!user?.id || guestMode) return undefined
-    let cancelled = false
-    void import('../app/catalogSync.js').then(
-      ({ scheduleCatalogSync, isMarketplaceCatalogIncomplete }) => {
-        if (cancelled) return
-        if (isMarketplaceCatalogIncomplete(store.getState())) {
-          // skipIfFresh + incomplete → awaited network pull without wiping IDB
-          void scheduleCatalogSync(store, { skipIfFresh: true })
-        }
-      },
-    )
-    return () => {
-      cancelled = true
-    }
-  }, [store, user?.id, guestMode, reduxListings.length, feed.total])
-
-  // Focus / tab re-entry: force full sync when incomplete; otherwise skipIfFresh.
+  // Focus / tab re-entry: lightweight delta sync check (0 re-renders if nothing changed).
   useEffect(() => {
     if (!user?.id || guestMode) return undefined
     const resyncIfNeeded = () => {
-      void import('../app/catalogSync.js').then(({ scheduleCatalogSync }) => {
-        // Incomplete auto-forces an awaited pull inside scheduleCatalogSync;
-        // pull-to-refresh (softRefreshSession) remains the path that invalidates IDB.
-        void scheduleCatalogSync(store, { skipIfFresh: true })
-      })
+      void syncMarketplaceCatalog(dispatch, store, { force: false })
     }
     const onVisibility = () => {
       if (document.visibilityState === 'visible') resyncIfNeeded()
@@ -330,7 +310,7 @@ export function MarketplacePage() {
       document.removeEventListener('visibilitychange', onVisibility)
       window.removeEventListener('focus', resyncIfNeeded)
     }
-  }, [store, user?.id, guestMode])
+  }, [dispatch, store, user?.id, guestMode])
 
   useEffect(() => {
     dispatch(loadFeedBoosts())
@@ -353,7 +333,7 @@ export function MarketplacePage() {
       <ScrollSectionAnchor className="scroll-mt-24 grid gap-5 lg:scroll-mt-28">
         <nav
           aria-label={mt('marketplace.common.type')}
-          className="scrollbar-hidden -mx-1 grid grid-rows-2 grid-flow-col auto-cols-[135px] sm:auto-cols-[155px] gap-2.5 overflow-x-auto px-1 pb-1.5 touch-pan-x snap-x snap-mandatory"
+          className="scrollbar-hidden -mx-1 flex items-stretch gap-2.5 overflow-x-auto px-1 pb-1.5 touch-pan-x snap-x snap-mandatory"
         >
           <MarketplaceBentoTile
             featured
@@ -365,20 +345,22 @@ export function MarketplacePage() {
             iconColor="from-brand-600 to-teal-500"
             onClick={() => dispatch(setMarketplaceFilters({ type: '', category: '' }))}
           />
-          {LISTING_TYPES_META.map((option) => (
-            <MarketplaceBentoTile
-              key={option.value}
-              active={filters.type === option.value}
-              icon={option.icon}
-              label={listingOptionLabel(t, option)}
-              hint={option.hint}
-              surface={BENTO_SURFACES[option.value] || BENTO_SURFACES.other}
-              iconColor={option.color}
-              onClick={() =>
-                dispatch(setMarketplaceFilters({ type: option.value, category: '' }))
-              }
-            />
-          ))}
+          <div className="grid grid-rows-2 grid-flow-col auto-cols-[142px] sm:auto-cols-[158px] gap-2">
+            {LISTING_TYPES_META.map((option) => (
+              <MarketplaceBentoTile
+                key={option.value}
+                active={filters.type === option.value}
+                icon={option.icon}
+                label={listingOptionLabel(t, option)}
+                hint={option.hint}
+                surface={BENTO_SURFACES[option.value] || BENTO_SURFACES.other}
+                iconColor={option.color}
+                onClick={() =>
+                  dispatch(setMarketplaceFilters({ type: option.value, category: '' }))
+                }
+              />
+            ))}
+          </div>
         </nav>
 
         <CatalogSearch
@@ -642,7 +624,7 @@ function MarketplaceBentoTile({
         title={label}
         aria-pressed={active}
         onClick={onClick}
-        className={`group relative flex row-span-2 h-[132px] w-[105px] sm:w-[125px] shrink-0 snap-start flex-col justify-between overflow-hidden rounded-[1.3rem] p-3 text-left transition-all duration-200 active:scale-[0.98] cursor-pointer ${surface} ${
+        className={`group relative flex h-[132px] w-[112px] sm:w-[128px] shrink-0 snap-start flex-col justify-between overflow-hidden rounded-[1.3rem] p-3 text-left transition-all duration-200 active:scale-[0.98] cursor-pointer ${surface} ${
           active
             ? 'ring-2 ring-brand-500 shadow-md border-transparent bg-brand-500/20 text-brand-900 dark:text-brand-100'
             : 'border border-[var(--app-border)]/70 hover:border-brand-500/40 text-[var(--app-text)] shadow-sm'
@@ -673,7 +655,7 @@ function MarketplaceBentoTile({
       title={label}
       aria-pressed={active}
       onClick={onClick}
-      className={`group relative flex h-[61px] w-[138px] sm:w-[155px] shrink-0 snap-start items-center gap-2.5 overflow-hidden rounded-[1.2rem] px-3 transition-all duration-200 active:scale-[0.98] cursor-pointer ${surface} ${
+      className={`group relative flex h-[62px] w-[142px] sm:w-[158px] shrink-0 snap-start items-center gap-2.5 overflow-hidden rounded-[1.2rem] px-3 transition-all duration-200 active:scale-[0.98] cursor-pointer ${surface} ${
         active
           ? 'ring-2 ring-brand-500 shadow-md border-transparent bg-brand-500/20 text-brand-900 dark:text-brand-100'
           : 'border border-[var(--app-border)]/70 hover:border-brand-500/40 text-[var(--app-text)] shadow-sm'
