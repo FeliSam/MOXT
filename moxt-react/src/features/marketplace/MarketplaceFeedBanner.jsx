@@ -414,7 +414,7 @@ export function MarketplaceFeedBanner({ bannerIndex = 0, onInteract }) {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-start gap-3.5">
               <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-violet-600 text-white shadow-md shadow-violet-600/20">
-                <FiSparkles className="text-xl" />
+                <LuSparkles className="text-xl" />
               </span>
               <div>
                 <div className="inline-flex items-center gap-1 rounded-full bg-violet-500/15 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-violet-700 dark:text-violet-300 mb-1">
