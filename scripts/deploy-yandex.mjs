@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env node
+#!/usr/bin/env node
 /**
  * Build MOXT + publication sur Yandex Object Storage.
  *
@@ -39,7 +39,7 @@ const domain = (process.env.MOXT_DOMAIN || 'moxtapp.ru').replace(/\.$/, '')
 const initMode = process.argv.includes('--init')
 const spaOnly = process.argv.includes('--spa')
 const skipBuild = process.argv.includes('--skip-build')
-const purgeCdn = process.argv.includes('--purge-cdn')
+const purgeCdn = process.argv.includes('--purge-cdn') && !process.argv.includes('--no-purge-cdn')
 const fullUpload = process.argv.includes('--full')
 const dryRun = process.argv.includes('--dry-run')
 const concurrencyArg = process.argv.find((arg) => arg.startsWith('--concurrency='))

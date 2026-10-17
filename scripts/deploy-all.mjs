@@ -34,7 +34,8 @@ const skipMigrate =
 const skipSupabase =
   process.env.MOXT_SKIP_SUPABASE === '1' || argv.includes('--skip-supabase')
 const skipWeb = process.env.MOXT_SKIP_DEPLOY === '1' || argv.includes('--skip-web')
-const purgeCdn = argv.includes('--purge-cdn')
+const noPurgeCdn = argv.includes('--no-purge-cdn')
+const purgeCdn = argv.includes('--purge-cdn') && !noPurgeCdn
 
 function log(step, title, detail = '') {
   console.log(`\n[${step}] ${title}${detail ? `\n      ${detail}` : ''}`)
@@ -229,7 +230,7 @@ async function main() {
 
   if (!skipWeb) {
     const deployArgs = []
-    if (purgeCdn || phase2.MOXT_CDN_RESOURCE_ID) deployArgs.push('--purge-cdn')
+    if (purgeCdn) deployArgs.push('--purge-cdn')
     log('5/5', 'Site Yandex', 'build + upload')
     if (runScript('deploy-yandex.mjs', deployArgs) !== 0) process.exit(1)
   } else {
