@@ -1,5 +1,14 @@
 import { translate } from '@moxt/shared/i18n/translate.js'
-import { buildAssistantContextPack } from './assistantContext'
+import {
+  buildAssistantContextPack,
+  filterCardsByIntent,
+  wantsExistingTransfer,
+  wantsExchangers,
+  wantsLatestTransfer,
+  wantsMarketplace,
+  wantsNewTransfer,
+  wantsPosts,
+} from './assistantContext'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -300,10 +309,63 @@ export const localAssistantProvider = {
       }
     }
 
-    // 2. Détection : Recherche directe du dernier transfert ou de l'historique des transferts
+    // 2. Détection : Demande de nouveau transfert / envoi d'argent -> PROPOSER LES ÉCHANGEURS DISPONIBLES
+    const isNewTransferQuery =
+      wantsNewTransfer(question) ||
+      ((qClean.includes('transfert') || qClean.includes('virement') || qClean.includes('envoyer') || qClean.includes('perevod')) &&
+        (qClean.includes('faire') ||
+          qClean.includes('effectuer') ||
+          qClean.includes('nouveau') ||
+          qClean.includes('comment') ||
+          qClean.includes('veux') ||
+          qClean.includes('souhaite') ||
+          qClean.includes('voudrais') ||
+          qClean.includes('besoin') ||
+          qClean.includes('propose') ||
+          qClean.includes('disponible') ||
+          qClean.includes('changeur') ||
+          qClean.includes('echangeur')))
+
+    if (isNewTransferQuery) {
+      const exchangers = contextPack.exchangers || []
+      let text = "Pour effectuer un transfert d'argent (Russie ↔ Afrique) en toute sécurité sur MOXT :\n\n"
+      text += "1. Rendez-vous sur la page **Nouveau transfert** pour sélectionner le pays d'envoi et de destination.\n"
+      text += "2. Indiquez le montant souhaité ainsi que les coordonnées du bénéficiaire.\n"
+      text += "3. Choisissez l'un de nos **changeurs partenaires agréés** pour valider votre opération au meilleur taux garanti.\n\n"
+
+      if (exchangers.length > 0) {
+        text += `Voici les **${exchangers.length} changeur(s) partenaire(s) disponible(s)** pour traiter votre virement :\n`
+        for (const ex of exchangers.slice(0, 4)) {
+          const loc = ex.city || ex.country || 'Russie'
+          const ratingStr = ex.rating ? ` · Note : ★ ${Number(ex.rating).toFixed(1)}` : ''
+          const feeStr = ex.feePercent != null ? ` · Commission : ${ex.feePercent}%` : ''
+          text += `• **${ex.name}** (${loc})${ratingStr}${feeStr}\n`
+        }
+        text += "\nSélectionnez un changeur ci-dessous pour consulter son profil ou initiez directement votre virement :"
+      } else {
+        text += "Tous nos transferts sont sécurisés et protégés par notre protocole de garantie escrow."
+      }
+
+      const exchangerCards = (contextPack.allCards || contextPack.cards || []).filter((c) => c.type === 'exchanger')
+      return {
+        text,
+        cards: exchangerCards,
+        actions: [
+          { label: 'Nouveau transfert', path: '/transfers/new' },
+          { label: 'Tous les changeurs', path: '/businesses?category=exchange' },
+          { label: 'Simulateur de taux', path: '/transfers/new' },
+        ],
+        suggestions: ['Initier mon transfert', 'Voir tous les changeurs', 'Taux de change en direct'],
+        sources: exchangers.slice(0, 4).map((ex) => `Changeur: ${ex.name}`),
+      }
+    }
+
+    // 3. Détection : Recherche directe du dernier transfert ou de l'historique des transferts (suivi)
     const isDirectTransferQuery =
-      (qClean.includes('transfert') || qClean.includes('virement') || qClean.includes('mandat') || qClean.includes('mxt') || qClean.includes('perevod')) &&
-      (qClean.includes('dernier') || qClean.includes('effectue') || qClean.includes('liste') || qClean.includes('mes') || qClean.includes('mon') || qClean.includes('trouve') || qClean.includes('historique') || qClean.includes('statut') || qClean.includes('en est'))
+      !isNewTransferQuery &&
+      (wantsExistingTransfer(question) ||
+        ((qClean.includes('transfert') || qClean.includes('virement') || qClean.includes('mandat') || qClean.includes('mxt') || qClean.includes('perevod')) &&
+          (qClean.includes('dernier') || qClean.includes('effectue') || qClean.includes('liste') || qClean.includes('mes') || qClean.includes('mon') || qClean.includes('trouve') || qClean.includes('historique') || qClean.includes('statut') || qClean.includes('en est'))))
 
     if (isDirectTransferQuery) {
       const allTransfers = state?.transfers?.items || []
@@ -335,7 +397,7 @@ export const localAssistantProvider = {
           if (t.exchanger) text += `• Changeur : ${t.exchanger}\n`
           text += `\nRetrouvez le reçu officiel et les preuves associées ci-dessous :`
 
-          const transferCards = contextPack.cards?.filter((c) => c.type === 'transfer') || []
+          const transferCards = (contextPack.allCards || contextPack.cards || []).filter((c) => c.type === 'transfer')
           return {
             text,
             cards: transferCards.length ? transferCards : [
@@ -379,7 +441,7 @@ export const localAssistantProvider = {
         text += `\nCliquez sur un transfert pour ouvrir la timeline de validation et les preuves de paiement :`
         return {
           text,
-          cards: contextPack.cards?.filter((c) => c.type === 'transfer') || [],
+          cards: (contextPack.allCards || contextPack.cards || []).filter((c) => c.type === 'transfer'),
           actions,
           suggestions: ['Nouveau transfert', 'Voir les changeurs', 'Reçu de transfert'],
           sources: userTransfers.slice(0, 4).map((t) => `Transfert: ${t.id}`),
@@ -395,16 +457,24 @@ export const localAssistantProvider = {
       }
     }
 
-    // 3. Détection : Articles, posts et fil d'actualité
+    // 4. Détection : Articles, posts et fil d'actualité
     const isPostQuery =
-      qClean.includes('article') ||
-      qClean.includes('publication') ||
-      qClean.includes('post') ||
-      qClean.includes('actualite') ||
-      qClean.includes('news') ||
-      qClean.includes('fil d') ||
-      qClean.includes('quoi de neuf') ||
-      qClean.includes('nouvelle')
+      !isNewTransferQuery &&
+      !isDirectTransferQuery &&
+      (wantsPosts(question) ||
+        qClean.includes('publication') ||
+        qClean.includes('post') ||
+        qClean.includes('actualite') ||
+        qClean.includes('news') ||
+        qClean.includes('fil d') ||
+        qClean.includes('quoi de neuf') ||
+        qClean.includes('nouvelle') ||
+        (qClean.includes('article') &&
+          (qClean.includes('fil') ||
+            qClean.includes('dernier') ||
+            qClean.includes('recent') ||
+            qClean.includes('lire') ||
+            qClean.includes('blog'))))
 
     if (isPostQuery && contextPack.posts?.length > 0) {
       const posts = contextPack.posts
@@ -418,7 +488,7 @@ export const localAssistantProvider = {
       text += `\nConsultez les articles complets, visuels et commentaires ci-dessous :`
       return {
         text,
-        cards: contextPack.cards?.filter((c) => c.type === 'post') || [],
+        cards: (contextPack.allCards || contextPack.cards || []).filter((c) => c.type === 'post'),
         actions: posts.slice(0, 4).map((p) => ({
           label: p.title,
           path: p.path,
@@ -428,21 +498,25 @@ export const localAssistantProvider = {
       }
     }
 
-    // 4. Détection : Annonces & Marketplace
+    // 5. Détection : Annonces & Marketplace
     const isMarketplaceQuery =
-      qClean.includes('annonce') ||
-      qClean.includes('marketplace') ||
-      qClean.includes('produit') ||
-      qClean.includes('vendre') ||
-      qClean.includes('acheter') ||
-      qClean.includes('achat') ||
-      qClean.includes('vente') ||
-      qClean.includes('prix') ||
-      qClean.includes('telephone') ||
-      qClean.includes('iphone') ||
-      qClean.includes('voiture') ||
-      qClean.includes('appartement') ||
-      qClean.includes('ordinateur')
+      !isNewTransferQuery &&
+      !isDirectTransferQuery &&
+      !isPostQuery &&
+      (wantsMarketplace(question) ||
+        qClean.includes('annonce') ||
+        qClean.includes('marketplace') ||
+        qClean.includes('produit') ||
+        qClean.includes('vendre') ||
+        qClean.includes('acheter') ||
+        qClean.includes('achat') ||
+        qClean.includes('vente') ||
+        qClean.includes('prix') ||
+        qClean.includes('telephone') ||
+        qClean.includes('iphone') ||
+        qClean.includes('voiture') ||
+        qClean.includes('appartement') ||
+        qClean.includes('ordinateur'))
 
     if (isMarketplaceQuery && contextPack.marketplaceListings?.length > 0) {
       const listings = contextPack.marketplaceListings
@@ -453,7 +527,7 @@ export const localAssistantProvider = {
       text += `\nDécouvrez les photos, prix et fiches détaillées ci-dessous :`
       return {
         text,
-        cards: contextPack.cards?.filter((c) => c.type === 'listing') || [],
+        cards: (contextPack.allCards || contextPack.cards || []).filter((c) => c.type === 'listing'),
         actions: listings.slice(0, 4).map((it) => ({
           label: `${it.title} (${it.price})`,
           path: it.path,
@@ -480,7 +554,7 @@ export const localAssistantProvider = {
       text += `\nTous nos partenaires sont certifiés pour garantir la sécurité et la rapidité de vos virements.`
       return {
         text,
-        cards: contextPack.cards?.filter((c) => c.type === 'exchanger') || [],
+        cards: (contextPack.allCards || contextPack.cards || []).filter((c) => c.type === 'exchanger'),
         actions: exchangers.slice(0, 4).map((ex) => ({
           label: ex.name,
           path: ex.path,
@@ -511,7 +585,7 @@ export const localAssistantProvider = {
       }
       return {
         text,
-        cards: contextPack.cards?.filter((c) => c.type === 'job') || [],
+        cards: (contextPack.allCards || contextPack.cards || []).filter((c) => c.type === 'job'),
         actions,
         suggestions: ['Voir tous les jobs', 'Publier une offre', 'Entreprises'],
         sources: jobs.slice(0, 3).map((j) => `Emploi: ${j.title}`),
@@ -540,7 +614,7 @@ export const localAssistantProvider = {
         }
         return {
           text,
-          cards: contextPack.cards?.filter((c) => c.type === 'parcel') || [],
+          cards: (contextPack.allCards || contextPack.cards || []).filter((c) => c.type === 'parcel'),
           actions,
           suggestions: ['Voir tous les colis', 'Publier un voyage', 'Tarifs colis'],
           sources: parcels.slice(0, 3).map((p) => `Colis: ${p.origin} → ${p.destination}`),
@@ -565,7 +639,7 @@ export const localAssistantProvider = {
 
     return {
       text,
-      cards: contextPack.cards?.slice(0, 4) || [],
+      cards: filterCardsByIntent(contextPack.allCards || contextPack.cards || [], question),
       actions: allActions,
       suggestions,
       sources: entityMatches.map((item) => `${item.typeLabel}: ${item.title}`),

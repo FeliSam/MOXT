@@ -180,5 +180,62 @@ describe('localAssistantProvider', () => {
     expect(response.cards[0].badgeText).toBe('Paiement déclaré')
     expect(response.cards[0].path).toBe('/transfers/MXT-2026')
   })
+
+  it('propose les changeurs disponibles lors d’une demande de nouveau transfert sans mélanger les cartes', async () => {
+    const state = {
+      businesses: {
+        items: [
+          {
+            id: 'biz-1',
+            name: 'Moxt Express Exchange',
+            category: 'exchange',
+            city: 'Moscou',
+            country: 'Russie',
+            rating: 4.9,
+            feePercent: 1.5,
+            status: 'active',
+          },
+        ],
+      },
+      marketplace: {
+        items: [
+          { id: 'item-99', title: 'iPhone 14', price: 60000, currency: 'RUB' },
+        ],
+      },
+      posts: {
+        items: [
+          { id: 'post-99', title: 'Nouvelle politique de sécurité', text: 'Important...' },
+        ],
+      },
+    }
+
+    const response = await localAssistantProvider.respond({
+      question: 'Je veux faire un transfert, propose moi les changeurs disponibles',
+      searchIndex: [],
+      state,
+    })
+
+    expect(response.text).toContain('changeur')
+    expect(response.text).toContain('Moxt Express Exchange')
+    expect(response.cards.length).toBeGreaterThan(0)
+    expect(response.cards.every((c) => c.type === 'exchanger')).toBe(true)
+    expect(response.cards.some((c) => c.type === 'listing')).toBe(false)
+    expect(response.cards.some((c) => c.type === 'post')).toBe(false)
+    expect(response.actions.some((a) => a.path === '/transfers/new')).toBe(true)
+  })
+
+  it('ne retourne aucune carte pour une question générale d’administration ou de profil', async () => {
+    const state = {
+      marketplace: {
+        items: [{ id: 'item-1', title: 'Vélo', price: 5000 }],
+      },
+    }
+    const response = await localAssistantProvider.respond({
+      question: 'Comment puis-je modifier mon adresse email et mon mot de passe ?',
+      searchIndex: [],
+      state,
+    })
+    expect(response.cards).toEqual([])
+  })
 })
 

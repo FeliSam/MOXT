@@ -127,6 +127,30 @@ export function wantsTransfers(question = '') {
   )
 }
 
+export function wantsNewTransfer(question = '') {
+  const q = cleanText(question)
+  return (
+    /(faire|effectuer|nouveau|initier|envoyer|comment envoyer|je veux envoyer|je souhaite|voudrais|besoin de|possibilit.*de).*(transfert|argent|fonds|virement|vers|au pays|en afrique|en russie)/i.test(
+      q,
+    ) ||
+    /(transfert|envoyer|virement).*(comment|faire|possible|marche|nouveau)/i.test(q) ||
+    /je veux (faire|un) transfert/i.test(q) ||
+    /propose.*(echangeur|changeur|partenaire|disponible)/i.test(q) ||
+    /trouve.*(echangeur|changeur)/i.test(q) ||
+    /qui peut (m['’]aider a|faire|changer|transferer)/i.test(q)
+  )
+}
+
+export function wantsExistingTransfer(question = '') {
+  const q = cleanText(question)
+  return (
+    /dernier transfert|derniers transferts|statut.*transfert|dernier virement|mon dernier envoi|où en est|ou en est|suivi.*transfert|mes transferts|mon transfert|trouve.*dernier.*transfert/i.test(
+      q,
+    ) ||
+    /re[çc]u.*transfert|preuve.*transfert|mxt[-_]\d+/i.test(q)
+  )
+}
+
 export function wantsLatestTransfer(question = '') {
   return /dernier transfert|derniers transferts|statut.*transfert|dernier virement|mon dernier envoi|où en est mon transfert|ou en est mon transfert|dernier.*effectue|trouve.*dernier/i.test(
     question,
@@ -134,12 +158,23 @@ export function wantsLatestTransfer(question = '') {
 }
 
 export function wantsExchangers(question = '') {
-  return /échangeur|echangeur|changeur|exchanger|taux|change|partenaire|обменник/i.test(question)
+  return /échangeur|echangeur|changeur|exchanger|partenaire|bureau de change|qui peut changer|qui change|обменник/i.test(
+    question,
+  )
 }
 
 export function wantsMarketplace(question = '') {
-  return /annonce|annonces|marketplace|article|produit|vendre|acheter|prix|achat|vente|iphone|telephone|voiture|appartement|logement|cours|ordinateur|meuble|объявлен/i.test(
-    question,
+  const q = String(question || '').toLowerCase()
+  if (
+    /actualit|news|fil d|quoi de neuf|nouvelle|post/i.test(q) ||
+    (/article/i.test(q) &&
+      /dernier|recent|fil|actu|lire|blog|publication/i.test(q) &&
+      !/acheter|vendre|prix|achat|vente|combien/i.test(q))
+  ) {
+    return false
+  }
+  return /annonce|annonces|marketplace|produit|vendre|acheter|prix|achat|vente|iphone|telephone|voiture|appartement|logement|cours|ordinateur|meuble|объявлен/i.test(
+    q,
   )
 }
 
@@ -147,6 +182,47 @@ export function wantsPosts(question = '') {
   return /article|articles|actualité|actualités|actualite|actualites|news|fil|publication|publications|post|posts|quoi de neuf|nouveauté|nouveaute|стать|новост/i.test(
     question,
   )
+}
+
+/**
+ * Filtre strictement les cartes interactives par intention pour éviter TOUT mélange de sujets.
+ */
+export function filterCardsByIntent(cards = [], question = '') {
+  if (!Array.isArray(cards) || !cards.length) return []
+  const q = String(question || '')
+
+  // 1. Demande de nouveau transfert ou proposition de changeurs
+  if (wantsNewTransfer(q) || wantsExchangers(q)) {
+    return cards.filter((c) => c.type === 'exchanger')
+  }
+
+  // 2. Demande de suivi de transfert existant ou dernier transfert
+  if (wantsExistingTransfer(q) || wantsLatestTransfer(q)) {
+    return cards.filter((c) => c.type === 'transfer')
+  }
+
+  // 3. Annonces & Marketplace
+  if (wantsMarketplace(q)) {
+    return cards.filter((c) => c.type === 'listing')
+  }
+
+  // 4. Articles & fil d'actualité
+  if (wantsPosts(q)) {
+    return cards.filter((c) => c.type === 'post')
+  }
+
+  // 5. Emplois
+  if (/emploi|job|travail|recrutement|stage/i.test(q)) {
+    return cards.filter((c) => c.type === 'job')
+  }
+
+  // 6. Colis
+  if (/colis|bagage|kilo|transport.*voyage/i.test(q)) {
+    return cards.filter((c) => c.type === 'parcel')
+  }
+
+  // 7. Questions générales ou autres domaines : aucune carte non sollicitée
+  return []
 }
 
 /**
@@ -375,14 +451,27 @@ export function buildAssistantContextPack({ state, question, user, searchIndex =
 
   // ── 4. Changeurs partenaires ───────────────────────────────────────────────────
   let exchangers = []
-  if (wantsExchangers(q) || /envoyer|transfert|argent/i.test(q)) {
+  if (wantsExchangers(q) || wantsNewTransfer(q) || /envoyer|transfert|argent|virement/i.test(q)) {
     try {
       const listed = listExchangersForTransfer({
         businesses: state?.businesses?.items || [],
         user,
         includeAllCountries: true,
       })
-      exchangers = listed.slice(0, 6).map(summarizeExchanger).filter(Boolean)
+      if (listed.length > 0) {
+        exchangers = listed.slice(0, 6).map(summarizeExchanger).filter(Boolean)
+      } else {
+        const raw = (state?.businesses?.items || []).filter(
+          (b) =>
+            b.category === 'exchange' ||
+            b.category === 'transfer' ||
+            b.services?.includes('Transfert') ||
+            b.services?.includes('Exchange') ||
+            b.services?.includes('Change') ||
+            b.type === 'exchanger',
+        )
+        exchangers = raw.slice(0, 6).map(summarizeExchanger).filter(Boolean)
+      }
     } catch {
       exchangers = []
     }
@@ -439,7 +528,9 @@ export function buildAssistantContextPack({ state, question, user, searchIndex =
     parcels,
   }
 
-  contextPack.cards = buildAssistantCards(contextPack)
+  const allCards = buildAssistantCards(contextPack)
+  contextPack.allCards = allCards
+  contextPack.cards = filterCardsByIntent(allCards, q)
   return contextPack
 }
 
