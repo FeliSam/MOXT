@@ -17,6 +17,8 @@ import {
 } from '../config/listingConfig'
 import { MarketplaceListingCard, GLOBAL_LOADED_IMAGES } from '../features/marketplace/MarketplaceListingCard'
 import { syncMarketplaceCatalog } from '../features/marketplace/marketplaceSync'
+import { supabase } from '../services/supabaseClient'
+import { listingFromRemoteRow } from '../features/marketplace/marketplaceRemote'
 import { MarketplaceDiscoveryRail } from '../features/marketplace/MarketplaceDiscoveryRail'
 import { MarketplaceVideoCard, MarketplaceVideoRail } from '../features/marketplace/MarketplaceVideoRail'
 import { MarketplaceFeedBanner } from '../features/marketplace/MarketplaceFeedBanner'
@@ -36,6 +38,7 @@ import {
   resetMarketplaceFilters,
   setMarketplaceFilters,
   setAll,
+  removeRemoteListing,
 } from '../features/marketplace/marketplaceSlice'
 import {
   listingOptionLabel,
@@ -208,43 +211,15 @@ export function MarketplacePage() {
     [searchTerms, suggestionSalt, user?.id, videos],
   )
   const visible = feed.discover
-
   const availableVideos = videoRail?.length > 0 ? videoRail : videos
 
-  // Interleave videos into the discover feed stream in an arranged, pseudo-random organic rhythm
-  const discoverFeedStream = useMemo(() => {
-    const stream = []
-    const videoPool = availableVideos || []
-    let videoIndex = 0
-    let nextVideoInterval = 5
-    let listingsSinceVideo = 0
-
-    for (let i = 0; i < visible.length; i++) {
-      stream.push({ kind: 'listing', data: visible[i], id: `listing-${visible[i].id}` })
-      listingsSinceVideo++
-
-      if (
-        videoPool.length > 0 &&
-        listingsSinceVideo >= nextVideoInterval &&
-        i < visible.length - 1
-      ) {
-        const video = videoPool[videoIndex % videoPool.length]
-        stream.push({ kind: 'video', data: video, id: `video-${video.id}-${videoIndex}` })
-        videoIndex++
-        listingsSinceVideo = 0
-        // Pseudo-random organic interval: cycles 5, 6, 7
-        nextVideoInterval = 5 + ((i * 7 + 3) % 3)
-      }
-    }
-
-    return stream
-  }, [visible, availableVideos])
-
-  const INITIAL_PAGE_SIZE = 40
-  const PAGE_INCREMENT = 20
+  // Infinite progressive stream generator: guarantees continuous, seamless discovery without dead-ends.
+  const INITIAL_PAGE_SIZE = 16
+  const PAGE_INCREMENT = 12
   const [displayCount, setDisplayCount] = useState(INITIAL_PAGE_SIZE)
   const [refreshingCatalog, setRefreshingCatalog] = useState(false)
   const sentinelRef = useRef(null)
+  const loadingMoreRef = useRef(false)
 
   // Reset pagination when search query or filters change
   const filterKey = `${filters.query}|${filters.type}|${filters.category}|${filters.city}|${filters.min}|${filters.max}|${filters.sort}`
@@ -254,44 +229,103 @@ export function MarketplacePage() {
     setDisplayCount(INITIAL_PAGE_SIZE)
   }
 
-  const totalStreamItems = discoverFeedStream.length
-  const renderedItems = useMemo(
-    () => discoverFeedStream.slice(0, displayCount),
-    [discoverFeedStream, displayCount]
-  )
-  const hasMore = displayCount < totalStreamItems
+  // Endless progressive stream with organic video interleaving and deterministic cycle permutation
+  const renderedItems = useMemo(() => {
+    if (!visible?.length) return []
 
-  // Observer pour déclenchement automatique de l'infinite scroll
+    const stream = []
+    const videoPool = availableVideos || []
+    let videoIndex = 0
+    let cycle = 0
+    let nextVideoInterval = 5
+    let listingsSinceVideo = 0
+
+    while (stream.length < displayCount) {
+      const cycleListings =
+        cycle === 0
+          ? visible
+          : pickShuffledWindow(visible, `${suggestionSalt}:c${cycle}`, 0, visible.length)
+
+      for (let i = 0; i < cycleListings.length && stream.length < displayCount; i++) {
+        const listing = cycleListings[i]
+        stream.push({
+          kind: 'listing',
+          data: listing,
+          id: cycle === 0 ? `listing-${listing.id}` : `listing-${listing.id}-c${cycle}-${i}`,
+        })
+        listingsSinceVideo++
+
+        if (
+          videoPool.length > 0 &&
+          listingsSinceVideo >= nextVideoInterval &&
+          stream.length < displayCount
+        ) {
+          const video = videoPool[videoIndex % videoPool.length]
+          stream.push({
+            kind: 'video',
+            data: video,
+            id: `video-${video.id}-c${cycle}-${videoIndex}`,
+          })
+          videoIndex++
+          listingsSinceVideo = 0
+          nextVideoInterval = 5 + (((i + cycle * 13) * 7 + 3) % 3)
+        }
+      }
+
+      cycle++
+      if (cycle > 500) break
+    }
+
+    return stream
+  }, [visible, availableVideos, displayCount, suggestionSalt])
+
+  const hasMore = visible.length > 0
+
+  // Observer pour déclenchement automatique et progressif de l'infinite scroll (800px en avance)
   useEffect(() => {
     const el = sentinelRef.current
     if (!el || !hasMore) return undefined
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting) {
-          setDisplayCount((prev) => Math.min(prev + PAGE_INCREMENT, totalStreamItems))
+        if (entries[0]?.isIntersecting && !loadingMoreRef.current) {
+          loadingMoreRef.current = true
+          setDisplayCount((prev) => prev + PAGE_INCREMENT)
+          setTimeout(() => {
+            loadingMoreRef.current = false
+          }, 250)
         }
       },
-      { rootMargin: '600px' }
+      { rootMargin: '800px' }
     )
 
     observer.observe(el)
     return () => observer.disconnect()
-  }, [hasMore, totalStreamItems])
+  }, [hasMore])
 
-  // Détection du défilement vers le bas en filet de sécurité (pour tous les types d'écrans)
+  // Filet de sécurité défilement pour garantir le chargement continu sur tous les navigateurs / WebViews
   useEffect(() => {
     if (!hasMore) return undefined
+    let ticking = false
     const onScroll = () => {
-      const scrollPosition = window.innerHeight + window.scrollY
-      const threshold = document.documentElement.scrollHeight - 700
-      if (scrollPosition >= threshold) {
-        setDisplayCount((prev) => Math.min(prev + PAGE_INCREMENT, totalStreamItems))
-      }
+      if (ticking) return
+      ticking = true
+      requestAnimationFrame(() => {
+        const scrollPosition = window.innerHeight + window.scrollY
+        const threshold = document.documentElement.scrollHeight - 900
+        if (scrollPosition >= threshold && !loadingMoreRef.current) {
+          loadingMoreRef.current = true
+          setDisplayCount((prev) => prev + PAGE_INCREMENT)
+          setTimeout(() => {
+            loadingMoreRef.current = false
+          }, 250)
+        }
+        ticking = false
+      })
     }
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
-  }, [hasMore, totalStreamItems])
+  }, [hasMore])
 
   // Actualiseur manuel du catalogue (force un re-fetch Supabase complet)
   async function handleRefreshCatalog() {
@@ -323,19 +357,17 @@ export function MarketplacePage() {
     }
   }, [dispatch, guestMode, reduxListings.length, store])
 
-  // Delta catalog sync on mount: fetches only items updated since last cached timestamp.
+  // Actualisation automatique en arrière-plan dès l'arrivée sur la page Marketplace
   useEffect(() => {
     if (guestMode) return
-    const current = store.getState()?.marketplace?.items || []
-    const realCount = current.filter((item) => item?.id && !String(item.id).startsWith('ANN-DEMO-')).length
-    void syncMarketplaceCatalog(dispatch, store, { force: realCount < 25 })
+    void syncMarketplaceCatalog(dispatch, store, { force: true })
   }, [dispatch, store, guestMode])
 
-  // Focus / tab re-entry: lightweight delta sync check (0 re-renders if nothing changed).
+  // Actualisation silencieuse en arrière-plan lors du retour sur l'onglet/fenêtre
   useEffect(() => {
     if (guestMode) return undefined
     const resyncIfNeeded = () => {
-      void syncMarketplaceCatalog(dispatch, store, { force: false })
+      void syncMarketplaceCatalog(dispatch, store, { force: true })
     }
     const onVisibility = () => {
       if (document.visibilityState === 'visible') resyncIfNeeded()
@@ -347,6 +379,48 @@ export function MarketplacePage() {
       window.removeEventListener('focus', resyncIfNeeded)
     }
   }, [dispatch, store, guestMode])
+
+  // Supabase Realtime : actualisation en direct dès qu'une annonce est créée, modifiée ou supprimée
+  useEffect(() => {
+    if (guestMode || !supabase) return undefined
+
+    const channel = supabase
+      .channel('marketplace-live-feed-page')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'listings' },
+        (payload) => {
+          if (payload.new?.id) {
+            const item = listingFromRemoteRow(payload.new)
+            dispatch(setAll({ items: [item], mode: 'merge' }))
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'listings' },
+        (payload) => {
+          if (payload.new?.id) {
+            const item = listingFromRemoteRow(payload.new)
+            dispatch(setAll({ items: [item], mode: 'merge' }))
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'listings' },
+        (payload) => {
+          if (payload.old?.id) {
+            dispatch(removeRemoteListing(payload.old.id))
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      void supabase.removeChannel(channel)
+    }
+  }, [dispatch, guestMode])
 
   useEffect(() => {
     dispatch(loadFeedBoosts())
@@ -580,7 +654,7 @@ export function MarketplacePage() {
 
                       {showBanner ? (
                         <MarketplaceFeedBanner
-                          key={`feed-banner-${bannerSlot}`}
+                          key={`feed-banner-${item.id}`}
                           bannerIndex={bannerSlot}
                           onInteract={() => {}}
                         />
@@ -590,34 +664,39 @@ export function MarketplacePage() {
                 })}
                 </CatalogGrid>
 
-                {/* Sentinelle pour l'infinite scroll automatique */}
-                {hasMore ? <div ref={sentinelRef} className="h-6 w-full" aria-hidden="true" /> : null}
+                {/* Sentinelle pour l'infinite scroll automatique et progressif */}
+                {hasMore ? (
+                  <div
+                    ref={sentinelRef}
+                    className="h-10 w-full flex items-center justify-center my-4"
+                    aria-hidden="true"
+                  >
+                    <div className="flex items-center gap-2 text-xs font-semibold text-[var(--app-text-muted)] animate-pulse">
+                      <span className="inline-block size-2 rounded-full bg-brand-500 animate-ping shrink-0" />
+                      <span>Recharge progressive des annonces...</span>
+                    </div>
+                  </div>
+                ) : null}
 
                 {/* Actualiseur & barre de statut en bas de liste */}
                 <div className="mt-8 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-muted)]/80 p-4 backdrop-blur-sm shadow-sm">
                   <div className="flex items-center gap-2 text-xs font-semibold text-[var(--app-text-muted)]">
                     <span className="inline-block size-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
                     <span>
-                      {renderedItems.length >= totalStreamItems
-                        ? `Toutes les ${totalStreamItems} annonces disponibles sont affichées`
-                        : `${renderedItems.length} sur ${totalStreamItems} annonces affichées`}
+                      Flux continu en direct • {visible.length} annonce{visible.length > 1 ? 's' : ''} au catalogue ({renderedItems.length} affichée{renderedItems.length > 1 ? 's' : ''})
                     </span>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
-                    {hasMore ? (
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={() =>
-                          setDisplayCount((prev) => Math.min(prev + PAGE_INCREMENT, totalStreamItems))
-                        }
-                        className="cursor-pointer shadow-sm font-bold text-xs"
-                      >
-                        {mt('marketplace.page.feed.loadMore') || 'Afficher la suite'}
-                      </Button>
-                    ) : null}
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setDisplayCount((prev) => prev + PAGE_INCREMENT)}
+                      className="cursor-pointer shadow-sm font-bold text-xs"
+                    >
+                      {mt('marketplace.page.feed.loadMore') || 'Afficher la suite'}
+                    </Button>
 
                     <Button
                       type="button"

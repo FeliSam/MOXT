@@ -9,11 +9,12 @@ import { LISTINGS_PUBLIC_LIMIT } from '../../app/catalogConstants'
  */
 export function getLatestListingTimestamp(listings = []) {
   let maxTime = 0
+  const maxAllowed = Date.now() + 60000
   for (const item of listings) {
     const raw = item?.updatedAt || item?.updated_at || item?.createdAt || item?.created_at
     if (!raw) continue
     const t = Date.parse(raw)
-    if (t > maxTime) maxTime = t
+    if (t > maxTime && t <= maxAllowed) maxTime = t
   }
   return maxTime > 0 ? new Date(maxTime).toISOString() : null
 }
@@ -61,7 +62,7 @@ export async function syncMarketplaceCatalog(dispatch, store, { force = false } 
       const { data, error } = await supabase
         .from('listings')
         .select('*')
-        .gt('updated_at', latestTimestamp)
+        .or(`updated_at.gt.${latestTimestamp},created_at.gt.${latestTimestamp}`)
         .order('updated_at', { ascending: false })
         .limit(100)
 
@@ -87,8 +88,9 @@ export async function syncMarketplaceCatalog(dispatch, store, { force = false } 
 
     if (!error && Array.isArray(data) && data.length > 0) {
       const items = data.map(listingFromRemoteRow)
-      dispatch(setAll({ items }))
-      void writeListingsToIdb(items)
+      dispatch(setAll({ items, mode: 'merge' }))
+      const nextItems = store.getState()?.marketplace?.items || []
+      void writeListingsToIdb(nextItems.length ? nextItems : items)
     }
   } catch (err) {
     console.warn('[MarketplaceSync] Erreur sync delta:', err)
