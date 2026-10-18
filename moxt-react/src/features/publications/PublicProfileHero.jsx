@@ -1,4 +1,4 @@
-import { FiBriefcase, FiEdit2, FiImage, FiStar, FiUser } from 'react-icons/fi'
+import { FiBriefcase, FiEdit2, FiImage, FiPhone, FiStar, FiUser } from 'react-icons/fi'
 import { VerifiedDisplayName } from '../../components/ui/Badge'
 import { avatarDisplayUrl } from '../account/avatarDisplayUrl'
 import { AvatarBadge } from '../account/avatarDicebear/AvatarBadge'
@@ -83,6 +83,7 @@ export function PublicProfileHero({
   verified = false,
   category,
   city,
+  phone = '',
   coverUrl,
   avatarUrl,
   avatarFallback,
@@ -221,7 +222,7 @@ export function PublicProfileHero({
             onOpenReviews={onOpenReviews}
           />
           {kindLabel ? (
-            <p className="mt-2 flex">
+            <div className="mt-2 flex flex-wrap items-center gap-2">
               <span
                 className="inline-flex items-center gap-1 rounded-full border border-brand-200 bg-brand-50 px-2.5 py-0.5 text-[11px] font-bold text-brand-700 dark:border-brand-800 dark:bg-[var(--app-accent-soft)] dark:text-brand-300"
                 data-profile-kind-chip={profileKind || undefined}
@@ -233,7 +234,17 @@ export function PublicProfileHero({
                 )}
                 {kindLabel}
               </span>
-            </p>
+              {phone ? (
+                <a
+                  href={`tel:${phone}`}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--app-text)] hover:border-brand-400 hover:text-brand-600 dark:hover:text-brand-300 transition"
+                  title={`Appeler le ${phone}`}
+                >
+                  <FiPhone className="size-3 text-brand-600 dark:text-brand-400 shrink-0" aria-hidden="true" />
+                  <span>{phone}</span>
+                </a>
+              ) : null}
+            </div>
           ) : null}
         </div>
 

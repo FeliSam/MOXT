@@ -225,7 +225,7 @@ export function createAuthService(supabase, redirects = {}) {
 
   async function rememberOtpDeliveryChannel(phone, channel) {
     const next = normalizeOtpChannel(channel)
-    if (!supabase) {
+    if (!supabase?.functions?.invoke) {
       if (next !== 'sms') throw new Error('Canal OTP indisponible.')
       return
     }
@@ -2512,8 +2512,8 @@ export function createAuthService(supabase, redirects = {}) {
       return true
     },
 
-    /** Envoie un OTP SMS pour réinitialiser le mot de passe d’un compte lié au +7 (ou admin exempt). */
-    async requestPhonePasswordReset(phone) {
+    /** Envoie un OTP (SMS, Telegram ou FlashCall) pour réinitialiser le mot de passe d’un compte lié au +7 (ou admin exempt). */
+    async requestPhonePasswordReset(phone, otpChannel = 'sms') {
       if (!supabase) throw new Error('Supabase non configuré.')
       const trimmed = String(phone || '').trim()
       const isAdmin = await isPhoneAdmin(trimmed)
@@ -2526,12 +2526,14 @@ export function createAuthService(supabase, redirects = {}) {
       if (!/^\+7\d{10}$/.test(normalizedPhone) && (!isAdmin || !/^\+[1-9]\d{7,14}$/.test(normalizedPhone))) {
         throw new Error('Numéro de téléphone invalide. Vérifiez le format (+7XXXXXXXXXX).')
       }
+      const channel = normalizeOtpChannel(otpChannel)
       return withOtpInFlight('phone', normalizedPhone, async () => {
         if (!isAdmin) {
           guardOtpSend('phone', normalizedPhone)
         } else {
           clearOtpSendLogForIdentity(otpSendLog, 'phone', normalizedPhone)
         }
+        await rememberOtpDeliveryChannel(normalizedPhone, channel)
         const { error } = await supabase.auth.signInWithOtp({
           phone: normalizedPhone,
           options: { channel: 'sms', shouldCreateUser: false },
@@ -2542,15 +2544,16 @@ export function createAuthService(supabase, redirects = {}) {
         if (!isAdmin) {
           trackOtpSend('phone', normalizedPhone)
         }
-        return { phone: normalizedPhone }
+        return { phone: normalizedPhone, otpChannel: channel }
       })
     },
 
     /**
-     * Vérifie l’OTP SMS puis définit le nouveau mot de passe.
+     * Vérifie l’OTP (SMS / Telegram à 6 chiffres ou FlashCall à 4 chiffres)
+     * puis définit le nouveau mot de passe.
      * Déconnecte ensuite pour forcer une connexion propre.
      */
-    async confirmPhonePasswordReset({ phone, token, password }) {
+    async confirmPhonePasswordReset({ phone, token, password, otpChannel = 'sms' }) {
       if (!supabase) throw new Error('Supabase non configuré.')
       const trimmed = String(phone || '').trim()
       const isAdmin = await isPhoneAdmin(trimmed)
@@ -2562,25 +2565,52 @@ export function createAuthService(supabase, redirects = {}) {
       }
       const otp = String(token || '').trim()
       const nextPassword = String(password || '').trim()
+      const channel = normalizeOtpChannel(otpChannel)
       if (!/^\+7\d{10}$/.test(normalizedPhone) && (!isAdmin || !/^\+[1-9]\d{7,14}$/.test(normalizedPhone))) {
         throw new Error('Numéro de téléphone invalide. Vérifiez le format (+7XXXXXXXXXX).')
       }
-      if (!/^\d{6}$/.test(otp)) {
-        throw new Error('Saisissez le code à 6 chiffres reçu par SMS.')
+      if (channel === 'flashcall') {
+        if (!/^\d{4}$/.test(otp)) {
+          throw new Error('Saisissez les 4 derniers chiffres du numéro qui a appelé.')
+        }
+      } else if (!/^\d{6}$/.test(otp)) {
+        throw new Error('Saisissez le code à 6 chiffres reçu.')
       }
       if (nextPassword.length < 8) {
         throw new Error('Le mot de passe doit contenir au moins 8 caractères.')
       }
 
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        phone: normalizedPhone,
-        token: otp,
-        type: 'sms',
-      })
-      if (verifyError) {
-        throw new Error(
-          translateAuthError(verifyError, { channel: 'phone', intent: 'otp_verify' }),
-        )
+      if (channel === 'flashcall') {
+        const flash = await supabase.functions.invoke('verify-flashcall', {
+          body: { phone: normalizedPhone, digits: otp },
+        })
+        if (flash.error || !flash.data?.access_token) {
+          throw new Error(
+            flash.data?.error ||
+              flash.error?.message ||
+              'Ces chiffres ne correspondent pas au numéro qui a appelé.',
+          )
+        }
+        const sessionResult = await supabase.auth.setSession({
+          access_token: flash.data.access_token,
+          refresh_token: flash.data.refresh_token,
+        })
+        if (sessionResult.error || !sessionResult.data?.session) {
+          throw new Error(
+            translateAuthError(sessionResult.error, { channel: 'phone', intent: 'otp_verify' }),
+          )
+        }
+      } else {
+        const { error: verifyError } = await supabase.auth.verifyOtp({
+          phone: normalizedPhone,
+          token: otp,
+          type: 'sms',
+        })
+        if (verifyError) {
+          throw new Error(
+            translateAuthError(verifyError, { channel: 'phone', intent: 'otp_verify' }),
+          )
+        }
       }
 
       const { error: passwordError } = await supabase.auth.updateUser({ password: nextPassword })

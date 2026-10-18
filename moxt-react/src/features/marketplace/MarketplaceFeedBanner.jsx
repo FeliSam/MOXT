@@ -9,12 +9,8 @@ import {
   FiPlay,
   FiPlus,
   FiShare,
-  FiShield,
   FiSmartphone,
-  FiStar,
-  FiTag,
   FiUser,
-  FiX,
   FiZap,
 } from 'react-icons/fi'
 import { LuSparkles } from 'react-icons/lu'
@@ -22,7 +18,6 @@ import { useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
-import { useLanguage } from '../../contexts/useLanguage'
 import { isNative } from '../../platform/capacitor'
 import { appReleaseService } from '../../services/appReleaseService'
 import { supabase } from '../../services/supabaseClient'
@@ -81,7 +76,6 @@ async function getMarketplaceBroadcasts() {
 }
 
 export function MarketplaceFeedBanner({ bannerIndex = 0, onInteract }) {
-  const { t } = useLanguage()
   const navigate = useNavigate()
   const user = useSelector((state) => state.auth?.user)
 

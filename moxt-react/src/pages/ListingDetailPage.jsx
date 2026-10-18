@@ -12,6 +12,7 @@ import {
   FiPercent,
   FiShield,
   FiShoppingBag,
+  FiTrash2,
 } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useOutletContext, useParams } from 'react-router-dom'
@@ -48,6 +49,8 @@ import {
 import {
   addListingQuestion,
   answerListingQuestion,
+  updateListingQuestion,
+  deleteListingQuestion,
   incrementListingContact,
   incrementListingShare,
   incrementListingView,
@@ -833,6 +836,9 @@ function Questions({ dispatch, listing, question, setQuestion, submitQuestion, u
   const mt = (key, vars) => marketplaceText(t, key, vars)
   const [answers, setAnswers] = useState({})
   const [replyingId, setReplyingId] = useState(null)
+  const [editingId, setEditingId] = useState(null)
+  const [editText, setEditText] = useState('')
+  const [questionToDelete, setQuestionToDelete] = useState(null)
   const isOwner = Boolean(user?.id && listing.ownerId === user.id)
 
   function submitAnswer(event, questionId) {
@@ -851,8 +857,46 @@ function Questions({ dispatch, listing, question, setQuestion, submitQuestion, u
     setReplyingId(null)
   }
 
+  function submitEditQuestion(event, questionId) {
+    event.preventDefault()
+    const text = editText.trim()
+    if (text.length < 5) return
+    dispatch(
+      updateListingQuestion({
+        listingId: listing.id,
+        questionId,
+        authorId: user?.id,
+        text,
+      }),
+    )
+    dispatch(addToast({ type: 'success', message: 'Question modifiée avec succès.' }))
+    setEditingId(null)
+    setEditText('')
+  }
+
   return (
     <div>
+      <ConfirmDialog
+        open={Boolean(questionToDelete)}
+        title="Supprimer la question"
+        description="Êtes-vous sûr de vouloir supprimer définitivement cette question ?"
+        confirmLabel="Supprimer"
+        tone="danger"
+        onCancel={() => setQuestionToDelete(null)}
+        onConfirm={() => {
+          if (!questionToDelete) return
+          dispatch(
+            deleteListingQuestion({
+              listingId: listing.id,
+              questionId: questionToDelete,
+              authorId: user?.id,
+            }),
+          )
+          dispatch(addToast({ type: 'info', message: 'Question supprimée.' }))
+          setQuestionToDelete(null)
+        }}
+      />
+
       {!isOwner ? (
         <form className="grid gap-3" onSubmit={submitQuestion}>
           <label className="grid gap-2 text-sm font-bold">
@@ -875,75 +919,135 @@ function Questions({ dispatch, listing, question, setQuestion, submitQuestion, u
       )}
       <div className="mt-6 grid gap-3">
         {(listing.questions || []).length ? (
-          listing.questions.map((item) => (
-            <div key={item.id} className="rounded-2xl bg-[var(--app-surface-muted)] p-4">
-              <div className="flex justify-between gap-3">
-                <EntityVerifiedName
-                  as="strong"
-                  name={item.authorName}
-                  userId={item.authorId}
-                />
-                <span className="text-xs text-[var(--app-text-muted)]">
-                  {formatShortDate(item.createdAt)}
-                </span>
-              </div>
-              <p className="mt-2 text-sm">
-                <LinkifiedText text={item.text} preserveWhitespace="pre-line" />
-              </p>
-              {item.answer ? (
-                <div className="mt-3 rounded-xl bg-[var(--app-surface)] p-3 text-sm">
-                  <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--app-accent)]">
-                    {mt('marketplace.detail.sellerAnswer')}
-                  </p>
-                  <p className="mt-1">
-                    <LinkifiedText text={item.answer} preserveWhitespace="pre-line" />
-                  </p>
-                  {item.answeredAt ? (
-                    <p className="mt-2 text-[10px] text-[var(--app-text-faint)]">
-                      {formatShortDate(item.answeredAt)}
-                    </p>
-                  ) : null}
+          listing.questions.map((item) => {
+            const isAuthor = Boolean(user?.id && (item.authorId === user.id || item.author_id === user.id))
+            const canManage = isAuthor || user?.role === 'admin' || user?.role === 'superadmin'
+
+            return (
+              <div key={item.id} className="rounded-2xl bg-[var(--app-surface-muted)] p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <EntityVerifiedName
+                    as="strong"
+                    name={item.authorName}
+                    userId={item.authorId}
+                  />
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-[var(--app-text-muted)]">
+                      {formatShortDate(item.createdAt)}
+                    </span>
+                    {canManage && editingId !== item.id ? (
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          title="Modifier ma question"
+                          aria-label="Modifier ma question"
+                          onClick={() => {
+                            setEditingId(item.id)
+                            setEditText(item.text)
+                          }}
+                          className="rounded-lg p-1 text-[var(--app-text-muted)] hover:bg-[var(--app-surface)] hover:text-brand-600 transition cursor-pointer"
+                        >
+                          <FiEdit2 className="size-3.5" aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          title="Supprimer ma question"
+                          aria-label="Supprimer ma question"
+                          onClick={() => setQuestionToDelete(item.id)}
+                          className="rounded-lg p-1 text-[var(--app-text-muted)] hover:bg-[var(--app-surface)] hover:text-rose-600 transition cursor-pointer"
+                        >
+                          <FiTrash2 className="size-3.5" aria-hidden="true" />
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
-              ) : isOwner ? (
-                replyingId === item.id ? (
-                  <form className="mt-3 grid gap-3" onSubmit={(event) => submitAnswer(event, item.id)}>
-                    <label className="grid gap-2 text-sm font-bold">
-                      {mt('marketplace.detail.yourPublicAnswer')}
-                      <textarea
-                        className="min-h-24 rounded-2xl bg-[var(--app-surface)] p-4"
-                        placeholder={mt('marketplace.detail.answerPlaceholder')}
-                        value={answers[item.id] || ''}
-                        onChange={(event) =>
-                          setAnswers((current) => ({ ...current, [item.id]: event.target.value }))
-                        }
-                      />
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      <Button type="submit" disabled={(answers[item.id] || '').trim().length < 2}>
-                        {mt('marketplace.detail.publishAnswer')}
+
+                {editingId === item.id ? (
+                  <form className="mt-3 grid gap-2.5" onSubmit={(event) => submitEditQuestion(event, item.id)}>
+                    <textarea
+                      className="min-h-20 w-full rounded-xl bg-[var(--app-surface)] p-3 text-sm border border-[var(--app-border)] focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      value={editText}
+                      onChange={(event) => setEditText(event.target.value)}
+                    />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button type="submit" size="sm" disabled={editText.trim().length < 5}>
+                        {mt('marketplace.common.save') || 'Enregistrer'}
                       </Button>
-                      <Button type="button" variant="secondary" onClick={() => setReplyingId(null)}>
-                        {mt('marketplace.common.cancel')}
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                          setEditingId(null)
+                          setEditText('')
+                        }}
+                      >
+                        {mt('marketplace.common.cancel') || 'Annuler'}
                       </Button>
                     </div>
                   </form>
                 ) : (
-                  <Button
-                    className="mt-3"
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setReplyingId(item.id)}
-                  >
-                    {mt('marketplace.detail.reply')}
-                  </Button>
-                )
-              ) : (
-                <p className="mt-3 text-xs text-[var(--app-text-faint)]">
-                  {mt('marketplace.detail.waitingSellerAnswer')}
-                </p>
-              )}
-            </div>
-          ))
+                  <p className="mt-2 text-sm">
+                    <LinkifiedText text={item.text} preserveWhitespace="pre-line" />
+                  </p>
+                )}
+
+                {item.answer ? (
+                  <div className="mt-3 rounded-xl bg-[var(--app-surface)] p-3 text-sm">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--app-accent)]">
+                      {mt('marketplace.detail.sellerAnswer')}
+                    </p>
+                    <p className="mt-1">
+                      <LinkifiedText text={item.answer} preserveWhitespace="pre-line" />
+                    </p>
+                    {item.answeredAt ? (
+                      <p className="mt-2 text-[10px] text-[var(--app-text-faint)]">
+                        {formatShortDate(item.answeredAt)}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : isOwner ? (
+                  replyingId === item.id ? (
+                    <form className="mt-3 grid gap-3" onSubmit={(event) => submitAnswer(event, item.id)}>
+                      <label className="grid gap-2 text-sm font-bold">
+                        {mt('marketplace.detail.yourPublicAnswer')}
+                        <textarea
+                          className="min-h-24 rounded-2xl bg-[var(--app-surface)] p-4"
+                          placeholder={mt('marketplace.detail.answerPlaceholder')}
+                          value={answers[item.id] || ''}
+                          onChange={(event) =>
+                            setAnswers((current) => ({ ...current, [item.id]: event.target.value }))
+                          }
+                        />
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        <Button type="submit" disabled={(answers[item.id] || '').trim().length < 2}>
+                          {mt('marketplace.detail.publishAnswer')}
+                        </Button>
+                        <Button type="button" variant="secondary" onClick={() => setReplyingId(null)}>
+                          {mt('marketplace.common.cancel')}
+                        </Button>
+                      </div>
+                    </form>
+                  ) : (
+                    <Button
+                      className="mt-3"
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => setReplyingId(item.id)}
+                    >
+                      {mt('marketplace.detail.reply')}
+                    </Button>
+                  )
+                ) : (
+                  <p className="mt-3 text-xs text-[var(--app-text-faint)]">
+                    {mt('marketplace.detail.waitingSellerAnswer')}
+                  </p>
+                )}
+              </div>
+            )
+          })
         ) : (
           <p className="text-sm text-[var(--app-text-muted)]">{mt('marketplace.detail.noPublicQuestions')}</p>
         )}

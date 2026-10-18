@@ -199,7 +199,7 @@ begin
       v_target_type = 'all'
       or (v_target_type = 'role' and p.role = v_target_role)
       or (v_target_type = 'country' and (upper(coalesce(p.country, '')) = v_target_country or upper(coalesce(p.origin_country, '')) = v_target_country))
-      or (v_target_type = 'verified' and (coalesce(p.phone_verified, false) = true or coalesce(p.identity_verified, false) = true))
+      or (v_target_type = 'verified' and (coalesce(p.phone_verified, false) = true or p.status = 'verified' or coalesce(p.email_verified, false) = true))
       or (v_target_type = 'custom' and p.id::text = any(v_custom_user_ids))
     )
   on conflict (id) do update set

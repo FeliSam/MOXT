@@ -3,7 +3,6 @@ import {
   FiBell,
   FiEye,
   FiGift,
-  FiImage,
   FiInfo,
   FiRefreshCw,
   FiSend,
@@ -93,7 +92,7 @@ export function AdminNotificationCenter() {
   const [imageUrl, setImageUrl] = useState('')
   const [imageFile, setImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState('')
-  const [uploadingImage, setUploadingImage] = useState(false)
+  const [_uploadingImage, setUploadingImage] = useState(false)
   const [showInMarketplace, setShowInMarketplace] = useState(true)
 
   // Badge Customizer
@@ -157,7 +156,7 @@ export function AdminNotificationCenter() {
         )
       }
       if (targetType === 'verified') {
-        return Boolean(u.phoneVerified || u.identityVerified)
+        return Boolean(u.phoneVerified || u.verified || u.emailVerified || u.status === 'verified')
       }
       if (targetType === 'custom') {
         return customUserIds.includes(u.id)

@@ -1,7 +1,8 @@
-import { FiGrid, FiPlus, FiShoppingBag } from 'react-icons/fi'
+import { FiGrid, FiPlus, FiRefreshCw, FiShoppingBag } from 'react-icons/fi'
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useDispatch, useSelector, useStore } from 'react-redux'
 import { useNavigate, useOutletContext } from 'react-router-dom'
+import { addToast } from '../features/ui/uiSlice'
 import { Button } from '../components/ui/Button'
 import { CatalogSearch } from '../components/ui/CatalogSearch'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
@@ -239,15 +240,19 @@ export function MarketplacePage() {
     return stream
   }, [visible, availableVideos])
 
-  const INITIAL_PAGE_SIZE = 12
-  const PAGE_INCREMENT = 12
+  const INITIAL_PAGE_SIZE = 40
+  const PAGE_INCREMENT = 20
   const [displayCount, setDisplayCount] = useState(INITIAL_PAGE_SIZE)
+  const [refreshingCatalog, setRefreshingCatalog] = useState(false)
   const sentinelRef = useRef(null)
 
   // Reset pagination when search query or filters change
-  useEffect(() => {
+  const filterKey = `${filters.query}|${filters.type}|${filters.category}|${filters.city}|${filters.min}|${filters.max}|${filters.sort}`
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey)
+  if (prevFilterKey !== filterKey) {
+    setPrevFilterKey(filterKey)
     setDisplayCount(INITIAL_PAGE_SIZE)
-  }, [filters.query, filters.type, filters.category, filters.city, filters.min, filters.max, filters.sort])
+  }
 
   const totalStreamItems = discoverFeedStream.length
   const renderedItems = useMemo(
@@ -256,6 +261,7 @@ export function MarketplacePage() {
   )
   const hasMore = displayCount < totalStreamItems
 
+  // Observer pour déclenchement automatique de l'infinite scroll
   useEffect(() => {
     const el = sentinelRef.current
     if (!el || !hasMore) return undefined
@@ -272,6 +278,34 @@ export function MarketplacePage() {
     observer.observe(el)
     return () => observer.disconnect()
   }, [hasMore, totalStreamItems])
+
+  // Détection du défilement vers le bas en filet de sécurité (pour tous les types d'écrans)
+  useEffect(() => {
+    if (!hasMore) return undefined
+    const onScroll = () => {
+      const scrollPosition = window.innerHeight + window.scrollY
+      const threshold = document.documentElement.scrollHeight - 700
+      if (scrollPosition >= threshold) {
+        setDisplayCount((prev) => Math.min(prev + PAGE_INCREMENT, totalStreamItems))
+      }
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [hasMore, totalStreamItems])
+
+  // Actualiseur manuel du catalogue (force un re-fetch Supabase complet)
+  async function handleRefreshCatalog() {
+    if (refreshingCatalog) return
+    setRefreshingCatalog(true)
+    try {
+      await syncMarketplaceCatalog(dispatch, store, { force: true })
+      dispatch(addToast({ type: 'success', message: 'Catalogue d’annonces actualisé.' }))
+    } catch {
+      dispatch(addToast({ type: 'error', message: 'Erreur lors de l’actualisation du catalogue.' }))
+    } finally {
+      setRefreshingCatalog(false)
+    }
+  }
 
   // Cache-first: hydrate immediately from local IndexedDB if Redux is empty on mount.
   useEffect(() => {
@@ -556,21 +590,48 @@ export function MarketplacePage() {
                 })}
                 </CatalogGrid>
 
-                {hasMore ? (
-                  <div ref={sentinelRef} className="col-span-full flex justify-center py-6">
+                {/* Sentinelle pour l'infinite scroll automatique */}
+                {hasMore ? <div ref={sentinelRef} className="h-6 w-full" aria-hidden="true" /> : null}
+
+                {/* Actualiseur & barre de statut en bas de liste */}
+                <div className="mt-8 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-muted)]/80 p-4 backdrop-blur-sm shadow-sm">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-[var(--app-text-muted)]">
+                    <span className="inline-block size-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                    <span>
+                      {renderedItems.length >= totalStreamItems
+                        ? `Toutes les ${totalStreamItems} annonces disponibles sont affichées`
+                        : `${renderedItems.length} sur ${totalStreamItems} annonces affichées`}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {hasMore ? (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() =>
+                          setDisplayCount((prev) => Math.min(prev + PAGE_INCREMENT, totalStreamItems))
+                        }
+                        className="cursor-pointer shadow-sm font-bold text-xs"
+                      >
+                        {mt('marketplace.page.feed.loadMore') || 'Afficher la suite'}
+                      </Button>
+                    ) : null}
+
                     <Button
                       type="button"
-                      variant="secondary"
+                      variant="outline"
                       size="sm"
-                      onClick={() =>
-                        setDisplayCount((prev) => Math.min(prev + PAGE_INCREMENT, totalStreamItems))
-                      }
-                      className="opacity-80 hover:opacity-100 cursor-pointer shadow-sm"
+                      onClick={handleRefreshCatalog}
+                      disabled={refreshingCatalog}
+                      className="cursor-pointer shadow-sm font-bold text-xs inline-flex items-center gap-1.5"
                     >
-                      {mt('marketplace.page.feed.loadMore') || 'Charger plus d’annonces...'}
+                      <FiRefreshCw className={`size-3.5 ${refreshingCatalog ? 'animate-spin text-brand-600' : ''}`} aria-hidden="true" />
+                      <span>{refreshingCatalog ? 'Actualisation...' : 'Actualiser le catalogue'}</span>
                     </Button>
                   </div>
-                ) : null}
+                </div>
               </div>
 </>
           ) : (

@@ -1,29 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  FiBriefcase,
   FiCheckCircle,
   FiChevronDown,
   FiChevronUp,
   FiDownload,
-  FiExternalLink,
-  FiGift,
-  FiHelpCircle,
-  FiPlus,
-  FiShare,
-  FiShield,
-  FiSmartphone,
-  FiTrash2,
   FiUser,
   FiX,
-  FiZap,
 } from 'react-icons/fi'
 import { LuSparkles } from 'react-icons/lu'
-import { MdOutlineNotificationsActive } from 'react-icons/md'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
-import { useLanguage } from '../../contexts/useLanguage'
 import { isNative } from '../../platform/capacitor'
 import { appReleaseService } from '../../services/appReleaseService'
 import { addToast } from '../ui/uiSlice'
@@ -35,7 +23,6 @@ const COLLAPSED_KEY_PREFIX = 'moxt_retention_hub_collapsed_'
 const MANUAL_BUSINESS_KEY_PREFIX = 'moxt_step_business_done_'
 
 export function SmartOnboardingHub() {
-  const { t } = useLanguage()
   const dispatch = useDispatch()
   const navigate = useNavigate()
 

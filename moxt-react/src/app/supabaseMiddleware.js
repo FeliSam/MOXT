@@ -566,6 +566,15 @@ const handlers = {
       answeredAt: payload.answeredAt,
     })
   },
+  'marketplace/updateListingQuestion': async (payload) => {
+    await update('listing_questions', payload.questionId, {
+      text: payload.text,
+    })
+  },
+  'marketplace/deleteListingQuestion': async (payload) => {
+    const { error } = await supabase.from('listing_questions').delete().eq('id', payload.questionId)
+    if (error) throw error
+  },
   'marketplace/reportListing': async (payload, state) => {
     await syncActiveContentReport(state, 'marketplace', payload, 'listingId', 'listing_reports')
   },

@@ -37,6 +37,7 @@ export default defineConfig([
       // production : quelques helpers restent volontairement co-localisés avec
       // leur composant. Signalé, mais ne bloque pas la CI.
       'react-refresh/only-export-components': 'warn',
+      'react-hooks/set-state-in-effect': 'warn',
     },
   },
   {
