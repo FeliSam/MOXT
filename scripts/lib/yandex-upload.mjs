@@ -11,7 +11,7 @@ import {
   runUploadBatchS3,
 } from './yandex-s3.mjs'
 import { ycRun } from './yandex.mjs'
-import { isShellKey } from './deploy-shell-keys.mjs'
+import { isShellKey, SHELL_KEYS } from './deploy-shell-keys.mjs'
 
 export function walkFiles(dir) {
   const files = []
@@ -131,7 +131,16 @@ export async function planDistUpload({ sourceDir, remoteObjects, full = false })
 }
 
 export function planManifestUpload({ sourceDir, currentManifest, previousManifest, full = false }) {
-  const keys = full ? Object.keys(currentManifest?.files || {}) : diffDeployManifests(previousManifest, currentManifest)
+  const diffKeys = full ? Object.keys(currentManifest?.files || {}) : diffDeployManifests(previousManifest, currentManifest)
+  const keySet = new Set(diffKeys)
+  // Les clés shell (index.html, sw.js, version.json, etc.) sont systématiquement
+  // republicées pour garantir que les clients PWA/navigateurs basculent immédiatement.
+  for (const shellKey of SHELL_KEYS) {
+    if (currentManifest?.files?.[shellKey]) {
+      keySet.add(shellKey)
+    }
+  }
+  const keys = Array.from(keySet)
   const toUpload = manifestKeysToUpload(sourceDir, currentManifest, keys)
   const total = Object.keys(currentManifest?.files || {}).length
   const skipped = Math.max(0, total - toUpload.length)

@@ -52,13 +52,6 @@ export function moxtBuildVersion({ rootDir }) {
 
       writeFileSync(path.join(distDir, 'version.json'), `${JSON.stringify(release, null, 2)}\n`, 'utf8')
 
-      const manifest = await buildDeployManifest(distDir, buildId)
-      writeFileSync(
-        path.join(distDir, 'deploy-manifest.json'),
-        `${JSON.stringify(manifest, null, 2)}\n`,
-        'utf8',
-      )
-
       const swSource = path.join(rootDir, 'public', 'sw.js')
       const swDest = path.join(distDir, 'sw.js')
       if (existsSync(swSource)) {
@@ -68,6 +61,13 @@ export function moxtBuildVersion({ rootDir }) {
         const swBody = readFileSync(swDest, 'utf8').replaceAll('__MOXT_CACHE_NAME__', swCacheId)
         writeFileSync(swDest, swBody, 'utf8')
       }
+
+      const manifest = await buildDeployManifest(distDir, buildId)
+      writeFileSync(
+        path.join(distDir, 'deploy-manifest.json'),
+        `${JSON.stringify(manifest, null, 2)}\n`,
+        'utf8',
+      )
     },
   }
 }
