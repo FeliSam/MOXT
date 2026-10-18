@@ -6,6 +6,9 @@ export const ADMIN_FR_SOURCES = {
   'admin.page.description':
     'Superviser les transferts, contenus, comptes, validations et tickets.',
   'admin.page.export': 'Exporter',
+  'admin.page.refresh': 'Actualiser',
+  'admin.page.refreshSuccess': 'Données actualisées avec succès.',
+  'admin.page.refreshError': 'Erreur lors de l’actualisation.',
   'admin.confirm.reactivateTitle': 'Reactiver cet utilisateur ?',
   'admin.confirm.suspendTitle': 'Suspendre cet utilisateur ?',
   'admin.confirm.reactivateBody': '{name} retrouvera un acces complet a la plateforme.',

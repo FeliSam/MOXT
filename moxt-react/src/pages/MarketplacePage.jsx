@@ -1,5 +1,5 @@
 import { FiGrid, FiPlus, FiRefreshCw, FiShoppingBag } from 'react-icons/fi'
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useDispatch, useSelector, useStore } from 'react-redux'
 import { useNavigate, useOutletContext } from 'react-router-dom'
 import { addToast } from '../features/ui/uiSlice'
@@ -279,6 +279,28 @@ export function MarketplacePage() {
     return stream
   }, [visible, availableVideos, displayCount, suggestionSalt])
 
+  // Chaque 4e élément de la grille Découvrir doit être un badge de bannière (slots 4, 8, 12, 16...)
+  const discoverGridEntries = useMemo(() => {
+    const entries = []
+    let bannerSlot = 0
+    for (let i = 0; i < renderedItems.length; i++) {
+      entries.push({
+        type: 'item',
+        item: renderedItems[i],
+        key: renderedItems[i].id,
+      })
+      if ((entries.length + 1) % 4 === 0) {
+        entries.push({
+          type: 'banner',
+          bannerIndex: bannerSlot,
+          key: `discover-banner-${bannerSlot}-${renderedItems[i].id}`,
+        })
+        bannerSlot++
+      }
+    }
+    return entries
+  }, [renderedItems])
+
   const hasMore = visible.length > 0
 
   // Observer pour déclenchement automatique et progressif de l'infinite scroll (800px en avance)
@@ -439,12 +461,12 @@ export function MarketplacePage() {
   }
 
   return (
-    <div className="bg-transparent min-w-0 max-w-full overflow-hidden grid gap-4 sm:gap-5">
+    <div className="bg-white dark:bg-[var(--app-bg)] min-w-0 max-w-full overflow-x-clip grid gap-4 sm:gap-5">
       <ScrollSectionAnchor className="scroll-mt-24 grid gap-4 lg:scroll-mt-28 min-w-0 max-w-full">
-        <div className="min-w-0 max-w-full overflow-hidden bg-transparent">
+        <div className="min-w-0 max-w-full overflow-hidden bg-transparent px-1 sm:px-1.5 py-1.5 sm:py-2">
           <nav
             aria-label={mt('marketplace.common.type')}
-            className="scrollbar-hidden flex items-stretch gap-2 overflow-x-auto touch-pan-x snap-x snap-mandatory min-w-0 max-w-full lg:overflow-visible lg:w-full"
+            className="scrollbar-hidden flex items-stretch gap-2.5 overflow-x-auto touch-pan-x snap-x snap-mandatory min-w-0 max-w-full p-1 md:overflow-visible md:w-full"
           >
             <MarketplaceBentoTile
               featured
@@ -455,7 +477,7 @@ export function MarketplacePage() {
               typeKey="all"
               onClick={() => dispatch(setMarketplaceFilters({ type: '', category: '' }))}
             />
-            <div className="grid grid-rows-2 grid-flow-col auto-cols-[142px] sm:auto-cols-[158px] lg:grid-flow-row lg:grid-cols-3 lg:grid-rows-2 lg:auto-cols-auto lg:flex-1 min-w-0 gap-2">
+            <div className="grid grid-rows-2 grid-flow-col auto-cols-[142px] sm:auto-cols-[158px] md:grid-flow-row md:grid-cols-4 md:grid-rows-2 md:auto-cols-auto md:flex-1 min-w-0 gap-2.5">
               {LISTING_TYPES_META.map((option) => (
                 <MarketplaceBentoTile
                   key={option.value}
@@ -628,39 +650,38 @@ export function MarketplacePage() {
                   gap={MARKETPLACE_DISCOVER_GRID_GAP}
                   className="min-w-0 w-full"
                 >
-                {renderedItems.map((item, index) => {
-                  const showBanner = (index + 1) % 4 === 0
-                  const bannerSlot = Math.floor((index + 1) / 4) - 1
+                {discoverGridEntries.map((entry, index) => {
+                  if (entry.type === 'banner') {
+                    return (
+                      <MarketplaceFeedBanner
+                        key={entry.key}
+                        bannerIndex={entry.bannerIndex}
+                        onInteract={() => {}}
+                      />
+                    )
+                  }
 
+                  const item = entry.item
                   return (
-                    <Fragment key={item.id}>
-                      <RevealListItem
-                        index={index}
-                        className={`${MARKETPLACE_DISCOVERY_CARD_HEIGHT} min-w-0 overflow-hidden`}
-                      >
-                        {item.kind === 'video' ? (
-                          <MarketplaceVideoCard
-                            video={item.data}
-                            badgeLabel={mt('marketplace.page.feed.badgeVideo')}
-                          />
-                        ) : (
-                          <MarketplaceListingCard
-                            listing={item.data}
-                            guestMode={guestMode}
-                            onGuestInteract={() => requireAccount('aimer cette annonce')}
-                            layout="rail"
-                          />
-                        )}
-                      </RevealListItem>
-
-                      {showBanner ? (
-                        <MarketplaceFeedBanner
-                          key={`feed-banner-${item.id}`}
-                          bannerIndex={bannerSlot}
-                          onInteract={() => {}}
+                    <RevealListItem
+                      key={entry.key}
+                      index={index}
+                      className={`${MARKETPLACE_DISCOVERY_CARD_HEIGHT} min-w-0 overflow-hidden`}
+                    >
+                      {item.kind === 'video' ? (
+                        <MarketplaceVideoCard
+                          video={item.data}
+                          badgeLabel={mt('marketplace.page.feed.badgeVideo')}
                         />
-                      ) : null}
-                    </Fragment>
+                      ) : (
+                        <MarketplaceListingCard
+                          listing={item.data}
+                          guestMode={guestMode}
+                          onGuestInteract={() => requireAccount('aimer cette annonce')}
+                          layout="rail"
+                        />
+                      )}
+                    </RevealListItem>
                   )
                 })}
                 </CatalogGrid>
@@ -742,56 +763,47 @@ export function MarketplacePage() {
 const BENTO_THEMES = {
   all: {
     bg: 'bg-emerald-50/95 hover:bg-emerald-100/80 dark:bg-emerald-950/40 dark:hover:bg-emerald-950/60',
-    border: 'border-emerald-300/90 dark:border-emerald-700/70',
-    activeRing: 'ring-2 ring-emerald-600 border-emerald-500 bg-emerald-100/90 dark:bg-emerald-900/60 shadow-md',
+    activeRing: 'ring-2 ring-emerald-600 bg-emerald-100/90 dark:bg-emerald-900/60 shadow-md',
     iconGradient: 'from-emerald-600 to-teal-500 shadow-emerald-500/25',
   },
   product: {
     bg: 'bg-blue-50/95 hover:bg-blue-100/80 dark:bg-blue-950/40 dark:hover:bg-blue-950/60',
-    border: 'border-blue-300/90 dark:border-blue-700/70',
-    activeRing: 'ring-2 ring-blue-600 border-blue-500 bg-blue-100/90 dark:bg-blue-900/60 shadow-md',
+    activeRing: 'ring-2 ring-blue-600 bg-blue-100/90 dark:bg-blue-900/60 shadow-md',
     iconGradient: 'from-blue-600 to-cyan-500 shadow-blue-500/25',
   },
   service: {
     bg: 'bg-purple-50/95 hover:bg-purple-100/80 dark:bg-purple-950/40 dark:hover:bg-purple-950/60',
-    border: 'border-purple-300/90 dark:border-purple-700/70',
-    activeRing: 'ring-2 ring-purple-600 border-purple-500 bg-purple-100/90 dark:bg-purple-900/60 shadow-md',
+    activeRing: 'ring-2 ring-purple-600 bg-purple-100/90 dark:bg-purple-900/60 shadow-md',
     iconGradient: 'from-purple-600 to-indigo-500 shadow-purple-500/25',
   },
   rental: {
     bg: 'bg-amber-50/95 hover:bg-amber-100/80 dark:bg-amber-950/40 dark:hover:bg-amber-950/60',
-    border: 'border-amber-300/90 dark:border-amber-700/70',
-    activeRing: 'ring-2 ring-amber-600 border-amber-500 bg-amber-100/90 dark:bg-amber-900/60 shadow-md',
+    activeRing: 'ring-2 ring-amber-600 bg-amber-100/90 dark:bg-amber-900/60 shadow-md',
     iconGradient: 'from-amber-500 to-orange-500 shadow-amber-500/25',
   },
   vehicle: {
     bg: 'bg-slate-100/95 hover:bg-slate-200/80 dark:bg-slate-800/70 dark:hover:bg-slate-800/90',
-    border: 'border-slate-350 dark:border-slate-600',
-    activeRing: 'ring-2 ring-slate-600 border-slate-500 bg-slate-200/90 dark:bg-slate-700/60 shadow-md',
+    activeRing: 'ring-2 ring-slate-600 bg-slate-200/90 dark:bg-slate-700/60 shadow-md',
     iconGradient: 'from-slate-600 to-slate-800 shadow-slate-500/25',
   },
   digital: {
     bg: 'bg-teal-50/95 hover:bg-teal-100/80 dark:bg-teal-950/40 dark:hover:bg-teal-950/60',
-    border: 'border-teal-300/90 dark:border-teal-700/70',
-    activeRing: 'ring-2 ring-teal-600 border-teal-500 bg-teal-100/90 dark:bg-teal-900/60 shadow-md',
+    activeRing: 'ring-2 ring-teal-600 bg-teal-100/90 dark:bg-teal-900/60 shadow-md',
     iconGradient: 'from-teal-600 to-emerald-500 shadow-teal-500/25',
   },
   real_estate: {
     bg: 'bg-rose-50/95 hover:bg-rose-100/80 dark:bg-rose-950/40 dark:hover:bg-rose-950/60',
-    border: 'border-rose-300/90 dark:border-rose-700/70',
-    activeRing: 'ring-2 ring-rose-600 border-rose-500 bg-rose-100/90 dark:bg-rose-900/60 shadow-md',
+    activeRing: 'ring-2 ring-rose-600 bg-rose-100/90 dark:bg-rose-900/60 shadow-md',
     iconGradient: 'from-rose-500 to-pink-600 shadow-rose-500/25',
   },
   food: {
     bg: 'bg-lime-50/95 hover:bg-lime-100/80 dark:bg-lime-950/40 dark:hover:bg-lime-950/60',
-    border: 'border-lime-300/90 dark:border-lime-700/70',
-    activeRing: 'ring-2 ring-lime-600 border-lime-500 bg-lime-100/90 dark:bg-lime-900/60 shadow-md',
+    activeRing: 'ring-2 ring-lime-600 bg-lime-100/90 dark:bg-lime-900/60 shadow-md',
     iconGradient: 'from-lime-600 to-green-600 shadow-lime-500/25',
   },
   other: {
     bg: 'bg-stone-100/95 hover:bg-stone-200/80 dark:bg-stone-800/70 dark:hover:bg-stone-800/90',
-    border: 'border-stone-350 dark:border-stone-600',
-    activeRing: 'ring-2 ring-stone-600 border-stone-500 bg-stone-200/90 dark:bg-stone-700/60 shadow-md',
+    activeRing: 'ring-2 ring-stone-600 bg-stone-200/90 dark:bg-stone-700/60 shadow-md',
     iconGradient: 'from-stone-500 to-stone-700 shadow-stone-500/25',
   },
 }
@@ -816,10 +828,10 @@ function MarketplaceBentoTile({
         title={label}
         aria-pressed={active}
         onClick={onClick}
-        className={`group relative flex h-[132px] w-[110px] sm:w-[124px] lg:w-[136px] xl:w-[152px] shrink-0 snap-start flex-col justify-between overflow-hidden rounded-2xl p-3 text-left transition-all duration-200 active:scale-[0.98] cursor-pointer shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-md border ${
+        className={`group relative flex h-full min-h-[132px] w-[110px] sm:w-[124px] md:w-[130px] lg:w-[136px] xl:w-[152px] shrink-0 snap-start self-stretch flex-col justify-between overflow-hidden rounded-2xl p-3 sm:p-3.5 text-left transition-all duration-200 active:scale-[0.98] cursor-pointer shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-md border-0 ${
           active
             ? theme.activeRing
-            : `${theme.bg} ${theme.border}`
+            : theme.bg
         }`}
       >
         <span
@@ -849,10 +861,10 @@ function MarketplaceBentoTile({
       title={label}
       aria-pressed={active}
       onClick={onClick}
-      className={`group relative flex h-[62px] w-[142px] sm:w-[158px] lg:w-full shrink-0 lg:shrink snap-start items-center gap-2.5 overflow-hidden rounded-xl px-3 transition-all duration-200 active:scale-[0.98] cursor-pointer shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-md border ${
+      className={`group relative flex h-[62px] w-[142px] sm:w-[158px] md:w-full shrink-0 md:shrink snap-start items-center gap-2.5 overflow-hidden rounded-xl px-3 sm:px-3.5 transition-all duration-200 active:scale-[0.98] cursor-pointer shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-md border-0 ${
         active
           ? theme.activeRing
-          : `${theme.bg} ${theme.border}`
+          : theme.bg
       }`}
     >
       <span

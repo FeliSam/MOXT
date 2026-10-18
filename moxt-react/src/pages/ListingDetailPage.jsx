@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  FiAlertTriangle,
   FiBriefcase,
   FiCheckCircle,
   FiChevronLeft,
@@ -16,11 +15,12 @@ import {
   FiUserPlus,
 } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
-import { Link, useOutletContext, useParams } from 'react-router-dom'
+import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
 import { EntityVerifiedName } from '../components/ui/EntityVerifiedName'
 import { BackButton } from '../components/ui/BackButton'
 import { Button } from '../components/ui/Button'
+import { ExpandableLinkifiedText } from '../components/ui/ExpandableLinkifiedText'
 import { LinkifiedText } from '../components/ui/LinkifiedText'
 import { Card } from '../components/ui/Card'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
@@ -53,6 +53,8 @@ import {
   answerListingQuestion,
   updateListingQuestion,
   deleteListingQuestion,
+  deleteListing,
+  duplicateListing,
   incrementListingContact,
   incrementListingShare,
   incrementListingView,
@@ -71,6 +73,7 @@ import { avatarDisplayUrl } from '../features/account/avatarDisplayUrl'
 import { pickShuffledWindow } from '../features/feed/feedDiscoveryUtils'
 import { ReportDialog } from '../components/ui/ReportDialog'
 import { useLanguage } from '../contexts/useLanguage'
+import { phase3Text } from '../i18n/phase3I18n'
 import {
   listingOptionLabel,
   marketplaceText,
@@ -120,7 +123,7 @@ function CompactPublisherCard({
     listing?.sellerAvatar ||
     null
   const displayAvatarUrl = rawAvatarUrl
-    ? avatarDisplayUrl(rawAvatarUrl, { width: 96, height: 96 })
+    ? avatarDisplayUrl(rawAvatarUrl, { width: 110, height: 110 })
     : null
 
   const rating = publisherProfile?.rating
@@ -137,13 +140,13 @@ function CompactPublisherCard({
 
   return (
     <div
-      className={`flex items-center justify-between gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-muted)]/70 px-3.5 py-2.5 backdrop-blur-sm transition-colors hover:border-[var(--app-border-hover)] ${className}`}
+      className={`flex items-center justify-between gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-muted)]/70 px-4 py-3.5 sm:py-4 min-h-[66px] sm:min-h-[72px] backdrop-blur-sm transition-colors hover:border-[var(--app-border-hover)] ${className}`}
     >
-      <div className="flex min-w-0 items-center gap-3">
+      <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-3.5 overflow-hidden">
         <Link
           to={profilePath}
           title={publisherName}
-          className="group relative size-11 shrink-0 overflow-hidden rounded-xl bg-slate-200 ring-1 ring-black/5 transition hover:scale-105 dark:bg-slate-800 dark:ring-white/10"
+          className="group relative size-[48px] sm:size-[52px] shrink-0 overflow-hidden rounded-xl bg-slate-200 ring-1 ring-black/5 transition hover:scale-105 dark:bg-slate-800 dark:ring-white/10"
         >
           {displayAvatarUrl ? (
             <img
@@ -159,13 +162,13 @@ function CompactPublisherCard({
           )}
         </Link>
 
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1 overflow-hidden">
           <Link
             to={profilePath}
-            className="group flex items-center gap-1.5 transition"
+            className="group flex min-w-0 max-w-full items-center gap-1.5 transition"
             title={publisherName}
           >
-            <span className="truncate text-sm font-black text-[var(--app-text)] group-hover:text-brand-600">
+            <span className="truncate block min-w-0 max-w-[125px] xs:max-w-[175px] sm:max-w-[240px] md:max-w-[320px] xl:max-w-[155px] 2xl:max-w-[200px] text-sm sm:text-[15px] font-black text-[var(--app-text)] group-hover:text-brand-600">
               {publisherName}
             </span>
             {verified ? (
@@ -173,7 +176,7 @@ function CompactPublisherCard({
             ) : null}
           </Link>
 
-          <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs">
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
             {isBusiness ? (
               <span className="inline-flex items-center gap-1 rounded-md border border-purple-500/20 bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-bold text-purple-600 dark:text-purple-400">
                 <FiBriefcase className="size-2.5" />
@@ -186,15 +189,19 @@ function CompactPublisherCard({
               </span>
             )}
 
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-500">
-              <FiStar className="size-3 fill-amber-400 text-amber-400" />
-              {ratingCount > 0 ? `${ratingAverage.toFixed(1)} (${ratingCount})` : 'Nouveau'}
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-500">
+              <FiStar className="size-3.5 fill-amber-400 text-amber-400" />
+              <span>
+                {ratingCount > 0
+                  ? `${ratingAverage.toFixed(1)} (${ratingCount})`
+                  : (ratingAverage > 0 ? ratingAverage.toFixed(1) : '0')}
+              </span>
             </span>
           </div>
         </div>
       </div>
 
-      <div className="shrink-0">
+      <div className="shrink-0 flex items-center">
         {currentUser?.id ? (
           !isSelf && publisherId ? (
             <SubscribeButton
@@ -204,19 +211,21 @@ function CompactPublisherCard({
               publisherPath={profilePath}
               size="sm"
               variant="secondary"
-              className="rounded-xl px-2.5 py-1 text-xs"
+              iconOnly
+              className="rounded-xl shrink-0"
             />
           ) : null
         ) : (
           <Button
             size="sm"
             variant="secondary"
+            iconOnly
             icon={FiUserPlus}
             onClick={() => requireAccount("s'abonner")}
-            className="rounded-xl px-2.5 py-1 text-xs"
-          >
-            Suivre
-          </Button>
+            className="size-9 rounded-xl shrink-0"
+            title="Suivre"
+            aria-label="Suivre"
+          />
         )}
       </div>
     </div>
@@ -228,6 +237,7 @@ export function ListingDetailPage() {
   const mt = (key, vars) => marketplaceText(t, key, vars)
   const tabs = TAB_DEFS.map((tab) => ({ ...tab, label: mt(tab.labelKey) }))
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const { listingId } = useParams()
   const { guestMode = false } = useOutletContext() || {}
   const { requireAccount } = useGuestAction()
@@ -245,12 +255,65 @@ export function ListingDetailPage() {
   const [selectedImage, setSelectedImage] = useState(null)
   const [imageOpen, setImageOpen] = useState(false)
   const [soldOpen, setSoldOpen] = useState(false)
+  const [archiveOpen, setArchiveOpen] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('description')
   const [quantity, setQuantity] = useState(1)
   const [question, setQuestion] = useState('')
   const isAdminViewer = Boolean(user?.role && ['admin', 'superadmin'].includes(user.role))
   const publisherProfile = usePublisherDetailProfile(listing, 'listing')
+
+  function handleDuplicate() {
+    if (!user?.id || !listing) return
+    dispatch(duplicateListing({ listing, ownerId: user.id }))
+    dispatch(
+      addToast({
+        id: `dup-${Date.now()}`,
+        tone: 'success',
+        message: 'Annonce dupliquée avec succès',
+      }),
+    )
+  }
+
+  function handleDelete() {
+    if (!user?.id || !listing) return
+    dispatch(deleteListing({ id: listing.id, ownerId: user.id }))
+    setDeleteConfirmOpen(false)
+    dispatch(
+      addToast({
+        id: `del-${Date.now()}`,
+        tone: 'success',
+        message: 'Annonce supprimée',
+      }),
+    )
+    navigate('/marketplace')
+  }
+
+  function handleArchive() {
+    if (!user?.id || !listing) return
+    dispatch(updateListingStatus({ id: listing.id, status: 'archived', actorId: user.id }))
+    setArchiveOpen(false)
+    dispatch(
+      addToast({
+        id: `arch-${Date.now()}`,
+        tone: 'neutral',
+        message: 'Annonce archivée',
+      }),
+    )
+  }
+
+  function handleReactivate() {
+    if (!user?.id || !listing) return
+    dispatch(updateListingStatus({ id: listing.id, status: 'active', actorId: user.id }))
+    dispatch(
+      addToast({
+        id: `react-${Date.now()}`,
+        tone: 'success',
+        message: 'Annonce réactivée et publiée',
+      }),
+    )
+  }
 
   useEffect(() => {
     if (!listingId) return
@@ -473,24 +536,7 @@ export function ListingDetailPage() {
 
       <PageHeader
         title={listing.title}
-        actions={
-          <div className="flex items-center gap-2">
-            {!isListingOwner ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                icon={FiAlertTriangle}
-                onClick={() => {
-                  if (requireAccount('signaler une annonce')) return
-                  setReportOpen(true)
-                }}
-                className="text-[var(--app-text-muted)] hover:text-red-500"
-                title={mt('marketplace.detail.report')}
-              />
-            ) : null}
-            <BackButton fallback="/marketplace" />
-          </div>
-        }
+        actions={<BackButton fallback="/marketplace" />}
       />
 
       <div className="grid min-w-0 gap-6 xl:grid-cols-[1.45fr_0.55fr]">
@@ -532,11 +578,13 @@ export function ListingDetailPage() {
               {activeTab === 'description' ? (
                 <div>
                   <h2 className="text-xl font-black">{mt('marketplace.detail.about')}</h2>
-                  <LinkifiedText
+                  <ExpandableLinkifiedText
                     as="p"
                     text={listing.description}
+                    maxLines={4}
                     preserveWhitespace="pre-line"
                     className="mt-4 leading-8 text-[var(--app-text-muted)]"
+                    buttonClassName="mt-2 font-bold text-brand-600 dark:text-brand-400"
                   />
                 </div>
               ) : null}
@@ -803,6 +851,11 @@ export function ListingDetailPage() {
         sourceType="listing"
         sourceId={listing.id}
         editTo={isListingOwner ? `/marketplace/${listing.id}/edit` : undefined}
+        onArchive={isListingOwner ? () => setArchiveOpen(true) : undefined}
+        onReactivate={isListingOwner ? handleReactivate : undefined}
+        onDuplicate={isListingOwner ? handleDuplicate : undefined}
+        onMarkSold={isListingOwner && listing.status === 'active' ? () => setSoldOpen(true) : undefined}
+        onDelete={isListingOwner ? () => setDeleteConfirmOpen(true) : undefined}
         onReport={
           !isListingOwner
             ? () => {
@@ -841,6 +894,31 @@ export function ListingDetailPage() {
           dispatch(updateListingStatus({ id: listing.id, status: 'sold', actorId: user.id }))
           setSoldOpen(false)
         }}
+      />
+
+      <ConfirmDialog
+        open={archiveOpen}
+        title={phase3Text(t, 'publications.confirm.archive.title') || "Archiver l'annonce"}
+        description={
+          phase3Text(t, 'publications.confirm.archive.description') ||
+          "Êtes-vous sûr de vouloir archiver cette annonce ? Elle ne sera plus visible sur le marketplace."
+        }
+        confirmLabel={mt('marketplace.common.archive') || "Archiver"}
+        onCancel={() => setArchiveOpen(false)}
+        onConfirm={handleArchive}
+      />
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        tone="danger"
+        title={phase3Text(t, 'publications.confirm.delete.title') || "Supprimer l'annonce"}
+        description={
+          phase3Text(t, 'publications.confirm.delete.description') ||
+          "Êtes-vous sûr de vouloir supprimer définitivement cette annonce ? Cette action est irréversible."
+        }
+        confirmLabel={mt('marketplace.common.delete') || "Supprimer"}
+        onCancel={() => setDeleteConfirmOpen(false)}
+        onConfirm={handleDelete}
       />
 
       {user?.id ? (
@@ -897,7 +975,7 @@ function Gallery({
         className="group relative overflow-hidden rounded-[1.5rem] bg-slate-900 text-white"
         {...imageSwipeHandlers}
       >
-        <div className="relative flex h-[486px] w-full items-center justify-center lg:h-[583px]">
+        <div className="relative flex h-[280px] sm:h-[380px] md:h-[480px] lg:h-[583px] w-full items-center justify-center">
           {activeImage ? (
             <img
               src={activeImage}
@@ -950,7 +1028,7 @@ function Gallery({
         ) : null}
       </div>
       {images.length ? (
-        <div className="mt-3 grid grid-cols-4 gap-3 sm:grid-cols-8">
+        <div className="mt-3 flex gap-2 overflow-x-auto scrollbar-hidden touch-pan-x sm:grid sm:grid-cols-8 sm:gap-3">
           {images.map((image, index) => (
             <button
               key={image}
@@ -961,7 +1039,7 @@ function Gallery({
                 title: listing.title,
               })}
               aria-pressed={image === activeImage}
-              className={`h-[72px] w-full overflow-hidden rounded-2xl transition ${
+              className={`h-[64px] sm:h-[72px] w-[64px] sm:w-full shrink-0 sm:shrink overflow-hidden rounded-2xl transition ${
                 image === activeImage
                   ? 'ring-2 ring-blue-500 ring-offset-2'
                   : 'bg-[var(--app-surface-muted)] hover:opacity-80'

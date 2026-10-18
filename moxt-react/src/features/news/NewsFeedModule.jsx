@@ -31,7 +31,7 @@ export function NewsFeedModule() {
   } = useNewsPublishActions()
 
   return (
-    <div className="grid min-w-0 max-w-full gap-5 overflow-x-clip">
+    <div className="bg-white dark:bg-[var(--app-bg)] grid min-w-0 max-w-full gap-5 overflow-x-clip min-h-screen">
       <div className="mx-auto grid w-full min-w-0 max-w-3xl gap-5">
         <StatusRail
           composerOpen={statusComposerOpen}

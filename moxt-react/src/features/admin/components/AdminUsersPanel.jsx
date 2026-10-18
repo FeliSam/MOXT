@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { FiCalendar, FiMapPin, FiUsers } from 'react-icons/fi'
+import { FiCalendar, FiMapPin, FiRefreshCw, FiUsers } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { Button } from '../../../components/ui/Button'
@@ -19,7 +19,7 @@ import { Empty, SectionTitle } from './AdminShared'
 
 const SORT_OPTIONS = ['newest', 'oldest', 'name']
 
-export function AdminUsersPanel({ actorRole, dispatch, onSuspendUser, onPurgeUser, setSelected, users }) {
+export function AdminUsersPanel({ actorRole, dispatch, onRefresh, onSuspendUser, onPurgeUser, refreshing, setSelected, users }) {
   const { t } = useLanguage()
   const { countries } = useGeographyOptions()
   const onlineMap = useSelector((state) => state.presence?.online || {})
@@ -104,27 +104,41 @@ export function AdminUsersPanel({ actorRole, dispatch, onSuspendUser, onPurgeUse
     <div className={`${CARD} grid gap-4 p-5`}>
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
         <SectionTitle icon={FiUsers} label={adminText(t, 'admin.users.title')} count={users.length} />
-        <button
-          type="button"
-          onClick={() => {
-            setOnlineOnly((current) => {
-              const next = !current
-              setPresenceFilter(next ? 'online' : 'all')
-              return next
-            })
-          }}
-          className={`inline-flex min-h-10 items-center gap-2 rounded-full px-3.5 text-xs font-black transition ${
-            onlineOnly || presenceFilter === 'online'
-              ? 'bg-emerald-600 text-white shadow-sm'
-              : 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200'
-          }`}
-          aria-pressed={onlineOnly || presenceFilter === 'online'}
-        >
-          <span className="relative inline-flex size-2.5 rounded-full bg-emerald-400">
-            <span className="absolute inset-0 animate-ping rounded-full bg-emerald-300 opacity-75" />
-          </span>
-          {adminText(t, 'admin.users.onlineButton', { count: onlineCount })}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {onRefresh && (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              icon={FiRefreshCw}
+              loading={refreshing}
+              onClick={onRefresh}
+            >
+              {adminText(t, 'admin.page.refresh')}
+            </Button>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              setOnlineOnly((current) => {
+                const next = !current
+                setPresenceFilter(next ? 'online' : 'all')
+                return next
+              })
+            }}
+            className={`inline-flex min-h-10 items-center gap-2 rounded-full px-3.5 text-xs font-black transition ${
+              onlineOnly || presenceFilter === 'online'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200'
+            }`}
+            aria-pressed={onlineOnly || presenceFilter === 'online'}
+          >
+            <span className="relative inline-flex size-2.5 rounded-full bg-emerald-400">
+              <span className="absolute inset-0 animate-ping rounded-full bg-emerald-300 opacity-75" />
+            </span>
+            {adminText(t, 'admin.users.onlineButton', { count: onlineCount })}
+          </button>
+        </div>
       </div>
 
       <div className="flex min-w-0 flex-wrap gap-3">

@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { FiBookOpen, FiDownload, FiHeart } from 'react-icons/fi'
+import { useEffect, useState } from 'react'
+import { FiBookOpen, FiDownload, FiHeart, FiRefreshCw } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { useSearchParams } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
@@ -9,8 +9,15 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { useLanguage } from '../contexts/useLanguage'
 import {
   purgeUserAccount,
+  removeAdministrativeUser,
   updateUserStatus,
+  upsertAdminUser,
 } from '../features/administration/administrationSlice'
+import { upsertProfileDirectoryEntries } from '../features/profile/profileDirectorySlice'
+import { receiveRemoteTransfer } from '../features/transfers/transferSlice'
+import { transferFromRemoteRow } from '../features/transfers/transferRemote'
+import { addToast } from '../features/ui/uiSlice'
+import { syncAdminDashboard } from '../features/admin/services/adminSyncService'
 import { ADMIN_VIEW_IDS, MAIN_VIEWS, CARD } from '../features/admin/adminConfig'
 import { adminOptionLabel, adminText } from '../features/admin/adminI18n'
 import { supabase } from '../services/supabaseClient'
@@ -61,6 +68,92 @@ export function AdminPage() {
   const [purgeUser, setPurgeUser] = useState(null)
   const [confirmingPurge, setConfirmingPurge] = useState(false)
   const [purgeError, setPurgeError] = useState('')
+  const [refreshing, setRefreshing] = useState(false)
+
+  async function handleRefresh() {
+    if (refreshing) return
+    setRefreshing(true)
+    try {
+      await syncAdminDashboard(dispatch, { full: true })
+      dispatch(
+        addToast({
+          title: adminText(t, 'admin.page.title'),
+          message: adminText(t, 'admin.page.refreshSuccess'),
+          tone: 'success',
+        }),
+      )
+    } catch (err) {
+      dispatch(
+        addToast({
+          title: adminText(t, 'admin.page.title'),
+          message: err?.message || adminText(t, 'admin.page.refreshError'),
+          tone: 'error',
+        }),
+      )
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
+  // Synchronisation initiale des données distantes à l'affichage de l'administration
+  useEffect(() => {
+    void syncAdminDashboard(dispatch)
+  }, [dispatch])
+
+  // Écoute Supabase Realtime : actualisation instantanée lors de tout changement en base
+  useEffect(() => {
+    if (!supabase) return undefined
+
+    const channel = supabase
+      .channel('admin-dashboard-live-channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'profiles' },
+        (payload) => {
+          if (payload.eventType === 'DELETE' && payload.old?.id) {
+            dispatch(removeAdministrativeUser({ id: payload.old.id }))
+          } else if (payload.new?.id) {
+            dispatch(upsertAdminUser(payload.new))
+            dispatch(upsertProfileDirectoryEntries([payload.new]))
+          }
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'transfers' },
+        (payload) => {
+          if (payload.new) {
+            dispatch(receiveRemoteTransfer(transferFromRemoteRow(payload.new)))
+          }
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'verification_requests' },
+        () => {
+          void syncAdminDashboard(dispatch)
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'business_documents' },
+        () => {
+          void syncAdminDashboard(dispatch)
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'listing_reports' },
+        () => {
+          void syncAdminDashboard(dispatch)
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [dispatch])
 
   const {
     state,
@@ -113,9 +206,19 @@ export function AdminPage() {
         title={adminText(t, 'admin.page.title')}
         description={adminText(t, 'admin.page.description')}
         actions={
-          <Button variant="secondary" icon={FiDownload} onClick={() => exportSnapshot(state)}>
-            {adminText(t, 'admin.page.export')}
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="secondary"
+              icon={FiRefreshCw}
+              loading={refreshing}
+              onClick={handleRefresh}
+            >
+              {adminText(t, 'admin.page.refresh')}
+            </Button>
+            <Button variant="secondary" icon={FiDownload} onClick={() => exportSnapshot(state)}>
+              {adminText(t, 'admin.page.export')}
+            </Button>
+          </div>
         }
       />
 
@@ -152,6 +255,8 @@ export function AdminPage() {
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}
             view={filterView}
+            onRefresh={handleRefresh}
+            refreshing={refreshing}
           />
 
           {view === 'overview' && (
@@ -216,8 +321,10 @@ export function AdminPage() {
             <AdminUsersPanel
               actorRole={admin?.role}
               dispatch={dispatch}
+              onRefresh={handleRefresh}
               onSuspendUser={setConfirmUser}
               onPurgeUser={setPurgeUser}
+              refreshing={refreshing}
               setSelected={setSelected}
               users={users}
             />
@@ -293,7 +400,7 @@ export function AdminPage() {
             : adminText(t, 'admin.confirm.suspendBody', { name: confirmName })
         }
         onCancel={() => setConfirmUser(null)}
-        onConfirm={() => {
+        onConfirm={async () => {
           const nextStatus = confirmUser.status === 'suspended' ? 'active' : 'suspended'
           dispatch(
             updateUserStatus({
@@ -301,6 +408,16 @@ export function AdminPage() {
               status: nextStatus,
             }),
           )
+          try {
+            if (supabase) {
+              await supabase
+                .from('profiles')
+                .update({ status: nextStatus, updated_at: new Date().toISOString() })
+                .eq('id', confirmUser.id)
+            }
+          } catch (err) {
+            console.warn('[MOXT] Failed to persist user status to Supabase:', err)
+          }
           if (nextStatus === 'suspended') {
             setPurgeUser({ ...confirmUser, status: 'suspended' })
           }
@@ -332,6 +449,13 @@ export function AdminPage() {
               return
             }
             dispatch(purgeUserAccount({ id: purgeUser.id }))
+            try {
+              if (supabase) {
+                await supabase.from('profiles').delete().eq('id', purgeUser.id)
+              }
+            } catch (err) {
+              console.warn('[MOXT] Failed to delete user from Supabase:', err)
+            }
             if (selected?.kind === 'user' && selected.item.id === purgeUser.id) {
               setSelected(null)
             }

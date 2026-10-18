@@ -55,6 +55,8 @@ export function AppLayout({ children }) {
 
   const isMessagesRoute = isMessagesPath(location.pathname)
   const isMarketplaceRoute = location.pathname.startsWith('/marketplace')
+  const isNewsRoute = location.pathname.startsWith('/news')
+  const isWhiteBgRoute = isMarketplaceRoute || isNewsRoute
   const isFeedMobileRoute =
     location.pathname === '/feed' || location.pathname === '/videos'
 
@@ -268,7 +270,9 @@ export function AppLayout({ children }) {
               ? 'messages-shell flex min-h-[100svh] flex-col'
               : isFeedMobileFeed
                 ? 'min-h-0 overflow-hidden bg-black'
-                : 'min-h-screen'
+                : isWhiteBgRoute
+                  ? 'min-h-screen bg-white dark:bg-[var(--app-bg)]'
+                  : 'min-h-screen'
       } ${hideAppChrome ? 'messages-thread-immersive' : ''}`}
 
     >
@@ -304,21 +308,16 @@ export function AppLayout({ children }) {
       <Sidebar open={sidebarOpen} />
 
       <div
-
         className={`min-w-0 max-w-full overflow-x-clip lg:pl-28 ${
           isMessagesRoute ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : ''
-        } ${messagesFixedViewport ? 'h-full' : ''}`}
-
+        } ${messagesFixedViewport ? 'h-full' : ''} ${
+          isWhiteBgRoute ? 'bg-white dark:bg-[var(--app-bg)]' : ''
+        }`}
       >
-
         <Header hideOnMobile={isFeedMobileRoute} />
-
         <main
-
           id="main-content"
-
           tabIndex={-1}
-
           className={`mx-auto w-full min-w-0 max-w-[96rem] overflow-x-clip ${
             isMessagesRoute
               ? `flex min-h-0 flex-1 flex-col overflow-hidden ${
@@ -331,10 +330,11 @@ export function AppLayout({ children }) {
               : isFeedMobileFeed
                 ? 'bg-black px-0 pt-0 pb-0 lg:bg-transparent lg:px-8 lg:py-8'
                 : isMarketplaceRoute
-                  ? 'px-2 py-4 pb-[var(--bottom-nav-clearance-loose)] sm:p-6 sm:pb-[var(--bottom-nav-clearance-loose)] lg:px-8 lg:py-8'
-                  : 'p-4 pb-[var(--bottom-nav-clearance-loose)] sm:p-6 sm:pb-[var(--bottom-nav-clearance-loose)] lg:px-8 lg:py-8'
+                  ? 'bg-white dark:bg-[var(--app-bg)] min-h-screen px-2 py-4 pb-[var(--bottom-nav-clearance-loose)] sm:p-6 sm:pb-[var(--bottom-nav-clearance-loose)] lg:px-8 lg:py-8'
+                  : isNewsRoute
+                    ? 'bg-white dark:bg-[var(--app-bg)] min-h-screen p-4 pb-[var(--bottom-nav-clearance-loose)] sm:p-6 sm:pb-[var(--bottom-nav-clearance-loose)] lg:px-8 lg:py-8'
+                    : 'p-4 pb-[var(--bottom-nav-clearance-loose)] sm:p-6 sm:pb-[var(--bottom-nav-clearance-loose)] lg:px-8 lg:py-8'
           }`}
-
         >
 
           <div

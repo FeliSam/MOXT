@@ -139,6 +139,8 @@ export function AdminNotificationCenter() {
   // History State
   const [historyItems, setHistoryItems] = useState([])
   const [historyLoading, setHistoryLoading] = useState(false)
+  const [broadcastToDelete, setBroadcastToDelete] = useState(null)
+  const [deletingBroadcast, setDeletingBroadcast] = useState(false)
 
   // Audience Count Estimation
   const estimatedUsers = useMemo(() => {
@@ -205,6 +207,43 @@ export function AdminNotificationCenter() {
       // offline / mock fallback
     } finally {
       setHistoryLoading(false)
+    }
+  }
+
+  async function handleDeleteBroadcast(id) {
+    if (!supabase || !id) return
+    setDeletingBroadcast(true)
+    try {
+      const { error } = await supabase.from('admin_broadcasts').delete().eq('id', id)
+      if (error) {
+        dispatch(
+          addToast({
+            title: 'Échec de la suppression',
+            message: error.message,
+            tone: 'error',
+          }),
+        )
+      } else {
+        setHistoryItems((prev) => prev.filter((item) => item.id !== id))
+        dispatch(
+          addToast({
+            title: 'Diffusion supprimée',
+            message: 'La diffusion a été supprimée avec succès.',
+            tone: 'success',
+          }),
+        )
+      }
+    } catch {
+      dispatch(
+        addToast({
+          title: 'Erreur',
+          message: 'Une erreur est survenue lors de la suppression.',
+          tone: 'error',
+        }),
+      )
+    } finally {
+      setDeletingBroadcast(false)
+      setBroadcastToDelete(null)
     }
   }
 
@@ -1048,8 +1087,8 @@ export function AdminNotificationCenter() {
                         </div>
                       </div>
 
-                      {/* Stats */}
-                      <div className="flex items-center gap-4 self-end sm:self-center">
+                      {/* Stats & Actions */}
+                      <div className="flex items-center gap-3 self-end sm:self-center">
                         <div className="text-right">
                           <p className="text-xs font-black text-[var(--app-text)]">
                             {recipients} destinataire(s)
@@ -1058,6 +1097,16 @@ export function AdminNotificationCenter() {
                             {reads} lu(s) ({rate}%)
                           </p>
                         </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          icon={FiTrash2}
+                          onClick={() => setBroadcastToDelete(item)}
+                          className="text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 shrink-0"
+                          title="Supprimer cette diffusion"
+                          aria-label={`Supprimer la diffusion ${item.title}`}
+                        />
                       </div>
                     </div>
                   )
@@ -1082,6 +1131,23 @@ export function AdminNotificationCenter() {
         onCancel={() => setConfirmingSend(false)}
         onConfirm={handleSendBroadcast}
         confirmLabel="Diffuser maintenant"
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={Boolean(broadcastToDelete)}
+        title="Supprimer cette diffusion ?"
+        description={`Voulez-vous vraiment supprimer définitivement la diffusion « ${broadcastToDelete?.title || ''} » ?`}
+        confirmLabel="Supprimer"
+        cancelLabel="Annuler"
+        tone="danger"
+        loading={deletingBroadcast}
+        onCancel={() => setBroadcastToDelete(null)}
+        onConfirm={() => {
+          if (broadcastToDelete?.id) {
+            void handleDeleteBroadcast(broadcastToDelete.id)
+          }
+        }}
       />
     </div>
   )

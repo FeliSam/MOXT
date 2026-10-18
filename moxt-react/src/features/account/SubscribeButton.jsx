@@ -30,6 +30,7 @@ export function SubscribeButton({
   subscribeLabel,
   subscribedLabel,
   showIcon = true,
+  iconOnly = false,
 }) {
   const dispatch = useDispatch()
   const { t } = useLanguage()
@@ -109,6 +110,21 @@ export function SubscribeButton({
   const followingLabel = subscribedLabel || p3('subscriptions.subscribed')
 
   if (!isSubscribed) {
+    if (iconOnly) {
+      return (
+        <Button
+          className={className}
+          size={size}
+          variant={variant}
+          iconOnly
+          icon={FiUserPlus}
+          onClick={() => subscribe('all')}
+          title={followLabel}
+          aria-label={followLabel}
+        />
+      )
+    }
+
     return (
       <Button
         className={className}
@@ -119,6 +135,41 @@ export function SubscribeButton({
       >
         {followLabel}
       </Button>
+    )
+  }
+
+  if (iconOnly) {
+    return (
+      <div className={`flex items-center gap-1 shrink-0 ${className}`}>
+        <Button
+          size={size}
+          variant="secondary"
+          iconOnly
+          icon={FiUserCheck}
+          className="border-brand-200 bg-brand-50 text-brand-700 dark:border-brand-800 dark:bg-brand-950/40 dark:text-brand-300"
+          aria-pressed="true"
+          title={followingLabel}
+          aria-label={followingLabel}
+          onClick={handleUnsubscribe}
+        />
+        <SubscriptionNotifyMenu
+          activePref={notifyPref}
+          isSubscribed
+          onSelect={handlePrefChange}
+          onUnsubscribe={handleUnsubscribe}
+          trigger={
+            <Button
+              size={size}
+              variant="ghost"
+              iconOnly
+              icon={NotifyIcon}
+              aria-label={p3('subscriptions.notifyAria', { pref: notifyLabel })}
+              title={notifyLabel}
+              className="shrink-0 border border-[var(--app-border)] bg-[var(--app-surface)] hover:bg-[var(--app-surface-muted)]"
+            />
+          }
+        />
+      </div>
     )
   }
 

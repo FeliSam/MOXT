@@ -221,19 +221,21 @@ export function PublicProfileHero({
             reviewsLabel={reviewsLabel}
             onOpenReviews={onOpenReviews}
           />
-          {kindLabel ? (
+          {kindLabel || phone || rating ? (
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <span
-                className="inline-flex items-center gap-1 rounded-full border border-brand-200 bg-brand-50 px-2.5 py-0.5 text-[11px] font-bold text-brand-700 dark:border-brand-800 dark:bg-[var(--app-accent-soft)] dark:text-brand-300"
-                data-profile-kind-chip={profileKind || undefined}
-              >
-                {profileKind === 'business' ? (
-                  <FiBriefcase className="size-3" aria-hidden="true" />
-                ) : (
-                  <FiUser className="size-3" aria-hidden="true" />
-                )}
-                {kindLabel}
-              </span>
+              {kindLabel ? (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full border border-brand-200 bg-brand-50 px-2.5 py-0.5 text-[11px] font-bold text-brand-700 dark:border-brand-800 dark:bg-[var(--app-accent-soft)] dark:text-brand-300"
+                  data-profile-kind-chip={profileKind || undefined}
+                >
+                  {profileKind === 'business' ? (
+                    <FiBriefcase className="size-3" aria-hidden="true" />
+                  ) : (
+                    <FiUser className="size-3" aria-hidden="true" />
+                  )}
+                  {kindLabel}
+                </span>
+              ) : null}
               {phone ? (
                 <a
                   href={`tel:${phone}`}
@@ -243,6 +245,24 @@ export function PublicProfileHero({
                   <FiPhone className="size-3 text-brand-600 dark:text-brand-400 shrink-0" aria-hidden="true" />
                   <span>{phone}</span>
                 </a>
+              ) : null}
+              {rating !== undefined && rating !== null ? (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-700 dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-300"
+                  title={
+                    rating?.count > 0
+                      ? `${formatRatingAverage(rating.average)} · ${rating.count} ${reviewsLabel}`
+                      : '0 étoile'
+                  }
+                  data-testid="profile-star-count-badge"
+                >
+                  <FiStar className="size-3 fill-amber-400 text-amber-400 shrink-0" aria-hidden="true" />
+                  <span>
+                    {rating?.count > 0
+                      ? `${Number(rating.average || 0).toFixed(1)} (${rating.count})`
+                      : (Number(rating?.average) > 0 ? Number(rating.average).toFixed(1) : '0')}
+                  </span>
+                </span>
               ) : null}
             </div>
           ) : null}

@@ -2,7 +2,6 @@ import {
   FiArchive,
   FiBriefcase,
   FiCalendar,
-  FiCheckCircle,
   FiCopy,
   FiEdit2,
   FiExternalLink,
@@ -22,7 +21,6 @@ import { phase3Text } from '../../i18n/phase3I18n'
 import { jobContractLabel } from '../jobs/jobDisplayUtils'
 import { MarketplaceListingCard } from '../marketplace/MarketplaceListingCard'
 import { isActiveListing } from '../marketplace/listingCatalogUtils'
-import { marketplaceText } from '../marketplace/marketplaceI18n'
 import { getPostImages } from '../posts/postMediaUtils'
 import { newsPostPath } from '../posts/postFeedUtils'
 import { formatParcelMoney } from '../parcels/parcelCurrency'
@@ -138,17 +136,8 @@ export function MyListingPublicationCard({
   readOnly = false,
   guestMode = false,
   onGuestInteract,
-  onArchive,
-  onReactivate,
-  onDuplicate,
-  onMarkSold,
-  onDelete,
-  onBoost,
-  activeBoost = null,
 }) {
   const { t } = useLanguage()
-  const p3 = (key) => phase3Text(t, key)
-  const mt = (key) => marketplaceText(t, key)
   const status = statusMeta(listing.status, t)
   const active = isActiveListing(listing)
 
@@ -160,38 +149,7 @@ export function MyListingPublicationCard({
       showFavorite={readOnly}
       archived={!active}
       badge={<Badge tone={status.tone}>{status.label}</Badge>}
-      actions={
-        readOnly ? null : (
-          <>
-            <Link to={`/marketplace/${listing.id}/edit`}>
-              <Button variant="secondary" icon={FiEdit2} size="sm">
-                {p3('publications.cards.edit')}
-              </Button>
-            </Link>
-            <Button variant="secondary" icon={FiCopy} size="sm" onClick={onDuplicate}>
-              {p3('publications.cards.duplicate')}
-            </Button>
-            {active ? (
-              <>
-                <BoostAction active={active} onBoost={onBoost} activeBoost={activeBoost} />
-                <Button variant="secondary" icon={FiCheckCircle} size="sm" onClick={onMarkSold}>
-                  {mt('marketplace.common.markSold')}
-                </Button>
-                <Button variant="danger" icon={FiArchive} size="sm" onClick={onArchive}>
-                  {p3('publications.cards.archive')}
-                </Button>
-              </>
-            ) : (
-              <Button icon={FiRotateCcw} size="sm" onClick={onReactivate}>
-                {p3('publications.cards.republish')}
-              </Button>
-            )}
-            <Button variant="danger" icon={FiTrash2} size="sm" onClick={onDelete}>
-              {p3('publications.cards.delete')}
-            </Button>
-          </>
-        )
-      }
+      actions={null}
     />
   )
 }
