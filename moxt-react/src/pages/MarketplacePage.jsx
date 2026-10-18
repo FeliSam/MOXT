@@ -291,13 +291,15 @@ export function MarketplacePage() {
 
   // Delta catalog sync on mount: fetches only items updated since last cached timestamp.
   useEffect(() => {
-    if (!user?.id || guestMode) return
-    void syncMarketplaceCatalog(dispatch, store, { force: false })
-  }, [dispatch, store, user?.id, guestMode])
+    if (guestMode) return
+    const current = store.getState()?.marketplace?.items || []
+    const realCount = current.filter((item) => item?.id && !String(item.id).startsWith('ANN-DEMO-')).length
+    void syncMarketplaceCatalog(dispatch, store, { force: realCount < 25 })
+  }, [dispatch, store, guestMode])
 
   // Focus / tab re-entry: lightweight delta sync check (0 re-renders if nothing changed).
   useEffect(() => {
-    if (!user?.id || guestMode) return undefined
+    if (guestMode) return undefined
     const resyncIfNeeded = () => {
       void syncMarketplaceCatalog(dispatch, store, { force: false })
     }
@@ -310,7 +312,7 @@ export function MarketplacePage() {
       document.removeEventListener('visibilitychange', onVisibility)
       window.removeEventListener('focus', resyncIfNeeded)
     }
-  }, [dispatch, store, user?.id, guestMode])
+  }, [dispatch, store, guestMode])
 
   useEffect(() => {
     dispatch(loadFeedBoosts())

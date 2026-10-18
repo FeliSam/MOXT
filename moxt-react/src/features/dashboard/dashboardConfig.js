@@ -264,9 +264,9 @@ export const dashboardNewsTrackClass =
 export const dashboardNewsItemClass =
   'w-[clamp(12rem,58.5vw,15.4rem)] shrink-0 sm:w-[clamp(16.5rem,46vw,21rem)] xl:w-auto xl:min-w-0 xl:shrink'
 
-/** Annonces — carrousel puis grille 4 colonnes (lg). */
+/** Annonces — carrousel puis grille 4 colonnes (lg) avec espacement compact (-70%). */
 export const dashboardListingTrackClass =
-  `${dashboardTrackBase} horizontal-track--lg-grid dashboard-h-bleed lg:mx-0 lg:grid lg:grid-cols-4 lg:gap-4 lg:px-0`
+  'horizontal-track scrollbar-hidden flex gap-1.5 px-2 py-1.5 sm:gap-1.5 horizontal-track--lg-grid dashboard-h-bleed lg:mx-0 lg:grid lg:grid-cols-4 lg:gap-1.5 lg:px-0'
 
 export const dashboardListingItemClass =
   'w-[clamp(12rem,25vw,16rem)] shrink-0 overflow-hidden lg:w-auto lg:min-w-0 lg:shrink'

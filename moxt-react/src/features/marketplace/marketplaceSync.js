@@ -47,10 +47,14 @@ export async function syncMarketplaceCatalog(dispatch, store, { force = false } 
 
     if (!supabase) return
 
-    // 2. Synchronisation Delta si un catalogue sain existe déjà en local
+    // 2. Synchronisation Delta si un catalogue sain de vraies annonces existe déjà en local
+    const realListings = currentListings.filter(
+      (item) => item?.id && !String(item.id).startsWith('ANN-DEMO-')
+    )
+
     const latestTimestamp =
-      !force && currentListings.length >= 5
-        ? getLatestListingTimestamp(currentListings)
+      !force && realListings.length >= 25
+        ? getLatestListingTimestamp(realListings)
         : null
 
     if (latestTimestamp) {

@@ -28,7 +28,6 @@ import { setUser } from '../features/auth/authSlice'
 import { setIdentityProfiles } from '../features/identity/identitySlice'
 import { listingFromRemoteRow, mergeListingQuestions } from '../features/marketplace/marketplaceRemote'
 import { earlyApplyMarketplaceListings } from '../features/marketplace/marketplaceCatalogApply'
-import { getLatestListingTimestamp } from '../features/marketplace/marketplaceSync'
 import { LISTINGS_PUBLIC_LIMIT } from './catalogConstants.js'
 import { fromRow, fromRows } from '../services/remoteRowMapper'
 import { fetchUserConversations } from '@moxt/shared/utils/fetchUserConversations.js'
@@ -276,21 +275,6 @@ export const loadAllData = createAsyncThunk(
       }
     }
 
-    let existingListings = getState().marketplace?.items || []
-    if (existingListings.length === 0) {
-      try {
-        const { readListingsFromIdb } = await import('../features/marketplace/marketplaceListingsIdb.js')
-        const idbItems = await readListingsFromIdb()
-        if (idbItems?.length) {
-          existingListings = idbItems
-          dispatch(setMarketplace({ items: idbItems, mode: 'merge' }))
-        }
-      } catch {
-        // IDB fallback
-      }
-    }
-    const latestListingTime = existingListings.length >= 10 ? getLatestListingTimestamp(existingListings) : null
-
     const [
       listingsRes, parcelsRes, parcelRequestsRes,
       jobsRes, jobApplicationsRes,
@@ -312,9 +296,7 @@ export const loadAllData = createAsyncThunk(
       conversationsRpcRes,
       supportConversationsRes,
     ] = await Promise.all([
-      latestListingTime
-        ? supabase.from('listings').select('*').gt('updated_at', latestListingTime).order('updated_at', { ascending: false }).limit(100)
-        : supabase.from('listings').select('*').order('created_at', { ascending: false }).limit(LISTINGS_PUBLIC_LIMIT),
+      supabase.from('listings').select('*').order('created_at', { ascending: false }).limit(LISTINGS_PUBLIC_LIMIT),
       supabase.from('parcels').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
       supabase.from('parcel_requests').select('*').eq('user_id', uid).limit(USER_LIMIT),
       supabase.from('jobs').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
@@ -405,16 +387,8 @@ export const loadAllData = createAsyncThunk(
     // Early-apply marketplace as soon as listings response is ready so Découvrir
     // paints the full catalog without waiting for the rest of the thunk.
     const listingsPullOk = !listingsRes?.error
-    const listingsBeforeCount = (getState().marketplace?.items || []).length
-    const remoteListingsCount = (listingsRes.data || []).length
-    if (listingsPullOk) {
-      if (latestListingTime) {
-        if ((listingsRes.data || []).length > 0) {
-          earlyApplyMarketplaceListings(dispatch, listingsRes.data || [], 'merge', () => getState().marketplace?.items || [])
-        }
-      } else {
-        earlyApplyMarketplaceListings(dispatch, listingsRes.data || [])
-      }
+    if (listingsPullOk && Array.isArray(listingsRes.data) && listingsRes.data.length > 0) {
+      earlyApplyMarketplaceListings(dispatch, listingsRes.data)
     } else if (listingsRes?.error) {
       console.warn('[MOXT] Chargement des annonces:', listingsRes.error.message)
     }
