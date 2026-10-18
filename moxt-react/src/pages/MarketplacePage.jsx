@@ -439,9 +439,9 @@ export function MarketplacePage() {
   }
 
   return (
-    <div className="bg-white dark:bg-transparent min-w-0 max-w-full overflow-hidden grid gap-4 sm:gap-5 rounded-[var(--radius-card-lg)]">
+    <div className="bg-transparent min-w-0 max-w-full overflow-hidden grid gap-4 sm:gap-5">
       <ScrollSectionAnchor className="scroll-mt-24 grid gap-4 lg:scroll-mt-28 min-w-0 max-w-full">
-        <div className="rounded-2xl bg-white dark:bg-slate-900/90 p-2 sm:p-2.5 border border-slate-200/80 dark:border-slate-800 shadow-sm min-w-0 max-w-full overflow-hidden">
+        <div className="min-w-0 max-w-full overflow-hidden bg-transparent">
           <nav
             aria-label={mt('marketplace.common.type')}
             className="scrollbar-hidden flex items-stretch gap-2 overflow-x-auto touch-pan-x snap-x snap-mandatory min-w-0 max-w-full lg:overflow-visible lg:w-full"
@@ -475,6 +475,7 @@ export function MarketplacePage() {
         </div>
 
         <CatalogSearch
+          className="border-0 bg-transparent shadow-none !p-0"
           advancedOpen={advancedOpen}
           count={feed.total}
           activeFilterCount={[filters.category, filters.city, filters.min, filters.max].filter(Boolean).length}

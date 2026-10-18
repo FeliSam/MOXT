@@ -1,18 +1,19 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   FiAlertTriangle,
+  FiBriefcase,
+  FiCheckCircle,
   FiChevronLeft,
   FiChevronRight,
   FiEdit2,
-  FiEye,
-  FiHeart,
-  FiMapPin,
   FiMaximize2,
-  FiPackage,
   FiPercent,
   FiShield,
   FiShoppingBag,
+  FiStar,
   FiTrash2,
+  FiUser,
+  FiUserPlus,
 } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useOutletContext, useParams } from 'react-router-dom'
@@ -23,7 +24,7 @@ import { Button } from '../components/ui/Button'
 import { LinkifiedText } from '../components/ui/LinkifiedText'
 import { Card } from '../components/ui/Card'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
-import { DetailFacts, DetailMetrics, DetailTimeline } from '../components/ui/DetailBlocks'
+import { DetailFacts, DetailTimeline } from '../components/ui/DetailBlocks'
 import { ImageGalleryViewer } from '../components/ui/ImageGalleryViewer'
 import { useSwipeDownToClose } from '../hooks/useSwipeDownToClose'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -41,6 +42,7 @@ import { DELIVERY_OPTIONS, LISTING_CONDITIONS, optionLabel } from '../config/opt
 import { ContactButton } from '../features/communications/ContactButton'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { MarketplaceListingCard } from '../features/marketplace/MarketplaceListingCard'
+import { MarketplaceVideoCard } from '../features/marketplace/MarketplaceVideoRail'
 import {
   MARKETPLACE_DISCOVER_GRID_COLUMNS,
   MARKETPLACE_DISCOVER_GRID_GAP,
@@ -61,9 +63,12 @@ import { markListingViewed } from '../features/account/accountSlice'
 import { addToast } from '../features/ui/uiSlice'
 import { formatMoney } from '../features/transfers/transferUtils'
 import { formatDateTime, formatShortDate } from '../utils/formatters'
-import { PublisherDetailCard } from '../features/publications/PublisherDetailCard'
 import { PublisherPublicationsStrip } from '../features/publications/PublisherPublicationsStrip'
 import { usePublisherDetailProfile } from '../features/publications/usePublisherDetailProfile'
+import { usePublicationProfile } from '../features/publications/usePublicationProfile'
+import { SubscribeButton } from '../features/account/SubscribeButton'
+import { avatarDisplayUrl } from '../features/account/avatarDisplayUrl'
+import { pickShuffledWindow } from '../features/feed/feedDiscoveryUtils'
 import { ReportDialog } from '../components/ui/ReportDialog'
 import { useLanguage } from '../contexts/useLanguage'
 import {
@@ -84,6 +89,140 @@ const TAB_DEFS = [
   { value: 'history', labelKey: 'marketplace.detail.tabs.history' },
 ]
 
+function CompactPublisherCard({
+  publisherProfile,
+  listing,
+  ownerProfile,
+  currentUser,
+  requireAccount,
+  className = '',
+}) {
+  const { t } = useLanguage()
+  const business = publisherProfile?.business || publisherProfile?.ownerBusiness
+  const isBusiness = Boolean(business || listing?.businessId)
+  const publisherName = publisherProfile?.publisherName || t('publications.publisher.memberMoxt')
+  const verified = publisherProfile?.verified
+
+  const directoryPath =
+    publisherProfile?.businessProfilePath ||
+    (publisherProfile?.businessId ? `/businesses/${publisherProfile.businessId}` : null) ||
+    (business?.id ? `/businesses/${business.id}` : null)
+  const profilePath =
+    directoryPath ||
+    publisherProfile?.publicationsPath ||
+    (publisherProfile?.ownerId ? `/users/${publisherProfile.ownerId}/publications` : null) ||
+    '/marketplace'
+
+  const rawAvatarUrl =
+    business?.logoUrl ||
+    business?.avatarUrl ||
+    ownerProfile?.avatarUrl ||
+    listing?.sellerAvatar ||
+    null
+  const displayAvatarUrl = rawAvatarUrl
+    ? avatarDisplayUrl(rawAvatarUrl, { width: 96, height: 96 })
+    : null
+
+  const rating = publisherProfile?.rating
+  const ratingAverage = Number(rating?.average || 0)
+  const ratingCount = Number(rating?.count || 0)
+  const isSelf = Boolean(
+    currentUser?.id &&
+      (currentUser.id === publisherProfile?.ownerId || currentUser.id === listing?.ownerId),
+  )
+
+  const publisherId = isBusiness
+    ? publisherProfile?.businessId || business?.id || publisherProfile?.ownerId
+    : publisherProfile?.ownerId || listing?.ownerId
+
+  return (
+    <div
+      className={`flex items-center justify-between gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-muted)]/70 px-3.5 py-2.5 backdrop-blur-sm transition-colors hover:border-[var(--app-border-hover)] ${className}`}
+    >
+      <div className="flex min-w-0 items-center gap-3">
+        <Link
+          to={profilePath}
+          title={publisherName}
+          className="group relative size-11 shrink-0 overflow-hidden rounded-xl bg-slate-200 ring-1 ring-black/5 transition hover:scale-105 dark:bg-slate-800 dark:ring-white/10"
+        >
+          {displayAvatarUrl ? (
+            <img
+              src={displayAvatarUrl}
+              alt={publisherName}
+              className="size-full object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <span className="flex size-full items-center justify-center bg-gradient-to-br from-brand-600 to-indigo-700 text-sm font-black text-white">
+              {publisherName?.slice(0, 2).toUpperCase()}
+            </span>
+          )}
+        </Link>
+
+        <div className="min-w-0">
+          <Link
+            to={profilePath}
+            className="group flex items-center gap-1.5 transition"
+            title={publisherName}
+          >
+            <span className="truncate text-sm font-black text-[var(--app-text)] group-hover:text-brand-600">
+              {publisherName}
+            </span>
+            {verified ? (
+              <FiCheckCircle className="size-3.5 shrink-0 text-emerald-500" aria-label="Vérifié" />
+            ) : null}
+          </Link>
+
+          <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs">
+            {isBusiness ? (
+              <span className="inline-flex items-center gap-1 rounded-md border border-purple-500/20 bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-bold text-purple-600 dark:text-purple-400">
+                <FiBriefcase className="size-2.5" />
+                Entreprise
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-md border border-blue-500/20 bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-bold text-blue-600 dark:text-blue-400">
+                <FiUser className="size-2.5" />
+                Particulier
+              </span>
+            )}
+
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-500">
+              <FiStar className="size-3 fill-amber-400 text-amber-400" />
+              {ratingCount > 0 ? `${ratingAverage.toFixed(1)} (${ratingCount})` : 'Nouveau'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="shrink-0">
+        {currentUser?.id ? (
+          !isSelf && publisherId ? (
+            <SubscribeButton
+              publisherType={isBusiness ? 'business' : 'user'}
+              publisherId={publisherId}
+              publisherName={publisherName}
+              publisherPath={profilePath}
+              size="sm"
+              variant="secondary"
+              className="rounded-xl px-2.5 py-1 text-xs"
+            />
+          ) : null
+        ) : (
+          <Button
+            size="sm"
+            variant="secondary"
+            icon={FiUserPlus}
+            onClick={() => requireAccount("s'abonner")}
+            className="rounded-xl px-2.5 py-1 text-xs"
+          >
+            Suivre
+          </Button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function ListingDetailPage() {
   const { t } = useLanguage()
   const mt = (key, vars) => marketplaceText(t, key, vars)
@@ -101,6 +240,8 @@ export function ListingDetailPage() {
   const reduxAllListings = useSelector((state) => state.marketplace.items)
   const listing = guestMode ? guestDetail.listing : reduxListing
   const allListings = guestMode ? guestCatalog.listings : reduxAllListings
+  const videos = useSelector((state) => state.videos?.items || [])
+  const { profile: ownerProfile } = usePublicationProfile(listing?.ownerId, user)
   const [selectedImage, setSelectedImage] = useState(null)
   const [imageOpen, setImageOpen] = useState(false)
   const [soldOpen, setSoldOpen] = useState(false)
@@ -119,18 +260,135 @@ export function ListingDetailPage() {
     }
   }, [dispatch, listingId, user?.id])
 
-  const similar = useMemo(
-    () =>
-      allListings
-        .filter(
-          (item) =>
-            item.id !== listingId &&
-            item.status === 'active' &&
-            (item.category === listing?.category || item.city === listing?.city),
-        )
-        .slice(0, 3),
-    [allListings, listing?.category, listing?.city, listingId],
+  const activeListings = useMemo(
+    () => (allListings || []).filter((item) => item.id !== listingId && item.status === 'active'),
+    [allListings, listingId],
   )
+
+  const orderedSimilarListings = useMemo(() => {
+    if (!activeListings.length) return []
+    const exact = []
+    const sameCat = []
+    const sameCity = []
+    const others = []
+
+    for (const item of activeListings) {
+      const matchCat = Boolean(listing?.category && item.category === listing.category)
+      const matchCity = Boolean(listing?.city && item.city === listing.city)
+      if (matchCat && matchCity) {
+        exact.push(item)
+      } else if (matchCat) {
+        sameCat.push(item)
+      } else if (matchCity) {
+        sameCity.push(item)
+      } else {
+        others.push(item)
+      }
+    }
+
+    return [...exact, ...sameCat, ...sameCity, ...others]
+  }, [activeListings, listing])
+
+  const [similarDisplayCount, setSimilarDisplayCount] = useState(12)
+  const similarSentinelRef = useRef(null)
+  const similarLoadingMoreRef = useRef(false)
+
+  const renderedSimilarItems = useMemo(() => {
+    if (!orderedSimilarListings.length) return []
+    const stream = []
+    const videoPool = videos || []
+    let videoIndex = 0
+    let cycle = 0
+    let nextVideoInterval = 6
+    let listingsSinceVideo = 0
+
+    while (stream.length < similarDisplayCount) {
+      const cycleListings =
+        cycle === 0
+          ? orderedSimilarListings
+          : pickShuffledWindow(
+              orderedSimilarListings,
+              `${listingId}:sim-cycle:${cycle}`,
+              0,
+              orderedSimilarListings.length,
+            )
+
+      for (let i = 0; i < cycleListings.length && stream.length < similarDisplayCount; i++) {
+        const item = cycleListings[i]
+        stream.push({
+          kind: 'listing',
+          data: item,
+          id: cycle === 0 ? `sim-${item.id}` : `sim-${item.id}-c${cycle}-${i}`,
+        })
+        listingsSinceVideo++
+
+        if (
+          videoPool.length > 0 &&
+          listingsSinceVideo >= nextVideoInterval &&
+          stream.length < similarDisplayCount
+        ) {
+          const video = videoPool[videoIndex % videoPool.length]
+          stream.push({
+            kind: 'video',
+            data: video,
+            id: `sim-vid-${video.id}-c${cycle}-${videoIndex}`,
+          })
+          videoIndex++
+          listingsSinceVideo = 0
+          nextVideoInterval = 5 + (((i + cycle * 7) * 3) % 3)
+        }
+      }
+
+      cycle++
+      if (cycle > 500) break
+    }
+
+    return stream
+  }, [orderedSimilarListings, videos, similarDisplayCount, listingId])
+
+  useEffect(() => {
+    const el = similarSentinelRef.current
+    if (!el || !orderedSimilarListings.length) return undefined
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && !similarLoadingMoreRef.current) {
+          similarLoadingMoreRef.current = true
+          setSimilarDisplayCount((prev) => prev + 8)
+          setTimeout(() => {
+            similarLoadingMoreRef.current = false
+          }, 250)
+        }
+      },
+      { rootMargin: '800px' },
+    )
+
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [orderedSimilarListings.length])
+
+  useEffect(() => {
+    if (!orderedSimilarListings.length) return undefined
+    let ticking = false
+    const onScroll = () => {
+      if (ticking) return
+      ticking = true
+      requestAnimationFrame(() => {
+        const scrollPosition = window.innerHeight + window.scrollY
+        const threshold = document.documentElement.scrollHeight - 900
+        if (scrollPosition >= threshold && !similarLoadingMoreRef.current) {
+          similarLoadingMoreRef.current = true
+          setSimilarDisplayCount((prev) => prev + 8)
+          setTimeout(() => {
+            similarLoadingMoreRef.current = false
+          }, 250)
+        }
+        ticking = false
+      })
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [orderedSimilarListings.length])
 
   if (guestMode && guestDetail.loading) {
     return <Card>{mt('marketplace.page.searchPlaceholder')}</Card>
@@ -216,7 +474,22 @@ export function ListingDetailPage() {
       <PageHeader
         title={listing.title}
         actions={
-          <BackButton fallback="/marketplace" />
+          <div className="flex items-center gap-2">
+            {!isListingOwner ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={FiAlertTriangle}
+                onClick={() => {
+                  if (requireAccount('signaler une annonce')) return
+                  setReportOpen(true)
+                }}
+                className="text-[var(--app-text-muted)] hover:text-red-500"
+                title={mt('marketplace.detail.report')}
+              />
+            ) : null}
+            <BackButton fallback="/marketplace" />
+          </div>
         }
       />
 
@@ -347,8 +620,14 @@ export function ListingDetailPage() {
           </Card>
 
           {publisherProfile ? (
-            <div className="grid gap-5 xl:hidden">
-              <PublisherDetailCard {...publisherProfile} />
+            <div className="grid gap-3 xl:hidden">
+              <CompactPublisherCard
+                publisherProfile={publisherProfile}
+                listing={listing}
+                ownerProfile={ownerProfile}
+                currentUser={user}
+                requireAccount={requireAccount}
+              />
               <PublisherPublicationsStrip
                 currentId={listing.id}
                 ownerId={publisherProfile.ownerId}
@@ -358,41 +637,6 @@ export function ListingDetailPage() {
               />
             </div>
           ) : null}
-
-          <DetailMetrics
-            items={[
-              rules.showCondition
-                ? {
-                    icon: FiPackage,
-                    label: mt('marketplace.common.condition'),
-                    value: conditionOption
-                      ? listingOptionLabel(t, conditionOption)
-                      : optionLabel(LISTING_CONDITIONS, listing.condition),
-                  }
-                : {
-                    icon: FiPackage,
-                    label: mt('marketplace.common.type'),
-                    value: listingTypeLabel,
-                  },
-              {
-                icon: FiMapPin,
-                label: mt('marketplace.detail.location'),
-                value: listing.city,
-              },
-              {
-                icon: FiEye,
-                label: mt('marketplace.detail.consultations'),
-                value: mt('marketplace.common.views', { count: listing.views || 0 }),
-              },
-              {
-                icon: FiHeart,
-                label: mt('marketplace.detail.interest'),
-                value: mt('marketplace.common.favorites', {
-                  count: listing.favorites?.length || 0,
-                }),
-              },
-            ]}
-          />
         </div>
 
         <aside className="grid min-w-0 content-start gap-5 xl:sticky xl:top-28">
@@ -425,11 +669,18 @@ export function ListingDetailPage() {
           </Card>
 
           {publisherProfile ? (
-            <PublisherDetailCard {...publisherProfile} className="hidden xl:block" />
+            <CompactPublisherCard
+              publisherProfile={publisherProfile}
+              listing={listing}
+              ownerProfile={ownerProfile}
+              currentUser={user}
+              requireAccount={requireAccount}
+              className="hidden xl:flex"
+            />
           ) : null}
 
-          <Card>
-            {isListingOwner ? (
+          {isListingOwner ? (
+            <Card>
               <div className="grid gap-2">
                 <Link to={`/marketplace/${listing.id}/edit`}>
                   <Button className="w-full" variant="secondary" icon={FiEdit2}>
@@ -442,16 +693,8 @@ export function ListingDetailPage() {
                   </Button>
                 ) : null}
               </div>
-            ) : user?.id ? (
-              <Button
-                variant="danger"
-                icon={FiAlertTriangle}
-                onClick={() => setReportOpen(true)}
-              >
-                {mt('marketplace.detail.report')}
-              </Button>
-            ) : null}
-          </Card>
+            </Card>
+          ) : null}
           {isAdminViewer ? (
             <Card className="border border-brand-100 bg-brand-50/60 dark:border-brand-900/40 dark:bg-brand-950/20">
               <div className="flex items-center gap-2">
@@ -489,10 +732,20 @@ export function ListingDetailPage() {
         </div>
       ) : null}
 
-      {similar.length ? (
-        <section className="grid gap-3">
-          <div className="min-w-0">
-            <h2 className="text-sm font-black tracking-tight">{mt('marketplace.detail.similarTitle')}</h2>
+      {renderedSimilarItems.length ? (
+        <section className="grid gap-4 mt-6">
+          <div className="flex items-center justify-between gap-3 min-w-0">
+            <div>
+              <h2 className="text-sm sm:text-base font-black tracking-tight">
+                {mt('marketplace.detail.similarTitle') || 'Annonces similaires & Recommandations'}
+              </h2>
+              <p className="text-xs text-[var(--app-text-muted)] mt-0.5">
+                Produits similaires puis exploration continue du catalogue
+              </p>
+            </div>
+            <span className="text-xs font-semibold text-brand-600 dark:text-brand-400 shrink-0">
+              Flux continu
+            </span>
           </div>
           <CatalogGrid
             lazy={false}
@@ -500,21 +753,39 @@ export function ListingDetailPage() {
             gap={MARKETPLACE_DISCOVER_GRID_GAP}
             className="min-w-0 w-full"
           >
-            {similar.map((item, index) => (
+            {renderedSimilarItems.map((item, index) => (
               <RevealListItem
                 key={item.id}
                 index={index}
                 className={`${MARKETPLACE_DISCOVERY_CARD_HEIGHT} min-w-0 overflow-hidden`}
               >
-                <MarketplaceListingCard
-                  listing={item}
-                  guestMode={guestMode}
-                  onGuestInteract={() => requireAccount('aimer cette annonce')}
-                  layout="rail"
-                />
+                {item.kind === 'video' ? (
+                  <MarketplaceVideoCard
+                    video={item.data}
+                    badgeLabel={mt('marketplace.page.feed.badgeVideo')}
+                  />
+                ) : (
+                  <MarketplaceListingCard
+                    listing={item.data}
+                    guestMode={guestMode}
+                    onGuestInteract={() => requireAccount('aimer cette annonce')}
+                    layout="rail"
+                  />
+                )}
               </RevealListItem>
             ))}
           </CatalogGrid>
+
+          <div
+            ref={similarSentinelRef}
+            className="h-10 w-full flex items-center justify-center my-4"
+            aria-hidden="true"
+          >
+            <div className="flex items-center gap-2 text-xs font-semibold text-[var(--app-text-muted)] animate-pulse">
+              <span className="inline-block size-2 rounded-full bg-brand-500 animate-ping shrink-0" />
+              <span>Recharge progressive des annonces...</span>
+            </div>
+          </div>
         </section>
       ) : null}
 
@@ -532,6 +803,15 @@ export function ListingDetailPage() {
         sourceType="listing"
         sourceId={listing.id}
         editTo={isListingOwner ? `/marketplace/${listing.id}/edit` : undefined}
+        onReport={
+          !isListingOwner
+            ? () => {
+                if (requireAccount('signaler une annonce')) return
+                setReportOpen(true)
+              }
+            : undefined
+        }
+        reportLabel={mt('marketplace.detail.report')}
       />
 
       <ImageGalleryViewer

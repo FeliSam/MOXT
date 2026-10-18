@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { FiArchive, FiEdit2, FiPlus, FiRotateCcw, FiShare2 } from 'react-icons/fi'
+import { FiAlertTriangle, FiArchive, FiEdit2, FiPlus, FiRotateCcw, FiShare2 } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../../contexts/useLanguage'
 import { ContactButton } from '../../features/communications/ContactButton'
@@ -39,6 +39,8 @@ export function DetailFloatingActions({
   archiveLabel,
   onReactivate,
   reactivateLabel,
+  onReport,
+  reportLabel,
 }) {
   const { t } = useLanguage()
   const mt = (key, vars) => marketplaceText(t, key, vars)
@@ -179,6 +181,25 @@ export function DetailFloatingActions({
               relatedType={relatedType}
               onContact={onContact}
             />
+          ),
+        }
+      : null,
+    !isOwner && onReport
+      ? {
+          key: 'report',
+          label: reportLabel || mt('marketplace.detail.report') || 'Signaler',
+          node: (
+            <button
+              type="button"
+              onClick={() => {
+                onReport()
+                setOpen(false)
+              }}
+              aria-label={reportLabel || mt('marketplace.detail.report') || 'Signaler'}
+              className={`${ICON_BUTTON_CLASS} text-rose-600 hover:text-rose-700 hover:border-rose-300 dark:text-rose-400`}
+            >
+              <FiAlertTriangle />
+            </button>
           ),
         }
       : null,
