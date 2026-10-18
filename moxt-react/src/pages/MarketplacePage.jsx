@@ -239,7 +239,7 @@ export function MarketplacePage() {
     return stream
   }, [visible, availableVideos])
 
-  const INITIAL_PAGE_SIZE = 16
+  const INITIAL_PAGE_SIZE = 12
   const PAGE_INCREMENT = 12
   const [displayCount, setDisplayCount] = useState(INITIAL_PAGE_SIZE)
   const sentinelRef = useRef(null)
@@ -331,12 +331,12 @@ export function MarketplacePage() {
   }
 
   return (
-    <div className="bg-white dark:bg-transparent grid gap-4 sm:gap-5 rounded-[var(--radius-card-lg)]">
-      <ScrollSectionAnchor className="scroll-mt-24 grid gap-4 lg:scroll-mt-28">
-        <div className="rounded-2xl bg-white dark:bg-slate-900/90 p-2 sm:p-2.5 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+    <div className="bg-white dark:bg-transparent min-w-0 max-w-full overflow-hidden grid gap-4 sm:gap-5 rounded-[var(--radius-card-lg)]">
+      <ScrollSectionAnchor className="scroll-mt-24 grid gap-4 lg:scroll-mt-28 min-w-0 max-w-full">
+        <div className="rounded-2xl bg-white dark:bg-slate-900/90 p-2 sm:p-2.5 border border-slate-200/80 dark:border-slate-800 shadow-sm min-w-0 max-w-full overflow-hidden">
           <nav
             aria-label={mt('marketplace.common.type')}
-            className="scrollbar-hidden flex items-stretch gap-2 overflow-x-auto touch-pan-x snap-x snap-mandatory lg:w-full"
+            className="scrollbar-hidden flex items-stretch gap-2 overflow-x-auto touch-pan-x snap-x snap-mandatory min-w-0 max-w-full lg:overflow-visible lg:w-full"
           >
             <MarketplaceBentoTile
               featured
@@ -347,7 +347,7 @@ export function MarketplacePage() {
               typeKey="all"
               onClick={() => dispatch(setMarketplaceFilters({ type: '', category: '' }))}
             />
-            <div className="grid grid-rows-2 grid-flow-col auto-cols-[142px] sm:auto-cols-[158px] lg:auto-cols-fr lg:flex-1 gap-2">
+            <div className="grid grid-rows-2 grid-flow-col auto-cols-[142px] sm:auto-cols-[158px] lg:grid-flow-row lg:grid-cols-3 lg:grid-rows-2 lg:auto-cols-auto lg:flex-1 min-w-0 gap-2">
               {LISTING_TYPES_META.map((option) => (
                 <MarketplaceBentoTile
                   key={option.value}

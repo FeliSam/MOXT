@@ -189,7 +189,7 @@ export function MarketplaceFeedBanner({ bannerIndex = 0, onInteract }) {
     const actionLabel = currentBroadcast.action_label || 'Découvrir'
 
     return (
-      <div className="col-span-2 md:col-span-3 xl:col-span-4 my-2">
+      <div className="col-span-full my-2">
         <div className="group relative overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-md transition-all hover:shadow-lg">
           <div className={`grid ${imageUrl ? 'md:grid-cols-12' : 'grid-cols-1'} items-center`}>
             {imageUrl ? (
@@ -253,7 +253,7 @@ export function MarketplaceFeedBanner({ bannerIndex = 0, onInteract }) {
   // 1. Android App Download
   if (builtInVariant === 'install_android') {
     return (
-      <div className="col-span-2 md:col-span-3 xl:col-span-4 my-2">
+      <div className="col-span-full my-2">
         <div className="relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/15 via-teal-500/10 to-[var(--app-surface)] p-4 sm:p-5 shadow-sm">
           <div className="pointer-events-none absolute -right-6 -bottom-6 size-36 sm:size-48 opacity-25 dark:opacity-30 select-none">
             <img src="/assets/services/quick-marketplace.png" alt="" className="size-full object-contain" />
@@ -306,7 +306,7 @@ export function MarketplaceFeedBanner({ bannerIndex = 0, onInteract }) {
   // 2. iOS Safari Add to Home
   if (builtInVariant === 'install_ios') {
     return (
-      <div className="col-span-2 md:col-span-3 xl:col-span-4 my-2">
+      <div className="col-span-full my-2">
         <div className="relative overflow-hidden rounded-2xl border border-sky-500/30 bg-gradient-to-br from-sky-500/15 via-brand-500/10 to-[var(--app-surface)] p-4 sm:p-5 shadow-sm">
           <div className="pointer-events-none absolute -right-6 -bottom-6 size-36 sm:size-48 opacity-25 dark:opacity-30 select-none">
             <img src="/assets/install/iphone-add-home-fr.png" alt="" className="size-full object-contain" />
@@ -404,7 +404,7 @@ export function MarketplaceFeedBanner({ bannerIndex = 0, onInteract }) {
   // 3. Business Creation & Promotion
   if (builtInVariant === 'business_create') {
     return (
-      <div className="col-span-2 md:col-span-3 xl:col-span-4 my-2">
+      <div className="col-span-full my-2">
         <div className="relative overflow-hidden rounded-2xl border border-brand-500/30 bg-gradient-to-r from-brand-500/15 via-amber-500/10 to-[var(--app-surface)] p-4 sm:p-5 shadow-sm">
           <div className="pointer-events-none absolute -right-6 -bottom-6 size-36 sm:size-48 opacity-25 dark:opacity-30 select-none">
             <img src="/assets/services/service-businesses.png" alt="" className="size-full object-contain" />
@@ -447,7 +447,7 @@ export function MarketplaceFeedBanner({ bannerIndex = 0, onInteract }) {
   // 4. Parcels & Baggage Transport Promo
   if (builtInVariant === 'parcels_promo') {
     return (
-      <div className="col-span-2 md:col-span-3 xl:col-span-4 my-2">
+      <div className="col-span-full my-2">
         <div className="relative overflow-hidden rounded-2xl border border-teal-500/30 bg-gradient-to-r from-teal-500/15 via-cyan-500/10 to-[var(--app-surface)] p-4 sm:p-5 shadow-sm">
           <div className="pointer-events-none absolute -right-6 -bottom-6 size-36 sm:size-48 opacity-25 dark:opacity-30 select-none">
             <img src="/assets/services/quick-parcel.png" alt="" className="size-full object-contain" />
@@ -490,7 +490,7 @@ export function MarketplaceFeedBanner({ bannerIndex = 0, onInteract }) {
   // 5. Jobs & Recruitment Promo
   if (builtInVariant === 'jobs_promo') {
     return (
-      <div className="col-span-2 md:col-span-3 xl:col-span-4 my-2">
+      <div className="col-span-full my-2">
         <div className="relative overflow-hidden rounded-2xl border border-indigo-500/30 bg-gradient-to-r from-indigo-500/15 via-blue-500/10 to-[var(--app-surface)] p-4 sm:p-5 shadow-sm">
           <div className="pointer-events-none absolute -right-6 -bottom-6 size-36 sm:size-48 opacity-25 dark:opacity-30 select-none">
             <img src="/assets/services/quick-job.png" alt="" className="size-full object-contain" />
@@ -533,7 +533,7 @@ export function MarketplaceFeedBanner({ bannerIndex = 0, onInteract }) {
   // 6. Events & Community Promo
   if (builtInVariant === 'events_promo') {
     return (
-      <div className="col-span-2 md:col-span-3 xl:col-span-4 my-2">
+      <div className="col-span-full my-2">
         <div className="relative overflow-hidden rounded-2xl border border-fuchsia-500/30 bg-gradient-to-r from-fuchsia-500/15 via-purple-500/10 to-[var(--app-surface)] p-4 sm:p-5 shadow-sm">
           <div className="pointer-events-none absolute -right-6 -bottom-6 size-36 sm:size-48 opacity-25 dark:opacity-30 select-none">
             <img src="/assets/services/quick-event.png" alt="" className="size-full object-contain" />
@@ -576,7 +576,7 @@ export function MarketplaceFeedBanner({ bannerIndex = 0, onInteract }) {
   // 7. Video Reels Promo
   if (builtInVariant === 'videos_promo') {
     return (
-      <div className="col-span-2 md:col-span-3 xl:col-span-4 my-2">
+      <div className="col-span-full my-2">
         <div className="relative overflow-hidden rounded-2xl border border-rose-500/30 bg-gradient-to-r from-rose-500/15 via-pink-500/10 to-[var(--app-surface)] p-4 sm:p-5 shadow-sm">
           <div className="pointer-events-none absolute -right-6 -bottom-6 size-36 sm:size-48 opacity-25 dark:opacity-30 select-none">
             <img src="/assets/services/service-community.png" alt="" className="size-full object-contain" />
@@ -619,7 +619,7 @@ export function MarketplaceFeedBanner({ bannerIndex = 0, onInteract }) {
   // 8. Avatar Customization
   if (builtInVariant === 'avatar_customize') {
     return (
-      <div className="col-span-2 md:col-span-3 xl:col-span-4 my-2">
+      <div className="col-span-full my-2">
         <div className="relative overflow-hidden rounded-2xl border border-violet-500/30 bg-gradient-to-r from-violet-500/15 via-rose-500/10 to-[var(--app-surface)] p-4 sm:p-5 shadow-sm">
           <div className="pointer-events-none absolute -right-6 -bottom-6 size-36 sm:size-48 opacity-25 dark:opacity-30 select-none">
             <img src="/assets/welcome-moxt-launch.png" alt="" className="size-full object-contain" />
@@ -672,7 +672,7 @@ export function MarketplaceFeedBanner({ bannerIndex = 0, onInteract }) {
 
   // 9. Moxt Transfers
   return (
-    <div className="col-span-2 md:col-span-3 xl:col-span-4 my-2">
+    <div className="col-span-full my-2">
       <div className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/15 via-brand-500/10 to-[var(--app-surface)] p-4 sm:p-5 shadow-sm">
         <div className="pointer-events-none absolute -right-6 -bottom-6 size-36 sm:size-48 opacity-25 dark:opacity-30 select-none">
           <img src="/assets/services/service-transfer.png" alt="" className="size-full object-contain" />

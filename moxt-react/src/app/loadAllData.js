@@ -387,6 +387,8 @@ export const loadAllData = createAsyncThunk(
     // Early-apply marketplace as soon as listings response is ready so Découvrir
     // paints the full catalog without waiting for the rest of the thunk.
     const listingsPullOk = !listingsRes?.error
+    const listingsBeforeCount = (getState().marketplace?.items || []).length
+    const remoteListingsCount = (listingsRes.data || []).length
     if (listingsPullOk && Array.isArray(listingsRes.data) && listingsRes.data.length > 0) {
       earlyApplyMarketplaceListings(dispatch, listingsRes.data)
     } else if (listingsRes?.error) {
