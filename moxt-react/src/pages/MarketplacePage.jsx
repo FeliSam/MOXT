@@ -1,7 +1,7 @@
 import { FiGrid, FiPlus, FiRefreshCw, FiShoppingBag } from 'react-icons/fi'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useDispatch, useSelector, useStore } from 'react-redux'
-import { useNavigate, useOutletContext } from 'react-router-dom'
+import { useNavigate, useOutletContext, useSearchParams } from 'react-router-dom'
 import { addToast } from '../features/ui/uiSlice'
 import { Button } from '../components/ui/Button'
 import { CatalogSearch } from '../components/ui/CatalogSearch'
@@ -16,7 +16,10 @@ import {
   listingSpecificDetails,
 } from '../config/listingConfig'
 import { MarketplaceListingCard, GLOBAL_LOADED_IMAGES } from '../features/marketplace/MarketplaceListingCard'
-import { syncMarketplaceCatalog } from '../features/marketplace/marketplaceSync'
+import {
+  syncMarketplaceCatalog,
+  verifyAndReconcileMarketplaceCatalog,
+} from '../features/marketplace/marketplaceSync'
 import { supabase } from '../services/supabaseClient'
 import { listingFromRemoteRow } from '../features/marketplace/marketplaceRemote'
 import { MarketplaceDiscoveryRail } from '../features/marketplace/MarketplaceDiscoveryRail'
@@ -81,12 +84,55 @@ export function MarketplacePage() {
   const dispatch = useDispatch()
   const store = useStore()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { guestMode = false } = useOutletContext() || {}
   const { requireAccount } = useGuestAction()
   const guestCatalog = useGuestMarketplaceListings(guestMode)
   const reduxListings = useSelector((state) => state.marketplace.items)
-  const listings = guestMode ? guestCatalog.listings : reduxListings
+  const listings = guestMode
+    ? guestCatalog.listings?.length
+      ? guestCatalog.listings
+      : reduxListings
+    : reduxListings
   const filters = useSelector((state) => state.marketplace.filters)
+
+  // Synchronisation bidirectionnelle : URL search params <-> Filtres Redux
+  useEffect(() => {
+    const urlType = searchParams.get('type') || ''
+    const urlCategory = searchParams.get('category') || ''
+    const urlQuery = searchParams.get('q') || searchParams.get('query') || ''
+    const urlCity = searchParams.get('city') || ''
+
+    if (
+      urlType !== (filters.type || '') ||
+      urlCategory !== (filters.category || '') ||
+      (urlQuery && urlQuery !== (filters.query || '')) ||
+      (urlCity && urlCity !== (filters.city || ''))
+    ) {
+      dispatch(
+        setMarketplaceFilters({
+          type: urlType,
+          category: urlCategory,
+          query: urlQuery || (urlType || urlCategory ? '' : filters.query),
+          city: urlCity || (urlType || urlCategory ? '' : filters.city),
+        }),
+      )
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- déclenché uniquement lors d'un changement de l'URL searchParams
+  }, [searchParams, dispatch])
+
+  function handleSelectType(typeValue) {
+    dispatch(setMarketplaceFilters({ type: typeValue, category: '' }))
+    const nextParams = new URLSearchParams(searchParams)
+    if (typeValue) {
+      nextParams.set('type', typeValue)
+    } else {
+      nextParams.delete('type')
+    }
+    nextParams.delete('category')
+    setSearchParams(nextParams, { replace: true })
+  }
+
   const categoryOptions = useMemo(
     () => (filters.type ? categoriesForType(filters.type) : []),
     [filters.type],
@@ -229,79 +275,111 @@ export function MarketplacePage() {
     setDisplayCount(INITIAL_PAGE_SIZE)
   }
 
-  // Endless progressive stream with organic video interleaving and deterministic cycle permutation
-  const renderedItems = useMemo(() => {
+  // Stream d'annonces continu : priorité aux résultats du filtre/recherche, puis prolongation fluide
+  const streamPool = useMemo(() => {
     if (!visible?.length) return []
+    const primary = visible
+    // Si un filtre est actif, on prépare les autres annonces actives pour continuer le scroll infini sans coupure
+    const otherActive = (listings || []).filter(
+      (item) => item?.status === 'active' && !primary.some((p) => p.id === item.id),
+    )
+    return [...primary, ...otherActive]
+  }, [visible, listings])
 
-    const stream = []
-    const videoPool = availableVideos || []
-    let videoIndex = 0
-    let cycle = 0
-    let nextVideoInterval = 5
-    let listingsSinceVideo = 0
-
-    while (stream.length < displayCount) {
-      const cycleListings =
-        cycle === 0
-          ? visible
-          : pickShuffledWindow(visible, `${suggestionSalt}:c${cycle}`, 0, visible.length)
-
-      for (let i = 0; i < cycleListings.length && stream.length < displayCount; i++) {
-        const listing = cycleListings[i]
-        stream.push({
+  const renderedListings = useMemo(() => {
+    if (!streamPool.length) return []
+    if (displayCount <= streamPool.length) {
+      return streamPool.slice(0, displayCount).map((listing) => ({
+        kind: 'listing',
+        data: listing,
+        id: `listing-${listing.id}`,
+      }))
+    }
+    // Si l'utilisateur scrolle au-delà du catalogue complet (28+ annonces déjà vues),
+    // on continue d'alimenter avec un shuffle déterministe
+    const items = streamPool.map((listing) => ({
+      kind: 'listing',
+      data: listing,
+      id: `listing-${listing.id}`,
+    }))
+    let cycle = 1
+    while (items.length < displayCount && cycle <= 50) {
+      const shuffled = pickShuffledWindow(
+        streamPool,
+        `${suggestionSalt}:c${cycle}`,
+        0,
+        streamPool.length,
+      )
+      for (const listing of shuffled) {
+        if (items.length >= displayCount) break
+        items.push({
           kind: 'listing',
           data: listing,
-          id: cycle === 0 ? `listing-${listing.id}` : `listing-${listing.id}-c${cycle}-${i}`,
+          id: `listing-${listing.id}-c${cycle}`,
         })
-        listingsSinceVideo++
-
-        if (
-          videoPool.length > 0 &&
-          listingsSinceVideo >= nextVideoInterval &&
-          stream.length < displayCount
-        ) {
-          const video = videoPool[videoIndex % videoPool.length]
-          stream.push({
-            kind: 'video',
-            data: video,
-            id: `video-${video.id}-c${cycle}-${videoIndex}`,
-          })
-          videoIndex++
-          listingsSinceVideo = 0
-          nextVideoInterval = 5 + (((i + cycle * 13) * 7 + 3) % 3)
-        }
       }
-
       cycle++
-      if (cycle > 500) break
+    }
+    return items
+  }, [streamPool, displayCount, suggestionSalt])
+
+  // Option 1 : Alternance coordonnée (toutes les 6 annonces -> 1 vidéo, puis 6 annonces -> 1 badge différent)
+  // Règle de seuil : Pas d'intercalage intrusif si la liste contient moins de 5 éléments
+  const discoverGridEntries = useMemo(() => {
+    if (!renderedListings.length) return []
+    if (renderedListings.length < 5) {
+      return renderedListings.map((item) => ({
+        type: 'item',
+        item,
+        key: item.id,
+      }))
     }
 
-    return stream
-  }, [visible, availableVideos, displayCount, suggestionSalt])
-
-  // Chaque 4e élément de la grille Découvrir doit être un badge de bannière (slots 4, 8, 12, 16...)
-  const discoverGridEntries = useMemo(() => {
     const entries = []
+    const videoPool = availableVideos || []
+    let videoIndex = 0
     let bannerSlot = 0
-    for (let i = 0; i < renderedItems.length; i++) {
+    let listingsSinceSpecial = 0
+    let alternateVideo = true
+
+    for (let i = 0; i < renderedListings.length; i++) {
       entries.push({
         type: 'item',
-        item: renderedItems[i],
-        key: renderedItems[i].id,
+        item: renderedListings[i],
+        key: renderedListings[i].id,
       })
-      if ((entries.length + 1) % 4 === 0) {
-        entries.push({
-          type: 'banner',
-          bannerIndex: bannerSlot,
-          key: `discover-banner-${bannerSlot}-${renderedItems[i].id}`,
-        })
-        bannerSlot++
+      listingsSinceSpecial++
+
+      // Toutes les 6 annonces réelles : intercaler 1 vidéo ou 1 badge en alternance
+      if (listingsSinceSpecial >= 6) {
+        if (alternateVideo && videoPool.length > 0) {
+          const video = videoPool[videoIndex % videoPool.length]
+          entries.push({
+            type: 'video',
+            video,
+            key: `video-slot-${videoIndex}-${video.id}`,
+          })
+          videoIndex++
+          alternateVideo = false
+        } else {
+          entries.push({
+            type: 'banner',
+            bannerIndex: bannerSlot,
+            key: `discover-banner-${bannerSlot}-${renderedListings[i].id}`,
+          })
+          bannerSlot++
+          alternateVideo = true
+        }
+        listingsSinceSpecial = 0
       }
     }
-    return entries
-  }, [renderedItems])
 
-  const hasMore = visible.length > 0
+    return entries
+  }, [renderedListings, availableVideos])
+
+  const hasMore =
+    streamPool.length > 0 &&
+    (displayCount < streamPool.length || streamPool.length >= 6)
 
   // Observer pour déclenchement automatique et progressif de l'infinite scroll (800px en avance)
   useEffect(() => {
@@ -349,12 +427,13 @@ export function MarketplacePage() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [hasMore])
 
-  // Actualiseur manuel du catalogue (force un re-fetch Supabase complet)
+  // Actualiseur manuel du catalogue (force un re-fetch Supabase complet et réconciliation)
   async function handleRefreshCatalog() {
     if (refreshingCatalog) return
     setRefreshingCatalog(true)
     try {
       await syncMarketplaceCatalog(dispatch, store, { force: true })
+      await verifyAndReconcileMarketplaceCatalog(dispatch, store)
       dispatch(addToast({ type: 'success', message: 'Catalogue d’annonces actualisé.' }))
     } catch {
       dispatch(addToast({ type: 'error', message: 'Erreur lors de l’actualisation du catalogue.' }))
@@ -362,6 +441,11 @@ export function MarketplacePage() {
       setRefreshingCatalog(false)
     }
   }
+
+  // 1. Auto-Healing / Vérification d'intégrité : s'assure que 100% des annonces actives en base sont chargées
+  useEffect(() => {
+    void verifyAndReconcileMarketplaceCatalog(dispatch, store)
+  }, [dispatch, store])
 
   // Cache-first: hydrate immediately from local IndexedDB if Redux is empty on mount.
   useEffect(() => {
@@ -449,12 +533,12 @@ export function MarketplacePage() {
   }, [dispatch])
 
   useEffect(() => {
-    const covers = renderedItems
+    const covers = renderedListings
       .filter((item) => item.kind === 'listing')
       .map((item) => item.data)
       .slice(0, MARKETPLACE_COVER_PRELOAD)
     prefetchListingCovers(covers)
-  }, [renderedItems])
+  }, [renderedListings])
 
   function scrollToDiscover() {
     discoverRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -475,7 +559,7 @@ export function MarketplacePage() {
               label={mt('marketplace.common.all')}
               hint="Tout le catalogue"
               typeKey="all"
-              onClick={() => dispatch(setMarketplaceFilters({ type: '', category: '' }))}
+              onClick={() => handleSelectType('')}
             />
             <div className="grid grid-rows-2 grid-flow-col auto-cols-[142px] sm:auto-cols-[158px] md:grid-flow-row md:grid-cols-4 md:grid-rows-2 md:auto-cols-auto md:flex-1 min-w-0 gap-2.5">
               {LISTING_TYPES_META.map((option) => (
@@ -487,9 +571,7 @@ export function MarketplacePage() {
                   hint={option.hint}
                   typeKey={option.value}
                   iconColor={option.color}
-                  onClick={() =>
-                    dispatch(setMarketplaceFilters({ type: option.value, category: '' }))
-                  }
+                  onClick={() => handleSelectType(option.value)}
                 />
               ))}
             </div>
@@ -507,7 +589,10 @@ export function MarketplacePage() {
             if (query.trim().length >= 2) saveSearchTerm(query)
           }}
           onToggleAdvanced={() => setAdvancedOpen((value) => !value)}
-          onClear={() => dispatch(resetMarketplaceFilters())}
+          onClear={() => {
+            dispatch(resetMarketplaceFilters())
+            setSearchParams({}, { replace: true })
+          }}
           placeholder={mt('marketplace.page.searchPlaceholder')}
         >
           <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
@@ -515,9 +600,7 @@ export function MarketplacePage() {
               id="market-type"
               label={mt('marketplace.common.type')}
               value={filters.type}
-              onChange={(event) =>
-                dispatch(setMarketplaceFilters({ type: event.target.value, category: '' }))
-              }
+              onChange={(event) => handleSelectType(event.target.value)}
             >
               <option value="">{mt('marketplace.common.allPlural')}</option>
               {LISTING_TYPES_META.map((option) => (
@@ -661,6 +744,21 @@ export function MarketplacePage() {
                     )
                   }
 
+                  if (entry.type === 'video') {
+                    return (
+                      <RevealListItem
+                        key={entry.key}
+                        index={index}
+                        className={`${MARKETPLACE_DISCOVERY_CARD_HEIGHT} min-w-0 overflow-hidden`}
+                      >
+                        <MarketplaceVideoCard
+                          video={entry.video}
+                          badgeLabel={mt('marketplace.page.feed.badgeVideo')}
+                        />
+                      </RevealListItem>
+                    )
+                  }
+
                   const item = entry.item
                   return (
                     <RevealListItem
@@ -668,19 +766,12 @@ export function MarketplacePage() {
                       index={index}
                       className={`${MARKETPLACE_DISCOVERY_CARD_HEIGHT} min-w-0 overflow-hidden`}
                     >
-                      {item.kind === 'video' ? (
-                        <MarketplaceVideoCard
-                          video={item.data}
-                          badgeLabel={mt('marketplace.page.feed.badgeVideo')}
-                        />
-                      ) : (
-                        <MarketplaceListingCard
-                          listing={item.data}
-                          guestMode={guestMode}
-                          onGuestInteract={() => requireAccount('aimer cette annonce')}
-                          layout="rail"
-                        />
-                      )}
+                      <MarketplaceListingCard
+                        listing={item.data}
+                        guestMode={guestMode}
+                        onGuestInteract={() => requireAccount('aimer cette annonce')}
+                        layout="rail"
+                      />
                     </RevealListItem>
                   )
                 })}
@@ -705,7 +796,7 @@ export function MarketplacePage() {
                   <div className="flex items-center gap-2 text-xs font-semibold text-[var(--app-text-muted)]">
                     <span className="inline-block size-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
                     <span>
-                      Flux continu en direct • {visible.length} annonce{visible.length > 1 ? 's' : ''} au catalogue ({renderedItems.length} affichée{renderedItems.length > 1 ? 's' : ''})
+                      Flux continu en direct • {visible.length} annonce{visible.length > 1 ? 's' : ''} au catalogue ({renderedListings.length} affichée{renderedListings.length > 1 ? 's' : ''})
                     </span>
                   </div>
 

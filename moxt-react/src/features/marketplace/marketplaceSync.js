@@ -98,3 +98,53 @@ export async function syncMarketplaceCatalog(dispatch, store, { force = false } 
     syncInProgress = false
   }
 }
+
+/**
+ * Vérification d'intégrité et auto-rattrapage (Auto-Healing) :
+ * 1. Fait une requête HEAD de comptage exact sur Supabase (.eq('status', 'active')).
+ * 2. Compare avec le nombre d'annonces actives réellement en cache/Redux.
+ * 3. Si le cache a moins d'annonces que la base, télécharge immédiatement la totalité
+ *    des annonces actives de la base et rafraîchit le store + IDB.
+ */
+export async function verifyAndReconcileMarketplaceCatalog(dispatch, store) {
+  if (!supabase) return { ok: false, reason: 'no-supabase' }
+
+  try {
+    const { count: remoteActiveCount, error: countErr } = await supabase
+      .from('listings')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'active')
+
+    if (countErr || typeof remoteActiveCount !== 'number') {
+      return { ok: false, error: countErr }
+    }
+
+    const state = store.getState()
+    const currentListings = state?.marketplace?.items || []
+    const localActive = currentListings.filter(
+      (item) => item?.status === 'active' && item?.id && !String(item.id).startsWith('ANN-DEMO-')
+    )
+
+    if (localActive.length < remoteActiveCount) {
+      const { data, error } = await supabase
+        .from('listings')
+        .select('*')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(LISTINGS_PUBLIC_LIMIT)
+
+      if (!error && Array.isArray(data) && data.length > 0) {
+        const items = data.map(listingFromRemoteRow)
+        dispatch(setAll({ items, mode: 'merge' }))
+        const nextItems = store.getState()?.marketplace?.items || []
+        void writeListingsToIdb(nextItems.length ? nextItems : items)
+        return { ok: true, reconciled: true, count: items.length }
+      }
+    }
+
+    return { ok: true, reconciled: false, count: localActive.length }
+  } catch (err) {
+    console.warn('[MarketplaceSync] Erreur réconciliation d’intégrité:', err)
+    return { ok: false, error: err }
+  }
+}

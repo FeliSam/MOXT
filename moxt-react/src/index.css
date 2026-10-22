@@ -553,8 +553,15 @@ html.capacitor-native .bottom-nav-shell {
      sous KEYBOARD_OPEN_PX via useKeyboardInset) le compense en temps réel —
      jamais un faux gap « clavier » qui flotterait la nav au milieu. */
   bottom: calc(var(--bottom-nav-offset) + var(--viewport-bottom-gap, 0px));
+  /* Verrouillage matériel iOS Safari (WebKit Compositing Layer) :
+     Empêche Safari d'attacher la barre au flux de défilement (Containing Block bug) */
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
+  -webkit-perspective: 1000;
+  perspective: 1000;
+  will-change: transform;
 }
 
 /* Soft keyboard open: keep bottom nav under the keyboard (no lift / no gap). */
