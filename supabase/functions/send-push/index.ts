@@ -181,6 +181,56 @@ async function dispatchNativePush(
   return { delivered, staleIds }
 }
 
+async function dispatchExpoPush(
+  subscriptions: Array<{ id: string; endpoint: string }>,
+  payload: ReturnType<typeof buildWebPushPayload>,
+) {
+  if (!subscriptions.length) {
+    return { delivered: 0, staleIds: [] as string[] }
+  }
+
+  const messages = subscriptions.map((s) => ({
+    to: s.endpoint,
+    sound: 'default',
+    title: payload.title,
+    body: payload.body,
+    data: payload.data,
+    badge: 1,
+    channelId: 'default',
+  }))
+
+  let delivered = 0
+  const staleIds: string[] = []
+
+  try {
+    const res = await fetch('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Accept-encoding': 'gzip, deflate',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(messages),
+    })
+
+    if (res.ok) {
+      const data = (await res.json()) as { data?: Array<{ status: string; details?: { error?: string } }> }
+      const tickets = data.data || []
+      tickets.forEach((ticket, idx) => {
+        if (ticket.status === 'ok') {
+          delivered += 1
+        } else if (ticket.details?.error === 'DeviceNotRegistered') {
+          staleIds.push(subscriptions[idx].id)
+        }
+      })
+    }
+  } catch (error) {
+    console.error('[send-push/expo]', error)
+  }
+
+  return { delivered, staleIds }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeadersFor(req) })
@@ -262,24 +312,31 @@ Deno.serve(async (req) => {
   }
 
   const payload = buildWebPushPayload(notification)
-  const webSubs = subscriptions.filter((s) => s.platform === 'web')
-  const nativeSubs = subscriptions.filter((s) => s.platform === 'android' || s.platform === 'ios')
+  const isExpoToken = (endpoint: string) =>
+    endpoint.startsWith('ExponentPushToken[') || endpoint.startsWith('ExpoPushToken[')
 
-  const [webResult, nativeResult] = await Promise.all([
+  const expoSubs = subscriptions.filter((s) => isExpoToken(s.endpoint))
+  const webSubs = subscriptions.filter((s) => s.platform === 'web' && !isExpoToken(s.endpoint))
+  const nativeSubs = subscriptions.filter(
+    (s) => (s.platform === 'android' || s.platform === 'ios') && !isExpoToken(s.endpoint),
+  )
+
+  const [webResult, nativeResult, expoResult] = await Promise.all([
     dispatchWebPush(webSubs, payload),
     dispatchNativePush(nativeSubs, payload),
+    dispatchExpoPush(expoSubs, payload),
   ])
 
-  const staleIds = [...webResult.staleIds, ...nativeResult.staleIds]
+  const staleIds = [...webResult.staleIds, ...nativeResult.staleIds, ...expoResult.staleIds]
   if (staleIds.length) {
     await supabase.from('device_subscriptions').delete().in('id', staleIds)
   }
 
-  const deliveredCount = webResult.delivered + nativeResult.delivered
+  const deliveredCount = webResult.delivered + nativeResult.delivered + expoResult.delivered
   await finalizeDispatch(supabase, notificationId, {
     deliveredCount,
     webDelivered: webResult.delivered,
-    nativeDelivered: nativeResult.delivered,
+    nativeDelivered: nativeResult.delivered + expoResult.delivered,
   })
 
   return json(
@@ -288,6 +345,7 @@ Deno.serve(async (req) => {
       delivered: deliveredCount,
       web: webResult.delivered,
       native: nativeResult.delivered,
+      expo: expoResult.delivered,
       staleRemoved: staleIds.length,
     },
     200,

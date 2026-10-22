@@ -134,8 +134,8 @@
   },
   "overrides": {
     "vite": "^8.1.2",
-    "expo": "~57.0.0",
-    "expo-modules-core": "~57.0.0"
+    "expo": "~58.0.7",
+    "expo-modules-core": "~58.0.15"
   },
   "dependencies": {
     "merge-options": "^3.0.4"

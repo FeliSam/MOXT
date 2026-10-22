@@ -19,18 +19,19 @@ export function ensureYc() {
   return bin
 }
 
-export function ycRun(args, { inherit = false, cwd } = {}) {
+export function ycRun(args, { inherit = false, cwd, timeout = 20000 } = {}) {
   const bin = ensureYc()
   const result = spawnSync(bin, args, {
     cwd,
     encoding: 'utf8',
     shell: false,
     stdio: inherit ? 'inherit' : 'pipe',
+    timeout,
   })
   return {
     code: result.status ?? 1,
     stdout: (result.stdout || '').trim(),
-    stderr: (result.stderr || '').trim(),
+    stderr: (result.stderr || result.error?.message || '').trim(),
   }
 }
 

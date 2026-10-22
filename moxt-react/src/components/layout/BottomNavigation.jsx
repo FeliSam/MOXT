@@ -203,11 +203,17 @@ export function BottomNavigation() {
     </nav>
   )
 
+  // Monté dans un conteneur dédié ou body pour isoler le layout fixed du scroll
+  const portalTarget =
+    typeof document !== 'undefined'
+      ? document.getElementById('bottom-nav-root') || document.body
+      : null
+
   return (
     <>
       {/* Portal hors du layout (overflow-x-clip / transforms) pour garder
           position:fixed collé au viewport et hors du flux de scroll. */}
-      {typeof document !== 'undefined' ? createPortal(nav, document.body) : nav}
+      {portalTarget ? createPortal(nav, portalTarget) : nav}
       <MobileMoreDrawer open={moreOpen} onClose={() => setMoreOpen(false)} />
     </>
   )

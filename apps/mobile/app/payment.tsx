@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import * as Linking from 'expo-linking';
+import { openLink } from '@/utils/appLinks';
 
 import {
   createPaymentIntent,
@@ -66,7 +66,7 @@ export default function PaymentScreen() {
           transferId,
         });
         if (intent.redirectUrl) {
-          await Linking.openURL(intent.redirectUrl);
+          openLink(intent.redirectUrl);
         }
         setStep('done');
       } else if (method === 'stripe') {
@@ -78,7 +78,7 @@ export default function PaymentScreen() {
           description: `Transfert MOXT #${transferId || 'unknown'}`,
         });
         if (intent.redirectUrl) {
-          await Linking.openURL(intent.redirectUrl);
+          openLink(intent.redirectUrl);
         }
         setStep('done');
       } else {

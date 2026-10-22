@@ -43,7 +43,7 @@ export function HeaderIslandButton({
   )
 }
 
-export function PageHeader({ eyebrow, title, description, actions, stats }) {
+export function PageHeader({ eyebrow, title, description, actions, stats, showDescriptionOnMobile = false }) {
   return (
     <header className="flex min-w-0 max-w-full flex-col gap-4 overflow-hidden rounded-[var(--radius-card-lg)] border-0 bg-[var(--app-surface)]/80 p-4 shadow-[var(--shadow-card)] backdrop-blur-xl sm:gap-5 sm:p-7">
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
@@ -57,7 +57,11 @@ export function PageHeader({ eyebrow, title, description, actions, stats }) {
             {title}
           </h1>
           {description ? (
-            <p className="mt-2 hidden max-w-2xl break-words text-sm leading-6 text-[var(--app-text-muted)] sm:block">
+            <p
+              className={`mt-2 max-w-2xl break-words text-sm leading-6 text-[var(--app-text-muted)] ${
+                showDescriptionOnMobile ? 'block' : 'hidden sm:block'
+              }`}
+            >
               {description}
             </p>
           ) : null}

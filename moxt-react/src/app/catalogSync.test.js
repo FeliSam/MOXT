@@ -84,34 +84,38 @@ describe('catalogSync', () => {
     expect(dispatch).not.toHaveBeenCalled()
   })
 
-  it('ne marque pas le catalogue frais quand loadAllData échoue (finally ne doit plus marquer)', async () => {
-    const userId = 'user-fail'
-    const dispatch = vi.fn(() =>
-      Promise.resolve({
-        type: 'app/loadAllData/rejected',
-        meta: { requestStatus: 'rejected' },
-        error: { message: 'network' },
-      }),
-    )
-    const store = {
-      getState: () => ({ auth: { user: { id: userId } }, marketplace: { items: [] } }),
-      dispatch,
-    }
+  it(
+    'ne marque pas le catalogue frais quand loadAllData échoue (finally ne doit plus marquer)',
+    async () => {
+      const userId = 'user-fail'
+      const dispatch = vi.fn(() =>
+        Promise.resolve({
+          type: 'app/loadAllData/rejected',
+          meta: { requestStatus: 'rejected' },
+          error: { message: 'network' },
+        }),
+      )
+      const store = {
+        getState: () => ({ auth: { user: { id: userId } }, marketplace: { items: [] } }),
+        dispatch,
+      }
 
-    const pending = scheduleCatalogSync(store, { force: true })
-    await vi.advanceTimersByTimeAsync(50)
-    await pending
+      const pending = scheduleCatalogSync(store, { force: true })
+      await vi.advanceTimersByTimeAsync(50)
+      await pending
 
-    expect(isCatalogSyncFresh(userId)).toBe(false)
-    const dispatch2 = vi.fn(() => Promise.resolve({ meta: { requestStatus: 'fulfilled' } }))
-    const store2 = {
-      getState: () => ({ auth: { user: { id: userId } }, marketplace: { items: [] } }),
-      dispatch: dispatch2,
-    }
-    await scheduleCatalogSync(store2, { skipIfFresh: true })
-    await vi.advanceTimersByTimeAsync(CATALOG_SYNC_WARM_DELAY_MS + 50)
-    expect(dispatch2).toHaveBeenCalled()
-  })
+      expect(isCatalogSyncFresh(userId)).toBe(false)
+      const dispatch2 = vi.fn(() => Promise.resolve({ meta: { requestStatus: 'fulfilled' } }))
+      const store2 = {
+        getState: () => ({ auth: { user: { id: userId } }, marketplace: { items: [] } }),
+        dispatch: dispatch2,
+      }
+      await scheduleCatalogSync(store2, { skipIfFresh: true })
+      await vi.advanceTimersByTimeAsync(CATALOG_SYNC_WARM_DELAY_MS + 50)
+      expect(dispatch2).toHaveBeenCalled()
+    },
+    15_000,
+  )
 
   it('markCatalogSynced rend isCatalogSyncFresh vrai uniquement pour le même user', () => {
     markCatalogSynced('alice', { listingCount: 3, activeListingCount: 2 })

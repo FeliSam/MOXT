@@ -1,7 +1,11 @@
 import { searchablePages } from '../../config/searchablePages'
 import { supabase } from '../../services/supabaseClient'
 import { filterSearchIndex } from '../searchSelectors'
-import { buildAssistantContextPack, buildTransferCandidates } from './assistantContext'
+import {
+  buildAssistantContextPack,
+  buildTransferCandidates,
+  filterCardsByIntent,
+} from './assistantContext'
 
 function buildCandidates(question, searchIndex, contextPack = null) {
   const entityMatches = filterSearchIndex(searchIndex, question)
@@ -113,8 +117,12 @@ export const llmAssistantProvider = {
     const citations = Array.isArray(data.citations) ? data.citations.filter(Boolean) : []
     const followUps = Array.isArray(data.followUps) ? data.followUps.filter(Boolean) : []
 
+    const rawCards = data.cards?.length ? data.cards : (draft?.cards || contextPack.allCards || contextPack.cards || [])
+    const finalCards = filterCardsByIntent(rawCards, question)
+
     return {
       text: data.text,
+      cards: finalCards,
       actions,
       sources: [...sources, ...citations.filter((c) => !sources.includes(c))].slice(0, 8),
       suggestions: followUps.length ? followUps : draft?.suggestions,

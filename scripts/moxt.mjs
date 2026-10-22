@@ -114,7 +114,7 @@ async function ship() {
   log('Git push')
   if (run('git', ['push', 'origin', 'HEAD']) !== 0) process.exit(1)
 
-  const deployArgs = ['--parallel', '--purge-cdn']
+  const deployArgs = ['--parallel']
   if (argv.includes('--purge-cdn')) deployArgs.push('--purge-cdn')
   if (argv.includes('--skip-web')) deployArgs.push('--skip-web')
   if (argv.includes('--skip-supabase')) {

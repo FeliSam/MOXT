@@ -3,7 +3,7 @@ import { supabase } from '../../services/supabaseClient'
 import { isProfileVerified } from '../profile/userProfileUtils'
 import { genderFromPreferences } from './coverBanners/coverBannerCatalog'
 
-const BASE_COLUMNS = 'first_name, last_name, city, country, avatar_url, status, created_at, updated_at'
+const BASE_COLUMNS = 'first_name, last_name, city, country, phone, avatar_url, status, created_at, updated_at'
 
 export function mapRemoteProfile(row) {
   if (!row) return null
@@ -12,6 +12,7 @@ export function mapRemoteProfile(row) {
     lastName: row.last_name || '',
     city: row.city || '',
     country: row.country || '',
+    phone: row.phone || '',
     avatarUrl: row.avatar_url || null,
     verified: row.status === 'verified',
     memberSince: row.created_at || row.updated_at || null,

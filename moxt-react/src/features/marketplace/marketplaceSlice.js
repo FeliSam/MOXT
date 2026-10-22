@@ -330,6 +330,26 @@ const marketplaceSlice = createSlice({
         }
       },
     },
+    updateListingQuestion(state, action) {
+      const listing = state.items.find((item) => item.id === action.payload.listingId)
+      if (!listing) return
+      const question = listing.questions?.find((item) => item.id === action.payload.questionId)
+      if (!question) return
+      if (action.payload.authorId && question.authorId !== action.payload.authorId) return
+      question.text = action.payload.text.trim()
+      question.updatedAt = new Date().toISOString()
+      listing.updatedAt = question.updatedAt
+    },
+    deleteListingQuestion(state, action) {
+      const listing = state.items.find((item) => item.id === action.payload.listingId)
+      if (!listing || !listing.questions) return
+      const index = listing.questions.findIndex((item) => item.id === action.payload.questionId)
+      if (index === -1) return
+      const question = listing.questions[index]
+      if (action.payload.authorId && question.authorId !== action.payload.authorId) return
+      listing.questions.splice(index, 1)
+      listing.updatedAt = new Date().toISOString()
+    },
     toggleListingFavorite(state, action) {
       const listing = state.items.find((item) => item.id === action.payload.listingId)
       if (!listing) return
@@ -469,6 +489,8 @@ export const {
   expireListings,
   addListingQuestion,
   answerListingQuestion,
+  updateListingQuestion,
+  deleteListingQuestion,
   incrementListingContact,
   incrementListingShare,
   incrementListingView,

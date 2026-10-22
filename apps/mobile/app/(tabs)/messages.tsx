@@ -1,292 +1,525 @@
 import { useEffect, useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
-
-import { IconButton } from '@/components/ui';
-import { ListCard } from '@/components/ui/ListCard';
-import { useLanguage } from '@/providers/LanguageProvider';
-import { Conversation, getConversationPeer, loadConversations, selectInboxList } from '@/store/messages';
-import { useAppDispatch, useAppSelector } from '@/store/store';
-import { brand, radii, spacing } from '@/theme/colors';
-import { useShadows, useThemeColors } from '@/theme/ThemeContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  getMobileConversationPreview,
-  getMobileConversationPreviewAt,
-} from '@/utils/conversationPreview';
+  Archive,
+  BellOff,
+  Briefcase,
+  Building2,
+  Calendar,
+  Check,
+  Filter,
+  Headphones,
+  MessageSquare,
+  Package,
+  Repeat,
+  Search,
+  ShoppingBag,
+  Star,
+  Users,
+  X,
+  type LucideIcon,
+} from 'lucide-react-native';
 
-type MessageFilter = 'all' | 'unread' | 'archived';
+import { setPresenceListener, type PresenceState } from '@/services/chatRealtime';
 
-const FILTER_LABELS: Record<MessageFilter, string> = {
-  all: 'Toutes',
-  unread: 'Non lues',
-  archived: 'Archivées',
+import { HeaderActionButton, HeaderChip } from '@/components/chrome/HeaderChrome';
+import { HEADER, headerPaddingTop } from '@/components/chrome/headerTokens';
+import { ASSISTANT_ID, MoxtiBadge } from '@/components/messages/MoxtiBadge';
+import { EntityAvatar } from '@/components/profile/EntityAvatar';
+import { AppText } from '@/components/ui/AppText';
+import { VerifiedIcon } from '@/components/ui/VerifiedIcon';
+import { useLanguage } from '@/providers/LanguageProvider';
+import {
+  type Conversation,
+  getConversationPeer,
+  loadConversations,
+  selectInboxList,
+  selectUnreadMessageCount,
+} from '@/store/messages';
+import { useAppDispatch, useAppSelector } from '@/store/store';
+import { brand, withAlphaColor } from '@/theme/palette';
+import { useShadows, useTheme } from '@/theme/ThemeContext';
+import { getMobileConversationPreview, getMobileConversationPreviewAt } from '@/utils/conversationPreview';
+
+type FilterId = 'all' | 'unread' | 'pinned' | 'transfer' | 'p2p' | 'support';
+
+/** MESSAGE_FILTER_IDS du web. */
+const FILTERS: { id: FilterId; labelKey: string; icon?: LucideIcon }[] = [
+  { id: 'all', labelKey: 'messages.filterAll' },
+  { id: 'unread', labelKey: 'messages.filterUnread' },
+  { id: 'pinned', labelKey: 'messages.filterPinned', icon: Star },
+  { id: 'transfer', labelKey: 'messages.filterTransfer', icon: Repeat },
+  { id: 'p2p', labelKey: 'messages.filterP2p', icon: Repeat },
+  { id: 'support', labelKey: 'messages.filterSupport', icon: Headphones },
+];
+
+/** RELATED_CONTENT_META du web (icône + teinte de la pastille sur l'avatar). */
+const RELATED_META: Record<string, { icon: LucideIcon; tone: string }> = {
+  business: { icon: Building2, tone: '#8b5cf6' },
+  event: { icon: Calendar, tone: '#f59e0b' },
+  job: { icon: Briefcase, tone: '#3b82f6' },
+  listing: { icon: ShoppingBag, tone: '#ec4899' },
+  parcel: { icon: Package, tone: '#f97316' },
+  p2p: { icon: Repeat, tone: '#0891b2' },
+  transfer: { icon: Repeat, tone: '#059669' },
+  support: { icon: Headphones, tone: '#e11d48' },
+  general: { icon: Users, tone: '#64748b' },
 };
 
-function getInitials(title: string) {
-  return title
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((word) => word.charAt(0).toUpperCase())
-    .join('');
+function matchesFilter(item: Conversation, filter: FilterId, userId: string) {
+  if (filter === 'unread' && !((item.unreadBy?.[userId] || 0) > 0)) return false;
+  if (filter === 'pinned' && !item.pinnedBy?.includes(userId)) return false;
+  if (filter === 'support' && item.relatedType !== 'support') return false;
+  if (filter === 'transfer' && item.relatedType !== 'transfer') return false;
+  if (filter === 'p2p' && item.relatedType !== 'p2p' && item.relatedType !== 'p2p_order') return false;
+  return true;
 }
 
-function ConversationCard({
+/** shortTime du web : heure si aujourd'hui, sinon « 26 sept. ». */
+function shortTime(value?: string | null) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  if (date.toDateString() === new Date().toDateString()) {
+    return new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(date);
+  }
+  return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short' }).format(date);
+}
+
+/** ConversationRow du web (ligne de liste, sans le menu d'actions). */
+function ConversationRow({
   conversation,
-  currentUserId,
+  userId,
+  divided,
+  assistant = false,
+  onlineIds,
 }: {
-  conversation: Conversation;
-  currentUserId?: string;
+  conversation?: Conversation;
+  userId: string;
+  divided: boolean;
+  assistant?: boolean;
+  onlineIds?: Record<string, boolean>;
 }) {
-  const colors = useThemeColors();
   const { t } = useLanguage();
-  const preview = getMobileConversationPreview(conversation, currentUserId, {
-    youPrefix: t('messages.youPrefix'),
-    empty: t('messages.noMessageYet'),
-  });
-  const unread = (conversation.unreadBy?.[currentUserId || ''] || 0) > 0;
-  // Interlocuteur comme le web : profil de l’autre participant, puis titre, puis « Utilisateur ».
-  const fallbackLabel = t('messages.userFallback');
-  const peer = getConversationPeer(
-    conversation,
-    currentUserId,
-    fallbackLabel && fallbackLabel !== 'messages.userFallback' ? fallbackLabel : 'Utilisateur',
-  );
-  const previewAt = getMobileConversationPreviewAt(conversation);
-
+  const { colors, isDark } = useTheme();
+  const peer = !assistant && conversation ? getConversationPeer(conversation, userId, t('messages.userFallback')) : null;
+  const online = Boolean(peer?.id && onlineIds?.[peer.id]);
+  const unread = !assistant && conversation ? conversation.unreadBy?.[userId] || 0 : 0;
+  const pinned = Boolean(!assistant && conversation?.pinnedBy?.includes(userId));
+  const muted = Boolean(!assistant && conversation?.mutedBy?.includes(userId));
+  const related = !assistant && conversation?.relatedType ? RELATED_META[conversation.relatedType] || RELATED_META.general : null;
+  const preview = assistant
+    ? t('messages.assistant.preview')
+    : getMobileConversationPreview(conversation as Conversation, userId, {
+        youPrefix: t('messages.youPrefix'),
+        empty: t('messages.startConversation'),
+      });
+  const timestamp = assistant ? t('messages.assistant.alwaysThere') : shortTime(getMobileConversationPreviewAt(conversation as Conversation));
+  const RelatedIcon = related?.icon;
+  // Web : p-[2%] de la largeur, min-h 3.875rem, gap 2.5.
   return (
-    <ListCard
-      selected={unread}
-      className="min-h-[76px] flex-row items-center gap-3 p-4"
-      onPress={() => router.push(`/messages/${conversation.id}` as never)}>
-      {peer.avatarUrl ? (
-        <Image source={{ uri: peer.avatarUrl }} style={styles.avatar} />
-      ) : (
-        <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-          <Text style={styles.avatarText}>{getInitials(peer.name) || 'M'}</Text>
-        </View>
-      )}
-      <View style={styles.cardBody}>
-        <View style={styles.cardTitleRow}>
-          <Text selectable numberOfLines={1} style={[styles.cardTitle, { color: colors.text }]}>
-            {peer.name}
-          </Text>
-          {unread ? <View style={[styles.unreadDot, { backgroundColor: colors.teal }]} /> : null}
-        </View>
-        <Text
-          selectable
-          numberOfLines={1}
-          style={[styles.lastMessage, { color: colors.textMuted }]}>
-          {preview}
-        </Text>
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => router.push(`/messages/${assistant ? ASSISTANT_ID : conversation?.id}` as never)}
+      style={({ pressed }) => ({
+        minHeight: 62,
+        flexDirection: 'row',
+        alignItems: 'stretch',
+        gap: 10,
+        borderRadius: 16,
+        paddingHorizontal: '2%',
+        paddingVertical: 7.8,
+        backgroundColor: pressed ? withAlphaColor(colors.surface, 0.55) : 'transparent',
+      })}>
+      <View style={{ alignSelf: 'center' }}>
+        {assistant ? (
+          <MoxtiBadge />
+        ) : (
+          <EntityAvatar name={peer?.name || ''} src={peer?.avatarUrl} size={44} shape="user" from={brand[600]} />
+        )}
+        {online ? (
+          <View
+            accessibilityLabel={t('messages.activity.online')}
+            style={{
+              position: 'absolute',
+              top: -1,
+              right: -1,
+              width: 12,
+              height: 12,
+              borderRadius: 6,
+              backgroundColor: '#22c55e',
+              borderWidth: 2,
+              borderColor: colors.background,
+            }}
+          />
+        ) : null}
+        {RelatedIcon ? (
+          <View
+            style={{
+              position: 'absolute',
+              right: -2,
+              bottom: -2,
+              width: 16,
+              height: 16,
+              borderRadius: 8,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: related?.tone,
+            }}>
+            <RelatedIcon size={9} color="#ffffff" strokeWidth={2.4} />
+          </View>
+        ) : null}
       </View>
-      <Text style={[styles.date, { color: colors.textFaint }]}>
-        {new Date(previewAt).toLocaleDateString('fr-FR', {
-          day: '2-digit',
-          month: 'short',
-        })}
-      </Text>
-    </ListCard>
+      <View
+        style={{
+          flex: 1,
+          minWidth: 0,
+          justifyContent: 'center',
+          borderBottomWidth: divided ? 1 : 0,
+          borderBottomColor: withAlphaColor(colors.border, 0.45),
+        }}>
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, paddingRight: 4 }}>
+          <View style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            {pinned ? <Star size={12} color="#f59e0b" strokeWidth={2} /> : null}
+            <AppText
+              numberOfLines={1}
+              className={`text-[13px] text-app-text ${unread ? 'font-black' : 'font-semibold'}`}
+              style={{ lineHeight: 16, flexShrink: 1 }}>
+              {assistant ? t('messages.assistant.name') : peer?.name}
+            </AppText>
+            {peer?.verified ? (
+              <View style={{ flexShrink: 0 }}>
+                <VerifiedIcon size={14} />
+              </View>
+            ) : null}
+            {muted ? <BellOff size={12} color={colors.textFaint} strokeWidth={2} /> : null}
+          </View>
+          <AppText
+            className={`text-[10px] ${unread ? 'font-semibold' : 'font-medium'}`}
+            style={{ lineHeight: 12, fontVariant: ['tabular-nums'], color: unread ? colors.accent : colors.textFaint }}>
+            {timestamp}
+          </AppText>
+        </View>
+        <View style={{ marginTop: 2, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <AppText
+            numberOfLines={1}
+            className={`text-[12px] ${unread ? 'font-medium text-app-text-muted' : 'text-app-text-faint'}`}
+            style={{ flex: 1, minWidth: 0, lineHeight: 16 }}>
+            {preview}
+          </AppText>
+          {unread ? (
+            <View style={{ minWidth: 20, borderRadius: 999, paddingHorizontal: 6, paddingVertical: 2, alignItems: 'center', backgroundColor: isDark ? brand[500] : brand[600] }}>
+              <AppText className="text-[10px] font-black text-white" style={{ lineHeight: 12 }}>
+                {unread}
+              </AppText>
+            </View>
+          ) : null}
+        </View>
+      </View>
+    </Pressable>
   );
 }
 
+/** Menu « Afficher » (ConversationFilterMenu du web), en feuille flottante. */
+function FilterMenu({
+  open,
+  onClose,
+  filter,
+  onFilter,
+  showArchived,
+  onToggleArchived,
+  counts,
+  archivedCount,
+  top,
+}: {
+  open: boolean;
+  onClose: () => void;
+  filter: FilterId;
+  onFilter: (id: FilterId) => void;
+  showArchived: boolean;
+  onToggleArchived: () => void;
+  counts: Record<FilterId, number>;
+  archivedCount: number;
+  top: number;
+}) {
+  const { t } = useLanguage();
+  const { colors } = useTheme();
+  const shadows = useShadows();
+  const row = (active: boolean) => ({
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 8,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: active ? withAlphaColor(colors.accentSoft, 0.7) : 'transparent',
+  });
+  const countChip = (value: number) =>
+    value ? (
+      <View style={{ minWidth: 18, borderRadius: 999, paddingHorizontal: 5, paddingVertical: 1, alignItems: 'center', backgroundColor: colors.surfaceMuted }}>
+        <AppText className="text-[10px] font-bold text-app-text-muted">{value}</AppText>
+      </View>
+    ) : null;
+  return (
+    <Modal transparent visible={open} animationType="fade" onRequestClose={onClose}>
+      <Pressable style={{ flex: 1 }} onPress={onClose}>
+        <View
+          accessibilityRole="menu"
+          style={[{ position: 'absolute', top, right: 12, width: 240, borderRadius: 16, padding: 6, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }, shadows.float]}>
+          <AppText className="text-[11px] font-bold uppercase text-app-text-faint" style={{ paddingHorizontal: 12, paddingVertical: 8, letterSpacing: 0.9 }}>
+            {t('messages.filterShow')}
+          </AppText>
+          {FILTERS.map((item) => {
+            const active = filter === item.id && !showArchived;
+            const Icon = item.icon;
+            const tint = active ? colors.accent : colors.text;
+            return (
+              <Pressable key={item.id} accessibilityRole="menuitem" accessibilityState={{ checked: active }} onPress={() => onFilter(item.id)} style={row(active)}>
+                {Icon ? <Icon size={16} color={tint} strokeWidth={2} /> : null}
+                <AppText className="text-sm font-semibold" style={{ flex: 1, color: tint }}>
+                  {t(item.labelKey)}
+                </AppText>
+                {countChip(counts[item.id])}
+                {active ? <Check size={16} color={tint} strokeWidth={2} /> : null}
+              </Pressable>
+            );
+          })}
+          <View className="bg-app-border" style={{ height: 1, marginVertical: 4 }} />
+          <Pressable accessibilityRole="menuitem" accessibilityState={{ checked: showArchived }} onPress={onToggleArchived} style={row(showArchived)}>
+            <Archive size={16} color={showArchived ? colors.accent : colors.text} strokeWidth={2} />
+            <AppText className="text-sm font-semibold" style={{ flex: 1, color: showArchived ? colors.accent : colors.text }}>
+              {showArchived ? t('messages.actives') : t('messages.archives')}
+            </AppText>
+            {countChip(archivedCount)}
+            {showArchived ? <Check size={16} color={colors.accent} strokeWidth={2} /> : null}
+          </Pressable>
+        </View>
+      </Pressable>
+    </Modal>
+  );
+}
+
+/** Liste des conversations (MessagesPage du web en viewport téléphone). Aucune écriture : l'ouverture d'une ligne navigue seulement. */
 export default function MessagesTabScreen() {
   const dispatch = useAppDispatch();
-  const { translateLabel } = useLanguage();
-  const colors = useThemeColors();
+  const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
+  const { colors } = useTheme();
   const shadows = useShadows();
   const user = useAppSelector((state) => state.auth.user);
   const conversations = useAppSelector((state) => state.messages.conversations);
   const loading = useAppSelector((state) => state.messages.loading);
+  const [filter, setFilter] = useState<FilterId>('all');
+  const [showArchived, setShowArchived] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const [showSearch, setShowSearch] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
-  const [filter, setFilter] = useState<MessageFilter>('all');
+  const [onlineIds, setOnlineIds] = useState<Record<string, boolean>>({});
+  const userId = user?.id || '';
 
   useEffect(() => {
     if (user?.id) dispatch(loadConversations(user.id));
   }, [dispatch, user?.id]);
 
-  const filteredConversations = useMemo(() => {
-    const normalizedQuery = query.trim().toLocaleLowerCase('fr');
-
-    // Même liste que le web : non archivées (ou archivées), non vides, épinglées puis récentes.
-    const inbox = selectInboxList(conversations, user?.id, { showArchived: filter === 'archived' });
-    return inbox.filter((conversation) => {
-      const unread = (conversation.unreadBy?.[user?.id || ''] || 0) > 0;
-      if (filter === 'unread' && !unread) return false;
-      if (!normalizedQuery) return true;
-      const preview = getMobileConversationPreview(conversation, user?.id);
-      const peerName = getConversationPeer(conversation, user?.id).name;
-      return `${peerName} ${preview}`
-        .toLocaleLowerCase('fr')
-        .includes(normalizedQuery);
+  useEffect(() => {
+    setPresenceListener((state: PresenceState) => {
+      const next: Record<string, boolean> = {};
+      for (const [id, value] of Object.entries(state)) {
+        if (value.online) next[id] = true;
+      }
+      setOnlineIds(next);
     });
-  }, [conversations, filter, query, user?.id]);
+    return () => setPresenceListener(() => undefined);
+  }, []);
+
+  const mine = useMemo(() => conversations.filter((c) => c.participantIds?.includes(userId)), [conversations, userId]);
+  const activeHuman = useMemo(() => mine.filter((c) => !c.archivedBy?.includes(userId)), [mine, userId]);
+  const unreadMessages = selectUnreadMessageCount(conversations, userId);
+
+  const inbox = useMemo(() => selectInboxList(conversations, userId, { showArchived }), [conversations, userId, showArchived]);
+  const visible = useMemo(() => inbox.filter((c) => matchesFilter(c, filter, userId)), [inbox, filter, userId]);
+  const counts = useMemo(() => {
+    const active = selectInboxList(conversations, userId, { showArchived: false });
+    return Object.fromEntries(FILTERS.map((f) => [f.id, f.id === 'all' ? 0 : active.filter((c) => matchesFilter(c, f.id, userId)).length])) as Record<FilterId, number>;
+  }, [conversations, userId]);
+  const archivedCount = useMemo(() => selectInboxList(conversations, userId, { showArchived: true }).length, [conversations, userId]);
+  const searchResults = useMemo(() => {
+    const q = query.trim().toLocaleLowerCase('fr');
+    const all = selectInboxList(conversations, userId, { showArchived: false });
+    if (!q) return all;
+    return all.filter((c) =>
+      `${getConversationPeer(c, userId).name} ${getMobileConversationPreview(c, userId)}`.toLocaleLowerCase('fr').includes(q),
+    );
+  }, [conversations, userId, query]);
+
+  const hasActiveFilter = filter !== 'all' || showArchived;
+  const headerTop = headerPaddingTop(insets.top);
+  const subtitle = `${t('messages.exchangeCount', { count: activeHuman.length + 1 })} ${showArchived ? t('messages.archived') : t('messages.active')}${
+    !showArchived && unreadMessages > 0 ? t(unreadMessages > 1 ? 'messages.unreadCountPlural' : 'messages.unreadCount', { count: unreadMessages }) : ''
+  }`;
+
+  const emptyText =
+    filter === 'pinned'
+      ? t('messages.noPinned')
+      : filter === 'transfer'
+        ? t('messages.noTransferChats')
+        : filter === 'p2p'
+          ? t('messages.noP2pChats')
+          : filter === 'support'
+            ? t('messages.noSupportChats')
+            : t('messages.noUnread');
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <View style={styles.heading}>
-            <View style={styles.eyebrowRow}>
-              <View style={[styles.eyebrowDot, { backgroundColor: colors.primary }]} />
-              <Text style={[styles.eyebrow, { color: colors.primary }]}>MESSAGERIE</Text>
-            </View>
-            <Text selectable style={[styles.title, { color: colors.text }]}>
-              {translateLabel('Messages')}
-            </Text>
-            <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-              {filteredConversations.length} conversation(s)
-            </Text>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <View style={{ paddingTop: headerTop, paddingHorizontal: HEADER.padX, flexDirection: 'row', alignItems: 'center', gap: HEADER.gap }}>
+        <HeaderChip>
+          <View style={{ width: HEADER.avatar, height: HEADER.avatar, borderRadius: 999, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentSoft }}>
+            <MessageSquare size={18} color={colors.accent} strokeWidth={2} opacity={0.92} />
           </View>
-          <View style={styles.actions}>
-            <IconButton
-              accessibilityLabel="Rechercher dans les messages"
-              iosName="magnifyingglass"
-              fallback="⌕"
-              active={showSearch}
-              onPress={() => setShowSearch((value) => !value)}
-            />
-            <IconButton
-              accessibilityLabel="Afficher les archives"
-              iosName="archivebox"
-              fallback="□"
-              active={filter === 'archived'}
-              onPress={() => setFilter((value) => value === 'archived' ? 'all' : 'archived')}
-            />
-            <IconButton
-              accessibilityLabel="Filtrer les messages"
-              iosName="line.3.horizontal.decrease"
-              fallback="≡"
-              active={filter !== 'all' || showFilters}
-              onPress={() => setShowFilters(true)}
-            />
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <AppText numberOfLines={1} className="text-sm font-black text-app-text" style={{ lineHeight: 14 }}>
+              {t('messages.conversations')}
+            </AppText>
+            <AppText numberOfLines={1} className="text-[11px] text-app-text-muted" style={{ marginTop: 2, lineHeight: 13 }}>
+              {subtitle}
+            </AppText>
           </View>
+        </HeaderChip>
+        <View style={{ flexDirection: 'row', gap: HEADER.gap }}>
+          <HeaderActionButton accessibilityLabel={t('messages.filterAria')} onPress={() => setMenuOpen(true)}>
+            <Filter
+              size={HEADER.icon}
+              color={hasActiveFilter ? colors.accent : colors.text}
+              strokeWidth={HEADER.iconStroke}
+              opacity={hasActiveFilter ? 1 : HEADER.iconOpacity}
+            />
+          </HeaderActionButton>
+          <HeaderActionButton accessibilityLabel={t('messages.searchConversationAria')} onPress={() => setSearchOpen(true)}>
+            <Search size={HEADER.icon} color={colors.text} strokeWidth={HEADER.iconStroke} opacity={HEADER.iconOpacity} />
+          </HeaderActionButton>
         </View>
-
-        {showSearch ? (
-          <View style={[styles.search, { backgroundColor: colors.inputBg }]}>
-            <Text style={{ color: colors.textFaint, fontSize: 18 }}>⌕</Text>
-            <TextInput
-              autoFocus
-              value={query}
-              onChangeText={setQuery}
-              placeholder="Rechercher une conversation"
-              placeholderTextColor={colors.textFaint}
-              style={[styles.searchInput, { color: colors.text }]}
-            />
-          </View>
-        ) : null}
       </View>
 
-      {loading && conversations.length === 0 ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={colors.primary} />
+      {loading && !conversations.length ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator color={colors.accent} />
         </View>
       ) : (
-        <FlatList
-          data={filteredConversations}
-          keyExtractor={(item) => item.id}
-          contentInsetAdjustmentBehavior="automatic"
-          contentContainerStyle={styles.list}
-          renderItem={({ item }) => (
-            <ConversationCard conversation={item} currentUserId={user?.id} />
-          )}
-          ListEmptyComponent={
-            <View style={styles.empty}>
-              <View style={[styles.emptyIcon, { backgroundColor: colors.primaryLight }]}>
-                <Text style={{ color: colors.primary, fontSize: 28 }}>M</Text>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: 8, paddingBottom: 128 }}>
+          <View style={{ paddingBottom: 4 }}>
+            <ConversationRow assistant userId={userId} divided />
+          </View>
+          {visible.length || showArchived || filter !== 'all' ? (
+            <AppText className="text-[10px] font-semibold text-app-text-faint" style={{ paddingHorizontal: 10, paddingTop: 12, paddingBottom: 4, letterSpacing: 0.25 }}>
+              {t('messages.yourConversations')}
+            </AppText>
+          ) : null}
+          {visible.map((conversation, index) => (
+            <ConversationRow key={conversation.id} conversation={conversation} userId={userId} divided={index < visible.length - 1} onlineIds={onlineIds} />
+          ))}
+          {!visible.length && filter === 'all' && !showArchived ? (
+            <View className="border border-dashed border-app-border bg-app-surface" style={[{ marginHorizontal: 8, marginTop: 8, borderRadius: 21.6, padding: 24, alignItems: 'center' }, shadows.card]}>
+              <View style={{ width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentSoft }}>
+                <MessageSquare size={20} color={colors.accent} strokeWidth={2} />
               </View>
-              <Text selectable style={[styles.emptyTitle, { color: colors.text }]}>
-                Aucune conversation
-              </Text>
-              <Text selectable style={[styles.emptyText, { color: colors.textMuted }]}>
-                Aucun message ne correspond à ce filtre.
-              </Text>
+              <AppText className="mt-4 text-base font-extrabold text-app-text">{t('messages.empty.title')}</AppText>
+              <AppText className="mt-2 text-center text-sm leading-6 text-app-text-muted">{t('messages.empty.description')}</AppText>
+              <View style={{ marginTop: 20, width: '100%', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 }}>
+                <Pressable
+                  onPress={() => router.push('/(tabs)/marketplace' as never)}
+                  style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 14, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14, backgroundColor: colors.surface }}>
+                  <ShoppingBag size={16} color={colors.text} strokeWidth={2} />
+                  <AppText className="text-sm font-bold text-app-text">{t('messages.empty.marketplace')}</AppText>
+                </Pressable>
+                <Pressable
+                  onPress={() => router.push('/(tabs)/parcels' as never)}
+                  style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 14, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14, backgroundColor: colors.surface }}>
+                  <Package size={16} color={colors.text} strokeWidth={2} />
+                  <AppText className="text-sm font-bold text-app-text">{t('messages.empty.parcels')}</AppText>
+                </Pressable>
+                <Pressable
+                  onPress={() => router.push('/activities' as never)}
+                  style={{ minHeight: 44, minWidth: '100%', alignItems: 'center', justifyContent: 'center', borderRadius: 14, paddingHorizontal: 14, backgroundColor: colors.accent }}>
+                  <AppText className="text-sm font-bold text-white">{t('messages.empty.activities')}</AppText>
+                </Pressable>
+              </View>
             </View>
-          }
-        />
+          ) : !visible.length ? (
+            <AppText className="text-center text-sm text-app-text-faint" style={{ padding: 24 }}>
+              {emptyText}
+            </AppText>
+          ) : null}
+        </ScrollView>
       )}
 
-      <Modal
-        animationType="fade"
-        transparent
-        visible={showFilters}
-        onRequestClose={() => setShowFilters(false)}>
-        <Pressable style={styles.modalBackdrop} onPress={() => setShowFilters(false)}>
+      <FilterMenu
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        filter={filter}
+        onFilter={(id) => {
+          setFilter(id);
+          setShowArchived(false);
+          setMenuOpen(false);
+        }}
+        showArchived={showArchived}
+        onToggleArchived={() => {
+          setShowArchived((v) => !v);
+          setMenuOpen(false);
+        }}
+        counts={counts}
+        archivedCount={archivedCount}
+        top={headerTop + HEADER.height + 8}
+      />
+
+      <Modal transparent visible={searchOpen} animationType="fade" onRequestClose={() => setSearchOpen(false)}>
+        <View style={{ flex: 1 }}>
+          <Pressable
+            accessibilityLabel={t('messages.closeSearch')}
+            onPress={() => setSearchOpen(false)}
+            style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(2,6,23,0.2)' }}
+          />
           <View
-            style={[
-              styles.filterMenu,
-              shadows.float,
-              { backgroundColor: colors.surface },
-            ]}>
-            <Text style={[styles.filterTitle, { color: colors.textMuted }]}>AFFICHER</Text>
-            {(Object.keys(FILTER_LABELS) as MessageFilter[]).map((value) => (
-              <Pressable
-                key={value}
-                onPress={() => {
-                  setFilter(value);
-                  setShowFilters(false);
-                }}
-                style={[
-                  styles.filterOption,
-                  filter === value && { backgroundColor: colors.primaryLight },
-                ]}>
-                <Text style={[styles.filterLabel, { color: filter === value ? colors.primary : colors.text }]}>
-                  {FILTER_LABELS[value]}
-                </Text>
-                {filter === value ? <Text style={{ color: colors.primary }}>✓</Text> : null}
-              </Pressable>
-            ))}
+            accessibilityRole="search"
+            style={[{ position: 'absolute', left: 12, right: 12, top: Math.max(12, insets.top + 12), maxHeight: '72%', borderRadius: 16, overflow: 'hidden', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }, shadows.float]}>
+            <View style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: withAlphaColor(colors.border, 0.6) }}>
+              <View className="bg-app-surface-muted" style={{ minHeight: 48, borderRadius: 16, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12 }}>
+                <Search size={16} color={colors.textMuted} strokeWidth={2} />
+                <TextInput
+                  autoFocus
+                  value={query}
+                  onChangeText={setQuery}
+                  placeholder={t('messages.searchPlaceholder')}
+                  placeholderTextColor={colors.textFaint}
+                  accessibilityLabel={t('messages.searchPlaceholder')}
+                  style={{ flex: 1, minWidth: 0, fontSize: 16, color: colors.text }}
+                />
+                <Pressable
+                  accessibilityLabel={t('messages.closeSearch')}
+                  onPress={() => setSearchOpen(false)}
+                  className="bg-app-surface"
+                  style={{ width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
+                  <X size={16} color={colors.text} strokeWidth={2} />
+                </Pressable>
+              </View>
+            </View>
+            <ScrollView style={{ maxHeight: 448 }} contentContainerStyle={{ paddingBottom: 8, paddingTop: 4 }} keyboardShouldPersistTaps="handled">
+              <AppText className="text-[10px] font-semibold text-app-text-faint" style={{ paddingHorizontal: 10, paddingTop: 4, paddingBottom: 6 }}>
+                {query.trim() ? t('messages.resultsCount', { count: searchResults.length }) : t('messages.conversations')}
+              </AppText>
+              {searchResults.map((conversation, index) => (
+                <ConversationRow key={conversation.id} conversation={conversation} userId={userId} divided={index < searchResults.length - 1} onlineIds={onlineIds} />
+              ))}
+              {query.trim() && !searchResults.length ? (
+                <AppText className="text-center text-sm text-app-text-faint" style={{ padding: 24 }}>
+                  {t('messages.noMatch')}
+                </AppText>
+              ) : null}
+            </ScrollView>
           </View>
-        </Pressable>
+        </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.sm, gap: spacing.md },
-  headerTop: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
-  heading: { flex: 1 },
-  eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingBottom: 4 },
-  eyebrowDot: { width: 8, height: 8, borderRadius: 4 },
-  eyebrow: { fontSize: 11, fontWeight: '800', letterSpacing: 1.3 },
-  title: { fontSize: 26, fontWeight: '900', letterSpacing: -0.6 },
-  subtitle: { fontSize: 13, paddingTop: 3 },
-  actions: { flexDirection: 'row', gap: spacing.sm },
-  search: { height: 46, borderRadius: radii.md, borderCurve: 'continuous', flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md },
-  searchInput: { flex: 1, fontSize: 14 },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  list: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing['2xl'], gap: spacing.sm },
-  card: { minHeight: 76, flexDirection: 'row', alignItems: 'center', borderRadius: radii.lg, borderCurve: 'continuous', padding: spacing.md, gap: spacing.md },
-  avatar: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: '#ffffff', fontSize: 15, fontWeight: '800' },
-  cardBody: { flex: 1, gap: 4 },
-  cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  cardTitle: { flex: 1, fontSize: 14, fontWeight: '800' },
-  unreadDot: { width: 8, height: 8, borderRadius: 4 },
-  lastMessage: { fontSize: 13 },
-  date: { alignSelf: 'flex-start', fontSize: 11, fontVariant: ['tabular-nums'] },
-  empty: { paddingTop: 72, alignItems: 'center', gap: spacing.sm },
-  emptyIcon: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
-  emptyTitle: { fontSize: 18, fontWeight: '800' },
-  emptyText: { fontSize: 13, textAlign: 'center' },
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(17,24,39,0.18)', alignItems: 'flex-end', paddingTop: 126, paddingRight: spacing.lg },
-  filterMenu: { width: 210, borderRadius: radii.lg, borderCurve: 'continuous', padding: spacing.sm },
-  filterTitle: { fontSize: 10, fontWeight: '900', letterSpacing: 1.3, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-  filterOption: { minHeight: 44, borderRadius: radii.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md },
-  filterLabel: { fontSize: 14, fontWeight: '700' },
-});

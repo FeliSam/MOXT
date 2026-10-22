@@ -1,6 +1,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit'
 
 import { fromRows } from '../utils/remoteRowMapper.js'
+import { transfersFromRemoteRows } from '../domain/transferRemote.js'
 import { PARCELS_PUBLIC_LIMIT, USER_ROWS_LIMIT } from '../services/parcelsService.js'
 
 function assertLoaded(result, label) {
@@ -32,7 +33,8 @@ export function createLoadCoreData({ supabase, setTransfers, setParcels }) {
     assertLoaded(parcelsRes, 'des colis')
     assertLoaded(parcelRequestsRes, 'des demandes colis')
 
-    dispatch(setTransfers({ items: fromRows(transfersRes.data) }))
+    // Même mapping que le web (payload fusionné, tarification, exchanger).
+    dispatch(setTransfers({ items: transfersFromRemoteRows(transfersRes.data || []) }))
     dispatch(
       setParcels({
         items: fromRows(parcelsRes.data),

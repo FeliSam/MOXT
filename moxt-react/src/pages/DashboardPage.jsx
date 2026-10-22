@@ -65,13 +65,13 @@ export function DashboardPage() {
   const rate = useExchangeRate()
 
   const listingsSection = authLoading || listings.length > 0 ? (
-    <section className="grid min-w-0 gap-3">
+    <section className="grid min-w-0 gap-1.5">
       <DashboardSectionHeading
         title={t('dashboard.discovery.latestListings')}
         link="/marketplace"
         linkLabel={t('dashboard.discovery.viewMarket')}
       />
-      <div className="relative min-w-0 pb-3">
+      <div className="relative min-w-0 pb-1.5">
         <div ref={listingsScrollRef} className={`${dashboardListingTrackClass} min-w-0`}>
           {authLoading
             ? Array.from({ length: 4 }).map((_, i) => (

@@ -23,10 +23,11 @@ export const selectSearchIndex = createSelector(
     (state) => state.jobs.items,
     (state) => state.events.items,
     (state) => state.parcels.items,
+    (state) => state.videos?.items || [],
     (state) => state.auth.user,
     selectDevModuleFlags,
   ],
-  (businesses, listings, jobs, events, parcels, user, devModuleFlags) => [
+  (businesses, listings, jobs, events, parcels, videos, user, devModuleFlags) => [
     ...businesses
       .filter((item) => ['verified', 'active'].includes(item.status))
       .map((item) => ({
@@ -81,6 +82,18 @@ export const selectSearchIndex = createSelector(
         subtitle: `${item.remainingKg} kg disponibles`,
         path: `/parcels/${item.id}`,
         publicPath: `/discover?type=parcel&q=${encodeURIComponent(item.origin)}`,
+      })),
+    ...videos
+      .filter((item) => !item.archived && !item.deleted)
+      .map((item) => ({
+        id: item.id,
+        type: 'video',
+        typeLabel: 'Vidéo',
+        title: item.title || item.caption || 'Vidéo',
+        subtitle: `${item.businessName || 'Reel'} · ${item.viewCount || 0} vues`,
+        path: `/videos?v=${item.id}`,
+        publicPath: `/discover?type=video&q=${encodeURIComponent(item.title || item.caption || '')}`,
+        thumbnailUrl: item.thumbnailUrl,
       })),
     ...searchablePages
       .filter(

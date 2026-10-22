@@ -1,5 +1,5 @@
 import { FiSearch } from 'react-icons/fi'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSelector } from 'react-redux'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
@@ -9,18 +9,50 @@ import { DISCOVERY_TYPES } from '../config/publicContent'
 import { searchTypeMeta } from '../config/searchTypes'
 import { useLanguage } from '../contexts/useLanguage'
 import { filterSearchIndex, selectSearchIndex } from '../features/searchSelectors'
+import { MarketplaceFeedBanner } from '../features/marketplace/MarketplaceFeedBanner'
 import { phase3Text } from '../i18n/phase3I18n'
 import { clearSearchHistory, readSearchHistory, saveSearchTerm } from '../services/searchHistory'
+
+const INITIAL_PAGE_SIZE = 12
+const PAGE_INCREMENT = 12
 
 export function DiscoverPage() {
   const { t } = useLanguage()
   const p3 = (key, vars) => phase3Text(t, key, vars)
+  const user = useSelector((state) => state.auth?.user)
   const index = useSelector(selectSearchIndex)
   const [searchParams, setSearchParams] = useSearchParams()
   const query = searchParams.get('q') || ''
   const type = searchParams.get('type') || 'all'
   const results = filterSearchIndex(index, query, type)
   const [history, setHistory] = useState(readSearchHistory)
+
+  const [displayCount, setDisplayCount] = useState(INITIAL_PAGE_SIZE)
+  const sentinelRef = useRef(null)
+
+  useEffect(() => {
+    setDisplayCount(INITIAL_PAGE_SIZE)
+  }, [query, type])
+
+  const visibleResults = results.slice(0, displayCount)
+  const hasMore = displayCount < results.length
+
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el || !hasMore) return undefined
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setDisplayCount((prev) => Math.min(prev + PAGE_INCREMENT, results.length))
+        }
+      },
+      { rootMargin: '500px' },
+    )
+
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [hasMore, results.length])
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -109,30 +141,52 @@ export function DiscoverPage() {
         </div>
       ) : null}
 
+      <MarketplaceFeedBanner bannerIndex={0} onInteract={() => {}} />
+
       <p className="text-sm font-bold text-[var(--app-text-muted)]">
         {results.length > 1
           ? p3('discover.resultsPlural', { count: results.length })
           : p3('discover.results', { count: results.length })}
       </p>
       {results.length ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {results.map((item) => {
-            const meta = searchTypeMeta(item.type, p3, item.typeLabel)
-            return (
-              <Card key={item.id || `${item.type}-${item.title}`} className="h-full">
-                <Badge tone={meta.tone}>{meta.label}</Badge>
-                <h2 className="mt-4 text-lg font-black">{item.title}</h2>
-                <p className="mt-2 text-sm text-[var(--app-text-muted)]">{item.subtitle}</p>
-                <Link
-                  to="/login"
-                  className="mt-5 inline-flex text-sm font-bold text-brand-700 dark:text-brand-300"
-                >
-                  {p3('discover.loginCta')}
-                </Link>
-              </Card>
-            )
-          })}
-        </div>
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {visibleResults.map((item) => {
+              const meta = searchTypeMeta(item.type, p3, item.typeLabel)
+              const targetPath = user ? item.path : (item.publicPath || item.path || '/login')
+              const ctaLabel = user
+                ? (item.type === 'video' ? 'Regarder la vidéo' : 'Consulter')
+                : p3('discover.loginCta')
+
+              return (
+                <Card key={item.id || `${item.type}-${item.title}`} className="h-full flex flex-col justify-between">
+                  <div>
+                    <Badge tone={meta.tone}>{meta.label}</Badge>
+                    <h2 className="mt-4 text-lg font-black">{item.title}</h2>
+                    <p className="mt-2 text-sm text-[var(--app-text-muted)]">{item.subtitle}</p>
+                  </div>
+                  <Link
+                    to={targetPath}
+                    className="mt-5 inline-flex items-center text-sm font-bold text-brand-700 hover:text-brand-600 dark:text-brand-300 transition"
+                  >
+                    {ctaLabel} &rarr;
+                  </Link>
+                </Card>
+              )
+            })}
+          </div>
+          {hasMore ? (
+            <div ref={sentinelRef} className="py-6 flex justify-center">
+              <button
+                type="button"
+                onClick={() => setDisplayCount((prev) => Math.min(prev + PAGE_INCREMENT, results.length))}
+                className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 py-2.5 text-xs font-bold text-[var(--app-text-muted)] shadow-sm hover:text-[var(--app-text)] hover:border-brand-500/40 transition cursor-pointer"
+              >
+                Charger plus de résultats...
+              </button>
+            </div>
+          ) : null}
+        </>
       ) : (
         <EmptyState
           icon={FiSearch}

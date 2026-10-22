@@ -6,6 +6,7 @@ import {
   upsertNotification,
 } from '@moxt/shared/domain/notificationRules.js';
 import {
+  archiveNotification as archiveNotificationRemote,
   fetchNotifications,
   markAllNotificationsRead,
   markNotificationRead,
@@ -28,6 +29,12 @@ export type NotificationItem = {
   read: boolean;
   archived: boolean;
   createdAt: string | null;
+  badgeText?: string | null;
+  badgeColor?: string | null;
+  badgeIcon?: string | null;
+  displayMode?: string;
+  actionLabel?: string | null;
+  metadata?: Record<string, unknown>;
 };
 
 type NotificationsState = {
@@ -66,6 +73,15 @@ export const markAsRead = createAsyncThunk('notifications/markAsRead', async (id
   if (supabase) await markNotificationRead(supabase, id);
   return id;
 });
+
+/** Archive comme le web (communications/archiveNotification). */
+export const archiveNotification = createAsyncThunk(
+  'notifications/archive',
+  async (args: { id: string; userId: string }) => {
+    if (supabase) await archiveNotificationRemote(supabase, args);
+    return args.id;
+  },
+);
 
 export const markAllAsRead = createAsyncThunk(
   'notifications/markAllAsRead',
@@ -116,6 +132,10 @@ const notificationsSlice = createSlice({
         state.items.forEach((n) => {
           n.read = true;
         });
+      })
+      .addCase(archiveNotification.pending, (state, action) => {
+        const item = state.items.find((n) => n.id === action.meta.arg.id);
+        if (item) item.archived = true;
       });
   },
 });

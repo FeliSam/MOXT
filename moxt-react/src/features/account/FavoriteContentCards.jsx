@@ -53,8 +53,8 @@ function ListingFavoriteCard({ item, onRemove }) {
         {display.image ? (
           <img src={display.image} alt={display.title} className="h-full w-full object-cover" loading="lazy" />
         ) : (
-          <div className="grid h-full w-full place-items-center bg-gradient-to-br from-cyan-700 to-blue-600 text-white">
-            <FiShoppingBag className="text-3xl opacity-90" />
+          <div className="grid h-full w-full place-items-center bg-slate-100 text-slate-400 dark:bg-slate-850 dark:text-slate-500">
+            <FiShoppingBag className="text-3xl opacity-80" />
           </div>
         )}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />

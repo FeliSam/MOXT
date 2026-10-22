@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
-import { FiArchive, FiEdit2, FiPlus, FiRotateCcw, FiShare2 } from 'react-icons/fi'
+import {
+  FiAlertTriangle,
+  FiArchive,
+  FiCheckCircle,
+  FiCopy,
+  FiEdit2,
+  FiPlus,
+  FiRotateCcw,
+  FiShare2,
+  FiTrash2,
+} from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../../contexts/useLanguage'
 import { ContactButton } from '../../features/communications/ContactButton'
@@ -39,6 +49,14 @@ export function DetailFloatingActions({
   archiveLabel,
   onReactivate,
   reactivateLabel,
+  onDuplicate,
+  duplicateLabel,
+  onMarkSold,
+  markSoldLabel,
+  onDelete,
+  deleteLabel,
+  onReport,
+  reportLabel,
 }) {
   const { t } = useLanguage()
   const mt = (key, vars) => marketplaceText(t, key, vars)
@@ -147,6 +165,63 @@ export function DetailFloatingActions({
           ),
         }
       : null,
+    isOwner && onMarkSold
+      ? {
+          key: 'markSold',
+          label: markSoldLabel || mt('marketplace.common.markSold') || 'Marquer comme vendu',
+          node: (
+            <button
+              type="button"
+              onClick={() => {
+                onMarkSold()
+                setOpen(false)
+              }}
+              aria-label={markSoldLabel || mt('marketplace.common.markSold') || 'Marquer comme vendu'}
+              className={`${ICON_BUTTON_CLASS} text-emerald-600 hover:text-emerald-700 hover:border-emerald-300 dark:text-emerald-400`}
+            >
+              <FiCheckCircle />
+            </button>
+          ),
+        }
+      : null,
+    isOwner && onDuplicate
+      ? {
+          key: 'duplicate',
+          label: duplicateLabel || mt('marketplace.common.duplicate') || 'Dupliquer',
+          node: (
+            <button
+              type="button"
+              onClick={() => {
+                onDuplicate()
+                setOpen(false)
+              }}
+              aria-label={duplicateLabel || mt('marketplace.common.duplicate') || 'Dupliquer'}
+              className={ICON_BUTTON_CLASS}
+            >
+              <FiCopy />
+            </button>
+          ),
+        }
+      : null,
+    isOwner && onDelete
+      ? {
+          key: 'delete',
+          label: deleteLabel || mt('marketplace.common.delete') || 'Supprimer',
+          node: (
+            <button
+              type="button"
+              onClick={() => {
+                onDelete()
+                setOpen(false)
+              }}
+              aria-label={deleteLabel || mt('marketplace.common.delete') || 'Supprimer'}
+              className={`${ICON_BUTTON_CLASS} text-rose-600 hover:text-rose-700 hover:border-rose-300 dark:text-rose-400`}
+            >
+              <FiTrash2 />
+            </button>
+          ),
+        }
+      : null,
     {
       key: 'favorite',
       label: mt('marketplace.detail.favorite'),
@@ -179,6 +254,25 @@ export function DetailFloatingActions({
               relatedType={relatedType}
               onContact={onContact}
             />
+          ),
+        }
+      : null,
+    !isOwner && onReport
+      ? {
+          key: 'report',
+          label: reportLabel || mt('marketplace.detail.report') || 'Signaler',
+          node: (
+            <button
+              type="button"
+              onClick={() => {
+                onReport()
+                setOpen(false)
+              }}
+              aria-label={reportLabel || mt('marketplace.detail.report') || 'Signaler'}
+              className={`${ICON_BUTTON_CLASS} text-rose-600 hover:text-rose-700 hover:border-rose-300 dark:text-rose-400`}
+            >
+              <FiAlertTriangle />
+            </button>
           ),
         }
       : null,

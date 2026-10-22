@@ -18,6 +18,7 @@ export function useMessagesRealtimeSync(activeConversationId) {
   const dispatch = useDispatch()
   const store = useStore()
 
+  // Synchronisation de la boîte de réception au montage et en mode dégradé (hors changement de chat)
   useEffect(() => {
     const userId = store.getState().auth.user?.id
     if (!userId) return undefined
@@ -32,20 +33,6 @@ export function useMessagesRealtimeSync(activeConversationId) {
       }
 
       await dispatch(refreshConversations())
-
-      if (!activeConversationId || cancelled) return
-
-      const conversation = store
-        .getState()
-        .communications.conversations.find((item) => item.id === activeConversationId)
-      if (!conversation) return
-
-      if (
-        conversationNeedsInitialMessageLoad(conversation) &&
-        !conversation.messagesLoading
-      ) {
-        await dispatch(loadConversationMessages(activeConversationId))
-      }
     }
 
     void syncInbox()
@@ -58,6 +45,23 @@ export function useMessagesRealtimeSync(activeConversationId) {
     return () => {
       cancelled = true
       window.clearInterval(degradedId)
+    }
+  }, [dispatch, store])
+
+  // Chargement direct des messages de la conversation active dès le clic (sans attendre refreshConversations)
+  useEffect(() => {
+    if (!activeConversationId) return
+
+    const conversation = store
+      .getState()
+      .communications.conversations.find((item) => item.id === activeConversationId)
+    if (!conversation) return
+
+    if (
+      conversationNeedsInitialMessageLoad(conversation) &&
+      !conversation.messagesLoading
+    ) {
+      void dispatch(loadConversationMessages(activeConversationId))
     }
   }, [activeConversationId, dispatch, store])
 }

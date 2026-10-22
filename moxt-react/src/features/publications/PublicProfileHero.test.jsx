@@ -153,4 +153,19 @@ describe('PublicProfileHero star rating', () => {
     expect(screen.queryByRole('button', { name: /Voir les avis/i })).toBeNull()
     expect(screen.getByText(/4,0/)).toBeTruthy()
   })
+
+  it('renders star badge next to the phone number chip', () => {
+    render(
+      <PublicProfileHero
+        name="Phone & Stars"
+        coverCategory="business"
+        phone="+243999999999"
+        rating={{ average: 4.8, count: 5 }}
+      />,
+    )
+    expect(screen.getByText('+243999999999')).toBeTruthy()
+    const badge = screen.getByTestId('profile-star-count-badge')
+    expect(badge).toBeTruthy()
+    expect(badge.textContent).toContain('4.8 (5)')
+  })
 })

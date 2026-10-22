@@ -1,6 +1,7 @@
 import { useFormik } from 'formik'
 import { useEffect, useState } from 'react'
-import { FiHelpCircle, FiLock, FiMail, FiPhone } from 'react-icons/fi'
+import { FiHelpCircle, FiLock, FiMail, FiPhone, FiMessageSquare } from 'react-icons/fi'
+import { FaTelegramPlane } from 'react-icons/fa'
 import { useDispatch } from 'react-redux'
 import { Link, useSearchParams } from 'react-router-dom'
 import { OTP_RESEND_COOLDOWN_SECONDS } from '@moxt/shared/auth/otpCooldown.js'
@@ -17,6 +18,7 @@ import { useLanguage } from '../contexts/useLanguage'
 import { authErrorToast } from '../features/auth/authErrorMessages'
 import { authService } from '../features/auth/authService'
 import { createAuthSchemas } from '../features/auth/authSchemas'
+import { clearSession } from '../features/auth/authSlice'
 import { addToast } from '../features/ui/uiSlice'
 
 const MODES = [
@@ -34,6 +36,8 @@ export function ForgotPasswordPage() {
   const [phoneStep, setPhoneStep] = useState('request') // request | confirm | done
   const [cooldown, setCooldown] = useState(0)
   const [pendingPhone, setPendingPhone] = useState('')
+  const [otpChannel, setOtpChannel] = useState('sms') // sms | telegram | flashcall
+  const [channelSending, setChannelSending] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
   const { forgotPasswordSchema } = createAuthSchemas(t)
 
@@ -78,40 +82,65 @@ export function ForgotPasswordPage() {
   const phoneRequestFormik = useFormik({
     initialValues: { phone: '+7' },
     onSubmit: async (values, helpers) => {
-      const phone = constrainPhone(values.phone, '+7', 10)
-      if (!isValidRussianPhone(phone)) {
+      const raw = String(values.phone || '').trim()
+      let phone = raw
+      if (raw.startsWith('+7') || raw.startsWith('8') || raw.startsWith('7')) {
+        phone = constrainPhone(raw, '+7', 10)
+      }
+      if (!isValidRussianPhone(phone) && !/^\+[1-9]\d{7,14}$/.test(phone)) {
         helpers.setFieldError('phone', t('auth.forgot.phoneInvalid'))
         helpers.setSubmitting(false)
         return
       }
-      try {
-        const result = await authService.requestPhonePasswordReset(phone)
-        setPendingPhone(result.phone)
-        setPhoneStep('confirm')
-        setCooldown(OTP_RESEND_COOLDOWN_SECONDS)
-        dispatch(
-          addToast({
-            title: t('auth.forgot.phoneCodeSentTitle'),
-            message: t('auth.forgot.phoneCodeSentBody', { phone: result.phone }),
-            tone: 'success',
-          }),
-        )
-      } catch (error) {
-        dispatch(
-          addToast(
-            authErrorToast(
-              t('auth.forgot.toastErrorTitle'),
-              error instanceof Error ? error.message : t('auth.forgot.toastErrorFallback'),
-              'error',
-              t,
-            ),
-          ),
-        )
-      } finally {
-        helpers.setSubmitting(false)
-      }
+      setPendingPhone(phone)
+      setPhoneStep('choose_channel')
+      helpers.setSubmitting(false)
     },
   })
+
+  async function sendOtpWithChannel(channelToUse) {
+    if (channelSending) return
+    setChannelSending(true)
+    try {
+      const result = await authService.requestPhonePasswordReset(pendingPhone, channelToUse)
+      setOtpChannel(channelToUse)
+      setPhoneStep('confirm')
+      setCooldown(OTP_RESEND_COOLDOWN_SECONDS)
+      let successTitle = t('auth.forgot.phoneCodeSentTitle')
+      let successBody = t('auth.forgot.phoneCodeSentBody', { phone: result.phone })
+      if (channelToUse === 'flashcall') {
+        successTitle = t('auth.register.channel.callTitle') || 'Par appel'
+        successBody =
+          t('security.phone.codeSentBodyCall', { phone: result.phone }) ||
+          `Un appel court va arriver au ${result.phone}. Notez les 4 derniers chiffres du numéro appelant.`
+      } else if (channelToUse === 'telegram') {
+        successTitle = t('auth.register.channel.telegramTitle') || 'Par Telegram'
+        successBody =
+          t('security.phone.codeSentBodyTelegram', { phone: result.phone }) ||
+          `Le code de validation a été envoyé sur Telegram au ${result.phone}.`
+      }
+      dispatch(
+        addToast({
+          title: successTitle,
+          message: successBody,
+          tone: 'success',
+        }),
+      )
+    } catch (error) {
+      dispatch(
+        addToast(
+          authErrorToast(
+            t('auth.forgot.toastErrorTitle'),
+            error instanceof Error ? error.message : t('auth.forgot.toastErrorFallback'),
+            'error',
+            t,
+          ),
+        ),
+      )
+    } finally {
+      setChannelSending(false)
+    }
+  }
 
   const phoneConfirmFormik = useFormik({
     initialValues: { code: '', password: '', confirmPassword: '' },
@@ -126,7 +155,14 @@ export function ForgotPasswordPage() {
         helpers.setSubmitting(false)
         return
       }
-      if (!/^\d{6}$/.test(String(values.code || '').trim())) {
+      const trimmedCode = String(values.code || '').trim()
+      if (otpChannel === 'flashcall') {
+        if (!/^\d{4}$/.test(trimmedCode)) {
+          helpers.setFieldError('code', 'Saisissez les 4 derniers chiffres du numéro qui appelle.')
+          helpers.setSubmitting(false)
+          return
+        }
+      } else if (!/^\d{6}$/.test(trimmedCode)) {
         helpers.setFieldError('code', t('auth.forgot.phoneCodeInvalid'))
         helpers.setSubmitting(false)
         return
@@ -134,9 +170,13 @@ export function ForgotPasswordPage() {
       try {
         await authService.confirmPhonePasswordReset({
           phone: pendingPhone,
-          token: values.code.trim(),
+          token: trimmedCode,
           password: values.password,
+          otpChannel,
         })
+        const { markIntentionalSignOut } = await import('../services/authSessionSync')
+        markIntentionalSignOut()
+        dispatch(clearSession())
         setPhoneStep('done')
         dispatch(
           addToast({
@@ -167,6 +207,7 @@ export function ForgotPasswordPage() {
     setSent(false)
     setPhoneStep('request')
     setPendingPhone('')
+    setOtpChannel('sms')
     setCooldown(0)
   }
 
@@ -289,14 +330,26 @@ export function ForgotPasswordPage() {
             type="tel"
             autoComplete="tel"
             placeholder="+7XXXXXXXXXX"
-            iconLeft={<span className="text-base leading-none">{flagEmoji('RU')}</span>}
-            value={phoneRequestFormik.values.phone}
-            onChange={(event) =>
-              phoneRequestFormik.setFieldValue(
-                'phone',
-                constrainPhone(event.target.value, '+7', 10),
-              )
+            iconLeft={
+              <span className="text-base leading-none">
+                {phoneRequestFormik.values.phone.startsWith('+7') ||
+                phoneRequestFormik.values.phone.startsWith('8')
+                  ? flagEmoji('RU')
+                  : '🌐'}
+              </span>
             }
+            value={phoneRequestFormik.values.phone}
+            onChange={(event) => {
+              const val = event.target.value
+              if (val.startsWith('+7') || val.startsWith('8') || val.startsWith('7')) {
+                phoneRequestFormik.setFieldValue(
+                  'phone',
+                  constrainPhone(val, '+7', 10),
+                )
+              } else {
+                phoneRequestFormik.setFieldValue('phone', val)
+              }
+            }}
             onBlur={phoneRequestFormik.handleBlur}
             error={phoneRequestFormik.touched.phone ? phoneRequestFormik.errors.phone : undefined}
           />
@@ -313,14 +366,111 @@ export function ForgotPasswordPage() {
             </button>
           </div>
           <Button className="w-full" type="submit" loading={phoneRequestFormik.isSubmitting}>
-            {phoneRequestFormik.isSubmitting
-              ? t('auth.forgot.phoneSending')
-              : t('auth.forgot.phoneSubmit')}
+            {t('common.continue') || 'Continuer'}
           </Button>
           <Link className="auth-flow-link-muted text-center" to="/login">
             {t('auth.forgot.backToLogin')}
           </Link>
         </form>
+      ) : null}
+
+      {mode === 'phone' && phoneStep === 'choose_channel' ? (
+        <div className="auth-flow-panel mt-4 grid gap-4">
+          <div className="flex items-center justify-between rounded-2xl bg-[var(--app-surface-muted)] p-3">
+            <div>
+              <span className="text-xs text-[var(--app-text-muted)]">Numéro de téléphone :</span>
+              <p className="text-sm font-bold text-[var(--app-text)]">{pendingPhone}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPhoneStep('request')}
+              className="text-xs font-bold text-brand-600 hover:underline dark:text-brand-400"
+            >
+              Modifier
+            </button>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-bold text-[var(--app-text)]">
+              {t('auth.register.channel.title') || 'Comment recevoir votre code ?'}
+            </h3>
+            <p className="mt-0.5 text-xs text-[var(--app-text-muted)]">
+              Choisissez le mode qui vous convient le mieux :
+            </p>
+          </div>
+
+          <div className="grid gap-2.5">
+            <button
+              type="button"
+              disabled={channelSending}
+              onClick={() => sendOtpWithChannel('sms')}
+              className="flex w-full items-start gap-3 rounded-2xl border-2 border-[var(--app-border)] bg-[var(--app-surface)] p-3.5 text-left transition hover:border-brand-600 hover:bg-[var(--app-accent-soft)]"
+            >
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-600/10 text-brand-700 dark:text-brand-300">
+                <FiMessageSquare className="text-lg" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <strong className="block text-sm font-black">{t('auth.register.channel.smsTitle') || 'Par SMS'}</strong>
+                  <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                    Recommandé
+                  </span>
+                </div>
+                <span className="mt-1 block text-xs text-[var(--app-text-muted)]">
+                  {t('auth.register.channel.smsHint') || 'Code à 6 chiffres par SMS standard (idéal si vous n’avez pas Telegram).'}
+                </span>
+              </span>
+            </button>
+
+            <button
+              type="button"
+              disabled={channelSending}
+              onClick={() => sendOtpWithChannel('telegram')}
+              className="flex w-full items-start gap-3 rounded-2xl border-2 border-[var(--app-border)] bg-[var(--app-surface)] p-3.5 text-left transition hover:border-brand-600 hover:bg-[var(--app-accent-soft)]"
+            >
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                <FaTelegramPlane className="text-lg" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <strong className="block text-sm font-black">{t('auth.register.channel.telegramTitle') || 'Par Telegram'}</strong>
+                <span className="mt-1 block text-xs text-[var(--app-text-muted)]">
+                  {t('auth.register.channel.telegramHint') || 'Code à 6 chiffres envoyé dans Telegram (nécessite un compte Telegram lié).'}
+                </span>
+              </span>
+            </button>
+
+            <button
+              type="button"
+              disabled={channelSending}
+              onClick={() => sendOtpWithChannel('flashcall')}
+              className="flex w-full items-start gap-3 rounded-2xl border-2 border-[var(--app-border)] bg-[var(--app-surface)] p-3.5 text-left transition hover:border-brand-600 hover:bg-[var(--app-accent-soft)]"
+            >
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                <FiPhone className="text-lg" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <strong className="block text-sm font-black">{t('auth.register.channel.callTitle') || 'Par appel (FlashCall)'}</strong>
+                <span className="mt-1 block text-xs text-[var(--app-text-muted)]">
+                  {t('auth.register.channel.callHint') || 'Un court appel entrant : saisissez les 4 derniers chiffres du numéro qui appelle.'}
+                </span>
+              </span>
+            </button>
+          </div>
+
+          {channelSending ? (
+            <p className="text-center text-xs text-brand-600 animate-pulse font-bold">
+              Envoi du code en cours...
+            </p>
+          ) : null}
+
+          <button
+            type="button"
+            className="text-center text-sm font-bold text-[var(--app-text-muted)] hover:underline"
+            onClick={() => setPhoneStep('request')}
+          >
+            ← Retour
+          </button>
+        </div>
       ) : null}
 
       {mode === 'phone' && phoneStep === 'confirm' ? (
@@ -329,21 +479,40 @@ export function ForgotPasswordPage() {
           onSubmit={phoneConfirmFormik.handleSubmit}
           noValidate
         >
-          <Alert variant="info" title={t('auth.forgot.phoneCodeSentTitle')}>
-            {t('auth.forgot.phoneCodeSentBody', { phone: pendingPhone })}
+          <Alert
+            variant="info"
+            title={
+              otpChannel === 'flashcall'
+                ? t('auth.register.channel.callTitle') || 'Appel en cours'
+                : otpChannel === 'telegram'
+                  ? t('auth.register.channel.telegramTitle') || 'Code Telegram envoyé'
+                  : t('auth.forgot.phoneCodeSentTitle')
+            }
+          >
+            {otpChannel === 'flashcall'
+              ? t('security.phone.codeSentBodyCall', { phone: pendingPhone }) ||
+                `Un appel court va arriver au ${pendingPhone}. Entrez les 4 derniers chiffres du numéro appelant.`
+              : otpChannel === 'telegram'
+                ? t('security.phone.codeSentBodyTelegram', { phone: pendingPhone }) ||
+                  `Le code a été envoyé sur Telegram au ${pendingPhone}. Si vous n'avez pas de compte Telegram, vous pouvez changer de méthode ci-dessous.`
+                : t('auth.forgot.phoneCodeSentBody', { phone: pendingPhone })}
           </Alert>
           <Input
             id="forgot-phone-code"
-            label={t('auth.forgot.phoneCodeLabel')}
+            label={
+              otpChannel === 'flashcall'
+                ? '4 derniers chiffres du numéro qui appelle'
+                : t('auth.forgot.phoneCodeLabel')
+            }
             inputMode="numeric"
             autoComplete="one-time-code"
-            maxLength={6}
-            placeholder="000000"
+            maxLength={otpChannel === 'flashcall' ? 4 : 6}
+            placeholder={otpChannel === 'flashcall' ? '0000' : '000000'}
             value={phoneConfirmFormik.values.code}
             onChange={(event) =>
               phoneConfirmFormik.setFieldValue(
                 'code',
-                event.target.value.replace(/\D/g, '').slice(0, 6),
+                event.target.value.replace(/\D/g, '').slice(0, otpChannel === 'flashcall' ? 4 : 6),
               )
             }
             error={phoneConfirmFormik.touched.code ? phoneConfirmFormik.errors.code : undefined}
@@ -378,20 +547,30 @@ export function ForgotPasswordPage() {
               ? t('auth.reset.submitting')
               : t('auth.forgot.phoneConfirmSubmit')}
           </Button>
+
           <Button
             className="w-full"
             variant="secondary"
             type="button"
-            disabled={cooldown > 0 || phoneRequestFormik.isSubmitting}
-            onClick={() => phoneRequestFormik.handleSubmit()}
+            disabled={cooldown > 0 || channelSending}
+            onClick={() => sendOtpWithChannel(otpChannel)}
           >
             {cooldown > 0
               ? t('auth.forgot.resendCooldown', { seconds: cooldown })
               : t('auth.forgot.phoneResend')}
           </Button>
+
           <button
             type="button"
-            className="text-center text-sm font-bold text-[var(--app-text-muted)] underline-offset-2 hover:underline"
+            className="text-center text-sm font-bold text-brand-600 underline-offset-2 hover:underline dark:text-brand-400"
+            onClick={() => setPhoneStep('choose_channel')}
+          >
+            {t('security.phone.tryAnotherMethod') || 'Essayer une autre méthode (SMS, Telegram, appel)'}
+          </button>
+
+          <button
+            type="button"
+            className="text-center text-xs font-bold text-[var(--app-text-muted)] underline-offset-2 hover:underline"
             onClick={() => {
               setPhoneStep('request')
               setPendingPhone('')

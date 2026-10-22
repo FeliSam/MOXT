@@ -57,6 +57,7 @@ import {
   p2pOrderFromRemoteRow,
   reportFromRemoteRow,
 } from '../features/sync/entityRemote'
+import { isE2eHarnessActive as e2eHarnessActive, readE2eFixtures } from '../services/e2eSession'
 
 // Nombre max de lignes pour les tables publiques paginées au login
 const PUBLIC_LIMIT = 50
@@ -185,8 +186,11 @@ export const loadAllData = createAsyncThunk(
     void dispatch(refreshStatusesData())
 
     try {
-    const { loadPlatformModules } = await import('../features/platform/platformModulesSlice')
-    void dispatch(loadPlatformModules())
+    const { isE2eHarnessActive } = await import('../services/e2eSession')
+    if (!isE2eHarnessActive()) {
+      const { loadPlatformModules } = await import('../features/platform/platformModulesSlice')
+      void dispatch(loadPlatformModules())
+    }
 
     if (!['admin', 'superadmin'].includes(user.role)) {
       const { data: lifecycleData } = await supabase.rpc('moxt_sync_account_lifecycle_for_user')
@@ -385,8 +389,8 @@ export const loadAllData = createAsyncThunk(
     const listingsPullOk = !listingsRes?.error
     const listingsBeforeCount = (getState().marketplace?.items || []).length
     const remoteListingsCount = (listingsRes.data || []).length
-    if (listingsPullOk) {
-      earlyApplyMarketplaceListings(dispatch, listingsRes.data || [])
+    if (listingsPullOk && Array.isArray(listingsRes.data) && listingsRes.data.length > 0) {
+      earlyApplyMarketplaceListings(dispatch, listingsRes.data)
     } else if (listingsRes?.error) {
       console.warn('[MOXT] Chargement des annonces:', listingsRes.error.message)
     }
@@ -812,7 +816,14 @@ export const loadAllData = createAsyncThunk(
       }))
       dispatch(setVideos({ items: fromRows(safeRows(videosRes, 'des videos')) }))
       dispatch(setBusinesses({
-        items: mergedBusinessItems,
+        items: (() => {
+          const fixtures = e2eHarnessActive() ? readE2eFixtures()?.businesses : null
+          if (!Array.isArray(fixtures) || !fixtures.length) return mergedBusinessItems
+          return [
+            ...fixtures,
+            ...mergedBusinessItems.filter((item) => !fixtures.some((f) => f.id === item.id)),
+          ]
+        })(),
         members: mergedMembers,
         documents: mergedDocuments,
         requests: mergedRequests,

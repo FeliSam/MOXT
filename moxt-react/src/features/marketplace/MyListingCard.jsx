@@ -82,7 +82,7 @@ export function MyListingCard({
     <Card className={`min-w-0 overflow-hidden p-0 ${active ? '' : archivedPublicationCardClass}`}>
       <div className="flex min-w-0 flex-col gap-0 lg:flex-row">
         <div
-          className={`relative h-44 w-full shrink-0 overflow-hidden rounded-t-[inherit] bg-gradient-to-br from-cyan-700 to-blue-600 sm:h-48 lg:h-auto lg:w-56 lg:rounded-l-[inherit] lg:rounded-tr-none ${
+          className={`relative h-44 w-full shrink-0 overflow-hidden rounded-t-[inherit] bg-slate-100 dark:bg-slate-850 sm:h-48 lg:h-auto lg:w-56 lg:rounded-l-[inherit] lg:rounded-tr-none ${
             active ? '' : 'opacity-75 saturate-[0.85]'
           }`}
         >
@@ -95,8 +95,8 @@ export function MyListingCard({
                 loading="lazy"
               />
             ) : (
-              <div className="grid h-full min-h-[12rem] w-full place-items-center text-white">
-                <FiShoppingBag className="text-4xl opacity-90" />
+              <div className="grid h-full min-h-[12rem] w-full place-items-center bg-slate-100 text-slate-400 dark:bg-slate-850 dark:text-slate-500">
+                <FiShoppingBag className="text-4xl opacity-80" />
               </div>
             )}
             <div className="absolute left-3 top-3 flex flex-wrap gap-1">

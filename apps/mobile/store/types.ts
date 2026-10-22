@@ -12,6 +12,10 @@ export type AuthUser = {
   role: string;
   verified: boolean;
   status: string;
+  phoneVerified?: boolean;
+  phoneVerifiedAt?: string | null;
+  emailVerified?: boolean;
+  emailVerifiedAt?: string | null;
 };
 
 export type AuthState = {

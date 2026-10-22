@@ -22,8 +22,13 @@ const expoCli = require('fs').existsSync(mobileExpoCli) ? mobileExpoCli : rootEx
 
 process.env.EXPO_DOCTOR_SKIP_DEPENDENCY_VERSION_CHECK = '1';
 
+const existingNodeOptions = process.env.NODE_OPTIONS || '';
+if (!existingNodeOptions.includes('--max-old-space-size')) {
+  process.env.NODE_OPTIONS = `${existingNodeOptions} --max-old-space-size=8192`.trim();
+}
+
 const args = ['start', ...process.argv.slice(2)];
-const result = spawnSync(process.execPath, [expoCli, ...args], {
+const result = spawnSync(process.execPath, ['--max-old-space-size=8192', expoCli, ...args], {
   cwd: projectRoot,
   stdio: 'inherit',
   env: process.env,

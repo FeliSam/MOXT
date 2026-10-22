@@ -1,123 +1,18 @@
 import {
-  currencyForCountry,
   DIRECTIONS,
-  FALLBACK_RATES,
-  transferLimitsForCurrency,
   TRANSFER_CONFIG,
   TRANSFER_LIMITS_POLICY,
 } from './transferConfig'
 import { formatCurrency, formatDateTime } from '../../utils/formatters'
+import { directionInfo, getTransferPricing } from '@moxt/shared/domain/transferPricing.js'
+import {
+  calculateTransfer,
+  calculateTransferFromReceived,
+  roundMoneyUp,
+} from '@moxt/shared/domain/transferCalc.js'
 
-export function directionInfo(direction, originCountry = 'BJ') {
-  const rate = FALLBACK_RATES[direction] || FALLBACK_RATES[DIRECTIONS.BJ_TO_RU]
-  const originCurrency = currencyForCountry(originCountry)
-  return {
-    ...rate,
-    from: direction === DIRECTIONS.BJ_TO_RU ? originCurrency : 'RUB',
-    to: direction === DIRECTIONS.BJ_TO_RU ? 'RUB' : originCurrency,
-    sourceCountry: direction === DIRECTIONS.BJ_TO_RU ? originCountry : 'RU',
-    destinationCountry: direction === DIRECTIONS.BJ_TO_RU ? 'RU' : originCountry,
-  }
-}
+export { calculateTransfer, calculateTransferFromReceived, directionInfo, getTransferPricing, roundMoneyUp }
 
-export function calculateTransfer(
-  amount,
-  direction,
-  feePercent = TRANSFER_CONFIG.feePercent,
-  rawRateOverride,
-  originCountry = 'BJ',
-  rateReductionPercent,
-) {
-  const numericAmount = Math.max(0, Number(amount) || 0)
-  const info = directionInfo(direction, originCountry)
-  const rawRate =
-    Number.isFinite(Number(rawRateOverride)) && Number(rawRateOverride) > 0
-      ? Number(rawRateOverride)
-      : info.rawRate
-  const margin =
-    rateReductionPercent != null && Number.isFinite(Number(rateReductionPercent))
-      ? Math.min(15, Math.max(0, Number(rateReductionPercent)))
-      : TRANSFER_CONFIG.rateMarginPercent
-  const rate = rawRate * (1 - margin / 100)
-  // Montant saisi = total à payer (frais inclus). Montant envoyé = total − frais.
-  const fees = numericAmount * (Number(feePercent) / 100)
-  const totalToPay = numericAmount
-  const amountSent = Math.max(0, numericAmount - fees)
-  const limits = transferLimitsForCurrency(info.from)
-
-  return {
-    amountSent,
-    amountReceived: roundMoneyUp(amountSent * rate),
-    fees,
-    totalToPay,
-    currencyFrom: info.from,
-    currencyTo: info.to,
-    rawRate,
-    rate,
-    rateSource: rawRateOverride ? 'api' : 'fallback',
-    feePercent: Number(feePercent),
-    rateMarginPercent: margin,
-    minimumRequired: limits.minimum,
-    maximumUnverified: limits.unverified,
-    maximumVerified: limits.verified,
-    sourceCountry: info.sourceCountry,
-    destinationCountry: info.destinationCountry,
-  }
-}
-
-/**
- * Calcul ancré sur le montant exact à recevoir : le montant saisi dans la devise
- * cible est conservé tel quel ; le total à payer est dérivé en conséquence.
- */
-export function calculateTransferFromReceived(
-  receivedAmount,
-  direction,
-  feePercent = TRANSFER_CONFIG.feePercent,
-  rawRateOverride,
-  originCountry = 'BJ',
-  rateReductionPercent,
-) {
-  const target = roundMoneyUp(Number(receivedAmount) || 0)
-  const empty = calculateTransfer(
-    0,
-    direction,
-    feePercent,
-    rawRateOverride,
-    originCountry,
-    rateReductionPercent,
-  )
-  if (target <= 0) {
-    return { ...empty, amountReceived: 0 }
-  }
-
-  const preview = calculateTransfer(
-    1,
-    direction,
-    feePercent,
-    rawRateOverride,
-    originCountry,
-    rateReductionPercent,
-  )
-  const factor = (1 - Number(preview.feePercent) / 100) * preview.rate
-  if (!Number.isFinite(factor) || factor <= 0) {
-    return { ...preview, amountReceived: target, totalToPay: 0, amountSent: 0, fees: 0 }
-  }
-
-  const totalToPay = roundMoneyUp(target / factor)
-  const calculation = calculateTransfer(
-    totalToPay,
-    direction,
-    feePercent,
-    rawRateOverride,
-    originCountry,
-    rateReductionPercent,
-  )
-
-  return {
-    ...calculation,
-    amountReceived: target,
-  }
-}
 
 /** Inverse : montant exact à recevoir → total à payer (frais inclus). */
 export function totalToPayFromReceived(
@@ -138,13 +33,6 @@ export function totalToPayFromReceived(
   ).totalToPay
 }
 
-/** Arrondi des montants de transfert à l'entier supérieur (ex. 8810.56 → 8811). */
-export function roundMoneyUp(value) {
-  const numeric = Number(value)
-  if (!Number.isFinite(numeric) || numeric <= 0) return 0
-  return Math.ceil(Number(numeric.toFixed(8)))
-}
-
 export function roundTransferInput(value) {
   const numeric = Number(value)
   if (!Number.isFinite(numeric) || numeric <= 0) return ''
@@ -163,26 +51,6 @@ export function rateReductionForDirection(businessOrExchanger, direction) {
   return null
 }
 
-export function getTransferPricing(transfer) {
-  const amountSent = Number(transfer?.amountSent || transfer?.amount || 0)
-  const feePercent = Number(
-    transfer?.feePercent ??
-      transfer?.exchanger?.feePercent ??
-      TRANSFER_CONFIG.feePercent ??
-      0,
-  )
-  const fees =
-    transfer?.fees != null ? Number(transfer.fees) : amountSent * (Number(feePercent) / 100)
-  const totalToPay =
-    transfer?.totalToPay != null ? Number(transfer.totalToPay) : amountSent + Number(fees)
-
-  return {
-    amountSent,
-    feePercent,
-    fees,
-    totalToPay,
-  }
-}
 
 function resolveMsg(t, key, fallback, vars) {
   if (typeof t === 'function') {

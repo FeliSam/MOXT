@@ -1,6 +1,7 @@
 import {
   FiActivity,
   FiAlertCircle,
+  FiBell,
   FiCalendar,
   FiEdit3,
   FiFileText,
@@ -24,6 +25,7 @@ import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 
 export const MAIN_VIEWS = [
   { id: 'overview', label: 'Vue generale', labelKey: 'admin.nav.overview', icon: FiShield },
+  { id: 'notifications', label: 'Diffusions', labelKey: 'admin.nav.notifications', icon: FiBell },
   { id: 'modules', label: 'Modules', labelKey: 'admin.nav.modules', icon: FiSliders },
   { id: 'stores', label: 'Stores', labelKey: 'admin.nav.stores', icon: FiGlobe },
   { id: 'feed', label: 'Fil', labelKey: 'admin.nav.feed', icon: FiPlay },
@@ -82,6 +84,7 @@ export const VIEW_FILTERS = {
   queues: [],
   audit: [],
   stars: [],
+  notifications: [],
 }
 
 export const ADMIN_VIEW_IDS = MAIN_VIEWS.map((view) => view.id)

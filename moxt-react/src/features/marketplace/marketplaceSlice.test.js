@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import reducer, {
   addListingQuestion,
   answerListingQuestion,
+  updateListingQuestion,
+  deleteListingQuestion,
   createListing,
   deleteListing,
   duplicateListing,
@@ -227,6 +229,44 @@ describe('marketplaceSlice', () => {
 
     expect(answered.items[0].questions[0].answer).toBe('Oui, toujours disponible.')
     expect(answered.items[0].questions[0].answeredAt).toBeTruthy()
+  })
+
+  it('permet a l’auteur de modifier puis supprimer sa question', () => {
+    const created = reducer({ items: [] }, createListing(listing))
+    const id = created.items[0].id
+    const withQuestion = reducer(
+      created,
+      addListingQuestion({
+        listingId: id,
+        authorId: 'buyer123',
+        authorName: 'Acheteur',
+        text: 'Quel est l’état de la batterie ?',
+      }),
+    )
+    const questionId = withQuestion.items[0].questions[0].id
+
+    // Modification
+    const edited = reducer(
+      withQuestion,
+      updateListingQuestion({
+        listingId: id,
+        questionId,
+        authorId: 'buyer123',
+        text: 'Batterie à combien de pourcent svp ?',
+      }),
+    )
+    expect(edited.items[0].questions[0].text).toBe('Batterie à combien de pourcent svp ?')
+
+    // Suppression
+    const deleted = reducer(
+      edited,
+      deleteListingQuestion({
+        listingId: id,
+        questionId,
+        authorId: 'buyer123',
+      }),
+    )
+    expect(deleted.items[0].questions).toHaveLength(0)
   })
 
   it('fusionne une annonce distante sans créer de doublon', () => {

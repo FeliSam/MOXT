@@ -2,6 +2,9 @@ import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 import { supabase } from '../services/supabase';
 import { fetchActiveListings } from '@moxt/shared/services/publicationsService.js';
+import { toggleLikeList } from '@moxt/shared/services/engagementService.js';
+import { normalizeListingImages } from '@/utils/mediaUrl';
+import { commentAdded, commentRemoved, likeToggled, type EngagementComment } from './engagementActions';
 
 export type ListingItem = {
   id: string;
@@ -19,12 +22,32 @@ export type ListingItem = {
   ownerId?: string;
   businessId?: string;
   views?: number;
+  favorites?: string[];
+  contactCount?: number;
+  shareCount?: number;
+  updatedAt?: string;
   sellerName?: string;
   contact?: string;
   whatsapp?: string;
   condition?: string;
   createdAt?: string;
   expiresAt?: string;
+  likes?: string[];
+  comments?: EngagementComment[];
+  deliveryOptions?: string[];
+  shippingCarriers?: unknown[];
+  deliveryFee?: number | null;
+  deliveryDelay?: string;
+  warranty?: string;
+  returnPolicy?: string;
+  paymentMethods?: string[];
+  questions?: { id?: string; authorName?: string; text?: string; answer?: string; createdAt?: string }[];
+  history?: { status?: string; at?: string }[];
+  brand?: string;
+  model?: string;
+  color?: string;
+  district?: string;
+  stock?: number | null;
 };
 
 type MarketplaceState = {
@@ -39,6 +62,14 @@ const initialState: MarketplaceState = {
   error: null,
 };
 
+/** Fiche absente du catalogue (lien direct /listing/:id). */
+export const loadListingById = createAsyncThunk('marketplace/loadListingById', async (id: string) => {
+  if (!supabase || !id) return null;
+  const { data, error } = await supabase.from('listings').select('*').eq('id', id).maybeSingle();
+  if (error) throw new Error(error.message);
+  return data ? mapRow(data) : null;
+});
+
 export const loadListings = createAsyncThunk(
   'marketplace/loadListings',
   async () => {
@@ -48,6 +79,19 @@ export const loadListings = createAsyncThunk(
     return rows.map(mapRow);
   },
 );
+
+function asArray(value: unknown): any[] {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
 
 function mapRow(row: any): ListingItem {
   return {
@@ -62,14 +106,37 @@ function mapRow(row: any): ListingItem {
     city: row.city || row.payload?.city || '',
     country: row.country || 'RU',
     address: row.address || row.payload?.address || '',
-    images: row.images || row.payload?.images || [],
+    images: normalizeListingImages(row.images, row.payload?.images, row.payload?.photos, row.image_url),
     ownerId: row.owner_id,
+    businessId: row.business_id || row.payload?.businessId || undefined,
+    views: Number(row.views ?? row.payload?.views ?? 0) || 0,
+    favorites: asArray(row.favorites ?? row.payload?.favorites),
+    contactCount: Number(row.contact_count ?? row.payload?.contactCount ?? 0) || 0,
+    shareCount: Number(row.share_count ?? row.payload?.shareCount ?? 0) || 0,
+    updatedAt: row.updated_at || row.payload?.updatedAt || '',
     sellerName: row.seller_name || row.payload?.sellerName || '',
     contact: row.payload?.contact || '',
     whatsapp: row.payload?.whatsapp || '',
     condition: row.payload?.condition || '',
     createdAt: row.created_at,
     expiresAt: row.expires_at,
+    // Colonnes likes / comments (miroir dans payload), écrites par les RPC moxt_listing_*.
+    likes: asArray(row.likes ?? row.payload?.likes),
+    comments: asArray(row.comments ?? row.payload?.comments).filter((c: unknown) => c && typeof c === 'object'),
+    deliveryOptions: asArray(row.delivery_options ?? row.payload?.deliveryOptions),
+    shippingCarriers: asArray(row.shipping_carriers ?? row.payload?.shippingCarriers),
+    deliveryFee: row.delivery_fee ?? row.payload?.deliveryFee ?? null,
+    deliveryDelay: row.delivery_delay || row.payload?.deliveryDelay || '',
+    warranty: row.warranty || row.payload?.warranty || '',
+    returnPolicy: row.return_policy || row.payload?.returnPolicy || '',
+    paymentMethods: asArray(row.payment_methods ?? row.payload?.paymentMethods),
+    questions: asArray(row.questions ?? row.payload?.questions),
+    history: asArray(row.history ?? row.payload?.history),
+    brand: row.brand || row.payload?.brand || '',
+    model: row.model || row.payload?.model || '',
+    color: row.color || row.payload?.color || '',
+    district: row.district || row.payload?.district || '',
+    stock: row.stock ?? row.payload?.stock ?? null,
   };
 }
 
@@ -80,9 +147,21 @@ const marketplaceSlice = createSlice({
     setListings(state, action: PayloadAction<ListingItem[]>) {
       state.items = action.payload;
     },
+    upsertListing(state, action: PayloadAction<ListingItem>) {
+      const index = state.items.findIndex((item) => item.id === action.payload.id);
+      if (index >= 0) state.items[index] = { ...state.items[index], ...action.payload };
+      else state.items.unshift(action.payload);
+    },
   },
   extraReducers: (builder) => {
     builder
+      .addCase(loadListingById.fulfilled, (state, action) => {
+        const listing = action.payload;
+        if (!listing) return;
+        const index = state.items.findIndex((item) => item.id === listing.id);
+        if (index >= 0) state.items[index] = { ...state.items[index], ...listing };
+        else state.items.unshift(listing);
+      })
       .addCase(loadListings.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -94,9 +173,24 @@ const marketplaceSlice = createSlice({
       .addCase(loadListings.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Erreur chargement marketplace';
+      })
+      .addCase(likeToggled, (state, action) => {
+        if (action.payload.kind !== 'listing') return;
+        const item = state.items.find((l) => l.id === action.payload.entityId);
+        if (item) item.likes = toggleLikeList(item.likes, action.payload.userId);
+      })
+      .addCase(commentAdded, (state, action) => {
+        if (action.payload.kind !== 'listing') return;
+        const item = state.items.find((l) => l.id === action.payload.entityId);
+        if (item) item.comments = [...(item.comments || []), action.payload.comment];
+      })
+      .addCase(commentRemoved, (state, action) => {
+        if (action.payload.kind !== 'listing') return;
+        const item = state.items.find((l) => l.id === action.payload.entityId);
+        if (item) item.comments = (item.comments || []).filter((c) => c.id !== action.payload.commentId);
       });
   },
 });
 
-export const { setListings } = marketplaceSlice.actions;
+export const { setListings, upsertListing } = marketplaceSlice.actions;
 export const marketplaceReducer = marketplaceSlice.reducer;

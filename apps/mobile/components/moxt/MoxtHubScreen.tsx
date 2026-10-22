@@ -69,7 +69,7 @@ export function MoxtHubScreen() {
   );
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: BOTTOM_NAV_PADDING, gap: 32 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, paddingBottom: BOTTOM_NAV_PADDING, gap: 32 }}>
       <View style={{ gap: 16 }}>
         <HubSectionHeading title={t('moxtHub.primaryServices')} />
         <BentoGrid items={coreServices} />

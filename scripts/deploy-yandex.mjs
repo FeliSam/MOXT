@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env node
+#!/usr/bin/env node
 /**
  * Build MOXT + publication sur Yandex Object Storage.
  *
@@ -39,7 +39,7 @@ const domain = (process.env.MOXT_DOMAIN || 'moxtapp.ru').replace(/\.$/, '')
 const initMode = process.argv.includes('--init')
 const spaOnly = process.argv.includes('--spa')
 const skipBuild = process.argv.includes('--skip-build')
-const purgeCdn = process.argv.includes('--purge-cdn')
+const purgeCdn = process.argv.includes('--purge-cdn') && !process.argv.includes('--no-purge-cdn')
 const fullUpload = process.argv.includes('--full')
 const dryRun = process.argv.includes('--dry-run')
 const concurrencyArg = process.argv.find((arg) => arg.startsWith('--concurrency='))
@@ -265,26 +265,30 @@ async function main() {
   }
 
   if (purgeCdn && !dryRun) {
-    const resourceId = resolveCdnResourceId()
-    if (!resourceId) {
-      console.log('\n  (purge CDN ignore - ressource CDN introuvable)')
-    } else {
-      // Garde-fou: never leave Storage-API origin / nuclear rewrite (site 403 / HTML-as-JS)
-      log('CDN lock (website origin)', resourceId)
-      finalizeSpaCdn(resourceId, bucket)
-      assertCdnSpaGuard(resourceId, bucket)
-      log('En-tetes securite CDN', resourceId)
-      ensureCdnSecurityHeaders(resourceId)
-      log('Purge cache CDN', resourceId)
-      const result = purgeCdnCache(resourceId)
-      if (!result.ok) {
-        if (result.reason === 'rate_limit') {
-          console.warn('\n  ⚠ Purge CDN limitée (rate limit) — déploiement OK')
-        } else {
-          console.warn(`\n  ⚠ Purge CDN échouée : ${result.reason}`)
-          console.warn('    Upload terminé ; purge manuelle dans Cloud CDN si besoin.')
+    try {
+      const resourceId = resolveCdnResourceId()
+      if (!resourceId) {
+        console.log('\n  (purge CDN ignore - ressource CDN introuvable)')
+      } else {
+        // Garde-fou: never leave Storage-API origin / nuclear rewrite (site 403 / HTML-as-JS)
+        log('CDN lock (website origin)', resourceId)
+        finalizeSpaCdn(resourceId, bucket)
+        assertCdnSpaGuard(resourceId, bucket)
+        log('En-tetes securite CDN', resourceId)
+        ensureCdnSecurityHeaders(resourceId)
+        log('Purge cache CDN', resourceId)
+        const result = purgeCdnCache(resourceId)
+        if (!result.ok) {
+          if (result.reason === 'rate_limit') {
+            console.warn('\n  ⚠ Purge CDN limitée (rate limit) — déploiement OK')
+          } else {
+            console.warn(`\n  ⚠ Purge CDN échouée : ${result.reason}`)
+            console.warn('    Upload terminé ; purge manuelle dans Cloud CDN si besoin.')
+          }
         }
       }
+    } catch (cdnErr) {
+      console.warn(`\n  ⚠ Purge CDN ignorée (${cdnErr?.message || cdnErr}) — les assets S3 ont été mis à jour avec succès.`)
     }
   }
 

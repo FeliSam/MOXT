@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, type TextInputProps } from 'react-native';
+import { View, Text, TextInput, Platform, type TextInputProps } from 'react-native';
 
 import { cn } from '@/lib/cn';
 
@@ -22,14 +22,13 @@ export function Input({ label, error, className, ...props }: InputProps) {
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         className={cn(
-          'border rounded-xl px-3.5 py-3 text-[15px]',
+          'border rounded-xl px-3.5 py-3 text-base min-h-[46px]',
           'bg-white dark:bg-zinc-900 text-app-text dark:text-zinc-50',
           error
             ? 'border-app-danger dark:border-red-500'
-            : focused
-              ? 'border-brand-700 dark:border-brand-400'
-              : 'border-app-border-md dark:border-zinc-600',
+            : 'border-app-border-md dark:border-zinc-700',
         )}
+        style={[{ fontSize: 16 }, Platform.OS === 'web' ? ({ outlineStyle: 'none', outlineWidth: 0 } as any) : undefined]}
         {...props}
       />
       {error ? <Text className="text-xs font-medium text-app-danger dark:text-red-400">{error}</Text> : null}

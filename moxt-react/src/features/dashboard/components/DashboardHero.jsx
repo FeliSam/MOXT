@@ -15,14 +15,14 @@ export function DashboardHero({ user }) {
   const { t } = useLanguage()
 
   return (
-    <div className="min-w-0">
+    <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="inline-flex max-w-full items-center gap-1.5">
         <h1 className="truncate text-[1.35rem] font-extrabold leading-tight tracking-[-0.03em] text-[var(--app-text)] sm:text-[1.55rem]">
           {t('dashboard.hero.welcome', { name: user?.firstName || 'MOXT' })}
         </h1>
         {isProfileVerified(user) ? <VerifiedBadge size="sm" /> : null}
       </div>
-      <div className="mt-2.5 flex min-w-0 flex-wrap items-center gap-2">
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
         {!isNative ? (
           <Link to="/install" className={heroBtnBase}>
             <FiDownload className="text-sm" aria-hidden /> {t('dashboard.hero.install')}

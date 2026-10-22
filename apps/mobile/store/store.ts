@@ -11,6 +11,8 @@ import { marketplaceReducer } from './marketplace';
 import { messagesReducer } from './messages';
 import { notificationsReducer } from './notifications';
 import { parcelsReducer } from './parcels';
+import { platformReducer } from './platform';
+import { dashboardReducer } from './dashboard';
 import { referralReducer } from './referral';
 import { supportReducer } from './support';
 import { transfersReducer } from './transfers';
@@ -34,6 +36,8 @@ export const store = configureStore({
     account: accountReducer,
     disputes: disputesReducer,
     support: supportReducer,
+    platform: platformReducer,
+    dashboard: dashboardReducer,
   },
 });
 

@@ -95,6 +95,14 @@ export async function dispatchUserRole(dispatch, { actorRole, id, role, t }) {
     }
   }
 
+  try {
+    if (supabase) {
+      await supabase.from('profiles').update({ role, updated_at: new Date().toISOString() }).eq('id', id)
+    }
+  } catch (err) {
+    console.warn('[MOXT] Failed to persist role update to Supabase profiles:', err)
+  }
+
   dispatch(updateUserRole({ id, role }))
   return true
 }

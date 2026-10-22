@@ -5,6 +5,7 @@ import {
   filterPublicationsByTabs,
   isArchivedListing,
   preferredPublicationArchiveTab,
+  publicProfileArchiveRequest,
   publicationArchiveCounts,
   publicationTypeCounts,
 } from './publicationRules.js'
@@ -62,6 +63,20 @@ describe('publicationRules', () => {
     expect(visible.listing).toEqual([])
     const onlyArchived = { ...publications, listings: [{ status: 'sold' }], parcels: [], events: [], videos: [], posts: [], others: [] }
     expect(preferredPublicationArchiveTab(onlyArchived, 'active')).toBe('archived')
+  })
+
+  it('colle l’onglet archives après les annonces, comme le premier paint du web', () => {
+    const pubs = {
+      listings: [{ id: 'l', status: 'sold', ownerId: uid }],
+      parcels: [],
+      jobs: [],
+      events: [{ id: 'e', status: 'published', ownerId: uid }],
+      videos: [],
+      posts: [],
+      others: [],
+    }
+    expect(preferredPublicationArchiveTab(pubs, 'active')).toBe('active')
+    expect(publicProfileArchiveRequest(pubs)).toBe('archived')
   })
 
   it('sélectionne par propriétaire dans les catalogues (posts par auteur)', () => {

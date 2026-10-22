@@ -1,28 +1,30 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  FiAlertTriangle,
+  FiBriefcase,
+  FiCheckCircle,
   FiChevronLeft,
   FiChevronRight,
   FiEdit2,
-  FiEye,
-  FiHeart,
-  FiMapPin,
   FiMaximize2,
-  FiPackage,
   FiPercent,
   FiShield,
   FiShoppingBag,
+  FiStar,
+  FiTrash2,
+  FiUser,
+  FiUserPlus,
 } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
-import { Link, useOutletContext, useParams } from 'react-router-dom'
+import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
 import { EntityVerifiedName } from '../components/ui/EntityVerifiedName'
 import { BackButton } from '../components/ui/BackButton'
 import { Button } from '../components/ui/Button'
+import { ExpandableLinkifiedText } from '../components/ui/ExpandableLinkifiedText'
 import { LinkifiedText } from '../components/ui/LinkifiedText'
 import { Card } from '../components/ui/Card'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
-import { DetailFacts, DetailMetrics, DetailTimeline } from '../components/ui/DetailBlocks'
+import { DetailFacts, DetailTimeline } from '../components/ui/DetailBlocks'
 import { ImageGalleryViewer } from '../components/ui/ImageGalleryViewer'
 import { useSwipeDownToClose } from '../hooks/useSwipeDownToClose'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -40,6 +42,7 @@ import { DELIVERY_OPTIONS, LISTING_CONDITIONS, optionLabel } from '../config/opt
 import { ContactButton } from '../features/communications/ContactButton'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { MarketplaceListingCard } from '../features/marketplace/MarketplaceListingCard'
+import { MarketplaceVideoCard } from '../features/marketplace/MarketplaceVideoRail'
 import {
   MARKETPLACE_DISCOVER_GRID_COLUMNS,
   MARKETPLACE_DISCOVER_GRID_GAP,
@@ -48,6 +51,10 @@ import {
 import {
   addListingQuestion,
   answerListingQuestion,
+  updateListingQuestion,
+  deleteListingQuestion,
+  deleteListing,
+  duplicateListing,
   incrementListingContact,
   incrementListingShare,
   incrementListingView,
@@ -58,11 +65,15 @@ import { markListingViewed } from '../features/account/accountSlice'
 import { addToast } from '../features/ui/uiSlice'
 import { formatMoney } from '../features/transfers/transferUtils'
 import { formatDateTime, formatShortDate } from '../utils/formatters'
-import { PublisherDetailCard } from '../features/publications/PublisherDetailCard'
 import { PublisherPublicationsStrip } from '../features/publications/PublisherPublicationsStrip'
 import { usePublisherDetailProfile } from '../features/publications/usePublisherDetailProfile'
+import { usePublicationProfile } from '../features/publications/usePublicationProfile'
+import { SubscribeButton } from '../features/account/SubscribeButton'
+import { avatarDisplayUrl } from '../features/account/avatarDisplayUrl'
+import { pickShuffledWindow } from '../features/feed/feedDiscoveryUtils'
 import { ReportDialog } from '../components/ui/ReportDialog'
 import { useLanguage } from '../contexts/useLanguage'
+import { phase3Text } from '../i18n/phase3I18n'
 import {
   listingOptionLabel,
   marketplaceText,
@@ -81,11 +92,152 @@ const TAB_DEFS = [
   { value: 'history', labelKey: 'marketplace.detail.tabs.history' },
 ]
 
+function CompactPublisherCard({
+  publisherProfile,
+  listing,
+  ownerProfile,
+  currentUser,
+  requireAccount,
+  className = '',
+}) {
+  const { t } = useLanguage()
+  const business = publisherProfile?.business || publisherProfile?.ownerBusiness
+  const isBusiness = Boolean(business || listing?.businessId)
+  const publisherName = publisherProfile?.publisherName || t('publications.publisher.memberMoxt')
+  const verified = publisherProfile?.verified
+
+  const directoryPath =
+    publisherProfile?.businessProfilePath ||
+    (publisherProfile?.businessId ? `/businesses/${publisherProfile.businessId}` : null) ||
+    (business?.id ? `/businesses/${business.id}` : null)
+  const profilePath =
+    directoryPath ||
+    publisherProfile?.publicationsPath ||
+    (publisherProfile?.ownerId ? `/users/${publisherProfile.ownerId}/publications` : null) ||
+    '/marketplace'
+
+  const rawAvatarUrl =
+    business?.logoUrl ||
+    business?.avatarUrl ||
+    ownerProfile?.avatarUrl ||
+    listing?.sellerAvatar ||
+    null
+  const displayAvatarUrl = rawAvatarUrl
+    ? avatarDisplayUrl(rawAvatarUrl, { width: 110, height: 110 })
+    : null
+
+  const rating = publisherProfile?.rating
+  const ratingAverage = Number(rating?.average || 0)
+  const ratingCount = Number(rating?.count || 0)
+  const isSelf = Boolean(
+    currentUser?.id &&
+      (currentUser.id === publisherProfile?.ownerId || currentUser.id === listing?.ownerId),
+  )
+
+  const publisherId = isBusiness
+    ? publisherProfile?.businessId || business?.id || publisherProfile?.ownerId
+    : publisherProfile?.ownerId || listing?.ownerId
+
+  return (
+    <div
+      className={`flex items-center justify-between gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-muted)]/70 px-4 py-3.5 sm:py-4 min-h-[66px] sm:min-h-[72px] backdrop-blur-sm transition-colors hover:border-[var(--app-border-hover)] ${className}`}
+    >
+      <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-3.5 overflow-hidden">
+        <Link
+          to={profilePath}
+          title={publisherName}
+          className="group relative size-[48px] sm:size-[52px] shrink-0 overflow-hidden rounded-xl bg-slate-200 ring-1 ring-black/5 transition hover:scale-105 dark:bg-slate-800 dark:ring-white/10"
+        >
+          {displayAvatarUrl ? (
+            <img
+              src={displayAvatarUrl}
+              alt={publisherName}
+              className="size-full object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <span className="flex size-full items-center justify-center bg-gradient-to-br from-brand-600 to-indigo-700 text-sm font-black text-white">
+              {publisherName?.slice(0, 2).toUpperCase()}
+            </span>
+          )}
+        </Link>
+
+        <div className="min-w-0 flex-1 overflow-hidden">
+          <Link
+            to={profilePath}
+            className="group flex min-w-0 max-w-full items-center gap-1.5 transition"
+            title={publisherName}
+          >
+            <span className="truncate block min-w-0 max-w-[125px] xs:max-w-[175px] sm:max-w-[240px] md:max-w-[320px] xl:max-w-[155px] 2xl:max-w-[200px] text-sm sm:text-[15px] font-black text-[var(--app-text)] group-hover:text-brand-600">
+              {publisherName}
+            </span>
+            {verified ? (
+              <FiCheckCircle className="size-3.5 shrink-0 text-emerald-500" aria-label="Vérifié" />
+            ) : null}
+          </Link>
+
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+            {isBusiness ? (
+              <span className="inline-flex items-center gap-1 rounded-md border border-purple-500/20 bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-bold text-purple-600 dark:text-purple-400">
+                <FiBriefcase className="size-2.5" />
+                Entreprise
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-md border border-blue-500/20 bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-bold text-blue-600 dark:text-blue-400">
+                <FiUser className="size-2.5" />
+                Particulier
+              </span>
+            )}
+
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-500">
+              <FiStar className="size-3.5 fill-amber-400 text-amber-400" />
+              <span>
+                {ratingCount > 0
+                  ? `${ratingAverage.toFixed(1)} (${ratingCount})`
+                  : (ratingAverage > 0 ? ratingAverage.toFixed(1) : '0')}
+              </span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="shrink-0 flex items-center">
+        {currentUser?.id ? (
+          !isSelf && publisherId ? (
+            <SubscribeButton
+              publisherType={isBusiness ? 'business' : 'user'}
+              publisherId={publisherId}
+              publisherName={publisherName}
+              publisherPath={profilePath}
+              size="sm"
+              variant="secondary"
+              iconOnly
+              className="rounded-xl shrink-0"
+            />
+          ) : null
+        ) : (
+          <Button
+            size="sm"
+            variant="secondary"
+            iconOnly
+            icon={FiUserPlus}
+            onClick={() => requireAccount("s'abonner")}
+            className="size-9 rounded-xl shrink-0"
+            title="Suivre"
+            aria-label="Suivre"
+          />
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function ListingDetailPage() {
   const { t } = useLanguage()
   const mt = (key, vars) => marketplaceText(t, key, vars)
   const tabs = TAB_DEFS.map((tab) => ({ ...tab, label: mt(tab.labelKey) }))
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const { listingId } = useParams()
   const { guestMode = false } = useOutletContext() || {}
   const { requireAccount } = useGuestAction()
@@ -98,15 +250,70 @@ export function ListingDetailPage() {
   const reduxAllListings = useSelector((state) => state.marketplace.items)
   const listing = guestMode ? guestDetail.listing : reduxListing
   const allListings = guestMode ? guestCatalog.listings : reduxAllListings
+  const videos = useSelector((state) => state.videos?.items || [])
+  const { profile: ownerProfile } = usePublicationProfile(listing?.ownerId, user)
   const [selectedImage, setSelectedImage] = useState(null)
   const [imageOpen, setImageOpen] = useState(false)
   const [soldOpen, setSoldOpen] = useState(false)
+  const [archiveOpen, setArchiveOpen] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('description')
   const [quantity, setQuantity] = useState(1)
   const [question, setQuestion] = useState('')
   const isAdminViewer = Boolean(user?.role && ['admin', 'superadmin'].includes(user.role))
   const publisherProfile = usePublisherDetailProfile(listing, 'listing')
+
+  function handleDuplicate() {
+    if (!user?.id || !listing) return
+    dispatch(duplicateListing({ listing, ownerId: user.id }))
+    dispatch(
+      addToast({
+        id: `dup-${Date.now()}`,
+        tone: 'success',
+        message: 'Annonce dupliquée avec succès',
+      }),
+    )
+  }
+
+  function handleDelete() {
+    if (!user?.id || !listing) return
+    dispatch(deleteListing({ id: listing.id, ownerId: user.id }))
+    setDeleteConfirmOpen(false)
+    dispatch(
+      addToast({
+        id: `del-${Date.now()}`,
+        tone: 'success',
+        message: 'Annonce supprimée',
+      }),
+    )
+    navigate('/marketplace')
+  }
+
+  function handleArchive() {
+    if (!user?.id || !listing) return
+    dispatch(updateListingStatus({ id: listing.id, status: 'archived', actorId: user.id }))
+    setArchiveOpen(false)
+    dispatch(
+      addToast({
+        id: `arch-${Date.now()}`,
+        tone: 'neutral',
+        message: 'Annonce archivée',
+      }),
+    )
+  }
+
+  function handleReactivate() {
+    if (!user?.id || !listing) return
+    dispatch(updateListingStatus({ id: listing.id, status: 'active', actorId: user.id }))
+    dispatch(
+      addToast({
+        id: `react-${Date.now()}`,
+        tone: 'success',
+        message: 'Annonce réactivée et publiée',
+      }),
+    )
+  }
 
   useEffect(() => {
     if (!listingId) return
@@ -116,18 +323,135 @@ export function ListingDetailPage() {
     }
   }, [dispatch, listingId, user?.id])
 
-  const similar = useMemo(
-    () =>
-      allListings
-        .filter(
-          (item) =>
-            item.id !== listingId &&
-            item.status === 'active' &&
-            (item.category === listing?.category || item.city === listing?.city),
-        )
-        .slice(0, 3),
-    [allListings, listing?.category, listing?.city, listingId],
+  const activeListings = useMemo(
+    () => (allListings || []).filter((item) => item.id !== listingId && item.status === 'active'),
+    [allListings, listingId],
   )
+
+  const orderedSimilarListings = useMemo(() => {
+    if (!activeListings.length) return []
+    const exact = []
+    const sameCat = []
+    const sameCity = []
+    const others = []
+
+    for (const item of activeListings) {
+      const matchCat = Boolean(listing?.category && item.category === listing.category)
+      const matchCity = Boolean(listing?.city && item.city === listing.city)
+      if (matchCat && matchCity) {
+        exact.push(item)
+      } else if (matchCat) {
+        sameCat.push(item)
+      } else if (matchCity) {
+        sameCity.push(item)
+      } else {
+        others.push(item)
+      }
+    }
+
+    return [...exact, ...sameCat, ...sameCity, ...others]
+  }, [activeListings, listing])
+
+  const [similarDisplayCount, setSimilarDisplayCount] = useState(12)
+  const similarSentinelRef = useRef(null)
+  const similarLoadingMoreRef = useRef(false)
+
+  const renderedSimilarItems = useMemo(() => {
+    if (!orderedSimilarListings.length) return []
+    const stream = []
+    const videoPool = videos || []
+    let videoIndex = 0
+    let cycle = 0
+    let nextVideoInterval = 6
+    let listingsSinceVideo = 0
+
+    while (stream.length < similarDisplayCount) {
+      const cycleListings =
+        cycle === 0
+          ? orderedSimilarListings
+          : pickShuffledWindow(
+              orderedSimilarListings,
+              `${listingId}:sim-cycle:${cycle}`,
+              0,
+              orderedSimilarListings.length,
+            )
+
+      for (let i = 0; i < cycleListings.length && stream.length < similarDisplayCount; i++) {
+        const item = cycleListings[i]
+        stream.push({
+          kind: 'listing',
+          data: item,
+          id: cycle === 0 ? `sim-${item.id}` : `sim-${item.id}-c${cycle}-${i}`,
+        })
+        listingsSinceVideo++
+
+        if (
+          videoPool.length > 0 &&
+          listingsSinceVideo >= nextVideoInterval &&
+          stream.length < similarDisplayCount
+        ) {
+          const video = videoPool[videoIndex % videoPool.length]
+          stream.push({
+            kind: 'video',
+            data: video,
+            id: `sim-vid-${video.id}-c${cycle}-${videoIndex}`,
+          })
+          videoIndex++
+          listingsSinceVideo = 0
+          nextVideoInterval = 5 + (((i + cycle * 7) * 3) % 3)
+        }
+      }
+
+      cycle++
+      if (cycle > 500) break
+    }
+
+    return stream
+  }, [orderedSimilarListings, videos, similarDisplayCount, listingId])
+
+  useEffect(() => {
+    const el = similarSentinelRef.current
+    if (!el || !orderedSimilarListings.length) return undefined
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && !similarLoadingMoreRef.current) {
+          similarLoadingMoreRef.current = true
+          setSimilarDisplayCount((prev) => prev + 8)
+          setTimeout(() => {
+            similarLoadingMoreRef.current = false
+          }, 250)
+        }
+      },
+      { rootMargin: '800px' },
+    )
+
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [orderedSimilarListings.length])
+
+  useEffect(() => {
+    if (!orderedSimilarListings.length) return undefined
+    let ticking = false
+    const onScroll = () => {
+      if (ticking) return
+      ticking = true
+      requestAnimationFrame(() => {
+        const scrollPosition = window.innerHeight + window.scrollY
+        const threshold = document.documentElement.scrollHeight - 900
+        if (scrollPosition >= threshold && !similarLoadingMoreRef.current) {
+          similarLoadingMoreRef.current = true
+          setSimilarDisplayCount((prev) => prev + 8)
+          setTimeout(() => {
+            similarLoadingMoreRef.current = false
+          }, 250)
+        }
+        ticking = false
+      })
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [orderedSimilarListings.length])
 
   if (guestMode && guestDetail.loading) {
     return <Card>{mt('marketplace.page.searchPlaceholder')}</Card>
@@ -212,9 +536,7 @@ export function ListingDetailPage() {
 
       <PageHeader
         title={listing.title}
-        actions={
-          <BackButton fallback="/marketplace" />
-        }
+        actions={<BackButton fallback="/marketplace" />}
       />
 
       <div className="grid min-w-0 gap-6 xl:grid-cols-[1.45fr_0.55fr]">
@@ -256,11 +578,13 @@ export function ListingDetailPage() {
               {activeTab === 'description' ? (
                 <div>
                   <h2 className="text-xl font-black">{mt('marketplace.detail.about')}</h2>
-                  <LinkifiedText
+                  <ExpandableLinkifiedText
                     as="p"
                     text={listing.description}
+                    maxLines={4}
                     preserveWhitespace="pre-line"
                     className="mt-4 leading-8 text-[var(--app-text-muted)]"
+                    buttonClassName="mt-2 font-bold text-brand-600 dark:text-brand-400"
                   />
                 </div>
               ) : null}
@@ -344,8 +668,14 @@ export function ListingDetailPage() {
           </Card>
 
           {publisherProfile ? (
-            <div className="grid gap-5 xl:hidden">
-              <PublisherDetailCard {...publisherProfile} />
+            <div className="grid gap-3 xl:hidden">
+              <CompactPublisherCard
+                publisherProfile={publisherProfile}
+                listing={listing}
+                ownerProfile={ownerProfile}
+                currentUser={user}
+                requireAccount={requireAccount}
+              />
               <PublisherPublicationsStrip
                 currentId={listing.id}
                 ownerId={publisherProfile.ownerId}
@@ -355,41 +685,6 @@ export function ListingDetailPage() {
               />
             </div>
           ) : null}
-
-          <DetailMetrics
-            items={[
-              rules.showCondition
-                ? {
-                    icon: FiPackage,
-                    label: mt('marketplace.common.condition'),
-                    value: conditionOption
-                      ? listingOptionLabel(t, conditionOption)
-                      : optionLabel(LISTING_CONDITIONS, listing.condition),
-                  }
-                : {
-                    icon: FiPackage,
-                    label: mt('marketplace.common.type'),
-                    value: listingTypeLabel,
-                  },
-              {
-                icon: FiMapPin,
-                label: mt('marketplace.detail.location'),
-                value: listing.city,
-              },
-              {
-                icon: FiEye,
-                label: mt('marketplace.detail.consultations'),
-                value: mt('marketplace.common.views', { count: listing.views || 0 }),
-              },
-              {
-                icon: FiHeart,
-                label: mt('marketplace.detail.interest'),
-                value: mt('marketplace.common.favorites', {
-                  count: listing.favorites?.length || 0,
-                }),
-              },
-            ]}
-          />
         </div>
 
         <aside className="grid min-w-0 content-start gap-5 xl:sticky xl:top-28">
@@ -422,11 +717,18 @@ export function ListingDetailPage() {
           </Card>
 
           {publisherProfile ? (
-            <PublisherDetailCard {...publisherProfile} className="hidden xl:block" />
+            <CompactPublisherCard
+              publisherProfile={publisherProfile}
+              listing={listing}
+              ownerProfile={ownerProfile}
+              currentUser={user}
+              requireAccount={requireAccount}
+              className="hidden xl:flex"
+            />
           ) : null}
 
-          <Card>
-            {isListingOwner ? (
+          {isListingOwner ? (
+            <Card>
               <div className="grid gap-2">
                 <Link to={`/marketplace/${listing.id}/edit`}>
                   <Button className="w-full" variant="secondary" icon={FiEdit2}>
@@ -439,16 +741,8 @@ export function ListingDetailPage() {
                   </Button>
                 ) : null}
               </div>
-            ) : user?.id ? (
-              <Button
-                variant="danger"
-                icon={FiAlertTriangle}
-                onClick={() => setReportOpen(true)}
-              >
-                {mt('marketplace.detail.report')}
-              </Button>
-            ) : null}
-          </Card>
+            </Card>
+          ) : null}
           {isAdminViewer ? (
             <Card className="border border-brand-100 bg-brand-50/60 dark:border-brand-900/40 dark:bg-brand-950/20">
               <div className="flex items-center gap-2">
@@ -486,10 +780,20 @@ export function ListingDetailPage() {
         </div>
       ) : null}
 
-      {similar.length ? (
-        <section className="grid gap-3">
-          <div className="min-w-0">
-            <h2 className="text-sm font-black tracking-tight">{mt('marketplace.detail.similarTitle')}</h2>
+      {renderedSimilarItems.length ? (
+        <section className="grid gap-4 mt-6">
+          <div className="flex items-center justify-between gap-3 min-w-0">
+            <div>
+              <h2 className="text-sm sm:text-base font-black tracking-tight">
+                {mt('marketplace.detail.similarTitle') || 'Annonces similaires & Recommandations'}
+              </h2>
+              <p className="text-xs text-[var(--app-text-muted)] mt-0.5">
+                Produits similaires puis exploration continue du catalogue
+              </p>
+            </div>
+            <span className="text-xs font-semibold text-brand-600 dark:text-brand-400 shrink-0">
+              Flux continu
+            </span>
           </div>
           <CatalogGrid
             lazy={false}
@@ -497,21 +801,39 @@ export function ListingDetailPage() {
             gap={MARKETPLACE_DISCOVER_GRID_GAP}
             className="min-w-0 w-full"
           >
-            {similar.map((item, index) => (
+            {renderedSimilarItems.map((item, index) => (
               <RevealListItem
                 key={item.id}
                 index={index}
                 className={`${MARKETPLACE_DISCOVERY_CARD_HEIGHT} min-w-0 overflow-hidden`}
               >
-                <MarketplaceListingCard
-                  listing={item}
-                  guestMode={guestMode}
-                  onGuestInteract={() => requireAccount('aimer cette annonce')}
-                  layout="rail"
-                />
+                {item.kind === 'video' ? (
+                  <MarketplaceVideoCard
+                    video={item.data}
+                    badgeLabel={mt('marketplace.page.feed.badgeVideo')}
+                  />
+                ) : (
+                  <MarketplaceListingCard
+                    listing={item.data}
+                    guestMode={guestMode}
+                    onGuestInteract={() => requireAccount('aimer cette annonce')}
+                    layout="rail"
+                  />
+                )}
               </RevealListItem>
             ))}
           </CatalogGrid>
+
+          <div
+            ref={similarSentinelRef}
+            className="h-10 w-full flex items-center justify-center my-4"
+            aria-hidden="true"
+          >
+            <div className="flex items-center gap-2 text-xs font-semibold text-[var(--app-text-muted)] animate-pulse">
+              <span className="inline-block size-2 rounded-full bg-brand-500 animate-ping shrink-0" />
+              <span>Recharge progressive des annonces...</span>
+            </div>
+          </div>
         </section>
       ) : null}
 
@@ -529,6 +851,20 @@ export function ListingDetailPage() {
         sourceType="listing"
         sourceId={listing.id}
         editTo={isListingOwner ? `/marketplace/${listing.id}/edit` : undefined}
+        onArchive={isListingOwner ? () => setArchiveOpen(true) : undefined}
+        onReactivate={isListingOwner ? handleReactivate : undefined}
+        onDuplicate={isListingOwner ? handleDuplicate : undefined}
+        onMarkSold={isListingOwner && listing.status === 'active' ? () => setSoldOpen(true) : undefined}
+        onDelete={isListingOwner ? () => setDeleteConfirmOpen(true) : undefined}
+        onReport={
+          !isListingOwner
+            ? () => {
+                if (requireAccount('signaler une annonce')) return
+                setReportOpen(true)
+              }
+            : undefined
+        }
+        reportLabel={mt('marketplace.detail.report')}
       />
 
       <ImageGalleryViewer
@@ -558,6 +894,31 @@ export function ListingDetailPage() {
           dispatch(updateListingStatus({ id: listing.id, status: 'sold', actorId: user.id }))
           setSoldOpen(false)
         }}
+      />
+
+      <ConfirmDialog
+        open={archiveOpen}
+        title={phase3Text(t, 'publications.confirm.archive.title') || "Archiver l'annonce"}
+        description={
+          phase3Text(t, 'publications.confirm.archive.description') ||
+          "Êtes-vous sûr de vouloir archiver cette annonce ? Elle ne sera plus visible sur le marketplace."
+        }
+        confirmLabel={mt('marketplace.common.archive') || "Archiver"}
+        onCancel={() => setArchiveOpen(false)}
+        onConfirm={handleArchive}
+      />
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        tone="danger"
+        title={phase3Text(t, 'publications.confirm.delete.title') || "Supprimer l'annonce"}
+        description={
+          phase3Text(t, 'publications.confirm.delete.description') ||
+          "Êtes-vous sûr de vouloir supprimer définitivement cette annonce ? Cette action est irréversible."
+        }
+        confirmLabel={mt('marketplace.common.delete') || "Supprimer"}
+        onCancel={() => setDeleteConfirmOpen(false)}
+        onConfirm={handleDelete}
       />
 
       {user?.id ? (
@@ -611,10 +972,10 @@ function Gallery({
     <Card className="overflow-hidden p-4 sm:p-4">
       <div
         ref={imageRef}
-        className="group relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-cyan-700 to-blue-600 text-white"
+        className="group relative overflow-hidden rounded-[1.5rem] bg-slate-900 text-white"
         {...imageSwipeHandlers}
       >
-        <div className="relative flex h-[486px] w-full items-center justify-center lg:h-[583px]">
+        <div className="relative flex h-[280px] sm:h-[380px] md:h-[480px] lg:h-[583px] w-full items-center justify-center">
           {activeImage ? (
             <img
               src={activeImage}
@@ -667,7 +1028,7 @@ function Gallery({
         ) : null}
       </div>
       {images.length ? (
-        <div className="mt-3 grid grid-cols-4 gap-3 sm:grid-cols-8">
+        <div className="mt-3 flex gap-2 overflow-x-auto scrollbar-hidden touch-pan-x sm:grid sm:grid-cols-8 sm:gap-3">
           {images.map((image, index) => (
             <button
               key={image}
@@ -678,7 +1039,7 @@ function Gallery({
                 title: listing.title,
               })}
               aria-pressed={image === activeImage}
-              className={`h-[72px] w-full overflow-hidden rounded-2xl transition ${
+              className={`h-[64px] sm:h-[72px] w-[64px] sm:w-full shrink-0 sm:shrink overflow-hidden rounded-2xl transition ${
                 image === activeImage
                   ? 'ring-2 ring-blue-500 ring-offset-2'
                   : 'bg-[var(--app-surface-muted)] hover:opacity-80'
@@ -833,6 +1194,9 @@ function Questions({ dispatch, listing, question, setQuestion, submitQuestion, u
   const mt = (key, vars) => marketplaceText(t, key, vars)
   const [answers, setAnswers] = useState({})
   const [replyingId, setReplyingId] = useState(null)
+  const [editingId, setEditingId] = useState(null)
+  const [editText, setEditText] = useState('')
+  const [questionToDelete, setQuestionToDelete] = useState(null)
   const isOwner = Boolean(user?.id && listing.ownerId === user.id)
 
   function submitAnswer(event, questionId) {
@@ -851,8 +1215,46 @@ function Questions({ dispatch, listing, question, setQuestion, submitQuestion, u
     setReplyingId(null)
   }
 
+  function submitEditQuestion(event, questionId) {
+    event.preventDefault()
+    const text = editText.trim()
+    if (text.length < 5) return
+    dispatch(
+      updateListingQuestion({
+        listingId: listing.id,
+        questionId,
+        authorId: user?.id,
+        text,
+      }),
+    )
+    dispatch(addToast({ type: 'success', message: 'Question modifiée avec succès.' }))
+    setEditingId(null)
+    setEditText('')
+  }
+
   return (
     <div>
+      <ConfirmDialog
+        open={Boolean(questionToDelete)}
+        title="Supprimer la question"
+        description="Êtes-vous sûr de vouloir supprimer définitivement cette question ?"
+        confirmLabel="Supprimer"
+        tone="danger"
+        onCancel={() => setQuestionToDelete(null)}
+        onConfirm={() => {
+          if (!questionToDelete) return
+          dispatch(
+            deleteListingQuestion({
+              listingId: listing.id,
+              questionId: questionToDelete,
+              authorId: user?.id,
+            }),
+          )
+          dispatch(addToast({ type: 'info', message: 'Question supprimée.' }))
+          setQuestionToDelete(null)
+        }}
+      />
+
       {!isOwner ? (
         <form className="grid gap-3" onSubmit={submitQuestion}>
           <label className="grid gap-2 text-sm font-bold">
@@ -875,75 +1277,135 @@ function Questions({ dispatch, listing, question, setQuestion, submitQuestion, u
       )}
       <div className="mt-6 grid gap-3">
         {(listing.questions || []).length ? (
-          listing.questions.map((item) => (
-            <div key={item.id} className="rounded-2xl bg-[var(--app-surface-muted)] p-4">
-              <div className="flex justify-between gap-3">
-                <EntityVerifiedName
-                  as="strong"
-                  name={item.authorName}
-                  userId={item.authorId}
-                />
-                <span className="text-xs text-[var(--app-text-muted)]">
-                  {formatShortDate(item.createdAt)}
-                </span>
-              </div>
-              <p className="mt-2 text-sm">
-                <LinkifiedText text={item.text} preserveWhitespace="pre-line" />
-              </p>
-              {item.answer ? (
-                <div className="mt-3 rounded-xl bg-[var(--app-surface)] p-3 text-sm">
-                  <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--app-accent)]">
-                    {mt('marketplace.detail.sellerAnswer')}
-                  </p>
-                  <p className="mt-1">
-                    <LinkifiedText text={item.answer} preserveWhitespace="pre-line" />
-                  </p>
-                  {item.answeredAt ? (
-                    <p className="mt-2 text-[10px] text-[var(--app-text-faint)]">
-                      {formatShortDate(item.answeredAt)}
-                    </p>
-                  ) : null}
+          listing.questions.map((item) => {
+            const isAuthor = Boolean(user?.id && (item.authorId === user.id || item.author_id === user.id))
+            const canManage = isAuthor || user?.role === 'admin' || user?.role === 'superadmin'
+
+            return (
+              <div key={item.id} className="rounded-2xl bg-[var(--app-surface-muted)] p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <EntityVerifiedName
+                    as="strong"
+                    name={item.authorName}
+                    userId={item.authorId}
+                  />
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-[var(--app-text-muted)]">
+                      {formatShortDate(item.createdAt)}
+                    </span>
+                    {canManage && editingId !== item.id ? (
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          title="Modifier ma question"
+                          aria-label="Modifier ma question"
+                          onClick={() => {
+                            setEditingId(item.id)
+                            setEditText(item.text)
+                          }}
+                          className="rounded-lg p-1 text-[var(--app-text-muted)] hover:bg-[var(--app-surface)] hover:text-brand-600 transition cursor-pointer"
+                        >
+                          <FiEdit2 className="size-3.5" aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          title="Supprimer ma question"
+                          aria-label="Supprimer ma question"
+                          onClick={() => setQuestionToDelete(item.id)}
+                          className="rounded-lg p-1 text-[var(--app-text-muted)] hover:bg-[var(--app-surface)] hover:text-rose-600 transition cursor-pointer"
+                        >
+                          <FiTrash2 className="size-3.5" aria-hidden="true" />
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
-              ) : isOwner ? (
-                replyingId === item.id ? (
-                  <form className="mt-3 grid gap-3" onSubmit={(event) => submitAnswer(event, item.id)}>
-                    <label className="grid gap-2 text-sm font-bold">
-                      {mt('marketplace.detail.yourPublicAnswer')}
-                      <textarea
-                        className="min-h-24 rounded-2xl bg-[var(--app-surface)] p-4"
-                        placeholder={mt('marketplace.detail.answerPlaceholder')}
-                        value={answers[item.id] || ''}
-                        onChange={(event) =>
-                          setAnswers((current) => ({ ...current, [item.id]: event.target.value }))
-                        }
-                      />
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      <Button type="submit" disabled={(answers[item.id] || '').trim().length < 2}>
-                        {mt('marketplace.detail.publishAnswer')}
+
+                {editingId === item.id ? (
+                  <form className="mt-3 grid gap-2.5" onSubmit={(event) => submitEditQuestion(event, item.id)}>
+                    <textarea
+                      className="min-h-20 w-full rounded-xl bg-[var(--app-surface)] p-3 text-sm border border-[var(--app-border)] focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      value={editText}
+                      onChange={(event) => setEditText(event.target.value)}
+                    />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button type="submit" size="sm" disabled={editText.trim().length < 5}>
+                        {mt('marketplace.common.save') || 'Enregistrer'}
                       </Button>
-                      <Button type="button" variant="secondary" onClick={() => setReplyingId(null)}>
-                        {mt('marketplace.common.cancel')}
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                          setEditingId(null)
+                          setEditText('')
+                        }}
+                      >
+                        {mt('marketplace.common.cancel') || 'Annuler'}
                       </Button>
                     </div>
                   </form>
                 ) : (
-                  <Button
-                    className="mt-3"
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setReplyingId(item.id)}
-                  >
-                    {mt('marketplace.detail.reply')}
-                  </Button>
-                )
-              ) : (
-                <p className="mt-3 text-xs text-[var(--app-text-faint)]">
-                  {mt('marketplace.detail.waitingSellerAnswer')}
-                </p>
-              )}
-            </div>
-          ))
+                  <p className="mt-2 text-sm">
+                    <LinkifiedText text={item.text} preserveWhitespace="pre-line" />
+                  </p>
+                )}
+
+                {item.answer ? (
+                  <div className="mt-3 rounded-xl bg-[var(--app-surface)] p-3 text-sm">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--app-accent)]">
+                      {mt('marketplace.detail.sellerAnswer')}
+                    </p>
+                    <p className="mt-1">
+                      <LinkifiedText text={item.answer} preserveWhitespace="pre-line" />
+                    </p>
+                    {item.answeredAt ? (
+                      <p className="mt-2 text-[10px] text-[var(--app-text-faint)]">
+                        {formatShortDate(item.answeredAt)}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : isOwner ? (
+                  replyingId === item.id ? (
+                    <form className="mt-3 grid gap-3" onSubmit={(event) => submitAnswer(event, item.id)}>
+                      <label className="grid gap-2 text-sm font-bold">
+                        {mt('marketplace.detail.yourPublicAnswer')}
+                        <textarea
+                          className="min-h-24 rounded-2xl bg-[var(--app-surface)] p-4"
+                          placeholder={mt('marketplace.detail.answerPlaceholder')}
+                          value={answers[item.id] || ''}
+                          onChange={(event) =>
+                            setAnswers((current) => ({ ...current, [item.id]: event.target.value }))
+                          }
+                        />
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        <Button type="submit" disabled={(answers[item.id] || '').trim().length < 2}>
+                          {mt('marketplace.detail.publishAnswer')}
+                        </Button>
+                        <Button type="button" variant="secondary" onClick={() => setReplyingId(null)}>
+                          {mt('marketplace.common.cancel')}
+                        </Button>
+                      </div>
+                    </form>
+                  ) : (
+                    <Button
+                      className="mt-3"
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => setReplyingId(item.id)}
+                    >
+                      {mt('marketplace.detail.reply')}
+                    </Button>
+                  )
+                ) : (
+                  <p className="mt-3 text-xs text-[var(--app-text-faint)]">
+                    {mt('marketplace.detail.waitingSellerAnswer')}
+                  </p>
+                )}
+              </div>
+            )
+          })
         ) : (
           <p className="text-sm text-[var(--app-text-muted)]">{mt('marketplace.detail.noPublicQuestions')}</p>
         )}

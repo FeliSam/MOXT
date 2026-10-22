@@ -40,11 +40,26 @@ export function subscribeToNotifications(client, userId, onUpsert, { channelName
     const item = notificationFromRemoteRow(payload?.new)
     if (item?.id) onUpsert(item, payload?.eventType || payload?.type)
   }
+
+  if (client?.auth?.getSession && client?.realtime?.setAuth) {
+    client.auth
+      .getSession()
+      .then(({ data }) => {
+        const token = data?.session?.access_token
+        if (token) client.realtime.setAuth(token).catch(() => {})
+      })
+      .catch(() => {})
+  }
+
   const channel = client
     .channel(channelName || `notifications:${userId}`)
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, handle)
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, handle)
-    .subscribe()
+    .subscribe((status, error) => {
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        console.warn(`[notificationsService] Erreur canal ${channelName || `notifications:${userId}`}:`, status, error)
+      }
+    })
   return () => {
     try {
       client.removeChannel(channel)
@@ -68,6 +83,16 @@ export async function markAllNotificationsRead(client, userId) {
   const { error } = await client
     .from('notifications')
     .update({ read: true, updated_at: new Date().toISOString() })
+    .eq('user_id', userId)
+  if (error) throw error
+}
+
+/** Même écriture que le web (communications/archiveNotification). */
+export async function archiveNotification(client, { id, userId }) {
+  const { error } = await client
+    .from('notifications')
+    .update({ archived: true, updated_at: new Date().toISOString() })
+    .eq('id', id)
     .eq('user_id', userId)
   if (error) throw error
 }

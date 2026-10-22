@@ -18,10 +18,10 @@ import { messagesText } from './messagesI18n'
 
 /** Keep pending/failed optimistic messages across reloads for a full day. */
 const PENDING_MESSAGE_MS = 24 * 60 * 60 * 1000
-const MESSAGE_FETCH_LIMIT = 200
-const MESSAGE_INCREMENTAL_LIMIT = 100
-const MESSAGE_OLDER_LIMIT = 100
-const MESSAGE_INBOX_PRELOAD = 6
+const MESSAGE_FETCH_LIMIT = 50
+const MESSAGE_INCREMENTAL_LIMIT = 50
+const MESSAGE_OLDER_LIMIT = 50
+const MESSAGE_INBOX_PRELOAD = 2
 const messageLoadInFlight = new Set()
 
 const MESSAGE_SELECT_COLUMNS = [
@@ -1294,9 +1294,9 @@ export const preloadInboxMessages = createAsyncThunk(
     const targets = conversations
       .filter((item) => conversationNeedsInitialMessageLoad(item))
       .slice(0, limit)
-    await Promise.all(
-      targets.map((conversation) => dispatch(loadConversationMessages(conversation.id))),
-    )
+    for (const conversation of targets) {
+      await dispatch(loadConversationMessages(conversation.id))
+    }
     return targets.length
   },
 )

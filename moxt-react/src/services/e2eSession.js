@@ -26,3 +26,10 @@ export function readE2eHarnessSession() {
 export function isE2eHarnessActive() {
   return isE2eHarnessEnabled()
 }
+
+/** Fixtures Playwright optionnelles (`window.__MOXT_E2E_FIXTURES__`). */
+export function readE2eFixtures() {
+  if (!isE2eHarnessEnabled()) return null
+  const payload = window.__MOXT_E2E_FIXTURES__
+  return payload && typeof payload === 'object' ? payload : null
+}

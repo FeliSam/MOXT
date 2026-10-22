@@ -207,6 +207,19 @@ export function preferredPublicationArchiveTab(publications, requestedTab = 'act
   return requestedTab === 'archived' ? 'archived' : 'active'
 }
 
+/**
+ * Onglet d’archive du profil public authentifié.
+ * Le web applique d’abord les annonces (earlyApplyMarketplaceListings) : si elles
+ * sont toutes archivées, l’URL passe à `status=archived` et ne revient pas quand
+ * le reste du catalogue arrive.
+ */
+export function publicProfileArchiveRequest(publications) {
+  const listingsFirst = emptyPublications()
+  listingsFirst.listings = publications?.listings || []
+  const afterListings = preferredPublicationArchiveTab(listingsFirst, 'active')
+  return preferredPublicationArchiveTab(publications || emptyPublications(), afterListings)
+}
+
 export function publicationTotalViews(publications) {
   const listingViews = (publications.listings || []).reduce((sum, item) => sum + (Number(item.views) || 0), 0)
   const videoViews = (publications.videos || []).reduce((sum, item) => sum + (Number(item.viewCount) || 0), 0)

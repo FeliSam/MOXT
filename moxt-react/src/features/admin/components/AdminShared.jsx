@@ -1,4 +1,4 @@
-import { FiCheckCircle, FiFilter, FiSearch, FiTrendingUp, FiX } from 'react-icons/fi'
+import { FiCheckCircle, FiFilter, FiRefreshCw, FiSearch, FiTrendingUp, FiX } from 'react-icons/fi'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { CARD, CHIP, VIEW_FILTERS } from '../adminConfig'
 import { adminText } from '../adminI18n'
@@ -79,7 +79,7 @@ function StatusChip({ label, value }) {
   )
 }
 
-export function GlobalFilterBar({ query, setQuery, statusFilter, setStatusFilter, view }) {
+export function GlobalFilterBar({ query, setQuery, statusFilter, setStatusFilter, view, onRefresh, refreshing }) {
   const { t } = useLanguage()
   const filters = VIEW_FILTERS[view] || []
   return (
@@ -125,6 +125,18 @@ export function GlobalFilterBar({ query, setQuery, statusFilter, setStatusFilter
             )
           })}
         </div>
+      )}
+      {onRefresh && (
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={refreshing}
+          title={adminText(t, 'admin.page.refresh')}
+          className="ml-auto inline-flex items-center gap-1.5 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2 text-xs font-bold text-[var(--app-text-muted)] transition-colors hover:bg-[var(--app-surface-muted)] hover:text-[var(--app-text)] disabled:opacity-50"
+        >
+          <FiRefreshCw className={`text-xs ${refreshing ? 'animate-spin' : ''}`} />
+          <span className="hidden sm:inline">{adminText(t, 'admin.page.refresh')}</span>
+        </button>
       )}
     </div>
   )

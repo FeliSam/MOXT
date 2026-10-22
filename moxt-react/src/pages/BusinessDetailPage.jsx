@@ -305,6 +305,7 @@ export function BusinessDetailPage() {
         verified={verified}
         category={activityLabel}
         city={cityLabel}
+        phone={business.phone}
         coverUrl={business.bannerUrl}
         avatarUrl={business.logoUrl}
         coverAlt={bt('businesses.detail.bannerAlt', { name: business.name })}

@@ -3,12 +3,15 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 import { subscribeToNotifications } from '@moxt/shared/services/notificationsService.js';
 
 import { notificationUpserted, type NotificationItem } from '@/store/notifications';
+import { scheduleLocalNotification } from './notifications';
 import {
+
   mapConversationRow,
+  mapMessageRow,
+  patchMessage,
   receiveMessage,
   receiveRemoteConversation,
   syncRemoteConversation,
-  type Message,
 } from '@/store/messages';
 import { supabase } from './supabase';
 
@@ -17,16 +20,6 @@ type GetState = () => { messages: { conversations: { id: string }[] } };
 
 let channels: RealtimeChannel[] = [];
 let notificationsUnsubscribe: (() => void) | null = null;
-
-function mapMessageRow(row: Record<string, unknown>): Message {
-  return {
-    id: String(row.id),
-    senderId: String(row.sender_id),
-    senderName: String(row.sender_name || ''),
-    text: String(row.text || ''),
-    createdAt: String(row.created_at),
-  };
-}
 
 function mapConversationPayload(row: Record<string, unknown>) {
   return mapConversationRow(row);
@@ -64,21 +57,55 @@ async function ingestRemoteMessage(
     return;
   }
 
-  // Comme le web : pas de notification locale pour un message (la messagerie a son propre badge).
   dispatch(receiveMessage({ conversationId, message }));
+  void scheduleLocalNotification(
+    message.senderName || 'Nouveau message',
+    message.text || (message.attachment ? 'Pièce jointe reçue' : 'Nouveau message'),
+    { type: 'message', relatedId: conversationId },
+  );
+}
+
+let authListenerSubscription: { unsubscribe: () => void } | null = null;
+
+async function syncRealtimeAuth() {
+  if (!supabase) return;
+  try {
+    const { data } = await supabase.auth.getSession();
+    const token = data?.session?.access_token;
+    if (token) {
+      await supabase.realtime.setAuth(token);
+    }
+  } catch (err) {
+    console.warn('[realtime] Échec sync auth token realtime:', err);
+  }
 }
 
 export function subscribeRealtime(userId: string, dispatch: Dispatch, getState: GetState) {
   unsubscribeRealtime();
   if (!supabase) return;
 
+  void syncRealtimeAuth();
+
+  if (!authListenerSubscription) {
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.access_token) {
+        supabase?.realtime.setAuth(session.access_token).catch(() => {});
+      }
+    });
+    authListenerSubscription = data.subscription;
+  }
+
   // Notifications serveur (INSERT / UPDATE filtrés sur user_id), comme realtimeService web.
-  // Les notifications locales inventées (transferts, colis, annonces) sont supprimées :
-  // le serveur crée déjà les vraies lignes `notifications`.
   notificationsUnsubscribe = subscribeToNotifications(
     supabase,
     userId,
-    (item: NotificationItem) => dispatch(notificationUpserted(item)),
+    (item: NotificationItem) => {
+      dispatch(notificationUpserted(item));
+      void scheduleLocalNotification(item.title, item.message, {
+        type: item.type,
+        relatedId: item.link,
+      });
+    },
     { channelName: `mobile-notifications-${userId}` },
   );
 
@@ -92,6 +119,18 @@ export function subscribeRealtime(userId: string, dispatch: Dispatch, getState: 
         const conversationId = String(row.conversation_id || '');
         if (!conversationId) return;
         ingestRemoteMessage(conversationId, row, userId, dispatch, getState);
+      },
+    )
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'messages' },
+      (payload) => {
+        const row = payload.new as Record<string, unknown>;
+        const conversationId = String(row.conversation_id || '');
+        if (!conversationId) return;
+        const known = getState().messages.conversations.some((item) => item.id === conversationId);
+        if (!known) return;
+        dispatch(patchMessage({ conversationId, message: mapMessageRow(row) }));
       },
     )
     .on(
@@ -126,4 +165,6 @@ export function unsubscribeRealtime() {
   channels = [];
   notificationsUnsubscribe?.();
   notificationsUnsubscribe = null;
+  authListenerSubscription?.unsubscribe();
+  authListenerSubscription = null;
 }

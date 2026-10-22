@@ -14,6 +14,7 @@ import { Provider } from 'react-redux';
 
 import { AuthGate } from '@/components/AuthGate';
 import { BackHeader } from '@/components/chrome/BackHeader';
+import { PublishMenuProvider } from '@/components/chrome/PublishMenuSheet';
 import { SentryErrorBoundary } from '@/components/SentryErrorBoundary';
 import { AuthBootstrap } from '@/providers/AuthBootstrap';
 import { DataSync } from '@/providers/DataSync';
@@ -24,6 +25,8 @@ import { initMonitoring } from '@/services/monitoring';
 import { store } from '@/store/store';
 import { AppThemeProvider, ThemeRoot, useTheme } from '@/theme/ThemeContext';
 import { getNavigationTheme } from '@/theme/navigationTheme';
+
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 initMonitoring();
 
@@ -47,17 +50,19 @@ export default function RootLayout() {
   if (!loaded) return null;
 
   return (
-    <SentryErrorBoundary>
-      <Provider store={store}>
-        <AppThemeProvider>
-          <LanguageProvider>
-            <AuthBootstrap fontsLoaded={loaded}>
-              <RootLayoutNav />
-            </AuthBootstrap>
-          </LanguageProvider>
-        </AppThemeProvider>
-      </Provider>
-    </SentryErrorBoundary>
+    <SafeAreaProvider>
+      <SentryErrorBoundary>
+        <Provider store={store}>
+          <AppThemeProvider>
+            <LanguageProvider>
+              <AuthBootstrap fontsLoaded={loaded}>
+                <RootLayoutNav />
+              </AuthBootstrap>
+            </LanguageProvider>
+          </AppThemeProvider>
+        </Provider>
+      </SentryErrorBoundary>
+    </SafeAreaProvider>
   );
 }
 
@@ -67,13 +72,8 @@ export default function RootLayout() {
  * propre BackHeader (plus de doublon « ← Retour » / en-tête natif).
  */
 const STACK_HEADER_TITLES: Record<string, string> = {
-  'parcel/[id]': 'Détail colis',
-  'listing/[id]': 'Détail annonce',
-  'listing/create': 'Publier une annonce',
   'jobs/index': 'Emplois',
   'jobs/[id]': "Offre d'emploi",
-  'messages/index': 'Messagerie',
-  'profile/edit': 'Mon profil',
   admin: 'Admin',
   'admin/stats': 'Statistiques',
 };
@@ -90,20 +90,23 @@ function RootLayoutNav() {
         <AuthGate>
           <DataSync>
             <OfflineSync>
+              <PublishMenuProvider>
               <Stack
                 screenOptions={({ route }) => {
                   const title = STACK_HEADER_TITLES[route.name];
                   return {
                     headerShown: Boolean(title),
                     header: title ? () => <BackHeader title={title} /> : undefined,
-                    contentStyle: { backgroundColor: colors.background },
+                    contentStyle: { flex: 1, backgroundColor: colors.background },
                   };
                 }}>
                 <Stack.Screen name="(tabs)" />
                 <Stack.Screen name="(auth)" />
                 <Stack.Screen name="transfer" />
                 <Stack.Screen name="design-system" />
+                <Stack.Screen name="status/[id]" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
               </Stack>
+              </PublishMenuProvider>
             </OfflineSync>
           </DataSync>
         </AuthGate>

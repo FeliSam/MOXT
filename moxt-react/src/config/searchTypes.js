@@ -6,6 +6,7 @@ export const SEARCH_TYPE_META = {
   event: { label: 'Événement', labelKey: 'discover.types.event', tone: 'rose' },
   page: { label: 'Page', labelKey: 'discover.types.page', tone: 'slate' },
   profile: { label: 'Profil', labelKey: 'nav.profile', tone: 'brand' },
+  video: { label: 'Vidéo', labelKey: 'discover.types.video', tone: 'brand' },
 }
 
 /**

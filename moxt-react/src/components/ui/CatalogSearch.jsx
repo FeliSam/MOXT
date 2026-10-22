@@ -12,13 +12,14 @@ export function CatalogSearch({
   placeholder,
   query,
   activeFilterCount = 0,
+  className = '',
 }) {
   const { t } = useLanguage()
   const searchLabel = label ?? t('catalog.search.label')
   const searchPlaceholder = placeholder ?? t('catalog.search.placeholder')
 
   return (
-    <section className="rounded-[var(--radius-card-lg)] border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--shadow-card)] sm:p-5">
+    <section className={`rounded-[var(--radius-card-lg)] border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--shadow-card)] sm:p-5 ${className}`}>
       <div className="flex flex-row items-center gap-2 sm:gap-3">
         <label className="relative min-w-0 flex-1">
           <span className="sr-only">{searchLabel}</span>

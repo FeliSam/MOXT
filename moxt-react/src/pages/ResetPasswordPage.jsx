@@ -21,6 +21,7 @@ export function ResetPasswordPage() {
   const { t } = useLanguage()
   const [ready, setReady] = useState(false)
   const [invalidLink, setInvalidLink] = useState(false)
+  const [isSuccess, setIsSuccess] = useState(false)
   const { resetPasswordSchema } = createAuthSchemas(t)
 
   useEffect(() => {
@@ -32,9 +33,19 @@ export function ResetPasswordPage() {
         return
       }
 
+      const search = window.location.search || ''
+      const codeMatch = new URLSearchParams(search).get('code')
+      if (codeMatch && typeof supabase.auth?.exchangeCodeForSession === 'function') {
+        try {
+          await supabase.auth.exchangeCodeForSession(codeMatch)
+        } catch {
+          // ignore error, will check getSession below
+        }
+      }
+
       const hash = window.location.hash || ''
       if (hash.includes('type=recovery') || hash.includes('access_token')) {
-        await new Promise((resolve) => window.setTimeout(resolve, 120))
+        await new Promise((resolve) => window.setTimeout(resolve, 150))
       }
 
       const { data } = await supabase.auth.getSession()
@@ -60,6 +71,7 @@ export function ResetPasswordPage() {
     onSubmit: async (values, helpers) => {
       try {
         await authService.updatePassword(values.password)
+        setIsSuccess(true)
         const { markIntentionalSignOut } = await import('../services/authSessionSync')
         markIntentionalSignOut()
         await supabase?.auth.signOut()
@@ -94,7 +106,7 @@ export function ResetPasswordPage() {
 
   const errorFor = (field) => (formik.touched[field] ? formik.errors[field] : undefined)
 
-  if (invalidLink) {
+  if (invalidLink && !isSuccess) {
     return (
       <AuthCard
         eyebrow={t('auth.reset.eyebrow')}

@@ -38,6 +38,16 @@ const administrationSlice = createSlice({
     setAdminUsers(state, action) {
       state.users = action.payload
     },
+    upsertAdminUser(state, action) {
+      const incoming = profileRowToAdminUser(action.payload)
+      if (!incoming?.id) return
+      const idx = state.users.findIndex((item) => item.id === incoming.id)
+      if (idx >= 0) {
+        state.users[idx] = { ...state.users[idx], ...incoming }
+      } else {
+        state.users.unshift(incoming)
+      }
+    },
     registerAdministrativeUser(state, action) {
       if (!state.users.some((item) => item.id === action.payload.id)) {
         state.users.unshift({ ...action.payload, status: action.payload.status || 'active' })
@@ -111,6 +121,7 @@ const administrationSlice = createSlice({
 export { profileRowToAdminUser }
 export const {
   setAdminUsers,
+  upsertAdminUser,
   registerAdministrativeUser,
   updateUserRole,
   updateUserStatus,

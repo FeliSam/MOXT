@@ -384,6 +384,12 @@ export function UserPublicationsPage() {
     publications.listings?.find((l) => l.images?.[0])?.images?.[0] ||
     ''
 
+  const phone =
+    scope === 'business'
+      ? ownBusiness?.phone || ''
+      : isOwner
+        ? currentUser?.phone || ''
+        : memberProfile?.phone || guestProfile?.phone || ownBusiness?.phone || ''
 
   const defaultTab = activeVideos.length > 0 ? 'videos' : 'publications'
   const mainTab =
@@ -442,6 +448,7 @@ export function UserPublicationsPage() {
       <PublicProfileHero
         name={displayName}
         verified={verified}
+        phone={phone}
         shareSlot={heroQrButton}
         profileKind={isBusinessHero ? 'business' : 'personal'}
         kindLabel={

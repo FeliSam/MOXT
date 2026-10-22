@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -11,7 +11,7 @@ import { radii, shadows, spacing, typography } from '@/theme/colors';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { BackHeader } from '@/components/chrome/BackHeader';
 
-const TYPE_ICONS: Record<string, string> = { listing: '🏪', parcel: '📦', job: '💼', business: '🏢', event: '📅' };
+const TYPE_ICONS: Record<string, string> = { listing: '🏪', parcel: '📦', job: '💼', business: '🏢', event: '📅', p2p: '🤝' };
 
 /* Web : sections par type de contenu favori */
 /* Web (FAVORITE_CATEGORIES) : Annonces, Colis, Jobs, Autres (entreprises + événements) */
@@ -19,7 +19,7 @@ const SECTIONS: { key: string; types: FavoriteItem['type'][]; title: string }[] 
   { key: 'listing', types: ['listing'], title: 'Annonces' },
   { key: 'parcel', types: ['parcel'], title: 'Colis' },
   { key: 'job', types: ['job'], title: 'Jobs' },
-  { key: 'other', types: ['business', 'event'], title: 'Autres' },
+  { key: 'other', types: ['business', 'event', 'p2p'], title: 'Autres' },
 ];
 
 function FavoriteCard({ item }: { item: FavoriteItem }) {
@@ -31,6 +31,8 @@ function FavoriteCard({ item }: { item: FavoriteItem }) {
     else if (item.type === 'parcel') router.push(`/parcel/${item.id}` as any);
     else if (item.type === 'job') router.push(`/jobs/${item.id}` as any);
     else if (item.type === 'business') router.push(`/organization/${item.id}` as any);
+    else if (item.type === 'event') router.push(`/events/${item.id}` as any);
+    else if (item.type === 'p2p') router.push(`/p2p/${item.id}` as any);
   };
 
   return (
@@ -55,15 +57,27 @@ export default function FavoritesScreen() {
   const dispatch = useAppDispatch();
   const userId = useAppSelector((state) => state.auth.user?.id);
   const items = useAppSelector((state) => state.favorites.items);
+  const [category, setCategory] = useState('all');
 
   useEffect(() => {
     if (userId) dispatch(loadFavorites(userId));
   }, [dispatch, userId]);
 
   const grouped = useMemo(
-    () => SECTIONS.map((s) => ({ ...s, data: items.filter((i) => s.types.includes(i.type)) })),
-    [items],
+    () =>
+      SECTIONS.map((s) => ({ ...s, data: items.filter((i) => s.types.includes(i.type)) })).filter(
+        (section) => category === 'all' || section.key === category,
+      ),
+    [category, items],
   );
+  const tabs = [
+    { key: 'all', label: 'Tous', count: items.length },
+    ...SECTIONS.map((section) => ({
+      key: section.key,
+      label: section.title,
+      count: items.filter((item) => section.types.includes(item.type)).length,
+    })),
+  ];
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -75,6 +89,22 @@ export default function FavoritesScreen() {
         title={translateLabel('Mes favoris')}
         description={`${items.length} élément(s) enregistré(s)`}
       />
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs}>
+        {tabs.map((tab) => {
+          const active = category === tab.key;
+          return (
+            <Pressable
+              key={tab.key}
+              onPress={() => setCategory(tab.key)}
+              style={[styles.tab, { backgroundColor: active ? colors.accent : colors.surface, borderColor: colors.border }]}>
+              <Text style={{ color: active ? '#fff' : colors.text, fontWeight: '800', fontSize: 13 }}>
+                {tab.label} · {tab.count}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
 
       <ScrollView contentContainerStyle={styles.list}>
         {items.length === 0 ? (
@@ -111,6 +141,8 @@ const styles = StyleSheet.create({
   backRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
   backArrow: { fontSize: 20 },
   backLabel: { fontSize: 16, fontWeight: '600' },
+  tabs: { paddingHorizontal: spacing.xl, gap: 8, paddingBottom: spacing.sm },
+  tab: { borderRadius: 999, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 8 },
   list: { padding: spacing.xl, gap: spacing.xl },
   sectionTitle: { fontSize: 16, fontWeight: '900' },
   card: {

@@ -70,6 +70,7 @@ function mapProfile(row) {
     lastName: row.last_name || '',
     city: row.city || '',
     country: row.country || '',
+    phone: row.phone || '',
     verified: row.status === 'verified',
     memberSince: row.created_at || row.updated_at || null,
     avatarUrl: row.avatar_url || '',
@@ -97,7 +98,7 @@ export async function fetchGuestUserPreview(userId) {
   const profileRes = await supabase
     .from('profiles')
     .select(
-      'id, first_name, last_name, city, country, status, created_at, updated_at, activity_visibility, avatar_url',
+      'id, first_name, last_name, city, country, status, created_at, updated_at, activity_visibility, avatar_url, phone',
     )
     .eq('id', userId)
     .maybeSingle()

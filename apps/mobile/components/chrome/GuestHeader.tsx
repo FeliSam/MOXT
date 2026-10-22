@@ -9,7 +9,7 @@ import { useTheme } from '@/theme/ThemeContext';
 
 import { FeatherIcon } from './icons';
 
-const BRAND_MARK = require('../../../../moxt-react/public/assets/brand/mark.png');
+const BRAND_MARK = require('../../assets/images/mark.png');
 
 /** En-tête public (PublicSiteLayout du web) pour le mode invité. */
 export function GuestHeader() {

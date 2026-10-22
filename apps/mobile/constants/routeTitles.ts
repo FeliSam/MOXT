@@ -4,7 +4,7 @@
  */
 export const TAB_ROUTE_PATHS: Record<string, string> = {
   index: '/dashboard',
-  transfers: '/transfers',
+  transfers: '/transfers/history',
   marketplace: '/marketplace',
   feed: '/feed',
   moxt: '/moxt',
@@ -16,6 +16,9 @@ export const TAB_ROUTE_PATHS: Record<string, string> = {
 export const ROUTE_TITLES: Record<string, string> = {
   '/dashboard': 'Accueil',
   '/transfers': 'Nouveau transfert',
+  '/transfers/history': 'Historique',
+  '/transfers/detail': 'Détail du transfert',
+  '/receipts': 'Reçus',
   '/marketplace': 'Marketplace',
   '/feed': 'Fil d’actualité',
   '/moxt': 'MOXT',
@@ -23,6 +26,28 @@ export const ROUTE_TITLES: Record<string, string> = {
   '/messages': 'Messagerie',
   '/notifications': 'Notifications',
   '/design-system': 'Design system',
+  '/profile': 'Mon profil',
+  '/publications/mine': 'Mes publications',
+  '/businesses/detail': 'Fiche entreprise',
+  '/p2p': 'Échanges P2P',
+  '/p2p/publish': 'Proposer une offre',
+  '/settings': 'Paramètres',
+  '/verification': 'Vérification',
+  '/kyc': 'Vérification',
+  '/publish/parcel': 'Publier un voyage',
+  '/publish/job': 'Publier un job',
+  '/publish/event': 'Publier un événement',
+  '/publish/video': 'Publier une vidéo',
+  '/publish/post': 'Fil d’actualité',
+  '/publish/status': 'Statut',
+  '/listing/create': 'Publier une annonce',
+  '/publications/edit': 'Modifier',
+  '/messages/moxt-assistant': 'Moxti',
+  '/events': 'Événement',
+  '/news': 'Actualités',
+  '/status': 'Statut',
+  '/videos': 'Vidéo',
+  '/users': 'Profil',
 };
 
 export function titleForTabRoute(routeName: string): string {

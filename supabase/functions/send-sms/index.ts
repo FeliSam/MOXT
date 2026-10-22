@@ -30,6 +30,46 @@ const SMS_MAX_PER_DAY = Number(Deno.env.get('SMS_MAX_PER_DAY') || '10')
  * laissait des appareils bloqués des heures avec « SMS indisponible ».
  * Seul un quota réellement dépassé (réponse false) bloque l'envoi.
  */
+async function isPhoneAdmin(phone: string, adminClient?: any): Promise<boolean> {
+  const digits = String(phone || '').replace(/\D/g, '')
+  if (!digits) return false
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  if (!supabaseUrl || !serviceRoleKey) return false
+
+  try {
+    const admin =
+      adminClient ||
+      createClient(supabaseUrl, serviceRoleKey, {
+        auth: { persistSession: false, autoRefreshToken: false },
+      })
+
+    const { data: adminProfiles, error } = await admin
+      .from('profiles')
+      .select('id, role, phone, origin_phone')
+      .in('role', ['admin', 'superadmin', 'moderator'])
+      .limit(30)
+
+    if (!error && adminProfiles && adminProfiles.length) {
+      const match = adminProfiles.some((p: any) => {
+        const p1 = String(p.phone || '').replace(/\D/g, '')
+        const p2 = String(p.origin_phone || '').replace(/\D/g, '')
+        return (
+          (p1 && (p1 === digits || digits.endsWith(p1) || p1.endsWith(digits))) ||
+          (p2 && (p2 === digits || digits.endsWith(p2) || p2.endsWith(digits)))
+        )
+      })
+      if (match) {
+        console.log(`[send-sms] Numéro admin/staff détecté (${phone}) : exemption totale de cap SMS.`)
+        return true
+      }
+    }
+  } catch (error) {
+    console.warn('[send-sms] isPhoneAdmin check warning:', error)
+  }
+  return false
+}
+
 async function smsSendAllowed(phone: string): Promise<boolean> {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -42,6 +82,11 @@ async function smsSendAllowed(phone: string): Promise<boolean> {
     const admin = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     })
+
+    if (await isPhoneAdmin(phone, admin)) {
+      return true
+    }
+
     const { data, error } = await admin.rpc('moxt_sms_send_allowed', {
       p_phone: phone,
       p_max: SMS_MAX_PER_DAY,

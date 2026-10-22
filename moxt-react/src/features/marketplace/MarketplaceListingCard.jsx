@@ -15,6 +15,8 @@ import { formatMoney } from '../transfers/transferUtils'
 import { listingOptionLabel, marketplaceText } from './marketplaceI18n'
 import { resolveMediaDisplayUrl } from '../../services/media/mediaUrlUtils'
 
+export const GLOBAL_LOADED_IMAGES = new Set()
+
 function MarketplaceListingCardComponent({
   listing,
   linked = true,
@@ -31,6 +33,16 @@ function MarketplaceListingCardComponent({
   const mt = (key, vars) => marketplaceText(t, key, vars)
   const user = useSelector((state) => state.auth.user)
   const [failedSrc, setFailedSrc] = useState(() => new Set())
+  const [loadedSrc, setLoadedSrc] = useState(() => {
+    const initial = new Set()
+    const listImgs = listing?.images || []
+    for (const src of listImgs) {
+      if (typeof src === 'string' && GLOBAL_LOADED_IMAGES.has(src)) {
+        initial.add(src)
+      }
+    }
+    return initial
+  })
   const [slide, setSlide] = useState(0)
   const scrollRef = useHorizontalScroll()
   const liked = useSelector((state) =>
@@ -118,7 +130,7 @@ function MarketplaceListingCardComponent({
       } ${archived ? archivedPublicationCardClass : ''}`}
     >
       <div
-        className={`relative w-full overflow-hidden bg-gradient-to-br from-cyan-700 to-blue-600 ${
+        className={`relative w-full overflow-hidden bg-slate-100 dark:bg-slate-850 ${
           isRail ? 'h-full' : 'h-[320px] xl:h-[360px]'
         } ${archived ? 'opacity-75 saturate-[0.85]' : ''}`}
       >
@@ -130,21 +142,38 @@ function MarketplaceListingCardComponent({
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
             {images.map((src, index) => {
+              const isLoaded = loadedSrc.has(src) || GLOBAL_LOADED_IMAGES.has(src)
               const img = (
-                <img
-                  src={src}
-                  alt={listing.title}
-                  className={`h-full w-full object-cover ${isRail ? '' : 'md:transition md:duration-500 md:ease-out md:group-hover:scale-[1.05]'}`}
-                  loading={index === 0 ? 'eager' : 'lazy'}
-                  draggable={false}
-                  onError={() => {
-                    setFailedSrc((current) => {
-                      const next = new Set(current)
-                      next.add(src)
-                      return next
-                    })
-                  }}
-                />
+                <div className="relative h-full w-full">
+                  {!isLoaded && (
+                    <div className="absolute inset-0 animate-pulse bg-slate-200/80 dark:bg-slate-800" />
+                  )}
+                  <img
+                    src={src}
+                    alt={listing.title}
+                    className={`h-full w-full object-cover transition-opacity duration-300 ${
+                      isLoaded ? 'opacity-100' : 'opacity-0'
+                    } ${isRail ? '' : 'md:transition-transform md:duration-500 md:ease-out md:group-hover:scale-[1.05]'}`}
+                    loading={index === 0 ? 'eager' : 'lazy'}
+                    decoding="async"
+                    draggable={false}
+                    onLoad={() => {
+                      GLOBAL_LOADED_IMAGES.add(src)
+                      setLoadedSrc((current) => {
+                        const next = new Set(current)
+                        next.add(src)
+                        return next
+                      })
+                    }}
+                    onError={() => {
+                      setFailedSrc((current) => {
+                        const next = new Set(current)
+                        next.add(src)
+                        return next
+                      })
+                    }}
+                  />
+                </div>
               )
               const slideClass = 'relative h-full w-full min-w-full shrink-0 snap-start'
               if (linked) {
@@ -173,8 +202,8 @@ function MarketplaceListingCardComponent({
             })}
           </div>
         ) : (
-          <div className="grid h-full w-full place-items-center text-white">
-            <FiShoppingBag className="text-4xl opacity-90" />
+          <div className="grid h-full w-full place-items-center bg-slate-100 text-slate-400 dark:bg-slate-850 dark:text-slate-500">
+            <FiShoppingBag className="text-4xl opacity-80" />
           </div>
         )}
 

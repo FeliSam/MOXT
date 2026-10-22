@@ -5,6 +5,7 @@ import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FeatherIcon, type FeatherName } from '@/components/chrome/icons';
+import { MobileMoreSheet } from '@/components/navigation/MobileMoreSheet';
 import { AppText } from '@/components/ui/AppText';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { withAlphaColor } from '@/theme/palette';
@@ -23,8 +24,7 @@ const L = layoutTokens as {
 
 type NavEntry = { id: string; label: string; labelKey: string | null; mobileRoute: string; icon: string };
 
-/** .bottom-nav-shell { padding: 0.2rem; padding-bottom: var(--bottom-nav-pad) } */
-const PAD_X = 3.2;
+const PAD = 4;
 
 const ITEMS: NavEntry[] = [...(bottomNavigationItems as NavEntry[]), moreNavigationItem as NavEntry];
 
@@ -49,6 +49,7 @@ export function BottomNavBar({
   const inactiveColor = withAlphaColor(colors.text, L.bottomNavInactiveOpacity);
 
   const [slotWidth, setSlotWidth] = useState(0);
+  const [moreOpen, setMoreOpen] = useState(false);
   const translate = useRef(new Animated.Value(0)).current;
   const gap = 2;
 
@@ -62,9 +63,13 @@ export function BottomNavBar({
     }).start();
   }, [activeIndex, slotWidth, translate]);
 
-  const onLayout = (event: LayoutChangeEvent) => {
-    const inner = event.nativeEvent.layout.width - PAD_X * 2 - 2; // bordure 1px × 2
-    setSlotWidth((inner - gap * (ITEMS.length - 1)) / ITEMS.length);
+  const onRowLayout = (event: LayoutChangeEvent) => {
+    const width = event.nativeEvent.layout.width;
+    if (width > 0) {
+      const available = width - PAD * 2;
+      const calculated = (available - gap * (ITEMS.length - 1)) / ITEMS.length;
+      setSlotWidth(calculated);
+    }
   };
 
   const labelOf = (item: NavEntry) => (item.labelKey ? t(item.labelKey) : item.label);
@@ -73,7 +78,6 @@ export function BottomNavBar({
     <View
       accessibilityRole="tablist"
       accessibilityLabel={t('nav.mobileQuickAria')}
-      onLayout={onLayout}
       style={[
         {
           position: 'absolute',
@@ -85,6 +89,7 @@ export function BottomNavBar({
           borderColor: withAlphaColor(colors.border, 0.75),
           overflow: 'hidden',
           backgroundColor: withAlphaColor(colors.surface, 0.92),
+          zIndex: 50,
         },
         shadows.bottomNav,
       ]}>
@@ -92,66 +97,101 @@ export function BottomNavBar({
         <BlurView
           intensity={24}
           tint={isDark ? 'dark' : 'light'}
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: withAlphaColor(colors.surface, 0.92) }}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
         />
       ) : null}
 
-      <View style={{ flexDirection: 'row', gap, paddingTop: PAD_X, paddingHorizontal: PAD_X, paddingBottom: L.bottomNavPad }}>
+      <View
+        onLayout={onRowLayout}
+        style={{
+          width: '100%',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap,
+          padding: PAD,
+          position: 'relative',
+        }}>
         {activeIndex >= 0 && slotWidth > 0 ? (
           <Animated.View
             pointerEvents="none"
             style={{
               position: 'absolute',
-              top: L.bottomNavPad,
-              bottom: L.bottomNavPad,
-              left: PAD_X,
+              top: PAD,
+              bottom: PAD,
+              left: PAD,
               width: slotWidth,
               borderRadius: 12,
               backgroundColor: colors.surfaceMuted,
-              boxShadow: `inset 0 ${L.bottomNavIndicator}px 0 ${activeColor}`,
               transform: [{ translateX: translate }],
-            }}
-          />
+              overflow: 'hidden',
+            }}>
+            <View
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 3,
+                backgroundColor: activeColor,
+              }}
+            />
+          </Animated.View>
         ) : null}
 
         {ITEMS.map((item, index) => {
-          const focused = index === activeIndex;
+          const focused = index === activeIndex || (item.id === 'more' && moreOpen);
           const color = focused ? activeColor : inactiveColor;
           const label = labelOf(item);
           return (
             <Pressable
               key={item.id}
+              testID={item.id === 'more' ? 'tab-more-services' : `tab-${item.id}`}
               accessibilityRole="tab"
               accessibilityState={{ selected: focused }}
               accessibilityLabel={item.id === 'more' ? t('nav.moreServicesAria') : label}
-              onPress={() => onTabPress(item.mobileRoute)}
+              onPress={() => {
+                // Plus → bottom sheet « Tous les services » (web MobileMoreDrawer), pas la page /moxt.
+                if (item.id === 'more') {
+                  setMoreOpen(true);
+                  return;
+                }
+                onTabPress(item.mobileRoute);
+              }}
               style={({ pressed }) => ({
                 flex: 1,
                 minWidth: 0,
-                minHeight: L.bottomNavSlotMinHeight,
+                height: 56,
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 2,
                 borderRadius: 12,
-                paddingHorizontal: 4,
-                paddingVertical: 6,
+                paddingHorizontal: 2,
                 transform: [{ scale: pressed ? 0.98 : 1 }],
               })}>
-              <View style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}>
+              <View style={{ width: 34, height: 34, alignItems: 'center', justifyContent: 'center' }}>
                 <FeatherIcon name={item.icon as FeatherName} size={L.bottomNavIcon} color={color} />
               </View>
               <AppText
                 numberOfLines={1}
-                style={{ width: '100%', textAlign: 'center', fontSize: 11, lineHeight: 11, fontWeight: '600', color }}>
+                style={{
+                  width: '100%',
+                  textAlign: 'center',
+                  fontSize: 11,
+                  lineHeight: 14,
+                  fontWeight: '600',
+                  color,
+                }}>
                 {label}
               </AppText>
             </Pressable>
           );
         })}
       </View>
+      <MobileMoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
     </View>
   );
 }
+
 
 /** Barre basse autonome (hors Tabs) — pour les piles transfer, etc. */
 export function AppBottomTabBar({ activeRoute = 'transfers' }: { activeRoute?: string }) {
@@ -159,6 +199,10 @@ export function AppBottomTabBar({ activeRoute = 'transfers' }: { activeRoute?: s
     <BottomNavBar
       activeRoute={activeRoute}
       onTabPress={(route) => {
+        if (route === 'transfers') {
+          router.push('/transfer/wizard' as never);
+          return;
+        }
         router.push((route === 'index' ? '/(tabs)' : `/(tabs)/${route}`) as never);
       }}
     />
